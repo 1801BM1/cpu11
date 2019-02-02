@@ -29,6 +29,7 @@ There are few words regarding the reverse engineering process stages:
 ## Processors
 
 - [1801BM1](/vm1) - USSR microprocessor, no DEC prototype, proprietary die design
+- [1801BM2](/vm2) - USSR microprocessor, no DEC prototype, proprietary die design
 
 ## Supported FPGA development boards
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:
