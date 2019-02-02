@@ -1,0 +1,2034 @@
+;
+; Тест прерываний и исключений процессора PDP-11, восстановлено 
+; 1801BM1@gmail.com из листингов теста 791404 по "Электронная вычислительная
+; машина Электроника-60, тест прерываний, программное обеспечение, 
+; 2.791.004 ПО4"
+;_____________________________________________________________________________
+;
+		.title	t404            	; тест прерываний
+		.list	meb			;
+						;
+		R0	= %0			;
+		R1	= %1			;
+		R2	= %2			;
+		R3	= %3			;
+		R4	= %4			;
+		R5	= %5			;
+		SP	= %6			;
+		PC	= %7			;
+						;
+		rtrap5	= 4			;
+		trapa	= 7			;
+		rtrap	= 10			;
+		rtrap4	= 14			;
+		rtrap2	= 20			;
+		rtrap3	= 30			;
+		rtrap1	= 34			;
+		tvec	= 64			;
+						;
+		$ern	= 253			;
+		$svpc	= 400			;
+		$error	= 402			;
+		$tstnm	= 404			;
+		instc	= 2276			;
+		trcsr	= 177560		;
+		tps	= 177564		;
+		tpb	= 177566		;
+;_____________________________________________________________________________
+;
+		W24	= 24
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		. 	= offset		;
+	.if 	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc 					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff            			;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+		.asect      			; ловушка прерываний 0-376
+						;
+		vect	0			;
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20			; точка входа в тесты
+		vect	24, entry, 0		; по вектору 024 (ACLO)  
+		vect	30			;
+		vect	34			;
+		vect	40			;
+		vect	44, $apthd, $endad	;
+		vect	50			;
+		vect	54			;
+		vect	60			;
+		vect	64			;
+		vect	70			;
+		vect	74			;
+		vect	100			;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+;_____________________________________________________________________________
+;
+		.	= 200			; начальная точка входа в тест
+entry:		jmp	start			;
+		vect	204			;
+						;
+		clr	@#$pass			;
+		jmp	start			;
+;_____________________________________________________________________________
+;
+		vect	220			;
+		vect	224			;
+		vect	230			;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+;_____________________________________________________________________________
+;
+$mail:		.word	0			;
+$fatal:		.word	0			;
+$testn:		.word	0			;
+$pass:		.word	0			;
+$devct:		.word	0			;
+$unit:		.word	0			;
+$msgad:		.word	0 			;
+$msglg:		.word	0			;
+$env:		.byte	0			;
+$envm:		.byte	0			;
+$swreg:		.word	0 			;
+$uswr:		.word	0			;
+$cpuop:		.word	0			;
+$mtyp1:		.word	0			;
+$madr1:		.word	0			;
+$mtyp2:		.word	0			;
+$madr2:		.word	0			;
+$mtyp3:		.word	0			;
+$madr3:		.word	0			;
+$mtyp4:		.word	0			;
+$madr4:		.word	0			;
+						;
+$apthd:		.word	0			;
+$mbadh:		.word	$mail			;
+$tstm:		.word	11			;
+$pastm:		.word	11			;
+$unitm:		.word	0			;
+		.word	24			;
+;_____________________________________________________________________________
+;
+		.word	040000			;
+		.word	000464			;
+		.word   040000			;
+		.word	177776			;
+		.word	2			;
+		.word	474			;
+buff:		.word	0			;
+;_____________________________________________________________________________
+;
+start:		mov	#pwrdwn, 24		;
+		mov	#340, 24+2		;
+		tstb	$env			;
+		bne	begin			;
+		clr	$envm			;
+		clr	$cpuop			;
+		bitb	#40, $swreg		;
+		beq	1$			;
+		bisb	#40, $envm		;
+						;
+1$:		mov	$swreg, R0		;
+		bit	#100, R0 		;
+		beq	begin			;
+		bis	#300, $cpuop		;
+						;
+begin:		mov	#-1, @#passpt		;
+restrt:		mov	#$svpc, R2		;
+		clr	$mail			;
+		clr	$testn			;
+		clr	$fatal			;
+		jmp	tst1			;
+;_____________________________________________________________________________
+;
+k1:		.word	0			;
+k2:		.word	0			;
+k3:		.word	0			;
+k4:		.word	0			;
+k5:		.word	0			;
+k6:		.word	0			;
+k7:		.word	52525			;
+k10:		.word	52400			;
+k11:		.word	0			;
+k12:		.word	0			;
+here:		.byte	0, 0			;
+;_____________________________________________________________________________
+;
+tst1:		inc	@#$testn		; тест 1, метод 2, 4 на
+		cmp	#1, @#$testn		; командах movb, cmpb
+		bne	etst1			;
+		clr	SP			;
+		movb	(SP)+, here		;
+		cmp	SP, #2			;
+		beq	1$			;
+		mov	#1, @#$fatal		;
+		inc	@R2			;
+		halt				; SP не увеличилось на 2
+						;
+1$:		mov	#1000, SP		;
+		movb	-(SP), here		;
+		cmp	SP, #776		;
+		beq	2$			;
+		mov	#2, @#$fatal		;
+		inc	@R2			;
+		halt				; SP не уменьшилось на 2
+						;
+2$:		clr	SP			;
+		movb	(SP)+, (SP)+		;
+		cmp	SP, #4			;
+		beq	3$			;
+		mov	#3, @#$fatal		;
+		inc	@R2			;
+		halt				; SP не увеличилось на 4
+						;
+3$:		clr	SP			;
+		clr	R4			;
+		cmpb	(SP)+, (R4)+		;
+		cmp	SP, #2			;
+		beq	4$			;
+		mov	#4, @#$fatal		;
+		inc	@R2			;			
+		halt				;
+						; SP не увеличилось на 2
+4$:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		;
+		cmp	SP, #2			;
+		beq	5$			;
+		mov	#5, @#$fatal		;
+		inc	@R2			;
+		halt				; SP не увеличилось на 2
+						;
+5$:		clr	SP			;
+		clr	R4			;
+		cmpb	(SP)+, (R4)+		;
+		cmp	R4, #1			;
+		beq	6$			;
+		mov	#6, @#$fatal		;
+		inc	@R2			;			
+		halt				; R4 не увеличилось на 1
+						;
+6$:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		;
+		cmp	R4, #1			;
+		beq	7$			;
+		mov	#7, @#$fatal		;
+		inc	@R2			;
+		halt				; R4 не увеличилось на 1
+						;
+7$:		mov	#1000, SP		;
+		cmpb	-(SP), here		;
+		cmp	#776, SP		;
+		beq	tst2			;
+						;
+etst1:		mov	#10, @#$fatal		; (SP) не уменьшилось на 2
+		inc	@R2			; или нарушен порядок тестов
+		halt				;
+;_____________________________________________________________________________
+;
+tst2:		inc	@#$testn		; тест 2, movb
+		cmp	#2, @#$testn		;
+		bne	etst2			;
+		mov	#123456, k5		;
+		mov	#50505,	k1		;
+		mov	#k1, R5			;
+		mov	#k5, SP			;
+		movb	(SP)+, (R5)+		;
+		cmp	#50456,	k1		;
+		beq	1$			;
+		mov	#11, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка movb (SP)+, (R5)+
+						;
+1$:		mov	#123456, k5		;
+		mov	#50505,	k1		;
+		mov	#k1, R5			;
+		mov	#k6, SP			;
+		movb	-(SP), (R5)+		;
+		cmp	k1, #50456		;
+		beq	2$			;
+		mov	#12, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка movb -(SP), (R5)+
+						;
+2$:		mov	#123456, k1		;
+		mov	#50505,	k5		;
+		mov	#k1, R5			;
+		mov	#k5, SP			;
+		movb	(R5)+, (SP)+		;
+		cmp	#50456,	k5		;
+		beq	3$			;
+		mov	#13, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка movb (R5)+, (SP)+
+						;
+3$:		mov	#123456, k1		;
+		mov	#50505,	k5		;
+		mov	#k1+1, R5		;
+		mov	#k5, SP			;
+		movb	(R5)+, (SP)+		;
+		cmp	k5, #50647		;
+		beq	4$			;
+		mov	#14, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка movb (R5)+, (SP)+
+						;
+4$:		mov	#123456, k1		;
+		mov	#50505,	k5		;
+		mov	#k1+1, R5		;
+		mov	#k5, SP			;
+		movb	(SP)+, (R5)+		;
+		cmp	#42456,	k1		;
+		beq	tst3			;
+						;
+etst2:		mov	#15, @#$fatal		; ошибка movb (SP)+, (R5)+
+		inc	@R2			; или нарушен порядок тестов
+		halt				;
+;_____________________________________________________________________________
+;
+tst3:		inc	@#$testn		; тест 3, cmpb
+		cmp	#3, @#$testn		;
+		bne	etst3			;
+		cmpb	k7, k7+1		;
+		beq	1$			;
+		mov	#16, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k7, k7+1
+						;
+1$:		cmpb	k7+1, k7		;
+		beq	2$			;
+		mov	#17, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k7+1, k7
+						;
+2$:		cmpb	k10+1, k7		;
+		beq	tst4			; нижележащие тесты пропущены
+		mov	#20, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k10+1, k7
+						;
+		cmpb	k10, k6			;
+		beq	3$			;
+		mov	#21, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k10, k7
+						;
+3$:		cmpb	k7+1, k10+1		;
+		beq	4$			;
+		mov	#22, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k7+1, k10+1
+						;
+4$:		cmpb	k10, k10+1		;
+		bne	5$			;
+		mov	#23, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k10, k10+1
+						;
+5$:		cmpb	k10+1, k10+1		;
+		beq	6$			;
+		mov	#24, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка cmpb k10+1, k10+1
+						;
+6$:		cmpb	k10, k7+1		;
+		bne	tst4			;
+						;
+etst3:		mov	#25, @#$fatal		;
+		inc	@R2			; ошибка cmpb k10, k7+1
+		halt				; или нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst4:		inc	@#$testn		; тест 4, проверка признаков
+		cmp	#4, @#$testn		;
+		bne	etst4			;
+		scc				;
+		clr	status			;
+		mtps	status			;
+		bcc	1$			;	
+		mov	#26, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился
+						;
+1$:		bvc	2$			;
+		mov	#27, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+   						;
+2$:		bne	3$			;			
+		mov	#30, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bpl	4$			;
+		mov	#31, @#$fatal		;
+		inc	@R2			;
+		halt				;
+   						;
+4$:		ccc				;
+		mfps	status			;
+		bis	#17, status		;
+		mtps	status			;
+		bcs	5$			;
+		mov	#32, @#$fatal		;
+		inc	@R2			;
+		halt				; С не установился
+						;
+5$:		bvs	6$			;
+		mov	#33, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+6$:		beq	7$			;
+		mov	#34, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился
+						;
+7$:		bmi	tst5			;
+etst4:		mov	#35, @#$fatal		;
+		inc	@R2			; N не установился или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst5:		inc	@#$testn		; тест 5, прерывание по
+		cmp	#5, @#$testn		; резервной команде trapa
+		bne	etst5			;
+		mov	#buff, SP		;
+		mov	#tst6, rtrap		;	
+		trapa				; код 7 (mfpt)
+		        			;
+etst5:		mov	#36, @#$fatal		; нет прерывания или
+		inc	@R2			; нарушен порядок тестов
+		halt				;
+;_____________________________________________________________________________
+;
+tst6:		inc	@#$testn		; тест 6, изменение SP
+		cmp	#6, @#$testn		; по исключению trapa
+		bne	etst6			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap		;
+		trapa				;
+1$:		cmp	SP, #buff-4		;
+		beq	tst7			;
+						;
+etst6:		mov	#37, @#$fatal		; SP не уменьшилось на 4
+		inc	@R2			; или нарушен порядок тестов
+		halt				;
+;_____________________________________________________________________________
+;
+tst7:		inc	@#$testn		; тест 7, запись PC в стек
+		cmp	#7, @#$testn		; по исключению trapa
+		bne	etst7			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap		;
+		trapa				;
+1$:		cmp	#1$, buff-4		;
+		beq	tst10			;
+						;
+etst7:		mov	#40, @#$fatal		;
+		inc	@R2			; неверная запись PC или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst10:		inc	@#$testn		; тест 10, запись PSW в стек
+		cmp	#10, @#$testn		; по исключению trapa
+		bne	etst10			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		trapa				;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#41, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap		;
+		mov	#357, status		;
+		mtps	status			;
+		scc				;
+		trapa				;
+3$:		cmp	buff-2, #357		;
+		beq	tst11			;
+						;
+etst10:		mov	#42, @#$fatal		;
+		inc	@R2			; PSW не равно 357 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst11:		inc	@#$testn		; тест 11, выборка PSW
+		cmp	#11, @#$testn		; из вектора по trapa
+		bne	etst11			; ошибка - переход мимо halt
+		mov	#buff, SP		;
+		mov	#1$, rtrap		;
+		clr	rtrap+2			;
+		trapa				;
+1$:		bpl	2$			;
+		mov	#43, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#44, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#45, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+						;
+4$:		bcc	5$			;
+		mov	#46, @#$fatal		;
+		inc	@R2			; C не очистился
+		halt				;
+						;
+5$:		mfps	status			;
+		bit	#340, status		;
+		beq	6$			;
+		mov	#47, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap		;
+		mov	#357, rtrap+2		;
+		trapa				;
+7$:		bmi	10$			;	
+		mov	#50, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установлен
+						;
+10$:		beq	11$			;
+		mov	#51, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установлен
+						;
+11$:		bvs	12$			;
+		mov	#52, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установлен
+						;
+12$:		bcs	13$			;
+		mov	#53, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установлен
+						;
+13$:		mfps	status			;
+		mov	status, SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	etst11			;
+		mov	#54, @#$fatal		;
+		inc	@R2			; приоритет не 7
+		halt				;
+						; здесь в тесте ошибка
+etst11:		mov	#rtrap+2, rtrap		; переход должен быть 
+		clr	rtrap+2			; на инструкцию halt
+;_____________________________________________________________________________
+;
+tst12:		inc	@#$testn		; тест 12, прерывание по trap
+		cmp	#12, @#$testn		;
+		bne	1$			;
+		mov	#buff, SP		;
+		mov	#tst13, rtrap1		;
+		trap	0			;
+						;
+1$:		mov	#55, @#$fatal		;
+		inc	@R2			; нет прерывания или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst13:		inc	@#$testn		; тест 13, изменение SP
+		cmp	#13, @#$testn		; по команде trap
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap1		;
+		trap	0			;
+1$:		cmp	SP, #buff-4		;
+		beq	tst14			;
+						;
+2$:		mov	#56, @#$fatal		;
+		inc	@R2			; SP не уменьшилось на 4
+		halt				; или нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst14:		inc	@#$testn		; тест 14, запись PC в стек
+		cmp	#14, @#$testn		; по команде trap
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap1		;
+		trap	0			;
+1$:		cmp	#1$, buff-4		;
+		beq	tst15			;
+						;
+2$:		mov	#57, @#$fatal		;
+		inc	@R2			; неверная запись PC или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst15:		inc	@#$testn		; тест 15, запись PSW в стек
+		cmp	#15, @#$testn		; по команде trap
+		bne	4$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap1		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		trap	0			;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#60, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap1		;
+		mov	#357, status		;
+		mtps	status			;
+		trap	0			;
+3$:		cmp	buff-2, #357		;
+		beq	tst16			;
+						;
+4$:		mov	#61, @#$fatal		; PSW не равно 357 или
+		inc	@R2			; нарушен порядок тестов
+		halt				;
+;_____________________________________________________________________________
+;
+tst16:		inc	@#$testn		; тест 16, выборка PSW
+		cmp	#16, @#$testn		; из вектора по trap
+		bne	etst16			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap1		;
+		clr	rtrap1+2		;
+		trap	0			;
+1$:		bpl	2$			;
+		mov	#62, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#63, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#64, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+   						;
+4$:		bcc	5$			;
+		mov	#65, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился
+						;
+5$:		mfps	status			;
+		bit	#340, status		;
+		beq	6$			;
+		mov	#66, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap1		;
+		mov	#357, rtrap1+2		;
+		trap	0			;
+7$:		bmi	10$			;
+		mov	#67, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установился
+						;
+10$:		beq	11$			;
+		mov	#70, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился
+						;
+11$:		bvs	12$			;
+		mov	#71, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+12$:		bcs	13$			;
+		mov	#72, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установился
+						;
+13$:		mfps	status			;
+		mov	status, SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst17			;
+						;
+etst16:		mov	#73, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 7 или НПТ
+;_____________________________________________________________________________
+;
+tst17:		inc	@#$testn		; тест 17, прерывание по trap
+		cmp	#17, @#$testn		;
+		bne	3$			;
+		mov	#trap, 2$		;
+		mov	#4$, rtrap1		;
+1$:		mov	#buff, SP		;
+2$:		trap	0			;
+3$:		mov	#74, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+						;
+4$:		inc	2$			;
+		cmp	#104777, 2$		;
+		bcc	1$			;
+		mov	#rtrap1+2, rtrap1	;
+		clr	rtrap1+2		;
+;_____________________________________________________________________________
+;
+tst20:		inc	@#$testn		; тест 20, прерывание по iot
+		cmp	#20, @#$testn		;
+		bne	1$			;
+		mov	#buff, SP		;
+		mov	#tst21, rtrap2		;
+		iot				;
+						;
+1$:		mov	#75, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst21:		inc	@#$testn		; тест 21, изменение SP по iot
+		cmp	#21, @#$testn		;
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap2		;
+		iot				;
+1$:		cmp	SP, #buff-4		;
+		beq	tst22			;
+						;
+2$:		mov	#76, @#$fatal		;
+		inc	@R2			; SP не уменшился на 4 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst22:		inc	@#$testn		; тест 22, запись PC  в стек 
+		cmp	#22, @#$testn		; при выполнении iot
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap2		;
+		iot				;
+1$:		cmp	#1$, buff-4		;
+		beq	tst23			;
+						;
+2$:		mov	#77, @#$fatal		;
+		inc	@R2			; неверная запись PC или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst23:		inc	@#$testn		; тест 23, запись PSW
+		cmp	#23, @#$testn		; при выполнении iot
+		bne	4$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap2		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		iot				;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#100, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap2		;
+		mov	#357, status		;
+		mtps	status			;
+		scc				;
+		iot				;
+3$:		cmp	buff-2, #357		;
+		beq	tst24			;
+						;
+4$:		mov	#101, @#$fatal		;
+		inc	@R2			;
+		halt				; PSW не равно 357 или НПТ
+;_____________________________________________________________________________
+;
+tst24:		inc	@#$testn		; тест 24, выборка PSW
+		cmp	#24, @#$testn		; из вектора по iot
+		bne	etst24			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap2		;
+		clr	rtrap2+2		;
+		iot				;
+1$:		bpl	2$			;
+		mov	#102, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#103, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#104, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+						;
+4$:		bcc	5$			;
+		mov	#105, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился
+						;
+5$:		mfps	status			;
+		bit	#340, status		;
+		beq	6$			;
+		mov	#106, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap2		;
+		mov	#357, rtrap2+2		;
+		iot				;
+7$:		bmi	10$			;
+		mov	#107, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установился
+						;
+10$:		beq	11$			;
+		mov	#110, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился
+		                                ;
+11$:		bvs	12$			;
+		mov	#111, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+12$:		bcs	13$			;
+		mov	#112, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установился
+						;
+13$:		mfps	status			;
+		mov	status, SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst25			;
+						;
+etst24:		mov	#113, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 7 или НПТ
+;_____________________________________________________________________________
+;
+tst25:		mov	#rtrap2+2, rtrap2	;
+		clr	rtrap2+2		;
+		inc	@#$testn		; тест 25, прерывание по emt
+		cmp	#25, @#$testn		;
+		bne	1$			;
+		mov	#buff, SP		;
+		mov	#tst26, rtrap3		;
+		emt	0			;
+						;
+1$:		mov	#114, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst26:		inc	@#$testn		; тест 26, изменение SP по emt
+		cmp	#26, @#$testn		;
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap3		;
+		emt	0			;
+1$:		cmp	SP, #buff-4		;
+		beq	tst27			;
+						;
+2$:		mov	#115, @#$fatal		;
+		inc	@R2			; SP не уменьшилось на 4 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst27:		inc	@#$testn		; тест 27, запись PC по emt
+		cmp	#27, @#$testn		;
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap3		;
+		emt	0			;
+1$:		cmp	#1$, buff-4		;
+		beq	tst30			;
+						;
+2$:		mov	#116, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PC или НПТ
+;_____________________________________________________________________________
+;
+tst30:		inc	@#$testn		; тест 30, запись PSW по emt
+		cmp	#30, @#$testn		;
+		bne	4$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap3		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		emt	0			;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#117, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap3		;
+		mov	#357, status		;
+		mtps	status			;
+		scc				;
+		emt	0			;
+3$:		cmp	buff-2, #357		;
+		beq	tst31			;
+						;
+4$:		mov	#120, @#$fatal		;
+		inc	@R2			;
+		halt				; PSW не равно 357 или НПТ
+;_____________________________________________________________________________
+;
+tst31:		inc	@#$testn		; тест 31, выборка PSW из
+		cmp	#31, @#$testn		; вектора при выполнении emt
+		bne	etst31			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap3		;
+		clr	rtrap3+2		;
+		emt	0			;
+1$:		bpl	2$			;
+		mov	#121, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#122, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#123, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+						;
+4$:		bcc	5$			;
+		mov	#124, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился
+						;
+5$:		mfps	status			;
+		bit	#340, status		;
+		beq	6$			;
+		mov	#125, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap3		;
+		mov	#357, rtrap3+2		;
+		emt	0			;
+7$:		bmi	10$			;		
+		mov	#126, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установился
+						;
+10$:		beq	11$			;
+		mov	#127, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился
+						;
+11$:		bvs	12$			;
+		mov	#130, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+12$:		bcs	13$			;
+		mov	#131, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установился
+						;
+13$:		mfps	status			;
+		mov	status, SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst32			;
+						;
+etst31:		mov	#132, @#$fatal		;
+		inc	@R2			; приоритет на равен 7 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst32:		inc	@#$testn		; тест 32, прерывание по emt
+		cmp	#32, @#$testn		;
+		bne	3$			;
+		mov	#emt, 2$ 		;
+		mov	#4$, rtrap3		;
+						;
+1$:		mov	#buff, SP		;
+2$:		emt	0			;
+3$:		mov	#133, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+						;
+4$:		inc	2$			;
+		cmp	#104377, 2$		;
+		bcc	1$			;
+;_____________________________________________________________________________
+;
+tst33:		mov	#rtrap3+2, rtrap3	; тест 33, прерывание по bpt
+		clr	rtrap3+2		;
+		inc	@#$testn		;
+		cmp	#33, @#$testn		;
+		bne	1$			;
+		mov	#buff, SP		;
+		mov	#tst34, rtrap4		;
+		bpt				;
+						;
+1$:		mov	#134, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst34:		inc	@#$testn		; тест 34, изменение SP по bpt
+		cmp	#34, @#$testn		;
+		bne	2$			;	
+		mov	#buff, SP		;
+		mov	#1$, rtrap4		;
+		bpt				;
+1$:		cmp	SP, #buff-4		;
+		beq	tst35			;
+						;
+2$:		mov	#135, @#$fatal		;
+		inc	@R2			;
+		halt				; SP не уменьшился на 4 или НПТ
+;_____________________________________________________________________________
+;
+tst35:		inc	@#$testn		; тест 35, запись PC при bpt
+		cmp	#35, @#$testn		;
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap4		;
+		bpt				;
+1$:		cmp	#1$, buff-4		;
+		beq	tst36			;
+						;
+2$:		mov	#136, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PC или НПТ
+;_____________________________________________________________________________
+;
+tst36:		inc	@#$testn		; тест 36, запись PSW при bpt
+		cmp	#36, @#$testn		;
+		bne	4$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap4		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		bpt				;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#137, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap4		;
+		mov	#357, status		;
+		mtps	status			;
+		scc				;
+		bpt				;
+3$:		cmp	buff-2, #357		;
+		beq	tst37			;
+						;
+4$:		mov	#140, @#$fatal		;
+		inc	@R2			;
+		halt				; PSW не равно 357 или НПТ
+;_____________________________________________________________________________
+;
+tst37:		inc	@#$testn		; тест 37, выборка PSW при bpt
+		cmp	#37, @#$testn		;
+		bne	tst40			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap4		;
+		clr	rtrap4+2		;
+		bpt				;
+1$:		bpl	2$			;
+		mov	#141, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#142, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#143, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+						;
+4$:		bcc	5$			;
+		mov	#144, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился
+						;
+5$:		mfps	status			;
+		bit	#340, status		;
+		beq	6$			;
+		mov	#145, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не равен 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap4		;
+		mov	#357, rtrap4+2		;
+		bpt				;
+7$:		bmi	10$			;
+		mov	#146, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установился
+						;
+10$:		beq	11$			;
+		mov	#147, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился 
+						;
+11$:		bvs	12$			;
+		mov	#150, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+12$:		bcs	13$			;
+		mov	#151, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установился
+						;
+13$:		mfps	status			;
+		mov	status, SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst40			;
+		mov	#152, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 7 или НПТ
+;_____________________________________________________________________________
+;
+tst40:		mov	#rtrap4+2, rtrap4	; тест 40, прерывание по
+		clr	rtrap4+2		; запрещенной команде jmp R0
+		inc	@#$testn		;
+		cmp	#40, @#$testn		;
+		bne	1$			;
+		mov	#buff, SP		;
+		mov	#tst41, rtrap5		;
+		jmp	R0			;
+						;
+1$:		mov	#153, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst41:		inc	@#$testn		; тест 41, изменение SP по
+		cmp	#41, @#$testn		; перрыванию jmp R0
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		jmp	R0			;
+1$:		cmp	SP, #buff-4		;
+		beq	tst42			;
+						;
+2$:		mov	#154, @#$fatal		;
+		inc	@R2			; SP не уменьшился на 4 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst42:		inc	@#$testn		; тест 42, запись PC в стек
+		cmp	#42, @#$testn		; по прерыванию по jmp R0
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		jmp	R0			;
+1$:		cmp	#1$, buff-4		;
+		beq	tst43			;
+						;
+2$:		mov	#155, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PC или НПТ
+;_____________________________________________________________________________
+;
+tst43:		inc	@#$testn		; тест 43, запись PSW в стек
+		cmp	#43, @#$testn		; при прерывании по jmp R0
+		bne	4$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		jmp	R0			;
+						;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#156, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap5		;
+		mov	#357, status		;
+		mtps	status			;
+		scc				;
+		jmp	R0			;
+3$:		cmp	buff-2, #357		;
+		beq	tst44			;
+						;
+4$:		mov	#157, @#$fatal		;
+		inc	@R2			;
+		halt				; PSW не равно 357 или НПТ
+;_____________________________________________________________________________
+;
+tst44:		inc	@#$testn		; тест 44, выборка PSW из
+		cmp	#44, @#$testn		; вектора по прерыванию jmp R0
+		bne	etst44			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		clr	rtrap5+2		;
+		jmp	R0			;
+						;
+1$:		bpl	2$			;
+		mov	#160, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#161, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#162, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился 
+						;
+4$:		bcc	5$			;
+		mov	#163, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился 
+						;
+5$:		mfps	status			;
+		bit	#357, status		;
+		beq	6$			;
+		mov	#164, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap5		;
+		mov	#357, rtrap5+2		;
+		jmp	R0			;
+						;
+7$:		bmi	10$			;
+		mov	#165, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установился
+						;
+10$:		beq	11$			;
+		mov	#166, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился
+						;
+11$:		bvs	12$			;
+		mov	#167, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+12$:		bcs	13$			;
+		mov	#170, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установился
+						;
+13$:		mfps	status			;
+		mov	status, SP		;
+		cmp	#357, SP		;
+		beq	tst45			;
+						;
+etst44:		mov	#171, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 7 или НПТ
+;_____________________________________________________________________________
+;
+tst45:		inc	@#$testn		; тест 45, прерывание по
+		cmp	#45, @#$testn		; запрещенной команде jsr R0,R0
+		bne	1$			;
+		mov	#buff, SP		;
+		mov	#tst46, rtrap5		;
+		jsr	R0, R0			;
+						;
+1$:		mov	#172, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst46:		inc	@#$testn		; тест 46, изменение SP
+		cmp	#46, @#$testn		; при прерывании jsr R0,R0
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		jsr	R0, R0			;
+1$:		cmp	SP, #buff-4		;
+		beq	tst47			;
+						;
+2$:		mov	#173, @#$fatal		;
+		inc	@R2			; SP не уменьшилмя на 4 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst47:		inc	@#$testn		; тест 47, запись PC в стек
+		cmp	#47, @#$testn		; при прерывании jsr R0,R0
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		jsr	R0, R0			;
+1$:		cmp	#1$, buff-4		;
+		beq	tst50			;
+						;
+2$:		mov	#174, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PC или НПТ
+;_____________________________________________________________________________
+;
+tst50:		inc	@#$testn		; тест 50, запись PSW в стек
+		cmp	#50, @#$testn		; при прерывании jsr R0,R0
+		bne	4$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		clr	status			;
+		mtps	status			;
+		ccc				;
+		jsr	R0, R0			;
+1$:		cmp	buff-2, #0		;
+		beq	2$			;
+		mov	#175, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW
+						;
+2$:		mov	#buff, SP		;
+		mov	#3$, rtrap5		;
+		mov	#357, status		;
+		mtps	status			;
+		scc				;
+		jsr	R0, R0			;
+3$:		cmp	buff-2, #357		;
+		beq	tst51			;
+						;
+4$:		mov	#176, @#$fatal		;
+		inc	@R2			;
+		halt				; PSW не равно 357 или НПТ
+;_____________________________________________________________________________
+;
+tst51:		inc	@#$testn		; тест 51, выборка PSW из
+		cmp	#51, @#$testn		; вектора при jsr R0,R0
+		bne	etst51			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap5		;
+		clr	rtrap5+2		;
+		jsr	R0, R0			;
+						;
+1$:		bpl	2$			;
+		mov	#177, @#$fatal		;
+		inc	@R2			;
+		halt				; N не очистился
+						;
+2$:		bne	3$			;
+		mov	#200, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не очистился
+						;
+3$:		bvc	4$			;
+		mov	#201, @#$fatal		;
+		inc	@R2			;
+		halt				; V не очистился
+						;
+4$:		bcc	5$			;
+		mov	#202, @#$fatal		;
+		inc	@R2			;
+		halt				; C не очистился
+						;
+5$:		mfps	status			;
+		mov	status, R0		;
+		beq	6$			;
+		mov	#203, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не равен 0
+						;
+6$:		mov	#buff, SP		;
+		mov	#7$, rtrap5		;
+		mov	#357, rtrap5+2		;
+		jsr	R0, R0			;
+						;
+7$:		bmi	10$			;
+		mov	#204, @#$fatal		;
+		inc	@R2			;
+		halt				; N не установился
+						;
+10$:		beq	11$			;
+		mov	#205, @#$fatal		;
+		inc	@R2			;
+		halt				; Z не установился
+						;
+11$:		bvs	12$			;
+		mov	#206, @#$fatal		;
+		inc	@R2			;
+		halt				; V не установился
+						;
+12$:		bcs	13$			;
+		mov	#207, @#$fatal		;
+		inc	@R2			;
+		halt				; C не установился
+						;
+13$:		mfps	status			;
+		mov	status, R0		;
+		cmp	#357, R0		;
+		beq	tst52			;
+						;
+etst51:		mov	#210, @#$fatal		;
+		inc	@R2			;
+		halt				; приоритет не 7 или НПТ
+;_____________________________________________________________________________
+;
+tst52:		mov	#rtrap5+2, rtrap5	; тест 52, прерывание
+		clr	rtrap5+2		; по Т-разряду PSW
+		inc	@#$testn		;
+		cmp	#52, @#$testn		;
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#tst53,	rtrap4		;
+		mov	#20, -(SP)		; T-разряд
+		mov	#1$, -(SP)		;
+		rti				;
+						;
+1$:		nop				;
+2$:		mov	#211, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst53:		inc	@#$testn		; тест 53, изменение SP
+		cmp	#53, @#$testn		; при прерывании по Т-биту
+		bne	3$			;
+		mov	#buff, SP		;
+		mov	#2$, rtrap4		;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		rti				;
+						;
+1$:		nop				;
+		mov	#212, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания
+2$:		cmp	SP, #buff-4		;
+		beq	tst54			;
+						;
+3$:		mov	#213, @#$fatal		;
+		inc	@R2			; SP не уменьшилось на 4 или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst54:		inc	@#$testn		; тест 54, запись PC при
+		cmp	#54, @#$testn		; прерывании по Т-разряду
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#1$, rtrap4		;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		rti				;
+						;
+1$:		cmp	#1$, buff-4		;
+		beq	tst55			;
+2$:		mov	#214, @#$fatal		;
+		inc	@R2			; неверная запись PC или
+		halt				; нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst55:		inc	@#$testn		; тест 55, установка
+		cmp	#55, @#$testn		; Т-разряда по rtt
+		bne	2$			;
+		mov	#buff, SP		;
+		clr	R1			;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		mov	#tst56,	rtrap4		;
+		rtt				;
+						;
+1$:		nop				;
+		beq	tst56			; задержанное прерывание
+2$:		mov	#215, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+;_____________________________________________________________________________
+;
+tst56:		inc	@#$testn		; тест 56, rtt - прослеживаемая
+		cmp	#56, @#$testn		; команда
+		bne	4$			;
+		mov	#-1, R5			;
+						;
+1$:		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#2$, -(SP)		;
+		mov	#3$, rtrap4		;
+		clr	R1			;
+		rtt				;
+						;
+2$:		inc	R1			;
+		inc	R5			;
+		beq	1$			;
+		mov	#216, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания
+						;
+3$:		dec	R1			; непонятно, сразу выход
+		beq	tst57			;
+		inc	R5			;
+		beq	1$			;
+						;
+4$:		mov	#217, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка rtt или НПТ
+;_____________________________________________________________________________
+;
+tst57:		inc	@#$testn		; тест 57, rti - прослеживаемая
+		cmp	#57, @#$testn		; команда
+		bne	3$			;
+		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		mov	#2$, rtrap4		;
+		clr	R1			;
+		rti				;
+						;
+1$:		inc	R1			;
+		mov	#220, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания
+						;
+2$:		tst	R1			;
+		beq	tst60			;
+						;
+3$:		mov	#221, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка rti или НПТ
+;_____________________________________________________________________________
+;
+tst60:		inc	@#$testn		; тест 60, последовательность
+		cmp	#60, @#$testn		; выполнения прерывания
+		bne	4$			;
+		mov	#-1, R5			;
+						;
+1$:		mov	#buff, SP		;
+		mov	#3$, rtrap4		;
+		clr	#rtrap4+2		;
+		clr	#rtrap2+2		;
+		mov	#tst61,	rtrap2		;
+		mov	#20, -(SP)		;
+		mov	#2$, -(SP)		;
+		rtt				;
+						;
+2$:		iot				;
+		mov	#222, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания по iot
+						;
+3$:		inc	R5			;
+		beq	1$			;
+4$:		mov	#223, @#$fatal		; T не очистился или
+		inc	@R2			; нарушен порядок тестов
+		halt				;
+;_____________________________________________________________________________
+;
+tst61:		mov	#rtrap4+2, rtrap4	; тест 61, запись PSW в стек
+		mov	#rtrap2+2, rtrap2	; при прерывании по Т-разряду
+		inc	@#$testn		;
+		cmp	#61, @#$testn		;
+		bne	3$			;
+		mov	#buff, SP		;
+		mov	#2$, rtrap4		;
+		clr	rtrap4+2		;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		rti				;
+						;
+1$:		nop				;
+		mov	#224, @#$fatal		;
+		inc	@R2			;
+		halt				;
+2$:		bit	buff-2, #20		;
+		bne	tst62			;
+3$:		mov	#225, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PSW или НПТ
+;_____________________________________________________________________________
+;
+tst62:		inc	@#$testn		; тест 62, установка Т-разряда
+		cmp	#62, @#$testn		; по инструкции rti
+		bne	2$			;
+		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		mov	#2$, rtrap4		;
+		rti				;
+						;
+1$:		nop				;
+		mov	#226, @#$fatal		;
+		inc	@R2			;
+		halt				;
+						;
+2$:		mov	#rtrap4+2, rtrap4	;
+		clr	rtrap4+2		;
+		inc	@#$testn		;
+;_____________________________________________________________________________
+;
+tst63:		cmp	#63, @#$testn		; тест 63, внешнее прерывание
+		bne	3$+4			; приоритет перед командным
+						; ошибка в смещении перехода
+1$:		tstb	@#tps			;
+		bpl	1$			;
+		mov	#buff, SP		;
+		mov	#340, status		;
+		mtps	status			;
+		mov	#2$, tvec		;
+		mov	#100, tps		;
+		mov	#3$, rtrap1		;
+		mov	#4$, tvec		;
+		mov	#340, rtrap1+2		;
+		clr	status			; прерывание от ЭПМ
+		mtps	status			;
+		trap	0			;
+						;
+2$:		mov	#227, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания от ЭПМ
+						;
+3$:		mov	#230, @#$fatal		;
+		inc	@R2			; выполнилась trap или НПТ
+		halt				;
+						;
+4$:		clr	rtrap1+2		;
+;_____________________________________________________________________________
+;
+tst64:		inc	@#$testn		;
+		cmp	#64, @#$testn		; тест 64, внешнее прерывание
+		bne	tst65-12		; между командными
+		bic	#100, tps		;
+		mov	#buff, SP		;
+		mov	#340, status		;
+		mtps	status			;
+		mov	#100, tps		; прерывание от ЭПМ
+		mov	#1$, rtrap1		;
+		mov	#3$, tvec		;
+		mov	#2$, rtrap2		;
+		mov	#340, rtrap2+2		;
+		trap	0			;
+						;
+1$:		iot				;
+2$:		mov	#231, @#$fatal		;
+		inc	@R2			;
+		halt				;
+						;
+3$:		clr	rtrap2+2		;
+		clr	tvec+2			;
+		mov	#tvec+2, tvec		;
+		mov	#rtrap1+2, rtrap1	;
+		mov	#rtrap2+2, rtrap2	;
+;_____________________________________________________________________________
+;
+tst65:		inc	@#$testn		; тест 65, команда reset
+		cmp	#65, @#$testn		;
+		bne	tst66-12		;
+		mtps	#340			;
+		mov	#100, tps		;
+		mov	#100, trcsr		;
+		reset				;
+		bit	#100, tps		;
+		beq	1$			;
+		mov	#232, @#$fatal		;
+		inc	@R2			; reset не очистила
+		halt				; разрешение прерывания
+						;
+1$:		bit	#100, trcsr		;
+		beq	tst66			;
+		mov	#233, @#$fatal		;
+		inc	@R2			; reset не очистила
+		halt				; разрешение прерывания
+;_____________________________________________________________________________
+;
+tst66:		inc	@#$testn		; тест 66, reset
+		cmp	#66, @#$testn		; прослеживаемая команда
+		bne	tst67-12		;
+		mov	#buff, SP		;
+		mov	#2$, rtrap4		;
+		mov	#20, -(SP)		;
+		mov	#1$, -(SP)		;
+		rtt				;
+						;
+1$:		reset				;
+		reset				;
+		mov	#234, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания или НПТ
+						;
+2$:		clr	status			;
+		mtps	status			;
+		mov	#rtrap4+2, rtrap4	;
+		clr	rtrap4+2		;
+;_____________________________________________________________________________
+;
+tst67:		inc	@#$testn		; тест 67, выборка PSW из
+		cmp	#67, @#$testn		; вектора при прерывании ЭПМ
+		bne	tst70-12		;
+		reset				;
+		mov	#buff, SP		;
+		mov	#1$, tvec		;
+		mtps	#0			;
+		mov	#357, tvec+2		;
+		bis	#100, tps		;
+		nop				;
+		mov	#235, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания
+						;
+1$:		mfps	status			;
+		cmp	#357, status		;
+		beq	2$			;
+		mov	#236, @#$fatal		;
+		inc	@R2			;
+		halt				; PSW не равно 357
+						;
+2$:		reset				;
+		mov	#buff, SP		;
+		mov	#3$, tvec		;
+		clr	tvec+2			;
+		mtps	#0			;
+		bis	#100, tps		;
+3$:		mfps	status			;
+		tst	status			;
+		beq	4$			;
+		mov	#237, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная выборка PSW или НПТ
+						;
+4$:		clr	tps			;
+		mov	#tvec+2, tvec		;
+;_____________________________________________________________________________
+;
+tst70:		inc	@#$testn		; тест 70, прерывание по
+		cmp	#70, @#$testn		; адресу несуществующей памяти
+		bne	auto1			;
+		br	adall			;
+						;
+tsl:		.word	0			;
+corh:		.word	0			;
+						;
+adall:		clr	R0			;
+		clr	rtrap5+2		;
+		mov	#atrap,	rtrap5		;
+						;
+nor:		mov	#buff, SP		;
+		tstb	(R0)+			;
+		cmp	R0, #172000		;	
+		blos	nor			;
+		mov	#240, @#$fatal		;
+		inc	@R2			;
+		halt				; нет прерывания
+						;
+atrap:		dec	R0			;
+		mov	R0, corh		;
+		mov	#172001, R0		;
+						;
+ctrap:		mov	#btrap,	rtrap5		;
+		mov	#buff, SP		;
+		tstb	-(R0)			;
+dtrap:		inc	R0			;
+		cmp	R0, corh		;
+		beq	trapb			;
+		mov	#241, @#$fatal		;
+		inc	@R2			;
+		halt				;
+						;
+btrap:		mfps	status			;
+		tst	status			;
+		beq	1$			;
+		mov	#242, @#$fatal		;
+		inc	@R2			;
+		halt				;
+						;
+1$:		cmp	buff-4, #dtrap		;
+		beq	ctrap			;
+						;
+auto1:		mov	#243, @#$fatal		;
+		inc	@R2			;
+		halt				; неверная запись PC или НПТ
+						;
+trapb:		mov	#rtrap5+2, rtrap5	;
+		clr	rtrap5+2		;
+;_____________________________________________________________________________
+;
+tst71:		inc	@#$testn		; тест 71, wait
+		cmp	#71, @#$testn		;
+		bne	rees1			;
+		tstb	$env			;
+		bne	rees			;
+		bic	#100, tps		;
+		mov	#buff, SP		;
+		mov	#wate, tvec		;
+		clr	tvec+2			;
+						;
+1$:		tstb	tps			;
+		bpl	1$			;
+		mov	#0, tpb			;
+						;
+2$:		tstb	tps			;
+		bpl	2$			;
+		mov	#0, tpb			;
+		bis	#100, tps		;
+		clr	status			;
+		mtps	status			;
+wate3:		wait				;
+		mov	#244, @#$fatal		;
+		inc	@R2			;
+		halt				; ошибка wait
+						;
+wate:		mfps	status			;
+		tst	status			;
+		beq	1$			;		
+		mov	#245, @#$fatal		;
+		inc	@R2			;
+		halt				; новое PSW не 0
+						;
+1$:		cmp	buff-4, #wate3+2	;
+		beq	rees			;
+						;
+rees1:		mov	#246, @#$fatal		; неверная запись PC
+		inc	@R2			; или нарушен порядок тестов
+		halt				;
+						;
+rees:		bic	#100, tps		;
+		mov	#tvec+2, tvec		;
+;_____________________________________________________________________________
+;
+tst72:		inc	@#$testn		; тест 72, jmp c
+		cmp	#72, @#$testn		; нечетный адресом
+		bne	tst73-12		; неверное смещение
+		jmp	1$+1			;
+						;
+		mov	#247, @#$fatal		;
+		inc	@R2			;
+		halt				; нет перехода по jmp 1$+1
+1$:		dec	PC			; или нарушен порядок тестов
+;_____________________________________________________________________________
+;
+tst73:		inc	@#$testn		; тест 73, прерывание по
+		cmp	#73, @#$testn		; резервным командам
+		bne	ret4			;
+		mov	PC, R0			;
+		mov	PC, R4			;
+		mov	PC, R5			;
+		mov	#table, R3		;
+						;
+gin1:		mov	(R3)+, R2		;
+		mov	(R3)+, R1		;
+		cmp	R2, eisfis		;
+		bne	1$			;
+		bit	#300, $cpuop		;
+		beq	1$			;
+		add	#4, R3			;
+		br	gin1			;
+						;
+1$:		cmp	R2, stop		;
+		bne	2$			;
+		bit	#20, $swreg		;
+		beq	2$			;
+		br	gin1			;
+						;
+2$:		cmp	R2, stop1		;
+		bne	3$			;
+		bit	#10, $swreg		;
+		beq	3$			;
+		br	gin1			;
+   						;
+3$:		cmp	R2, finish		;
+		beq	gin3			;
+		mov	R2, inst		;
+						;
+gin2:		inc	inst			;
+		mov	#ret, rtrap		;
+		mov	#buff, SP		;
+		clr	status			;
+		mtps	status			;
+		jmp	inst			;
+						;
+gin3:		inc	@#$pass			;
+		incb	passpt			;
+		bne	act			;
+		bitb	#40, $envm		;
+		bne	act			;
+		mov	#msg, R0		;
+						;
+1$:		tstb	@#tps			;
+		bpl	1$			;
+		movb	(R0)+, @#tpb		;
+		bne	1$			;
+						;
+2$:		tstb	@#tps			;
+		bpl	2$			;
+		reset				;
+		mov	#177761, passpt		;
+						;
+act:		mov	@#42, R0		;
+		beq	goagin			;
+		reset				;
+						;
+$endad:		jsr	PC, @R0			;
+		nop				;
+		nop				;
+		nop				;
+						;
+goagin:		mov	#rtrap+2, rtrap		;
+		clr	rtrap+2			;
+		jmp	restrt			;
+;_____________________________________________________________________________
+;
+passpt:		.word 	177777			;
+msg:		.word	5015			; K ПРОХОД
+		.byte	113, 040, 160, 120	;
+		.byte	117, 130, 117, 144	;
+		.byte	040, 004, 040, 000	;
+;_____________________________________________________________________________
+;
+ret:		cmp	SP, #buff-4		;
+		beq	ret1			;
+		mov	#250, @#$fatal		;
+		inc	@R2			;
+		halt				; SP не уменьшилось на 4
+						;
+ret1:		cmp	buff-4, #inst+2		;
+		beq	ret2			;
+		mov	#251, @#$fatal		; 
+		inc	@R2			; неверная запись СК
+		halt				;
+						;
+ret2:		tst	buff-2			;
+		beq	ret3			;
+						;
+ret4:		mov	#252, @#$fatal		;
+		inc	@R2			; РСП не равно 0
+		halt				;
+						;
+ret3:		cmp	inst, R1		;
+		beq	gin1			;
+		jmp	gin2			;
+;_____________________________________________________________________________
+;
+table:		.word	6777			;
+		.word	7777			;
+		.word	106777			;
+		.word	107777			;
+eisfis:		.word	67777			;
+		.word	73777			;
+		.word	74777			;
+		.word	75037			;
+stop:		.word 	75377			;
+		.word	76777			;
+stop1:		.word	167777			;
+		.word	177777			;
+						;
+finish:		.word	finish			;
+inst:		halt				; нет прерывания по
+		halt				; резервной команде
+		halt				;
+		halt				;
+		halt				;
+status:		.word 0				;
+;_____________________________________________________________________________
+;
+pwrdwn:		mov	#pwrup, 24		; прерывание по питанию
+		halt				; нет прерывания по питанию
+						;
+pwrup:		mov	#pwrdwn, 24		;
+		mov     #buff, SP		;
+		bitb	#40, $envm		;
+		bne	pfres			;
+		mov     #msgpwf, R0		;
+						;
+pwait:		tstb	@#tps			;
+		bpl	pwait			;
+		movb	(R0)+, @#tpb		;
+		bne	pwait			;
+1$:		tstb    @#177564		;
+		bpl	1$			;
+pfres:		jmp     start			;
+;_____________________________________________________________________________
+;
+msgpwf:		.byte	15, 12, 160, 151, 124	; ПИТАНИЕ
+		.byte	101, 110, 151, 105	;
+		.byte	40, 40, 4, 40, 0	;
+		.word	240 			;
+;_____________________________________________________________________________
+;
+		.rept	190.			;
+		.word	0			;
+		.endr				;
+		.end
