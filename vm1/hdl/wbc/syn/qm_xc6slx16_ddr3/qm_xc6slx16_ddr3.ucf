@@ -1,0 +1,14 @@
+//global system clock
+NET	sys_clock_50 		LOC = A10 | TNM_NET = sys_clk_pin;
+TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 50000 kHz;
+//reset signal
+NET	sys_reset_n 		LOC = L3 	| IOSTANDARD = LVTTL;
+//led_1 signal
+NET	sys_led[0] 			LOC = T9 	| IOSTANDARD = LVTTL;
+//led_2 signal
+NET	sys_led[1] 			LOC = R9 	| IOSTANDARD = LVTTL;
+
+NET 	sys_button[0]             LOC = T7        | IOSTANDARD = LVTTL;
+
+NET	sys_uart_rxd      LOC = B5 | IOSTANDARD = "LVCMOS33";
+NET	sys_uart_txd      LOC = A4 | IOSTANDARD = "LVCMOS33";
