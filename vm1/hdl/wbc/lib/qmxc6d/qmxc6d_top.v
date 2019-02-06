@@ -51,7 +51,7 @@ module qm_xc6slx16_ddr3
    input          sys_clock_50,        // clock input 50 MHz
                                        //
    input          sys_reset_n,         // push reset button
-   input    [0:0] sys_button,          // push button [3:0]
+   input    [1:0] sys_button,          // push button [3:0]
    output   [1:0] sys_led,             // led outputs [3:0]
 //   output   [7:0] ax3_hex,             // seven segment digit mask
 //   output   [5:0] ax3_hsel,            // seven segment digit select
@@ -369,17 +369,17 @@ begin
    end
 end
 
-assign vm_in14[3:0]     = sys_button;
-assign vm_in14[15:4]    = 12'h0000;
+assign vm_in14[1:0]     = sys_button[1:0];
+assign vm_in14[15:2]    = 14'h00000;
 
 always @(posedge wb_clk)
 begin
    if (~sys_button[0])
       tena <= 1'b1;
-	/*
+	
    if (~sys_button[1])
       tena <= 1'b0;
-	*/
+	
 end
 
 //assign sys_led[0] = tena;
