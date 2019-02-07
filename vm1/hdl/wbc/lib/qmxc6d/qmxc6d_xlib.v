@@ -149,7 +149,7 @@ doutb[2], doutb[1], doutb[0]}),
 // synthesis translate_on
 endmodule
 
-module qm_xc6slx16_ddr3_mem
+module qmxc6d_mem
 (
    input [12:0]   addra,
    input          clka,

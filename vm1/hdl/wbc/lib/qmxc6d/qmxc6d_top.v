@@ -25,7 +25,7 @@ module wbc_mem
 wire [1:0] ena;
 reg [1:0]ack;
 
-qm_xc6slx16_ddr3_mem ram(
+qmxc6d_mem ram(
    .addra(wb_adr_i[13:1]),
    .clka(wb_clk_i),
    .dina(wb_dat_i),
@@ -46,61 +46,21 @@ endmodule
 //
 // Top project module - instantiates the ~AX309~ QM_XS6SLX16_DDR3 board itself
 //
-module qm_xc6slx16_ddr3
+module qmxc6d
 (
    input          sys_clock_50,        // clock input 50 MHz
                                        //
    input          sys_reset_n,         // push reset button
-   input    [1:0] sys_button,          // push button [3:0]
-   output   [1:0] sys_led,             // led outputs [3:0]
-//   output   [7:0] ax3_hex,             // seven segment digit mask
-//   output   [5:0] ax3_hsel,            // seven segment digit select
-// output         ax3_buzzer,          //
-//                                     //
-// inout   [15:0] ax3_dram_dq,         // SDRAM data bus 16 bits
-// output  [12:0] ax3_dram_addr,       // SDRAM address bus 13 bits
-// output         ax3_dram_ldqm,       // SDRAM low-byte data mask
-// output         ax3_dram_udqm,       // SDRAM high-byte data mask
-// output         ax3_dram_we_n,       // SDRAM write enable
-// output         ax3_dram_cas_n,      // SDRAM column address strobe
-// output         ax3_dram_ras_n,      // SDRAM row address strobe
-// output         ax3_dram_cs_n,       // SDRAM chip select
-// output   [1:0] ax3_dram_ba,         // SDRAM bank address
-// output         ax3_dram_clk,        // SDRAM clock
-// output         ax3_dram_cke,        // SDRAM clock enable
-//                                     //
-// output         ax3_spi_cs_n,        // SPI FLASH chip select
-// output         ax3_spi_clk,         // SPI FLASH clock
-// output         ax3_spi_mosi,        // SPI FLASH master output
-// input          ax3_spi_miso,        // SPI FLASH master input
-//                                     //
-// inout          ax3_sd_cs_n,         // SD Card chip select
-// inout          ax3_sd_clk,          // SD Card clock
-// inout          ax3_sd_mosi,         // SD Card master output
-// inout          ax3_sd_miso,         // SD Card master input
-//                                     //
-// inout          ax3_i2c_clk,         // I2C Clock
-// inout          ax3_i2c_dat,         // I2C Data
-// output         ax3_rtc_rst_n,       // RTC DS1302 reset
-// output         ax3_rtc_sclk,        // RTC DS1302_serial clock
-// inout          ax3_rtc_sdat,        // RTC DS1302 serial data_
-//                                     //
-// output         ax3_vga_hs,          // VGA H_SYNC
-// output         ax3_vga_vs,          // VGA V_SYNC
-// output   [4:0] ax3_vga_r,           // VGA Red[4:0]
-// output   [5:0] ax3_vga_g,           // VGA Green[5:0]
-// output   [4:0] ax3_vga_b,           // VGA Blue[4:0]
-//                                     //
-// inout   [33:0] ax3_gpio0,           // GPIO Connection 0
-// inout   [33:0] ax3_gpio1            // GPIO Connection 1
-//   inout   [1:0]  ax3_gpio1            // GPIO Connection 1
+   input          sys_button,          // push button [1:0]
+   output   [1:0] sys_led,             // led outputs [1:0] (D1, D3)
+
    output         sys_uart_txd,        // UART transmitter
    input          sys_uart_rxd         // UART receiver
 );
 
 //______________________________________________________________________________
 //
-// Top module for AX309 board based system
+// Top module for QM_XC6XSL16_DDR3 board based system
 //
 //______________________________________________________________________________
 //
@@ -144,7 +104,7 @@ wire        rx_irq, rx_ack;            //
 wire [31:0] baud;                      //
 reg  [2:0]  hsel;                      //
 reg         tena;                      //
-                                       //
+reg  [31:0] c_ticks;                   // system clock counter
 //______________________________________________________________________________
 //
 assign      sys_init = vm_init_out;
@@ -164,7 +124,7 @@ assign clk50   = sys_clock_50;
 // assign sys_clk_n = ~clk50;
 // assign sys_plock = 1'b1;
 //
-ax3_pll66 corepll
+sys_pll66 corepll
 (
    .inclk0(clk50),
    .c0(sys_clk_p),
@@ -329,19 +289,7 @@ assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
 //
 // 7-segment display registers and switches
 //
-/** QMTech Spartan-6 core board as no 7seg display
-assign ax3_hex = (hsel == 3'b000) ? ~vm_reg0[7:0]
-               : (hsel == 3'b001) ? ~vm_reg0[15:8]
-               : (hsel == 3'b010) ? ~vm_reg1[7:0]
-               : (hsel == 3'b011) ? ~vm_reg1[15:8] : 8'hFF;
-
-assign ax3_hsel[0] = ~(hsel == 3'b000);
-assign ax3_hsel[1] = ~(hsel == 3'b001);
-assign ax3_hsel[2] = ~(hsel == 3'b010);
-assign ax3_hsel[3] = ~(hsel == 3'b011);
-assign ax3_hsel[4] = ~(hsel == 3'b100);
-assign ax3_hsel[5] = ~(hsel == 3'b101);
-*/
+// QMTech Spartan-6 core board has no 7seg display
 
 always @(posedge wb_clk)
 begin
@@ -361,78 +309,47 @@ begin
    begin
       vm_reg0 <= 16'o000000;
       vm_reg1 <= 16'o000000;
+		c_ticks <= 32'h00000000;
+		led1hz <= 1'b0;
    end
    else
    begin
       if (vm_sel[2] & wb_we & ~wb_adr[0]) vm_reg0 <= wb_out;
       if (vm_sel[2] & wb_we &  wb_adr[0]) vm_reg1 <= wb_out;
+		if (c_ticks == 32'd16666665) // 32'd66666667)
+		begin
+			c_ticks <= 32'h00000000;
+			led1hz <= led1hz ? 1'b0 : 1'b1;
+		end
+		else
+			c_ticks <= c_ticks + 1'b1;
    end
 end
 
-assign vm_in14[1:0]     = sys_button[1:0];
-assign vm_in14[15:2]    = 14'h00000;
+assign vm_in14[0]     = ~sys_button;
+assign vm_in14[15:1]    = 15'h00000;
 
 always @(posedge wb_clk)
 begin
-   if (~sys_button[0])
+   if (sys_button)
       tena <= 1'b1;
-	
-   if (~sys_button[1])
+/*
+   if (sys_button[1])
       tena <= 1'b0;
-	
+	*/
 end
 
 //assign sys_led[0] = tena;
 //assign sys_led[1] = sys_rst;
 //assign sys_led[2] = pwr_rst;
 //assign sys_led[3] = 1'b0;
+reg led1hz;
 
-assign sys_led[0] = sys_rst;
-assign sys_led[1] = pwr_rst;
-// assign sys_led[2] = ;
+assign sys_led[1] = sys_button; // sys_rst;
+assign sys_led[0] = pwr_rst;
 
 //______________________________________________________________________________
 //
 // Temporary and debug assignments
-//
-// assign   ax3_dram_dq    = 16'hzzzz;
-// assign   ax3_dram_addr  = 13'h0000;
-// assign   ax3_dram_ldqm  = 1'b0;
-// assign   ax3_dram_udqm  = 1'b0;
-// assign   ax3_dram_we_n  = 1'b1;
-// assign   ax3_dram_cas_n = 1'b1;
-// assign   ax3_dram_ras_n = 1'b1;
-// assign   ax3_dram_cs_n  = 1'b1;
-// assign   ax3_dram_ba[0] = 1'b0;
-// assign   ax3_dram_ba[1] = 1'b0;
-// assign   ax3_dram_clk   = 1'b0;
-// assign   ax3_dram_cke   = 1'b0;
-//
-// assign   ax3_spi_cs_n   = 1'b1;
-// assign   ax3_spi_clk    = 1'b0;
-// assign   ax3_spi_mosi   = 1'bz;
-//
-// assign   ax3_sd_cs_n    = 1'bz;
-// assign   ax3_sd_clk     = 1'b0;
-// assign   ax3_sd_mosi    = 1'bz;
-// assign   ax3_sd_miso    = 1'bz;
-//
-// assign   ax3_i2c_dat    = 1'hz;
-// assign   ax3_i2c_clk    = 1'hz;
-// assign   ax3_rtc_rst_n  = 1'hz;
-// assign   ax3_rtc_sclk   = 1'hz;
-// assign   ax3_rtc_sdat   = 1'hz;
-// assign   ax3_buzzer     = 1'hz;
-// assign   ax3_gpio1[0]   = ena_us;
-// assign   ax3_gpio1[1]   = ena_ms;
-//
-// assign   ax3_vga_hs     = 1'b0;
-// assign   ax3_vga_vs     = 1'b0;
-// assign   ax3_vga_r      = 5'h0;
-// assign   ax3_vga_g      = 6'h0;
-// assign   ax3_vga_b      = 5'h0;
-//
-// assign   ax3_gpio0      = 34'hzzzzzzzzz;
-// assign   ax3_gpio1      = 34'hzzzzzzzzz;
 //
 endmodule
