@@ -1,0 +1,3298 @@
+;
+; Тест команд процессора PDP-11, восстановлено 1801BM1@gmail.com 
+; из листингов теста 791401 по "Электронная вычислительная машина
+; Электроника-60, основной тест команд, программное обеспечение,
+; 2.791.004 ПО1"
+;_____________________________________________________________________________
+;
+		.title	t401            	; основной тест команд
+		.list	meb			;
+		$tn 	= 1			;
+		$swr	= 160000		;
+						;
+		R0	= %0			;
+		R1	= %1			;
+		R2	= %2			;
+		R3	= %3			;
+		R4	= %4			;
+		R5	= %5			;
+		SP	= %6			;
+		PC	= %7			;
+						;
+		clnz	= 254			;
+		errnm	= 1			;
+		nops	= 260			;
+		sevc	= 263			;
+		senvc	= 273			;
+		$tn 	= 0			;
+;_____________________________________________________________________________
+;
+		.macro	jmpR0			; ассемблер генерирует ошибку Z
+		.word	000120			; jmp (R0)+ работает по-разному
+		.endm				; на различных моделях PDP-11
+						;
+		.macro	jsrR0			;
+		.word	004720			; jsr PC, (R0)+
+		.endm				;
+						;
+		.macro	movR0p			;
+		.word	010020			; mov R0, (R0)+
+		.endm				;
+						;
+		.macro	movR0m			;
+		.word	010040			; mov R0, -(R0)
+		.endm				;
+						;
+		.macro	addR0			;
+		.word	060020			; add R0, (R0)+
+		.endm				;
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		. 	= offset		;
+	.if 	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc 					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff            			;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+		.asect      			; ловушка прерываний 0-776
+						;
+		vect	0			;
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20, type		; точка входа в тесты
+		vect	24, entry, 0		; по вектору 024 (ACLO)  
+		vect	30			;
+		vect	34			;
+		vect	40			;
+		vect	44, $apthd, $endad	;
+		vect	50			;
+		vect	54			;
+		vect	60			;
+		vect	64			;
+		vect	70			;
+		vect	74			;
+		vect	100			;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+						;
+;_____________________________________________________________________________
+;
+		.	= 200			; начальная точка входа в тест
+entry:		mov	#pwrdn, @#24		;
+		mov	#$etable, R0		;
+1$:		clr	-(R0)			;
+		cmp	R0, #$mail		;
+		bhi	1$			;
+		jmp	start			;
+;_____________________________________________________________________________
+;
+		vect	230			;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+;_____________________________________________________________________________
+;
+		.	= 400			; область рабочих переменных 
+$mail:						;
+$msgty:		.word	0			;
+$fatal:		.word	0			; номер ошибки
+$testn:		.word	0 			; номер теста
+$Pass:		.word	0			; счетчик проходов
+$devct:		.word	0			;
+$unit:		.word	0			;
+$msgad:		.word	0			;
+$msglg:		.word	0			;
+						;
+$etable:	     				;
+$env:		.byte	0			;
+$envm:		.byte	0			;
+$swreg:		.word	0			;
+$uswr:		.word	0			;
+$cpuop:		.word	0			;
+						;
+$etend:						;
+$apthd:                                         ;
+$hibys:		.word	0			;
+$mbadr:		.word	$mail			;
+$tstm:		.word	1			;
+$pastm:		.word	1			;
+$unitm:		.word	0			;
+$testx:		.word	12.			;
+						;
+		adr	= $apthd		;
+		adr1	= $apthd + 2		;
+		adr2	= $apthd + 4		;
+		dummy	= $apthd + 6		;
+		temp	= $apthd + 10		;
+		temp1	= $apthd + 12		;
+		temp2	= $apthd + 14		;
+						;
+		.	= temp2 + 2		;
+tps:		.word	177564			;
+tpb:		.word	177566			;
+mark2:		mark	2			;
+						;
+endpas:		.word	5015			;
+		.byte	016, 153, 040, 160, 162	; "k ПРОХОД"
+		.byte	157, 150, 157, 144, 000	;
+						;
+power:		.word	5015			; "ПИТАНИЕ"
+		.byte	160, 151, 124, 101	;
+		.byte	110, 151, 105, 000	;
+						;
+;_____________________________________________________________________________
+;
+		.	= 444			;
+		.word	446			;
+		vect	504			;
+		vect	510			;
+		vect	514			;
+		vect	520			;
+		vect	524			;
+;_____________________________________________________________________________
+;
+		.	= 530			;
+start:		mov	#start, SP		;
+		mov	#$testn, R5		;
+		tst	@R5			;
+		beq	nobit			;
+		halt				; задать номер теста
+;_____________________________________________________________________________
+;
+nobit:		cmp	@R5, #0			; тест 0, команды ветвления
+		bne	cc0			; проверка при N=Z=V=C=0 
+		inc	@R5			;
+		ccc				;
+		bcs	cc0			;
+		bvs	cc0			;
+		beq	cc0			;
+		bmi	cc0			;
+						;
+		nops				;
+		bcs	cc0			;
+		bvs	cc0			;
+		beq	cc0			;
+		bmi	cc0			;
+		blt	cc0			;
+		ble	cc0			;
+		blos	cc0			;
+		bhi	endcc0			;
+						;
+cc0:		mov	#1, -(R5)		; ошибка ветвления или НПТ
+		inc	-(R5)			;
+		halt				;
+endcc0:		bvc	nbit			;
+;_____________________________________________________________________________
+;
+nbit:		cmp	@R5, #1                 ; тест 1, команды ветвления
+		bne	cc1			; проверка при N=1
+		inc	@R5			;
+		sen				;
+		bpl	cc1			;
+		beq	cc1			;
+		bge	cc1			;
+		bgt	cc1			;
+		bcs	cc1			;
+		blos	cc1			;
+		bcs	cc1			;
+		ble	endcc1			;
+		                 		;
+cc1:		mov	#2, -(R5)		; ошибка ветвления или НПТ
+		inc	-(R5)			;
+		halt				;
+endcc1:		bne	vbit			;
+;_____________________________________________________________________________
+;
+vbit:		cmp	@R5, #2			; тест 2, команды ветвления
+		bne	cc2			; проверка при N=V=1
+		inc	@R5			;
+		sen				;
+		sev				;
+		bvc	cc2			;
+		beq	cc2			;
+		bpl	cc2			;
+		bcs	cc2			;
+		blt	cc2			;
+		ble	cc2			;
+		blos	cc2			;
+		bcs	cc2			;
+		bgt	endcc2			;
+						;
+cc2:		mov	#3, -(R5)		; ошибка ветвления или НПТ
+		inc	-(R5)			;
+		halt				;
+endcc2:		bge	cbit			;
+;_____________________________________________________________________________
+;
+cbit:		cmp	@R5, #3			; тест 3, команды ветвления
+		bne	cc3			; проверка при N=V=C=1
+		inc	@R5			;
+		sen				;
+		sev				;
+		sec				;		
+		beq	cc3			;
+		bpl	cc3			;
+		bvc	cc3			;
+		blt	cc3			;
+		ble	cc3			;
+		bhi	cc3			;
+		bge	zbit			;
+						;
+cc3:		mov	#4, -(R5)		; ошибка ветвления или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+zbit:		cmp	@R5, #4			; тест 4, команды ветвления
+		bne	cc4			; проверка при N=V=C=Z=1
+		inc	@R5			;
+		sen				;
+		sev				;
+		sec				;		
+		sez				;
+		bne	cc4			;
+		bpl	cc4			;
+		bvc	cc4			;
+		bcc	cc4			;
+		blt	cc4			;
+		bgt	cc4			;
+		bhi	cc4			;
+		beq	yescc			;
+						;
+cc4:		mov	#5, -(R5)		; ошибка ветвления или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+yescc:		cmp	@R5, #5			; тест 5, команды ветвления
+		bne	cc6			; проверка при N=V=C=Z=1
+		inc	@R5			;
+		scc				;
+		bpl	cc6			;
+		bne	cc6			;
+		bvc	cc6			;
+		bcc	cc6			;
+		nop				;
+		bpl	cc6			;
+		bne	cc6			;
+		bvc	cc6			;
+		bcc	cc6			;
+		blos	notcc			;
+		          			;
+cc6:		mov	#6, -(R5)		; ошибка ветвления или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+notcc:		cmp	@R5, #6			; тест 5, очистка признаков
+		bne	cc5			;
+		inc	@R5			;
+		scc				;
+		clc				;
+		bcs	cc5			;
+		clv				;
+		bvs	cc5			;
+		clz				;
+		beq	cc5			;
+		cln				;
+		bmi	cc5			;
+		bhi	endcc5			;
+						;
+cc5:		mov	#7, -(R5)		; не очистился признак или НПТ
+		inc	-(R5)			;
+		halt				;
+endcc5:		bpl	branch			;
+;_____________________________________________________________________________
+;
+branch:		cmp	@R5, #7			; тест 7, безусловный переход
+		beq	1$			;
+		mov	#10, -(R5)		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		br	4$			;
+		mov	#11, -(R5)		; br не выполнила ветвление
+		inc	-(R5)			;
+		halt				;
+						;
+2$:		br	3$			;
+		mov	#12, -(R5)		; br не выполнила ветвление
+		inc	-(R5)			;
+		halt				;
+		        			;
+3$:		br	5$			;
+		mov	#13, -(R5)		; br не выполнила ветвление
+		inc	-(R5)			;
+		halt				;
+		        			;
+4$:		br	2$			;
+		mov	#14, -(R5)		; br не выполнила ветвление
+		inc	-(R5)			;
+		halt				;
+		        			;
+5$:		br	jmp1			;
+;_____________________________________________________________________________
+;
+jmp1:		cmp	@R5, #10		; тест 10, jmp метод 1
+		bne	endjp1			;
+		inc	@R5			;
+		mov	#1$, R0			;
+		scc				;
+		jmp	@R0			;
+		mov	#15, -(R5)		; нет перехода по jmp
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		bpl	2$			;
+		bne	2$			;
+		bvc	2$			;
+		bcs	3$			;
+2$:		mov	#16, -(R5)		; jmp изменила РСП
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		cmp	R0, #1$			;
+		beq	4$			;
+		mov	#17, -(R5)		; jmp изменила R0
+		inc	-(R5)			;
+		halt				;
+						;
+4$:		mov	#jmp2, R0		;
+		jmp	@R0			;
+endjp1:		mov	#20, -(R5)		; нет перехода по jmp или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+jmp2:      	cmp	@R5, #11		; тест 11, jmp метод 2,3
+		bne	endjp3			;
+		inc	@R5			;
+		mov	#1$, R0			; метод 2
+		scc				;
+		jmpR0				; jmp (R0)+
+		mov	#21, -(R5)		; нет перехода по jmp (R0)+
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		bpl	3$			;
+2$:		bne	3$			;
+		bvc	3$			;
+		bcs	4$			;
+3$:		mov	#22, -(R5)		; jmp изменила РСП
+		inc	-(R5)			;
+		halt				;
+						;
+4$:		cmp	R0, #1$+2		;
+		beq	5$			;
+		mov	#23, -(R5)		; R0 не увеличилось на 2
+		inc	-(R5)			;
+		halt				;
+		                                ;
+5$:		mov	#jmp3, R0		;
+		jmpR0				; jmp (R0)+
+		mov	#24, -(R5)		; нет перехода по jmp (R0)+
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+jmp3:		mov	#1$, temp		;
+		mov	#2$, temp1		;
+		mov	#temp, R0		;
+		scc				;
+		jmp	@(R0)+			;
+		mov	#25, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @(R0)+
+						;      		
+1$:		cmp	@0(R0), 2$		;
+		beq	2$			;
+		mov	#26, -(R5)		;
+		inc	-(R5)			;
+		halt				; R0 не увеличилось на 2
+						;
+2$:		mov	#jmp4, temp		;
+		mov	#temp, R0		;
+		jmp	@(R0)+			;
+endjp3:		mov	#27, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @(R0)+
+;_____________________________________________________________________________
+;
+jmp4:		cmp	@R5, #12		; тест 12, метод 4,5
+		bne	endjp5			;
+		inc	@R5			;
+		mov	#1$, R0			; метод 4
+		scc				;
+		jmp	-(R0)			;
+		mov	#30, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp -(R0)
+						;
+		br	2$			;
+1$:		mov	#31, -(R5)		;
+		inc	-(R5)			;
+		halt				; R0 не уменьшилось на 2
+						;
+2$:		cmp	#1$-2, R0		;
+		beq	3$			;
+		mov	#32, -(R5)		;
+		inc	-(R5)			;
+		halt				; R0 не равно адресу
+						;						
+3$:		mov	#jmp5+2, R0		;
+		jmp	-(R0)			;
+		mov	#33, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp -(R0)
+						;
+jmp5:		mov	#1$, temp1		; метод 5
+		mov	#temp1, R0		;
+		mov	#2$, temp		;
+		jmp	@-(R0)			;
+		mov	#34, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @-(R0)
+						;
+1$:		mov	#35, -(R5)		;
+		inc	-(R5)			;
+		halt				; R0 не уменьшилось на 2
+						;
+2$:		cmp	#temp, R0		;
+		beq	3$			;
+		mov	#36, -(R5)		;
+		inc	-(R5)			;
+		halt				; R0 не равно адресу
+						;
+3$:		mov	#1$, temp1		;
+		mov	#temp1, R0		;
+		mov	#jmp6, temp		;
+		jmp	@-(R0)			;
+						;
+endjp5:		mov	#37, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @-(R0)
+;_____________________________________________________________________________
+;
+jmp6:		cmp	@R5, #13		; тест 13, jmp метод 6
+		bne	endjp7			;
+		inc	@R5			;
+		mov	#1$+6, R3		; метод 6
+		jmp	-6(R3)			;
+		mov	#40, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp -6(R3)
+						;
+1$:		cmp	R3, #1$+6		;
+		beq	2$			;		
+		mov	#41, -(R5)		;
+		inc	-(R5)			;
+		halt				; неверное значение R3
+						;
+2$:		jmp	3$			;
+		mov	#42, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp
+						;
+3$:		mov	#jmp7, R3		;
+		jmp	0(R3)			;
+		mov	#43, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp 0(R3)
+						;
+jmp7:		mov	#temp, R3		; метод 7
+		mov	#1$, @R3		;
+		jmp	@0(R3)			;
+		mov	#44, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @0(R3)
+						;
+1$:		mov	#2$, @R3		;
+		mov	#adr2, R0		;
+		jmp	@4(R0)			;
+		mov	#45, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @4(R0)
+						;
+2$:		mov	#jsrtst, temp		;
+		mov	#temp, R0		;
+		jmp	@0(R0)			;
+endjp7:		mov	#46, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jmp @0(R0)
+;_____________________________________________________________________________
+;
+jsrtst:		cmp	@R5, #14		; тест 14, jsr mark
+		bne	endjsr			;
+		inc	@R5			;
+		mov	#start, SP		;
+		scc				;
+		jsr	PC, 3$			;
+1$:		mov	#47, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по jsr PC
+						;
+2$:		cmp	#start, SP		;
+		beq	jsrm			;
+		mov	#50, -(R5)		;
+		inc	-(R5)			;
+		halt				; rts не восстановила SP
+						;
+3$:		bpl	4$			;
+		bne	4$			;
+		bvc	4$			;
+		bcs	5$			;
+4$:		mov	#51, -(R5)		;
+		inc	-(R5)			;
+		halt				; jsr изменила РСП
+						;
+5$:		cmp	#start-2, SP		;
+		beq	6$			;
+		mov	#52, -(R5)		;
+		inc	-(R5)			;
+		halt				; SP не уменьшился на 2
+						;
+6$:		cmp	#1$, @SP		;
+		beq	7$			;
+		mov	#53, -(R5)		;
+		inc	-(R5)			;
+		halt				; неверный адрес возврата
+						;
+7$:		mov	#2$, @SP		;
+		rts	PC			;
+		mov	#54, -(R5)		;
+		inc	-(R5)			;
+		halt				; нет перехода по rts PC
+						;
+jsrm: 		mov	R5, -(SP)		;
+		mov	dummy, -(SP)		;
+		mov	dummy, -(SP)		;
+		mov	mark2, -(SP)		;
+		mov	R5, R3			;
+		jsr	R4, 10$			;
+1$:		mov	#55, -(R5) 		; нет вызова по jsr R4
+		inc	-(R5)			;
+		halt				;
+		          			;
+2$:		bpl	3$			;
+		bne	3$			;
+		bvc	3$			;
+		bcs	4$			;
+3$:		mov	#56, -(R3)		;
+		inc	-(R3)			;
+		halt				; возврат разрушил РСП
+						;
+4$:		cmp	#$testn, R5		;
+		beq	5$			;
+		mov	#57, -(R3) 		;
+		inc	-(R3)			;
+		halt				; неверное значение R5
+						;
+5$:		cmp	#start, SP		;
+		beq	6$			;
+		mov	#60, -(R5) 		;
+		inc	-(R5)			;
+		halt				; неверное значение SP
+						;
+6$:		mov	#12$, R1		;
+		jsr	R0, @R1			;
+7$:		mov	#61, -(R5)		;
+		inc	-(R5)			;
+		halt				;
+						;
+		mov	#62, -(R5)		;
+		inc	-(R5)			;
+		halt				;
+						;
+9$:		cmp	#start, SP		;
+		beq	tstsp			;
+		mov	#63, -(R5)		;
+		inc	-(R5)			;
+		halt				;
+						;
+10$:		cmp	R4, #1$			;
+		beq	11$			;
+		mov	#64, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+11$:		mov	SP, R5			; тестовая подпрограмма mark
+		tst	(R5)+			;
+		mov	#2$, (SP)		; подготовили адрес для R5
+		scc				;
+		rts	R5			; возврат на команду mark 2
+		mov	#65, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нет корректного возврата
+						;
+12$:		cmp	R0, #7$			;
+		beq	13$			;
+		mov	#66, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+13$:		mov	#9$, R0			;
+		rts	R0			;
+endjsr:		mov	#67, -(R5) 		; нет перехода по rts R0
+		inc	-(R5)			; иле неверная последовательность теста
+		halt
+;_____________________________________________________________________________
+;
+tstsp:		cmp	@R5, #15		; тест 15, сложение с SP
+		bne	eregs			;
+		inc	@R5			;
+		mov	SP, temp		;
+		mov	#1, R0			;
+		mov	#4, R1			;
+		mov	#20, R2			;
+		mov	#100, R3 		;
+		mov	#400, R4		;
+		clr	SP			;
+		add	R0, SP			;
+		add	R1, SP			;
+		add	R2, SP			;
+		add	R3, SP			;
+		add	R4, SP			;
+		add	R5, SP			;
+		cmp	#$testn+525, SP		;
+		bne	1$			;
+		mov	temp, SP		;
+		br	tstb0			;
+						;
+1$:		mov	temp, SP		;
+eregs:		mov	#70, -(R5) 		; неправильная выборка
+		inc	-(R5)			; регистра или НПТ
+		halt				;
+;_____________________________________________________________________________
+;
+; Байтовые команды, регистровый метод адресации
+;
+tstb0:		cmp	@R5, #16		; тест 16, tstb clrb movb
+		beq	1$			;
+		mov	#71, -(R5) 		;
+		inc	-(R5)			; нарушен порядок тестов
+		halt				;
+						;
+1$:		inc	@R5			;
+		scc				;
+		clrb	R0			;
+		jsr 	PC, @#$cc4		;
+		tstb	R0			;
+		jsr 	PC, @#$cc4		;
+		movb	#377, R1		;
+		jsr 	PC, @#$cc10		;
+		tstb	R1			;
+		jsr	PC, @#$cc10		;
+;_____________________________________________________________________________
+;
+cmpb0:		cmp	@R5, #17		; тест 17, cmpb bisb
+		bne	ecmpb0			;
+		inc	@R5			;
+		scc				;
+		bisb	#377, R2		;
+		jsr 	PC, @#$cc11		;
+		cmpb	#377, R2		;
+		beq	1$			;
+		mov	#72, -(R5) 		; ошибка bisb или cmpb
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		movb	#77, R0			;
+		cmpb	R0, R2			;
+		bpl	2$			;
+		mov	#73, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+2$:		cmpb	R2, R0			;
+		bmi	bicb0			;
+ecmpb0:		mov	#74, -(R5) 		; ошибка cmpb R2, R0
+		inc	-(R5)			; или НПТ
+		halt				;
+;_____________________________________________________________________________
+;
+bicb0:		cmp	@R5, #20		; тест 20, bitb
+		beq	1$			;
+		mov	#75, -(R5) 		; нарушен порядок тестов
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		inc	@R5			;
+		movb	#377, R3		;
+		movb	#252, R0 		;
+		scc				;
+		bicb	R0, R3			;
+		jsr 	PC, @#$cc1		;
+		bitb	R0, R3			;
+		beq	2$			;
+		mov	#76, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bicb R0, R3
+						;
+2$:		bitb	#125, R3 		;
+		jsr	PC, @#$cc1		;
+		bisb	R0, R3			;
+		bmi	3$			;
+		mov	#77, -(R5) 		; ошибка bisb R0, R3
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		bicb	#177, R3 		;
+		jsr	PC, @#$cc11		;
+		bitb	#377, R3		;
+		jsr 	PC, @#$cc11		;
+;_____________________________________________________________________________
+;
+incb0:		cmp	@R5, #21		; тест 21, incb decb
+		beq	1$			;
+		mov	#100, -(R5) 		;
+		inc	-(R5)			; нарушен порядок тестов
+		halt				;
+						;
+1$:		inc	@R5			;
+		movb	#177, R4 		;
+		sec				;
+		incb	R4			;
+		jsr 	PC, @#$cc13		;
+		movb	#376, R4 		;
+		incb	R4			;
+		jsr	PC, @#$cc11		;
+		incb	R4			;
+		jsr	PC, @#$cc5		;
+		incb	R4			;
+		jsr 	PC, @#$cc1		;
+		cmpb	#1, R4			;
+		beq	2$			;		
+		mov	#101, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка incb R4
+						;
+2$:		sec				;
+		decb	R4			;
+		jsr	PC, @#$cc5		;
+		decb	R4			;
+		jsr	PC, @#$cc11		;
+		mov	#200, R4 		;
+		decb	R4			;
+		jsr	PC, @#$cc3		;
+		decb	R4			;
+		jsr 	PC, @#$cc1		;
+;_____________________________________________________________________________
+;
+comb0:		cmp	@R5, #22		; тест 22, comb
+		beq	1$			;
+		mov	#102, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		inc	@R5			;
+		movb	#252, R3 		;
+		scc				;
+		comb	R3			;
+		jsr	PC, @#$cc1		;
+		cmpb	#125, R3 		;
+		beq	2$			;
+		mov	#103, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка comb R3
+						;
+2$:		scc				;
+		comb	R3			;
+		jsr	PC, @#$cc11		;
+		cmpb	#252, R3		;
+		beq	3$			;
+		mov	#104, -(R5) 		; ошибка comb R3
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		mov	#377, R3		;
+		scc				;
+		comb	R3			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+negb0:		cmp	@R5, #23		; тест 23, negb
+		bne	enegb0			;
+		inc	@R5			;
+		movb	#1, R0			;
+		negb	R0			;
+		jsr	PC, @#$cc11		;
+		cmpb	#377, R0		;
+		beq	1$			;
+		mov	#105, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка negb R0
+						;
+1$:		mov	#200, R0 		;
+		negb	R0			;
+		jsr	PC, @#$cc13		;
+		cmpb	#200, R0 		;
+		beq	rolb0			;
+						;
+enegb0:		mov	#106, -(R5) 		; ошибка negb R0 или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+rolb0:		cmp	@R5, #24		; тест 24, rolb
+		bne	erolb0			;
+		inc	@R5			;
+		movb	#40, R1			;
+		ccc				;
+		rolb	R1			;
+		rolb	R1			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, R1 		;
+		beq	1$			;
+		mov	#107, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rolb R1
+						;
+1$:		rolb	R1			;
+		jsr	PC, @#$cc7		;
+		rolb	R1			;
+		cmpb	#1, R1			;
+		beq	rorb0			;
+						;
+erolb0:		mov	#110, -(R5) 		;
+		inc	-(R5)			;
+		halt				;  ошибка rolb R1 или НПТ
+;_____________________________________________________________________________
+;
+rorb0:		cmp	@R5, #25		; тест 25, rorb
+		bne	erorb0			;
+		inc	@R5			;
+		movb	#4, R2			;
+		ccc				;
+		rorb	R2			;
+		rorb	R2			;
+		cmpb	#1, R2			;
+		beq	1$			;
+		mov	#111, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		rorb	R2			;
+		jsr	PC, @#$cc7		;
+		rorb	R2			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, R2		;
+		beq	aslb0			;
+		                                ;
+erorb0:		mov	#112, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rorb R2 или НПТ
+;_____________________________________________________________________________
+;
+aslb0:		cmp	@R5, #26		; тест 26, aslb
+		beq	1$			;
+		mov	#113, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		movb	#40, R3			;
+		ccc				;
+		aslb	R3			;
+		aslb	R3			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, R3 		;
+		beq	2$			;
+		mov	#114, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка aslb R3
+						;
+2$:		aslb	R3			;
+		jsr	PC, @#$cc7		;
+		aslb	R3			;
+		jsr	PC, @#$cc4		;
+;_____________________________________________________________________________
+;
+asrb0:		cmp	@R5, #27		; тест 27, asrb
+		bne	easrb0			;
+		inc	@R5			;
+		movb	#4, R4			;
+		ccc				;
+		asrb	R4			;
+		asrb	R4			;
+		cmpb	#1, R4			;
+		beq	1$			;
+		mov	#115, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка asrb R4
+						;
+1$:		asrb	R4			;
+		jsr	PC, @#$cc7		;
+		asrb	R4			;
+		jsr	PC, @#$cc4		;
+		movb	#202, R3		;
+		asrb	R3			;
+		asrb	R3			;
+		jsr	PC, @#$cc11		;
+		cmpb	#340, R3 		;
+		beq	adcb0			;
+						;
+easrb0:		mov	#116, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка asrb R3 или НПТ
+;_____________________________________________________________________________
+;
+adcb0:		cmp	@R5, #30		; тест 30, adcb
+		beq	1$			;
+		mov	#117, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		inc	@R5			;
+		clrb	R0			;
+		ccc				;
+		adcb	R0			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		adcb	R0			;
+		sec				;
+		adcb	R0			;
+		jsr	PC, @#$cc0		;
+		cmpb	#2, R0			;
+		beq	2$			;
+		mov	#120, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка adcb R0
+						;
+2$:		movb	#177, R0 		;
+		sec				;
+		adcb	R0			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, R0		;
+		beq	3$			;	
+		mov	#121, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка adcb R0
+						;
+3$:		movb	#377, R0		;
+		sec				;
+		adcb	R0			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+sbcb0:		cmp	@R5, #31		; тест 31 sbcb
+		beq	1$			;
+		mov	#122, -(R5) 		;
+		inc	-(R5)			; нарушен порядок тестов
+		halt				;
+						;
+1$:		inc	@R5			;
+		movb	#3, R1			;
+		ccc				;
+		sbcb	R1			;
+		jsr	PC, @#$cc0		;
+		cmpb	#3, R1			;
+		beq	2$			;
+		mov	#123, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbcb R1
+						;						;
+2$:		sec				;
+		sbcb	R1			;
+		sec				;
+		sbcb	R1			;
+		jsr	PC, @#$cc0		;
+		cmpb	#1, R1			;
+		beq	3$			;
+		mov	#124, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbcb R1
+						;
+3$:		sec				;
+		sbcb	R1			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		sbcb	R1			;
+		jsr	PC, @#$cc11		;
+		cmpb	#377, R1		;
+		beq	4$			;
+		mov	#125, -(R5)		;
+		inc	-(R5)			;
+		halt				; ошибка sbcb R1
+						;
+4$:		movb	#200, R1		;
+		sec				;
+		sbcb	R1			;
+		jsr	PC, @#$cc2		;
+;_____________________________________________________________________________
+;
+; Команды со словами, регистровый метод адресации
+;
+tst0:		cmp	@R5, #32		; тест 32, tst clr mov
+		beq	1$			;
+		mov	#126, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		scc				;
+		clr	R0			;
+		jsr	PC, @#$cc4		;
+		tst	R0			;
+		jsr	PC, @#$cc4		;
+		mov	#-1, R4			;
+		mov	R4, R1			;
+		jsr	PC, @#$cc10		;
+		tst	R1			;
+		jsr	PC, @#$cc10		;
+		cmp	R4, R1			;
+		beq	2$			;
+		mov	#127, -(R5) 		;
+		inc	-(R5)			; ошибка mov #-1, R4
+		halt				; или mov R4, R1 или tst R1
+						;
+2$:		sevc				;
+		mov	R0, R0			;
+		jsr	PC, $cc5		;
+;_____________________________________________________________________________
+;
+cmp0:		cmp	@R5, #33		; тест 33, bis
+		bne	ecmp0			;
+		inc	@R5			;
+		mov	#177777, R0		;
+		bis	R0, R2			;
+		jsr	PC, @#$cc10		;
+		cmp	R0, R2			;
+		beq	1$			;
+		mov	#130, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка cmp R0, R2
+						;
+1$:		cmp	#77, R2			;
+		bpl	2$			;
+		mov	#131, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+2$:		cmp	R2, #77			; 
+		bmi	bic0			;
+						;
+ecmp0:		mov	#132, -(R5) 		; ошибка cmp #77, R2 или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+bic0:		cmp	@R5, #34		; тест 34, bic bit
+		bne	ebic0			;
+		inc	@R5			;
+		mov	#-1, R3			;
+		mov	#temp, R0		;
+		mov	#125252, @R0		;
+		scc				;
+		bic	@R0, R3			;
+		jsr	PC, @#$cc1		;
+		bit	@R0, R3			;
+		beq	1$			;	
+		mov	#133, -(R5) 		;
+		inc	-(R5)			; ошибка bic @R0, R3
+		halt				; или bit @R0, R3
+						;
+1$:		bit	#52525,	R3		;
+		jsr	PC, @#$cc1		;
+		bis	#125252, R3		;
+		bmi	2$			;
+		mov	#134, -(R5) 		; ошибка bis #125252, R3
+		inc	-(R5)			;
+		halt				;
+						;
+2$:		bic	#77777,	R3		;
+		jsr	PC, @#$cc11		;
+		mov	#177777, R0		;
+		bit	R0, R3			;
+		jsr	PC, @#$cc11		;
+		sevc				;
+		bic	R0, R0			;
+		jsr	PC, @#$cc5		;
+		tst	R0			;
+		beq	inc0			;
+						;
+ebic0:		mov	#135, -(R5) 		; ошибка bic R0, R0 или НПТ
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+inc0:		cmp	@R5, #35		; тест 35, inc dec
+		beq	1$			;
+		mov	#136, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#77777,	R4		;
+		sec				;
+		inc	R4			;
+		jsr	PC, @#$cc13		;
+		mov	#177776, R4		;
+		inc	R4			;
+		jsr	PC, @#$cc11		;
+		inc	R4			;
+		jsr	PC, @#$cc5		;
+		inc	R4			;
+		jsr	PC, @#$cc1		;
+		cmp	#1, R4			;
+		beq	2$			;
+		mov	#137, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка inc R4
+						;
+2$:		sec				;
+		dec	R4			;
+		jsr	PC, @#$cc5		;
+		dec	R4			;
+		jsr	PC, @#$cc11		;
+		mov	#100000, R4		;
+		dec	R4			;
+		jsr	PC, @#$cc3		;
+		dec	R4			;
+		jsr	PC, @#$cc1		;
+;_____________________________________________________________________________
+;
+com0:		cmp	@R5, #36		; тест 36, com
+		beq	1$			;
+		mov	#140, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#125252, R3		;
+		scc				;
+		com	R3			;
+		jsr	PC, @#$cc1		;
+		cmp	#52525,	R3		;
+		beq	2$			;
+		mov	#141, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка com R3
+						;
+2$:		scc				;
+		com	R3			;
+		jsr	PC, @#$cc11		;
+		cmp	#125252, R3		;
+		beq	3$			;
+		mov	#142, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка com R3
+						;
+3$:		mov	#-1, R3			;
+		scc				;
+		com	R3			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+neg0:		cmp	@R5, #37		; тест 37, neg
+		bne	eneg0			;
+		inc	@R5			;
+		mov	#1, R0			;
+		neg	R0			;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, R0			;
+		beq	1$			;
+		mov	#143, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка neg R0
+						;
+1$:		mov	#100000, R0		;
+		neg	R0			;
+		jsr	PC, @#$cc13		;
+		cmp	#100000, R0		;
+		beq	rol0			;
+						;
+eneg0:		mov	#144, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка neg R0 или НПТ
+;_____________________________________________________________________________
+;
+rol0:		cmp	@R5, #40 		; тест 40, rol
+		bne	erol0			;
+		inc	@R5			;
+		mov	#20000,	R1		;
+		ccc				;
+		rol	R1			;
+		rol	R1			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, R1		;
+		beq	1$			;
+		mov	#145, -(R5) ;		;
+		inc	-(R5)			;
+		halt				; ошибка rol R1
+						;
+1$:		rol	R1			;
+		jsr	PC, @#$cc7		;
+		rol	R1			;
+		cmp	#1, R1			;
+		beq	ror0			;
+						;
+erol0:		mov	#146, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rol R1 или НПТ
+;_____________________________________________________________________________
+;
+ror0:		cmp	@R5, #41 		; тест 41, ror
+		bne	eror0			;
+		inc	@R5			;
+		mov	#4, R2			;
+		ccc				;
+		ror	R2			;
+		ror	R2			;
+		cmp	#1, R2			;
+		beq	1$			;
+		mov	#147, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка ror R2
+						;
+1$:		ror	R2			;
+		jsr	PC, @#$cc7		;
+		ror	R2			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, R2		;
+		beq	asl0			;
+						;
+eror0:		mov	#150, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка ror R2 или НПТ
+;_____________________________________________________________________________
+;
+asl0:		cmp	@R5, #42 		; тест 42, asl
+		beq	1$			;
+		mov	#151, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#20000,	R3		;
+		ccc				;
+		asl	R3			;
+		asl	R3			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, R3		;
+		beq	2$			;
+		mov	#152, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+2$:		asl	R3			;
+		jsr	PC, @#$cc7		;
+		asl	R3			;
+		jsr	PC, @#$cc4		;
+;_____________________________________________________________________________
+;
+asr0:		cmp	@R5, #43 		; тест 43, asr
+		bne	easr0			;
+		inc	@R5			;
+		mov	#4, R4			;
+		ccc				;
+		asr	R4			;
+		asr	R4			;
+		cmp	#1, R4			;
+		beq	1$			;
+		mov	#153, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка asr R4
+						;
+1$:		asr	R4			;
+		jsr	PC, @#$cc7		;
+		asr	R4			;
+		jsr	PC, @#$cc4		;
+		mov	#100002, R3		;
+		asr	R3			;
+		asr	R3			;
+		jsr	PC, @#$cc11		;
+		cmp	#160000, R3		;
+		beq	adc0			;
+						;
+easr0:		mov	#154, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+adc0:		cmp	@R5, #44 		; тест 44, adc
+		beq	1$			;
+		mov	#155, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		clr	R0			;
+		ccc				;
+		adc	R0			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		adc	R0			;
+		sec				;
+		adc	R0			;
+		jsr	PC, @#$cc0		;
+		cmp	#2, R0			;
+		beq	2$			;
+		mov	#156, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка adc R0
+						;
+2$:		mov	#77777,	R0		;
+		sec				;
+		adc	R0			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, R0		;
+		beq	3$			;
+		mov	#157, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка adc R0
+						;
+3$:		mov	#-1, R0			;
+		sec				;
+		adc	R0			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+sec0:		cmp	@R5, #45 		; тест 45, sbc
+		beq	1$			;
+		mov	#160, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен  порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#3, R1			;
+		ccc				;
+		sbc	R1			;
+		jsr	PC, @#$cc0		;
+		cmp	#3, R1			;
+		beq	2$			;
+		mov	#161, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbc R1
+						;
+2$:		sec				;
+		sbc	R1			;
+		sec				;
+		sbc	R1			;
+		jsr	PC, @#$cc0		;
+		cmp	#1, R1			;
+		beq	3$			;
+		mov	#162, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbc R1
+						;
+3$:		sec				;
+		sbc	R1			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		sbc	R1			;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, R1			;
+		beq	4$			;
+		mov	#163, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+4$:		mov	#100000, R1		;
+		sec				;
+		sbc	R1			;
+		jsr	PC, @#$cc2		;
+;_____________________________________________________________________________
+;
+sxt0:		cmp	@R5, #46 		; тест 46, sxt
+		bne	esxt0			;
+		inc	@R5			;
+		clr	R2			;
+		scc				;
+		clnz				;
+		sxt	R2			;
+		jsr	PC, @#$cc5		;
+		tst	R2			;
+		beq	1$			;
+		mov	#164, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sxt R2
+						;
+1$:		senvc				;
+		sxt	R2			;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, R2			;
+		beq	swab0			;
+esxt0:		mov	#165, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sxt R2 или НПТ
+;_____________________________________________________________________________
+;
+swab0:		cmp	@R5, #47 		; тест 47, swab
+		bne	eswab0			;
+		inc	@R5			;
+		mov	#125125, R3		;
+		scc				;
+		cln				;
+		swab	R3			;
+		jsr	PC, @#$cc10		;
+		cmp	#52652,	R3		;
+		beq	1$			;
+		mov	#166, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка swab R3
+						;
+1$:		mov	#377, R3		;
+		scc				;
+		clz				;
+		swab	R3			;
+		jsr	PC, @#$cc4		;
+		cmp	#177400, R3		;
+		beq	xor0			;
+						;
+eswab0:		mov	#167, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка swab R3 или НПТ
+;_____________________________________________________________________________
+;
+xor0:		cmp	@R5, #50 		; тест 50, xor
+		bne	exor0			;
+		inc	@R5			;
+		mov	#177777, R4		;
+		mov	#177777, R3		;
+		scc				;
+		xor	R4, R3			;
+		jsr	PC, @#$cc5		;
+		mov	#77777,	R3		;
+		mov	R4, R0			;
+		sevc				;
+		clz				;
+		xor	R0, R3			;
+		jsr	PC, @#$cc11		;
+		mov	#125252, R2		;
+		mov	#052525, R4		;
+		scc				;
+		xor	R2, R4			;
+		jsr	PC, @#$cc11		;
+		cmp	#177777, R4		;
+		beq	add0			;
+						;
+exor0:		mov	#170, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка xor R2, R4 или НПТ
+;_____________________________________________________________________________
+;
+add0:		cmp	@R5, #51 		; тест 51, add
+		bne	eadd0			;
+		inc	@R5			;
+		mov	#21421,	R1		;
+		add	R1, R1			;
+		jsr	PC, @#$cc0		;
+		cmp	#43042,	R1		;
+		beq	1$			;
+		mov	#171, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка add R1, R1
+						;
+1$:		mov	#-21421, R0		;
+		add	R0, R0			;
+		jsr	PC, @#$cc11		;
+		cmp	#-43042, R0		;
+		beq	2$			;
+		mov	#172, -(R5)		;
+		inc	-(R5)			;
+		halt				; ошибка add R0, R0
+						;
+2$:		mov	#100000, R2		;
+		add	R2, R2			;
+		jsr	PC, @#$cc7		;
+		mov	#21421,	R4		;
+		mov	#-21421, R1		;
+		add	R4, R1			;
+		beq	3$			;
+		mov	#173, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка add R4, R1 
+						;
+3$:		neg	R4			;
+		mov	#21421,	R1		;
+		add	R1, R4			;
+		beq	sub0			;
+						;
+eadd0:		mov	#174, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка add R1, R4 или НПТ
+;_____________________________________________________________________________
+;
+sub0:		cmp	@R5, #52 		; тест 52, sub
+		beq	1$			;
+		mov	#175, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#21421,	R2		;
+		mov	#-21421, R3		;
+		sub	R2, R3			;
+		jsr	PC, @#$cc10		;
+		cmp	#-43042, R3		;
+		beq	2$			;
+		mov	#176, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sub R2, R3
+						;
+2$:		mov	#21421,	R3		;
+		mov	R2, R4			;
+		sub	R4, R3			;
+		beq	3$			;
+		mov	#177, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sub R4, R3
+						;
+3$:		mov	#-1, R3			;
+		mov	#77777,	R2		;
+		sub	R3, R2			;
+		jsr	PC, @#$cc13		;
+		cmp	#100000, R2		;
+		beq	4$			;
+		mov	#200, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sub R3, R2
+						;
+4$:		mov	#-1, R4			;
+		sub	R3, R4			;
+		jsr	PC, @#$cc4		;
+;_____________________________________________________________________________
+;
+psw:		cmp	@R5, #53 		; тест 53, mtps mtfs
+		bne	epsw			;
+		inc	@R5			;
+		mov	#-1, R1			;
+		clr	R0			;
+		mtps	R0			;
+		jsr	PC, @#$cc0		;
+		mfps	R1			;
+		beq	1$			;
+		mov	#201, -(R5) 		; ошибка mfps R1
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		jsr	PC, @#$cc4		;
+		mov	#377, R0		;
+		mtps	R0			;
+		jsr	PC, @#$cc17		;
+		mfps	R1			;
+		jsr	PC, @#$cc11		;
+		cmp	#177757, R1		;
+		beq	mode0			;
+						;
+epsw:		mov	#202, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка mfps R1 или НПТ
+;_____________________________________________________________________________
+;
+; Все методы адресации кроме регистрового на командах movb, mov, incb, in
+;
+mode0:		cmp	@R5, #54 		; тест 54, метод 0,1
+		bne	emode0			;
+		inc	@R5			;
+		movb	#252, R0 		;
+		movb	R0, R1			;
+		movb	R1, R2			;
+		cmpb	#252, R2 		;
+		beq	1$			;
+		mov	#203, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 0
+						;
+1$:		mov	#125252, R0		;
+		mov	R0, R1			;
+		mov	R1, R2			;
+		cmp	#125252, R2		;
+		beq	2$			;
+		mov	#204, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 1
+						;
+2$:		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		mov	#temp2, R2		;
+		clr	temp2			;
+		movb	#125, @R0 		;
+		movb	@R0, @R1		;
+		movb	@R1, @R2		;
+		cmpb	#125, temp2 		;
+		beq	3$			;
+		mov	#205, -(R5)		;
+		inc	-(R5)			;
+		halt				; ошибка метода 1
+						;
+3$:		mov	#52525,	@R0		;
+		mov	@R0, @R1		;
+		mov	@R1, @R2		;
+		cmp	#52525,	temp2		;
+		beq	mode2			;
+						;
+emode0:		mov	#206, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 1 или НПТ
+;_____________________________________________________________________________
+;
+mode2:		cmp	@R5, #55 		; тест 55, mode 2
+		bne	emode2			;
+		inc	@R5     		;
+		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		mov	#temp2, R2		;
+		clrb	(R2)+			;
+		movb	#252, @R0 		;
+		movb	(R0)+, (R1)+		;
+		incb	R1			;
+		movb	@R1, temp		;
+		incb	R0			;
+		movb	(R0)+, (R1)+		;
+		cmpb	-(R2), #252 		;
+		bne	1$			;
+		tstb	temp			;
+		beq	2$			;
+						;
+1$:		mov	#207, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 2
+						;
+2$:		tst	-(R1)			;
+		clr	(R2)+			;
+		mov	#125252, -(R0)		;
+		mov	(R0)+, (R0)+		;
+		mov	@R0, temp		;
+		mov	(R1)+, (R1)+		;
+		cmp	-(R2), #125252		;
+		bne	emode2			;
+		tst	temp			;
+		beq	mode3			;
+						;
+emode2:		mov	#210, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 2 или НПТ
+;_____________________________________________________________________________
+;
+mode3:		cmp	@R5, #56 		; тест 56, метод 3
+		bne	emode3			;
+		inc	@R5			;
+		mov	#temp, adr		;
+		mov	#temp1, adr1		;
+		mov	#temp2, adr2		;
+		mov	#adr, R0		;
+		mov	#adr1, R1		;
+		clrb	temp2			;
+		movb	#125, temp		;
+		movb	@(R0)+,	@(R1)+		;
+		movb	@(R1)+,	temp		;
+		movb	@(R0)+,	@(R0)+		;
+		cmpb	#125, temp2 		;
+		bne	1$			;
+		tstb	temp			;
+		beq	2$			;
+						;
+1$:		mov	#211, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 3
+						;
+2$:		clr	temp2			;
+		mov	#52525,	temp		;
+		mov	#adr, R0		;
+		mov	#adr1, R1		;
+		mov	@(R0)+,	@(R0)+		;
+		mov	@(R0)+,	temp		;
+		mov	@(R1)+,	@(R1)+		;
+		cmp	#52525,	temp2		;
+		bne	emode3			;
+		tst	temp			;
+		beq	mode4			;
+						;
+emode3:		mov	#212, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 3
+;_____________________________________________________________________________
+;
+mode4:		cmp	@R5, #57 		; тест 57, метод 4
+		bne	emode4			;
+		inc	@R5			;
+		clrb	temp			;
+		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		mov	#temp2, R2		;
+		inc	R2			;
+		cmp	@R2, temp2+1		;
+		beq	1$			;
+		mov	#213, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 4
+						;
+1$:		movb	#252, -(R2) 		;
+		inc	R1			;
+		inc	R2			;
+		movb	-(R2), -(R1)		;
+		inc	R0			;
+		inc	R2			;
+		movb	-(R0), -(R2)		;
+		incb	R0			;
+		cmp	@R0, temp+1		;
+		beq	2$			;
+		mov	#214, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 4
+						;
+2$:		incb	R1			;
+		movb	-(R1), -(R0)		;
+		cmpb	#252, temp		;
+		bne	3$			;
+		tstb	temp2			;
+		beq	4$			;
+						;
+3$:		mov	#215, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 4
+						;
+4$:		clr	temp			;
+		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		mov	#temp2, R2		;
+		tst	(R2)+			;
+		cmp	@R2, tps		;
+		beq	5$			;
+		mov	#216, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 4
+						;
+5$:		mov	#125252, -(R2)		;
+		tst	(R1)+			;
+		tst	(R2)+			;
+		mov	-(R2), -(R1)		;
+		tst	(R0)+			;
+		tst	(R2)+			;
+		mov	-(R0), -(R2)		;
+		tst	(R0)+			;
+		tst	(R1)+			;
+		mov	-(R1), -(R0)		;
+		cmp	#125252, temp		;
+		bne	emode4			;
+		tst	temp2			;
+		beq	mode5			;
+						;
+emode4:		mov	#217, -(R5)		;
+		inc	-(R5)			;
+		halt				; ошибка метода 4 или НПТ
+;_____________________________________________________________________________
+;
+mode5:		cmp	@R5, #60 		; тест 60, метод 5
+		bne	emode5			;
+		inc	@R5			;
+		clrb	temp			;
+		mov	#temp, adr		;
+		mov	#temp1, adr1		;
+		mov	#temp2, adr2		;
+		mov	#adr, R0		;
+		mov	#adr1, R1		;
+		mov	#adr2, R2		;
+		tst	(R2)+			;
+		movb	#125, @-(R2) 		;
+		cmp	(R1)+, (R2)+		;
+		movb	@-(R2),	@-(R1)		;
+		cmp	(R0)+, (R2)+		;
+		movb	@-(R0),	@-(R2)		;
+		cmp	(R0)+, (R2)+		;
+		cmpb	@-(R0),	@-(R2)		;
+		beq	1$			;
+		mov	#220, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 5
+						;
+1$:		cmp	(R1)+, (R0)+		;
+		movb	@-(R1),	@-(R0)		;
+		cmpb	#125, temp	 	;
+		bne	2$			;
+		tstb	temp2			;
+		beq	3$			;
+2$:		mov	#221, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 5
+						;
+3$:		clr	temp			;
+		mov	#adr, R0		;
+		mov	#adr1, R1		;
+		mov	#adr2, R2		;
+		tst	(R2)+			;
+		mov	#52525,	@-(R2)		;
+		cmp	(R1)+, (R2)+		;
+		mov	@-(R2),	@-(R1)		;
+		cmp	(R0)+, (R2)+		;
+		mov	@-(R0),	@-(R2)		;
+		cmp	(R0)+, (R1)+		;
+		mov	@-(R1),	@-(R0)		;
+		cmp	#52525,	temp		;
+		bne	emode5			;
+		tst	temp2			;
+		beq	mode6			;
+						;
+emode5:		mov	#222, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 5 или НПТ
+;_____________________________________________________________________________
+;
+mode6:		cmp	@R5, #61 		; тест 61, метод 6
+		bne	emode6			;
+		inc	@R5			;
+		clr	temp2			;
+		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		mov	#temp2, R2		;
+		movb	#252, 0(R0) 		;
+		movb	#252, 1(R0) 		;
+		cmp	#125252, temp		; 
+		bne	1$			;
+		movb	1(R0), 0(R2)		;
+		movb	2(R1), 5(R0)		;
+		cmp	#125252, temp2		;
+		beq	2$			;
+						;
+1$:		mov	#223, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 6
+						;
+2$:		clr	temp1			;
+		mov	#52525,	0(R0)		;
+		mov	-4(R2),	2(R0)		;
+		cmp	#52525,	temp1		;
+		beq	mode7			;
+						;
+emode6:		mov	#224, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 6 или НПТ
+;_____________________________________________________________________________
+;
+mode7:		cmp	@R5, #62 		; тест 62, метод 7
+		bne	emode7			;
+		inc	@R5			;
+		clr	temp1			;
+		mov	#temp, adr		;
+		mov	#temp1, adr1		;
+		mov	#temp2, adr2		;
+		mov	#adr, R0		;
+		mov	#adr1, R1		;
+		mov	#adr2, R2		;
+		movb	#252, @0(R0) 		;
+		movb	@-4(R2), @2(R0)		;
+		cmpb	#252, temp1		;
+		beq	1$			;
+		mov	#225, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 7
+       						;
+1$:		mov	#125252, @0(R0)		;
+		mov	@-4(R2), @2(R0)		;
+		cmp	#125252, temp1		;
+		beq	tstb1			;
+						;
+emode7:		mov	#226, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка метода 7 или НПТ
+;_____________________________________________________________________________
+;
+; Байтовые команды, все методы адресации кроме регистрового
+;
+tstb1:		cmp	@R5, #63 		; тест 63, tstb clrb movb
+		bne	etstb1			;
+		inc	@R5			;
+		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		scc				;
+		clrb	@R0			;
+		jsr	PC, @#$cc4		;
+		tstb	@R0			;
+		jsr	PC, @#$cc4		;
+		movb	#377, @R1		;
+		jsr	PC, @#$cc10		;
+		tstb	@R1			;
+		jsr	PC, @#$cc10		;
+		mov	R0, R2			;
+		movb	#200, 0(R2) 		;
+		movb	(R2)+, -(R1)		;
+		cmp	-1(R1),	#100200		;
+		beq	1$			;
+		mov	#227, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка movb	#200, 0(R2)
+						; или	 movb	(R2)+, -(R1)
+1$:		cmp	R1, R2			;
+		beq	cmpb1			;
+etstb1:		mov	#230, -(R5) 		;
+		inc	-(R5)			; ошибка movb	(R2)+, -(R1)
+		halt				; или НПТ
+;_____________________________________________________________________________
+;
+cmpb1:		cmp	@R5, #64 		; тест 64, cmpb bisb
+		bne	ecmpb1			;
+		inc	@R5			;
+		mov	#temp2, R1		;
+		mov	#temp, R2		;
+		mov	#77, @R1 		;
+		movb	#377, R4		;
+		bisb	R4, @R2			;
+		jsr	PC, @#$cc10		;
+		cmpb	R4, @R2			;
+		beq	1$			;
+		mov	#231, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		cmpb	@R1, @R2		;
+		bpl	2$			;
+		mov	#232, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка cmpb	@R1, @R2
+						;
+2$:		cmpb	@R2, @R1		;
+		bmi	bicb1			;
+ecmpb1:		mov	#233, -(R5) 		;
+		inc	-(R5)			; ошибка cmpb	@R1, @R2
+		halt				; или НПТ
+;_____________________________________________________________________________
+;
+bicb1:		cmp	@R5, #65 		; тест 65, bicb bitb
+		beq	1$			;
+		mov	#234, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+   						;
+1$:		inc	@R5			;
+		mov	#temp, R3		;
+		movb	#377, @R3		;
+		mov	#temp1, R0		;
+		mov	R0, R1			;
+		movb	#252, (R1)+ 		;
+		scc				;
+		bicb	0(R0), @R3		;
+		jsr	PC, @#$cc1		;
+		bitb	-1(R1),	@R3		;
+		beq	2$			;
+		mov	#235, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bitb -1(R1), @R3
+						;
+2$:		bitb	#125, @R3 		;
+		jsr	PC, @#$cc1		;
+		bisb	-(R1), @R3		;
+		bmi	3$			;
+		mov	#236, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bisb -(R1), @R3
+						;
+3$:		mov	#177, -(SP) 		;
+		bicb	(SP)+, @R3		;
+		jsr	PC, @#$cc11		;
+		bitb	#377, @R3		;
+		jsr	PC, @#$cc11		;
+		mov	R3, R0			;
+		mov	#temp1, @R0		;
+		mov	#377, @(R0)+		;
+		sevc				;		
+		bicb	@-(R0),	@0(R0)		;
+		jsr	PC, @#$cc5		;
+		cmp	(R0)+, #temp1		;
+		beq	4$			;	
+		mov	#237, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bicb @-(R0),	@0(R0)
+   						;
+4$:		tst	@-(R0)			;
+		beq	5$			;
+		mov	#240, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bicb @-(R0),	@0(R0)
+						;
+5$:		ccc				;
+		bicb	@R0, @R0		;
+		jsr	PC, @#$cc4		;
+;_____________________________________________________________________________
+;
+incb1:		cmp	@R5, #66 		; тест 66, incb decb
+		bne	eincb1			;
+		inc	@R5			;
+		mov	#temp, R4		;
+		movb	#177, @R4 		;
+		sec				;
+		incb	@R4			;
+		jsr	PC, @#$cc13		;
+		mov	#376, @R4 		;
+		mov	#$cc11,	R0		;
+		incb	(R4)+			;
+		jsrR0				; jsr PC, (R0)+ избегаем ошибки Z
+						;
+		tstb	-(R4)			;
+		tst	-(SP)			;
+		mov	R4, (SP)+		;
+		clc				;
+		incb	@-(SP)			;
+		jsr	PC, @#$cc4		;
+		cmpb	@(SP)+,	@(R4)+		;
+		sec				;
+		incb	-1(R4)			;
+		jsr	PC, @#$cc1		;
+		cmpb	-(R4), #1		;
+		beq	1$			;
+		mov	#241, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка incb	-1(R4)
+   						;
+1$:		sec				;
+		decb	@R4			;
+		jsr	PC, @#$cc5		;
+		decb	(R4)+			;
+		jsr	PC, -(R0)		;
+		movb	#200, -1(R4) 		;
+		decb	-(R4)			;
+		jsr	PC, 177650(R0)		;
+		decb	0(R4)			;
+		jsr	PC, @#$cc1		;
+		cmpb	0(R4), #176 		;
+		beq	comb1			;
+						;
+eincb1:		mov	#242, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка decb -(R4) или НПТ
+;_____________________________________________________________________________
+;
+comb1:		cmp	@R5, #67 		; тест 67, comb
+		beq	1$			;
+		mov	#243, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp, R3		;
+		mov	#temp1, R4		;
+		mov	#252, @R4 		;
+		movb	(R4)+, @R3		;
+		scc				;
+		comb	@R3			;
+		jsr	PC, @#$cc1		;
+		cmpb	#125, @R3 		;	
+		beq	2$			;
+		mov	#244, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка comb @R3
+						;
+2$:		scc				;
+		comb	@R3			;
+		jsr	PC, @#$cc11		;
+		mov	R4, R0			;
+		cmpb	-1(R0),	@R3		;
+		beq	3$			;
+		mov	#245, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		movb	#377, (R4)+		;
+		movb	-(R4), @R3		;
+		scc				;
+		comb	@R3			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+negb1:		cmp	@R5, #70 		; тест 70, negb
+		bne	enegb1			;
+		inc	@R5			;
+		mov	#temp, R0		;
+		movb	#1, @R0			;
+		negb	@R0			;
+		jsr	PC, @#$cc11		;
+		cmpb	#377, @R0		;
+		beq	1$			;
+		mov	#246, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка negb @R0
+						;
+1$:		mov	#200, @R0 		;
+		negb	@R0			;
+		jsr	PC, @#$cc13		;
+		cmpb	#200, @R0 		;
+		beq	rolb1			;	
+						;
+enegb1:		mov	#247, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+rolb1:		cmp	@R5, #71 		; тест 71, rolb
+		bne	erolb1			;
+		inc	@R5			;
+		mov	#temp1, R1		;
+		movb	#40, @R1 		;
+		ccc				;
+		rolb	@R1			;
+		rolb	@R1			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, @R1 		;
+		beq	1$			;
+		mov	#250, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rolb	@R1
+						;
+1$:		rolb	@R1			;
+		jsr	PC, @#$cc7		;
+		rolb	@R1			;
+		cmpb	#1, @R1			;
+		beq	rorb1			;
+						;
+erolb1:		mov	#251, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rolb (R1) или НПТ
+;_____________________________________________________________________________
+;
+rorb1:		cmp	@R5, #72 		; тест 72, rorb
+		bne	erorb1			;
+		inc	@R5			;
+		mov	#temp1, R2		;
+		movb	#4, @R2			;
+		ccc				;
+		rorb	@R2			;
+		rorb	@R2			;
+		cmpb	#1, @R2			;
+		beq	1$			;
+		mov	#252, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rorb (R2)
+						;
+1$:		rorb	@R2			;
+		jsr	PC, @#$cc7		;
+		rorb	@R2			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, @R2 		;
+		beq	aslb1			;
+						;
+erorb1:		mov	#253, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rorb (R2) или НПТ
+;_____________________________________________________________________________
+;
+aslb1:		cmp	@R5, #73 		; тест 73, aslb
+		beq	1$			;
+		mov	#254, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp1, R3		;
+		movb	#40, @R3 		;
+		ccc				;
+		aslb	@R3			;
+		aslb	@R3			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, @R3 		;
+		beq	2$			;
+		mov	#255, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка aslb (R3)
+						;
+2$:		aslb	@R3			;
+		jsr	PC, @#$cc7		;
+		aslb	@R3			;
+		jsr	PC, @#$cc4		;
+;_____________________________________________________________________________
+;
+asrb1:		cmp	@R5, #74 		; тест 74, asrb
+		bne	easrb1			;
+		inc	@R5			;
+		mov	#temp1, R4		;
+		mov	#temp2, R3		;
+		movb	#4, @R4			;
+		ccc				;
+		asrb	@R4			;
+		asrb	@R4			;
+		cmpb	#1, @R4			;
+		beq	1$			;
+		mov	#256, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		asrb	@R4			;
+		jsr	PC, @#$cc7		;
+		asrb	@R4			;
+		jsr	PC, @#$cc4		;
+		movb	#202, @R3 		;
+		asrb	@R3			;
+		asrb	@R3			;
+		jsr	PC, @#$cc11		;
+		cmpb	#340, @R3 		;
+		beq	adcb1			;
+						;
+easrb1:		mov	#257, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка asrb (R3) или НПТ
+;_____________________________________________________________________________
+;
+adcb1:		cmp	@R5, #75 		; тест 75
+		beq	1$			;
+		mov	#260, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+   						;
+1$:		inc	@R5			;
+		mov	#temp2, R0		;
+		clrb	@R0			;
+		ccc				;
+		adcb	@R0			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		adcb	@R0			;
+		sec				;
+		adcb	@R0			;
+		jsr	PC, @#$cc0		;
+		cmpb	#2, @R0			;
+		beq	2$			;
+		mov	#261, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка adcb (R0)
+						;
+2$:		movb	#177, @R0 		;
+		sec				;
+		adcb	@R0			;
+		jsr	PC, @#$cc12		;
+		cmpb	#200, @R0 		;
+		beq	3$			;	
+		mov	#262, -(R5) 		;	
+		inc	-(R5)			;
+		halt				; ошибка adcb (R0)
+						;
+3$:		movb	#377, @R0		;
+		sec				;
+		adcb	@R0			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+sbcb1:		cmp	@R5, #76 		; тест 76, sbcb
+		beq	1$			;
+		mov	#263, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp2, R1		;
+		movb	#3, @R1			;
+		ccc				;
+		sbcb	@R1			;
+		jsr	PC, @#$cc0		;
+		cmpb	#3, @R1			;
+		beq	2$			;
+		mov	#264, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbcb (R1)
+						;
+2$:		sec				;
+		sbcb	@R1			;
+		sec				;
+		sbcb	@R1			;
+		jsr	PC, @#$cc0		;
+		cmpb	#1, @R1			;
+		beq	3$			;
+		mov	#265, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbcb (R1)
+						;
+3$:		sec				;
+		sbcb	@R1			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		sbcb	@R1			;
+		jsr	PC, @#$cc11		;
+		cmpb	#377, @R1		;
+		beq	4$			;
+		mov	#266, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbcb (R1)
+						;
+4$:		movb	#200, @R1 		;
+		sec				;
+		sbcb	@R1			;
+		jsr	PC, @#$cc2		;
+.eot						;
+;_____________________________________________________________________________
+;
+; Команды со словами, все методы адресации кроме регистрового
+;
+tst1:		cmp	@R5, #77 		; тест 77, tst clr mov
+		beq	1$			;
+		mov	#267, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен пордяок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp, R1		;
+		mov	#temp1, R0		;
+		scc				;
+		clr	@R0			;
+		jsr	PC, @#$cc4		;
+		tst	(R0)+			;
+		jsr	PC, @#$cc4		;
+		movR0m				; mov	R0, -(R0) избегаем ошибки Z
+						;
+		mov	#-1, @(R0)+		;
+		mov	@-2(R0), @R1		;
+		jsr	PC, @#$cc10		;
+		tst	@R1			;
+		jsr	PC, @#$cc10		;
+;_____________________________________________________________________________
+;
+cmp1:		cmp	@R5, #100 		; тест 100, cmp bis
+		bne	ecmp1			;
+		inc	@R5			;
+		mov	#temp1, R2		;
+		mov	#temp, R0		;
+		mov	#-1, (R0)+		;
+		bis	-(R0), (R2)		;
+		jsr	PC, @#$cc10		;
+		cmp	(R2)+, #-1		;
+		beq	1$			;
+		mov	#270, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка cmp (R2)+, #-1
+						;
+1$:		cmp	R2, #temp2		;
+		beq	2$			;
+		mov	#271, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+2$:		cmp	#77, -(R2) 		; 
+		jsr	PC, @#$cc1		;
+		cmp	#77777,	(R2)+		;
+		jsr	PC, @#$cc13		;
+		cmp	-(R2), #77777		;
+		jsr	PC, @#$cc10		;
+		mov	#52525,	temp2		;
+		mov	#temp2, temp1		;
+		mov	#adr, R4		;
+		mov	#adr1, @R4		;
+		mov	#125252, @(R4)+		;
+		bis	@177776(R4), @(R2)+	;
+		mov	R2, R0			;
+		cmp	@-(R0),	#-1		;
+		beq	3$			;
+		mov	#272, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bis @177776(R4), @(R2)+
+						;
+3$:		cmp	R2, #temp2		;
+		beq	4$			;
+		mov	#273, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+4$:		clr	-(R0)			;
+		mov	R0, temp2		;
+		cmp	(R0)+, (R0)+		;
+		bis	@-(R0),	@2(R0)		;
+		cmp	#temp, temp		;
+		beq	bic1			;
+						;
+ecmp1:		mov	#274, -(R5) 		; ошибка bis @-(R0), @2(R0)
+		inc	-(R5)			; или cmp #temp, temp
+		halt				; или НПТ
+;_____________________________________________________________________________
+;
+bic1:		cmp	@R5, #101 		; тест 101, bic bit
+		bne	ebic1			;
+		inc	@R5			;
+		mov	#temp, R3		;
+		mov	#-1, @R3		;
+		mov	#adr, R4		;
+		mov	#adr1, @R4		;
+		mov	@R3, @(R4)+		;
+		mov	#temp1, R0		;
+		mov	#125252, @R0		;
+		scc				;
+		bic	(R0)+, @R3		;
+		jsr	PC, @#$cc1		;
+		bit	-(R0), @R3		;
+		beq	1$			;
+		mov	#275, -(R5) 		; 
+		inc	-(R5)			; ошибка bic (R0)+, @R3
+		halt				; или bit -(R0), @R3
+						;
+1$:		bit	#52525,	@R3		;
+		jsr	PC, @#$cc1		;
+		bis	0(R0), @R3		;
+		bmi	2$			;
+		mov	#276, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bis 0(R0), @R3
+						;
+2$:		mov	#77777,	(R0)+		;
+		mov	R0, R2			;
+		bic	177776(R2), @R3		;
+		jsr	PC, @#$cc11		;
+		cmp	R0, #temp2		;
+		beq	3$			;
+		mov	#277, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка bic 177776(R2), @R3 
+						;
+3$:		movR0p				; mov R0, (R0)+	избегаем ошибки Z
+		sevc				;
+		bic	@-(R0),	R0		;
+		jsr	PC, @#$cc5		;
+		bit	@177776(R4), @R3	;
+		jsr	PC, @#$cc11		;
+		mov	#125252, -(SP)		;
+		mov	@177776(R4), (R3)+	;
+		bic	0(SP), -(R3)		;
+		cmp	(R3)+, #52525		;
+		beq	4$			;
+		mov	#300, -(R5) 		;
+		inc	-(R5)			; ошибка bic 0(SP), -(R3)
+		halt				; или bit @177776(R4), @R3
+						;
+4$:		mov	#tps, R0		;
+		mov	R3, -(R0)		;
+		mov	-(R3), @(R0)+		;
+		sevc				;
+		bit	@-(R0),	(SP)+		;
+		jsr	PC, @#$cc5		;
+		cmp	SP, #start		;
+		beq	inc1			;
+						;
+ebic1:		mov	#301, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+inc1:		cmp	@R5, #102 		; тест 102, inc dec
+		beq	1$			;
+		mov	#302, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp1, R4		;
+		mov	#77777,	@R4		;
+		sec				;
+		inc	@R4			;
+		jsr	PC, @#$cc13		;
+		mov	#177776, @R4		;
+		mov	#temp, R0		;
+		mov	#$cc11,	@R0		;
+		inc	@R4			;
+		jsr	PC, @(R0)+		;
+		inc	@R4			;
+		jsr	PC, @#$cc5		;
+		inc	@R4			;
+		jsr	PC, @#$cc1		;
+		cmp	0(R4), #1		;
+		beq	2$			;
+		mov	#303, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка inc (R4)
+						;
+2$:		sec				;
+		dec	@R4			;
+		jsr	PC, @#$cc5		;
+		dec	@R4			;
+		jsr	PC, @177776(R0)		;
+		mov	#100000, @R4		;
+		dec	@R4			;
+		jsr	PC, @#$cc3		;
+		dec	@R4			;
+		jsr	PC, @#$cc1		;
+;_____________________________________________________________________________
+;
+com1:		cmp	@R5, #103 		; тест 103, com
+		beq	1$			;
+		mov	#304, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+   						;
+1$:		inc	@R5			;
+		mov	#temp1, R3		;
+		mov	#125252, @R3		;
+		scc				;
+		com	0(R3)			;
+		jsr	PC, @#$cc1		;
+		cmp	#52525,	@R3		;
+		beq	2$			;
+		mov	#305, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка com 0(R3)
+						;
+2$:		scc				;
+		com	(R3)+			;
+		jsr	PC, @#$cc11		;
+		cmp	#125252, -(R3)		;
+		beq	3$			;
+		mov	#306, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка com (R3)+
+						;
+3$:		mov	R3, R0			;
+		mov	#-1, @R0		;
+		scc				;
+		com	@R0			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+neg1:		cmp	@R5, #104 		; тест 104, neg
+		bne	eneg1			;
+		inc	@R5			;
+		mov	#temp1, R4		;
+		mov	#1, (R4)+		;
+		mov	R4, R2			;
+		mov	#100000, 0(R2)		;
+		neg	-(R4)			;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, (R4)+		;
+		beq	1$			;
+		mov	#307, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка neg -(R4)
+						;
+1$:		mov	0(R4), -(R4)		;
+		neg	@R4			;
+		jsr	PC, @#$cc13		;
+		cmp	0(R2), @R4		;
+		beq	rol1			;
+						;
+eneg1:		mov	#310, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка neg (R4) или НПТ
+;_____________________________________________________________________________
+;
+rol1:		cmp	@R5, #105 		; тест 105, rol
+		bne	erol1			;
+		inc	@R5			;
+		mov	#temp2, R1		;
+		mov	#20000,	@R1		;
+		ccc				;
+		rol	(R1)+			;
+		rol	-(R1)			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, @R1		;
+		beq	1$			;
+		mov	#311, -(R5) 		;
+		inc	-(R5)			; ошибка rol (R1)+
+		halt				; или rol -(R1)
+						;
+1$:		rol	0(R1)			;
+		jsr	PC, @#$cc7		;
+		mov	R1, R2			;
+		rol	@R2			;
+		cmp	#1, @R1			;
+		beq	ror1			;
+						;
+erol1:		mov	#312, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка rol (R2) или НПТ
+;_____________________________________________________________________________
+;
+ror1:		cmp	@R5, #106 		; тест 106, ror
+		bne	eror1			;
+		inc	@R5			;
+		mov	#temp2, R2		;
+		mov	#4, @R2			;
+		ccc				;
+		ror	@R2			;
+		ror	@R2			;
+		cmp	#1, @R2			;
+		beq	1$			;
+		mov	#313, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка ror (R2)
+   						;
+1$:		ror	@R2			;
+		jsr	PC, @#$cc7		;
+		ror	@R2			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, @R2		;
+		beq	asl1			;
+						;
+eror1:		mov	#314, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка ror (R2) или НПТ
+;_____________________________________________________________________________
+;
+asl1:		cmp	@R5, #107 		; тест 107, asl
+		beq	1$			;
+		mov	#315, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp2, R3		;
+		mov	#20000,	@R3		;
+		ccc				;
+		asl	@R3			;
+		asl	@R3			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, @R3		;
+		beq	2$			;
+		mov	#316, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка asl (R3)
+						;
+2$:		asl	@R3			;
+		jsr	PC, @#$cc7		;
+		asl	@R3			;
+		jsr	PC, @#$cc4		;
+;_____________________________________________________________________________
+;
+asr1:		cmp	@R5, #110 		; тест 110, asr
+		bne	easr1			;
+		inc	@R5			;
+		mov	#temp2, R4		;
+		mov	#temp, R3		;
+		mov	#4, @R4			;
+		ccc				;
+		asr	@R4			;
+		asr	@R4			;
+		cmp	#1, @R4			;
+		beq	1$			;
+		mov	#317, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+1$:		asr	@R4			;
+		jsr	PC, @#$cc7		;
+		asr	@R4			;
+		jsr	PC, @#$cc4		;
+		mov	#100002, @R3		;
+		asr	@R3			;
+		asr	@R3			;
+		jsr	PC, @#$cc11		;
+		cmp	#160000, @R3		;
+		beq	adc1			;
+						;
+easr1:		mov	#320, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка asr (R3) или НПТ
+;_____________________________________________________________________________
+;
+adc1:		cmp	@R5, #111 		; тест 111, adc
+		beq	1$			;
+		mov	#321, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+   						;
+1$:		inc	@R5			;
+		mov	#temp, R0		;
+		clr	@R0			;
+		ccc				;
+		adc	@R0			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		adc	@R0			;
+		sec				;
+		adc	@R0			;
+		jsr	PC, @#$cc0		;
+		cmp	#2, @R0			;
+		beq	2$			;
+		mov	#322, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка adc (R0)
+						;
+2$:		mov	#77777,	@R0		;
+		sec				;
+		adc	@R0			;
+		jsr	PC, @#$cc12		;
+		cmp	#100000, @R0		;
+		beq	3$			;
+		mov	#323, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		mov	#-1, @R0		;
+		sec				;
+		adc	@R0			;
+		jsr	PC, @#$cc5		;
+;_____________________________________________________________________________
+;
+sbc1:		cmp	@R5, #112 		; тест 112, sbc
+		beq	1$			;
+		mov	#324, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	@R5			;
+		mov	#temp, R1		;
+		mov	#3, @R1			;
+		ccc				;
+		sbc	@R1			;
+		jsr	PC, @#$cc0		;
+		cmp	#3, @R1			;
+		beq	2$			;
+		mov	#325, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbc (R1)
+   						;
+2$:		sec				;
+		sbc	@R1			;
+		sec				;
+		sbc	@R1			;
+		jsr	PC, @#$cc0		;
+		cmp	#1, @R1			;
+		beq	3$			;
+		mov	#326, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sbc (R1)
+   						;
+3$:		sec				;
+		sbc	@R1			;
+		jsr	PC, @#$cc4		;
+		sec				;
+		sbc	@R1			;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, @R1		;
+		beq	4$			;
+		mov	#327, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+4$:		mov	#100000, @R1		;
+		sec				;
+		sbc	@R1			;
+		jsr	PC, @#$cc2		;
+;_____________________________________________________________________________
+;
+sxt1:		cmp	@R5, #113 		; тест 113, sxt
+		bne	esxt1			;
+		inc	@R5			;
+		mov	#temp1, R2		;
+		clr	@R2			;
+		scc				;
+		clnz				;
+		sxt	@R2			;
+		jsr	PC, @#$cc5		;
+		tst	@R2			;
+		beq	1$			;
+		mov	#330, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sxt (R2)
+   						;
+1$:		senvc				;
+		sxt	@R2			;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, @R2		;
+		beq	swab1			;
+						;
+esxt1:		mov	#331, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+;_____________________________________________________________________________
+;
+swab1:		cmp	@R5, #114 		; тест 114, swab
+		bne	eswab1			;
+		inc	@R5			;
+		mov	#temp2, R3		;
+		mov	#125125, @R3		;
+		scc				;
+		cln				;
+		swab	@R3			;
+		jsr	PC, @#$cc10		;
+		cmp	#52652,	@R3		;
+		beq	1$			;
+		mov	#332, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка swab (R3)
+						;
+1$:		mov	#377, @R3		;
+		scc				;
+		clz				;
+		swab	0(R3)			;
+		jsr	PC, @#$cc4		;
+		cmp	#177400, @R3		;
+		beq	xor1			;
+						;
+eswab1:		mov	#333, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка swab (R3) или НПТ
+;_____________________________________________________________________________
+;
+xor1:		cmp	@R5, #115 		; тест 115, xor
+		bne	exor1			;
+		inc	@R5			;
+		mov	#-1, R4			;
+		mov	#-1, temp1		;
+		scc				;
+		xor	R4, temp1		;
+		jsr	PC, @#$cc5		;
+		mov	#77777,	temp1		;
+		mov	#temp1, R0		;
+		sevc				;
+		clz				;
+		xor	R4, @R0			;
+		jsr	PC, @#$cc11		;
+		mov	#125252, R1		;
+		mov	#52525,	(R0)+		;
+		scc				;
+		xor	R1, -(R0)		;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, @#temp1		;
+		beq	add1			;
+						;
+exor1:		mov	#334, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка xor R1, -(R0) или НПТ
+;_____________________________________________________________________________
+;
+add1:		cmp	@R5, #116 		; тест 116, add
+		bne	eadd1			;
+		inc	@R5			;
+		mov	#temp2, R0		;
+		mov	#temp, R1		;
+		mov	#21421,	temp2		;
+		mov	@R0, @R1		;
+		add	@R0, @R1		;
+		jsr	PC, @#$cc0		;
+		cmp	#43042,	temp		;
+		beq	1$			;
+		mov	#335, -(R5)		;
+		inc	-(R5)			;
+		halt				; ошибка add (R0), (R1)
+						;
+1$:		clr	@R0			;
+		addR0				; add R0, (R0)+	избегаем ошибки Z
+		cmp	-(R0), #temp2		;
+		beq	2$			;
+		mov	#336, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка add R0, (R0)+
+						;		
+2$:		mov	#156357, temp2		;
+		mov	(R0)+, @R1		;
+		add	-(R0), @R1		;
+		jsr	PC, @#$cc11		;
+		cmp	#134736, temp		;
+		beq	3$			;
+		mov	#337, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		mov	#100000, temp2		;
+		mov	@R0, 0(R1)		;
+		add	0(R0), @R1		;
+		jsr	PC, @#$cc7		;
+		mov	#21421,	temp1		;
+		mov	#temp1, 0(R0)		;
+		mov	#156357, @R1		;
+		mov	R0, R4			;
+		add	@0(R4),	@R1		;
+		jsr	PC, @#$cc5		;
+		neg	@(R0)+			;
+		mov	#21421,	-(SP)		;
+		add	@-(R0),	0(SP)		;
+		jsr	PC, @#$cc5		;
+		tst	(SP)+			;
+		beq	4$			;
+		mov	#340, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка add @-(R0), 0(SP)
+						;
+4$:		mov	#137777, temp2		;
+		add	#137777, temp2		;
+		jsr	PC, @#$cc3		;
+		cmp	#77776,	temp2		;
+		beq	sub1			;
+						;
+eadd1:		mov	#341, -(R5) 		; ошибка add #137777, temp2
+		inc	-(R5)			; или НПТ
+		halt				;
+;_____________________________________________________________________________
+;
+sub1:		cmp	@R5, #117 		; тест 117, sub
+		bne	esub1			;
+		inc	@R5			;
+		mov	#temp, R2		;
+		mov	#temp1, R3		;
+		mov	#21421,	temp		;
+		mov	#-21421, temp1		;
+		sub	@R2, @R3		;
+		jsr	PC, @#$cc10		;
+		cmp	#134736, temp1		;
+		beq	1$			;
+		mov	#342, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sub (R2), (R3)
+						;
+1$:		mov	#21421,	temp1		;
+		sub	@R2, @R3		;
+		beq	2$			;
+		mov	#343, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sub (R2), (R3)
+						;
+2$:		mov	#-1, temp1		;
+		mov	#77777,	temp		;
+		sub	@R3, @R2		;
+		jsr	PC, @#$cc13		;
+		cmp	#100000, temp		;
+		beq	3$			;
+		mov	#344, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка sub (R2), (R3)
+						;
+3$:		mov	#-1, @R2		;
+		sub	@R3, @R2		;
+		jsr	PC, @#$cc4		;
+		mov	#77777,	temp		;
+		sub	#77777,	temp		;
+		jsr	PC, @#$cc4		;
+		tst	temp			;
+		beq	sob1			;
+						;
+esub1:		mov	#345, -(R5) 		;
+		inc	-(R5)			; ошибка sub #77777, temp
+		halt				; или НПТ
+;_____________________________________________________________________________
+;
+sob1:		cmp	@R5, #120 		; тест 120, sob
+		bne	esob1			;
+		inc	@R5			;
+		mov	#12, R0			;
+		clr	R1			;
+						;
+1$:		inc	R1			;
+		cmp	R1, #12			;
+		ble	2$			;
+		mov	#346, -(R5) 		;
+		inc	-(R5)			;
+		halt				; переход при (R0) = 0
+						;
+2$:		scc				;
+		sob	R0, 1$			;		
+		jsr	PC, @#$cc17		;
+		tst	R0			;
+		beq	3$			;
+		mov	#347, -(R5) 		;
+		inc	-(R5)			;
+		halt				;
+						;
+3$:		cmp	#12, R1			;
+		beq	4$			;	
+		mov	#350, -(R5) 		;
+		inc	-(R5)			;
+		halt				; число переходов != 12
+						;
+4$:		mov	#10, R4			;
+5$:		sob	R4, 5$			;
+		tst	R4			;
+		beq	pswn0			;
+						;
+esob1:		mov	#351, -(R5) 		;
+		inc	-(R5)			; нет перехода при R4 != 0
+		halt				; или НПТ
+;_____________________________________________________________________________
+;
+pswn0:		cmp	@R5, #121 		; тест 121, mtps mfps
+		bne	epswn0			;
+		inc	@R5			;
+		mov	#temp, R0		;
+		mov	#temp1, R1		;
+		mov	#-1, @R1		;
+		clr	@R0			;
+		mtps	@R0			;
+		jsr	PC, @#$cc0		;
+		mfps	@R1			;
+		jsr	PC, @#$cc4		;
+		cmp	#177400, @R1		;
+		beq	1$			;
+		mov	#352, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка mfps (R1)
+						;
+1$:		clr	@R1			;
+		mtps	#377			;
+		jsr	PC, @#$cc17		;
+		mfps	temp1			;
+		jsr	PC, @#$cc11		;
+		cmp	#357, temp1		;
+		beq	btwrd			;
+						;
+epswn0:		mov	#353, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка mfps/mtps или НПТ
+;_____________________________________________________________________________
+;
+btwrd:		cmp	@R5, #122 		; тест 122, особые случаи
+		bne	ebtwrd			; выполнения байтовых команд
+		inc	@R5			;
+		clr	R0			;
+		scc				;
+		movb	#200, R0 		;
+		jsr	PC, @#$cc11		;
+		cmp	#177600, R0		;
+		beq	1$			;
+		mov	#354, -(R5) 		;
+		inc	-(R5)			;
+		halt				; movb не расширила знак
+						;
+1$:		scc				;
+		mov	#-1, R0			;
+		movb	#0, R0			;
+		jsr	PC, @#$cc5		;
+		tst	R0			;
+		beq	2$			;
+		mov	#355, -(R5) 		;
+		inc	-(R5)			;
+		halt				;  movb не расширила знак
+						;
+2$:		mov	#temp2, R4		;
+		mov	#377, @R4		;
+		mov	#start-2, SP		;
+		movb	0(R4), (SP)+		;
+		cmp	#start, SP		;
+		beq	3$			;
+		mov	#356, -(R5) 		;
+		inc	-(R5)			;
+		halt				; SP не увеличился на 2
+						;
+3$:		cmpb	-(SP), #377		;
+		beq	4$			;
+		mov	#357, -(R5) 		;
+		inc	-(R5)			;
+		halt				; в стеке не 377
+						;
+4$:		cmp	#start-2, SP		;
+		beq	5$			;
+		mov	#360, -(R5) 		;
+		inc	-(R5)			;
+		halt				; SP не уменьшился на 2
+						;
+5$:		mov	0(R4), temp		;
+		tst	(SP)+			;
+		scc				;
+		movb	-(SP), temp+1		;
+		jsr	PC, @#$cc11		;
+		cmp	#-1, temp		;
+		beq	6$			;
+		mov	#361, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка movb -(SP), temp+1
+						;
+6$:		clr	temp			;
+		clc				;
+		comb	temp+1			;
+		jsr 	PC, @#$cc11		;
+		cmp	#177400, temp		;
+		beq	next			;
+						;
+ebtwrd:		mov	#362, -(R5) 		;
+		inc	-(R5)			;
+		halt				; ошибка comb temp+1 или НПТ
+;_____________________________________________________________________________
+;
+next:		cmp	@R5, #123 		; тест 123, вывод сообщения
+		beq	1$			;
+		mov	#363, -(R5) 		;
+		inc	-(R5)			;
+		halt				; нарушен порядок тестов
+						;
+1$:		inc	$pass			;
+		cmpb	$pass, #1		;
+		bne	get42			;
+		iot				;
+		endpas				;
+;_____________________________________________________________________________
+	
+get42:		mov	@#42, R0		;
+		beq	doagn			;
+$endad:		jsr	PC, @R0			;
+		nop				;
+		nop				;
+		nop				;
+						;
+doagn:		clr	$testn			;
+return:		jmp	start			;
+						;
+pwrdn:		mov	#pwrup, @#24		;
+		halt				; нет прерывания
+						;
+pwrup:		mov	#start, SP		;
+		mov	#pwrdn, @#24		;
+		iot				;
+		.word	power			;
+		br	doagn			;
+;_____________________________________________________________________________
+;
+; Точка обработки IOT -  печать сообщения
+;
+type:		bitb	#40, @#$envm		;
+		bne	3$			;
+		mov	@0(SP),	R3		;
+						;
+1$:		tstb	@R3			;
+		beq	3$			;
+2$:		tstb	@tps			;
+		bpl	2$			;
+		movb	(R3)+, @tpb		;
+		br	1$			;
+3$:		add	#2, (SP)		;
+		rtt				;
+;_____________________________________________________________________________
+;
+; Проверка признаков
+;
+$cc0:		ble	1$			;
+		bmi	1$			;
+		bcc	2$			;
+1$:		mov	#364, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0000
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+$cc1:		ble	1$			;
+		bmi	1$			;
+		bcs	2$			;
+1$:		mov	#365, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0001
+2$:		rts 	PC			;
+;_____________________________________________________________________________
+;
+$cc2:		bmi	1$			;
+		blos	1$			;
+		bvs	2$			;
+1$:		mov	#366, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0010
+2$:		rts 	PC			;
+;_____________________________________________________________________________
+;
+$cc3:		bmi	1$			;
+		beq	1$			;
+		bvc	1$			;
+		bcs	2$			;
+						;
+1$:		mov	#367, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0011
+2$:		rts 	PC			;
+;_____________________________________________________________________________
+;
+$cc4:		bmi	1$			;
+		bne	1$			;
+		bvs	1$			;
+		bcc	2$			;
+1$:		mov	#370, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0100
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+$cc5:		bmi	1$			;
+		bne	1$			;
+		bvs	1$			;
+		bcs	2$			;
+  						;
+1$:		mov	#371, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0101
+2$:		rts 	PC			;
+;_____________________________________________________________________________
+;
+$cc7:		bmi	1$			;
+		bne	1$			;
+		bvc	1$			;
+		bcs	2$			;
+1$:		mov	#372, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b0111
+2$:		rts 	PC			;
+;_____________________________________________________________________________
+;
+$cc10:		bpl	1$			;
+		blos	1$			;
+		bvc	2$			;
+1$:		mov	#373, -(R5) ;		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b1000
+2$:		rts 	PC			;
+;_____________________________________________________________________________
+;
+$cc11:		bpl	1$			;
+		beq	1$			;
+		bvs	1$			;
+		bcs	2$			;
+1$:		mov	#374, -(R5) 		;	
+		inc	-(R5)			;
+		halt				; NZVC != 1'b1001
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+$cc12:		bpl	1$			;
+		blos	1$			;
+		bvs	2$			;
+						;
+1$:		mov	#375, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b1010
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+$cc13:		bpl	1$			;
+		ble	1$			;
+		bcs	2$			;
+1$:		mov	#376, -(R5) 		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b1011
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+$cc17:		bpl	1$			;
+		bne	1$			;
+		bvc	1$			;
+		bcs	2$			;
+1$:		mov	#377, -(R5)		;
+		inc	-(R5)			;
+		halt				; NZVC != 1'b1111
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+		.word	0 			;
+		.rept	128.			;
+		.word	0			;
+		.endr				;
+		.end				;
