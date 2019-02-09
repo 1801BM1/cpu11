@@ -127,6 +127,10 @@ begin
       sel_ram = 1'b1;
    end
 
+   if (~ad == 16'o177714)  // 7-segment outhex
+      sel_all = 1'b1;
+   if (~ad == 16'o177715)
+      sel_all = 1'b1;
    if (~ad == 16'o177560)
       sel_all = 1'b1;
    if (~ad == 16'o177564)

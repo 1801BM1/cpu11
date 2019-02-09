@@ -1,0 +1,2471 @@
+;
+; Тест команд расширенной арифметики процессора PDP-11, восстановлено
+; 1801BM1@gmail.com путем дизассемблирования теста 791402
+;_____________________________________________________________________________
+;
+		.title	t402            	; основной тест команд
+		.list	meb			;
+						;
+		R0	= %0			;
+		R1	= %1			;
+		R2	= %2			;
+		R3	= %3			;
+		R4	= %4			;
+		R5	= %5			;
+		SP	= %6			;
+		PC	= %7			;
+;_____________________________________________________________________________
+;
+		npass	= 3			; количество проходов теста
+						;	
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		. 	= offset		;
+	.if 	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc 					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff            			;
+		.word	0			;
+	.endc					;
+		.endm				;
+						;
+		.macro	error, num		; вывод кода ошибки в
+		jsr	PC, octerr		; восьмеричном виде
+		.word	num			; аргумент расположен
+		.endm				; за инструкцией вызова
+;_____________________________________________________________________________
+;
+		.asect      			;
+		. = 0				;
+						; вектор начального пуска
+		vect	0, entry		; для процессора 1801ВМ2
+;_____________________________________________________________________________
+;
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20, type		; печать строки по iot
+vec24:		vect	24, entry		; точка входа в тест
+		vect	30			;
+		vect	34			;
+						;
+		.word	4020			;
+w042:		.word	0			;
+		.word	430			;
+		.word	17026			;
+						;
+		vect	50			;
+		vect	54			;
+		vect	60			;
+		vect	64			;
+		vect	70			;
+		vect	74			;
+		vect	100			;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+;_____________________________________________________________________________
+;
+		.	= 200			; начальная точка входа в тест
+entry:		mov	#pwrdn, @#vec24		;
+		mov	#etable, R0		;
+1$:		clr	-(R0)			;
+		cmp	#$mail,	R0		;
+		bne	1$			;
+		mov	#npass, pcnt		;
+		jmp	start			;
+;_____________________________________________________________________________
+;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+;_____________________________________________________________________________
+;
+$mail:		.word	0			;
+$fatal:		.word	0			; номер ошибки
+$testn:		.word	0 			; номер теста
+$pass:		.word	0			; счетчик проходов
+						;
+etable:		.word	 0, 0, 0, 0		;
+numtt:		.byte 	0			; номер используемого терминала 0/1
+distt:		.byte	0			; маска 040 запрещает вывод на терминал
+						;
+w422:		.word	0			; управление проходами тестов
+		.word	0			;
+		.word	0			;
+						;
+$testa:		.word 	0			; номер успешного теста
+$qpsw:		.word	400			; переменная записи PSW после теста
+$apar0:		.word	3			; параметры/переменные теста ASH/ASHC
+$apar1:		.word	5			;
+$apar2:		.word	0			;
+$apar3:		.word	14			;
+$apar4:		.word	0			;
+$apar5:		.word	0			;
+						;
+csym:		.byte	0			; счетчик символов octerr
+cout:		.byte	0			; счетчик выводов octerr
+		.byte	7			;
+		.byte	0			;
+						;
+w454:		.word 	177771			; индексы тестовых сдвигов ASH
+w456:		.word	w454			;
+		.word	177772			;
+		.word	177777			;
+						;
+w464:		.word	40000			;
+w466:		.word	w464			; 
+		.word	40000			;
+		.word	177776			;
+						;
+w474:		.word	2			;
+w476:		.word	w474			;
+		.word	2			;
+						;
+tpv:		.word	64			; вектор терминала
+tps:		.word	177566			; регистр данных терминала
+tpb:		.word	177564			; регистр статус терминала
+						;
+$crlf:		.ascii	<15><12>		; перевод строки
+$spa3:		.ascii	<40><40><40><0> 	; три пробела
+power:		.ascii	<12>			; авария питания
+		.ascii	<15>\nACLO\<0>		;
+		.word	0			;
+;_____________________________________________________________________________
+;
+		vect	530			;
+		vect	534			;
+		vect	540			;
+		vect	544			;
+		vect	550			;
+		vect	554			;
+		vect	560			;
+		vect	564			;
+		vect	570			;
+		vect	574			;
+stack:						;
+;_____________________________________________________________________________
+;
+start:		mov	#$testn, R5		;
+		clr	@#$testa                ;
+		mov	#1, @R5			;
+		mov	#stack,	SP		;
+		mtps	#0			; разрешили прерывания
+		bitb	#1, @#numtt		; 
+		beq	1$			;
+		mov	#tps+4, R0		; записываем адреса
+		mov	#176564, -(R0)		; терминала для вывода
+		mov	#176566, -(R0)		;
+		mov	#74, -(R0) 		; вектор 74
+		                		;
+1$:		mov	#1, @#$apar0		; готовим параметры теста
+		clr	@#$apar1		; для первого прохода ASH
+		mov	#1, @#$apar2		; (1, 0, 1, nzvc)
+		clr	@#$apar3		;
+;_____________________________________________________________________________
+;
+; Многозаходный тест инструкции ASH, с различными пераметрами
+;
+; apar0 - модель для сдвига
+; apar1 - параметр сдвига (положительный влево, отрицательный вправо)
+; apar2 - модель для сравнения с результатом
+; apar3 - PSW с сравнения с PSW результата
+;
+tstash:		mov	PC, R1			;
+		mov	@#$apar0, R0		;
+		bit	#1, @#$pass		;
+		bne	1$			;
+		mov	@#$apar1, R1		;
+		ash	R1, R0			; метод адресации индекса
+		br	2$			; меняется взависимости от
+1$:		ash	$apar1, R0		; номера прохода теста
+2$:		mfps	@#$qpsw			;
+		cmpb	@#$apar3, @#$qpsw	;
+		beq	3$			;
+		error	1			;
+						;
+3$:		inc	@#$testa		;
+		cmp	@#$apar2, R0		;
+		beq	tst002			;
+err002:		error	2			;
+;_____________________________________________________________________________
+;
+tst002:		cmp	@R5, @#$testa		; проверка номера теста
+		bne	err002			;
+		inc	@R5			;
+		mov	PC, R1			;
+		cmp	@R5, #37		;
+		bge	1$			;
+		inc	@#$apar1		;
+		asl	$apar2			;
+		cmp	@R5, #20		;
+		bne	2$			; установка аргументов
+		jmp	tst020			; для теста 20
+1$:		jsr	PC, setash		; установка аргументов
+						; для тестов 37-50
+2$:		mov	PC, R3			;
+		mov	@#$apar0, R1		;
+		bit	#1, @#$pass		;
+		bne	3$			;
+		mov	@#$apar1, R2		;
+		ash	R2, R1			;
+		br	4$			;
+3$:		ash	$apar1, R1		;
+4$:		mfps	@#$qpsw			; проверка PSW результата
+		cmpb	@#$apar3, @#$qpsw	;
+		beq	5$			;
+		error	3			;
+						;
+5$:		inc	@#$testa		;
+		cmp	@#$apar2, R1		; проверка данных результата
+		beq	tst003			;
+err004:		error	4			;
+;_____________________________________________________________________________
+;
+tst003:		cmp	@R5, @#$testa		;
+		bne	err004			;
+		inc	@R5			;
+		mov	PC, R3			;
+		cmp	@R5, #37		;
+		bge	1$			;
+		inc	@#$apar1		;
+		asl	$apar2			;
+		cmp	@R5, #20		;
+		bne	2$			;
+		jmp	tst020			;
+1$:		jsr	PC, setash		;
+						;
+2$:		mov	PC, R1			;
+		mov	@#$apar0, R2		;
+		bit	#1, @#$pass		;
+		bne	3$			;
+		mov	@#$apar1, R3		;
+		ash	R3, R2			;
+		br	4$			;
+3$:		ash	$apar1, R2		;
+4$:		mfps	@#$qpsw			;
+		cmpb	@#$apar3, @#$qpsw	;
+		beq	tst004			;
+		error	5			;
+;_____________________________________________________________________________
+;
+tst004:		inc	@#$testa		;
+		cmp	@#$apar2, R2		;
+		beq	2$			;
+1$:		error	6			;
+2$:		cmp	@R5, @#$testa		;
+		bne	1$			;
+		inc	@R5			;
+		mov	PC, R1			;
+		cmp	@R5, #37		;
+		bge	3$			;
+		inc	@#$apar1		;
+		asl	$apar2			;
+		cmp	@R5, #20		;
+		bne	4$			;
+		jmp	tst020			;
+3$:		jsr	PC, setash		;
+						;
+4$:		mov	PC, R1			;
+		mov	@#$apar0, R3		;
+		bit	#1, @#$pass		;
+		bne	5$			;
+		mov	@#$apar1, R4		;
+		ash	R4, R3			;
+		br	6$			;
+						;
+5$:		ash	$apar1, R3		;
+6$:		mfps	@#$qpsw			;
+		cmpb	@#$apar3, @#$qpsw	;
+		beq	tst005			;
+		error	7
+;_____________________________________________________________________________
+;
+tst005:		inc	@#$testa		;
+		cmp	@#$apar2, R3		;
+		beq	2$			;
+1$:		error	10			;
+2$:		cmp	@R5, @#$testa		;
+		bne	1$			;
+		inc	@R5			;
+		mov	PC, R1			;
+		cmp	@R5, #37		;
+		bge	3$			;
+		inc	@#$apar1		;
+		asl	$apar2			;
+		cmp	@R5, #20		;
+		bne	4$			;
+		br	tst020			;
+3$:		jsr	PC, setash		;
+						;
+4$:		mov	PC, R3			;
+		mov	@#$apar0, R4		;
+		mov	R5, R1			;
+		bit	#1, @#$pass		;
+		bne	5$			;
+		mov	@#$apar1, R5		;
+		ash	R5, R4			;
+		br	6$			;
+						;
+5$:		ash	$apar1, R4		;
+6$:		mfps	@#$qpsw			;
+		cmpb	@#$apar3, @#$qpsw	;
+		beq	tst006			;
+		error	11			;
+;_____________________________________________________________________________
+;
+tst006:		inc	@#$testa		;
+		cmp	@#$apar2, R4		;
+		beq	2$			;
+1$:		error	12			;
+2$:		mov	R1, R5			;
+		cmp	@R5, @#$testa		;
+		bne	1$			;
+		inc	@R5			;
+		mov	PC, R1			;
+		cmp	@R5, #37		;
+		bge	3$			;
+		inc	@#$apar1		;
+		asl	$apar2			;
+		cmp	@R5, #20		;
+		bne	4$			;
+		br	tst020			;
+3$:		jsr	PC, setash		;
+						;	
+4$:		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	@#$apar0, R5		;
+		bit	#1, @#$pass		;
+		bne	5$			;
+		mov	@#$apar1, R0		;
+		ash	R0, R5			;
+		br	6$			;
+						;
+5$:		ash	$apar1, R5		;
+6$:		mfps	@#$qpsw			;
+		cmpb	@#$apar3, @#$qpsw	;
+		beq	tst007			;
+		error	13			;
+;_____________________________________________________________________________
+;
+tst007:		inc	@#$testa		;
+		cmp	@#$apar2, R5		;
+		beq	2$			;
+1$:		error	14			;
+2$:		cmp	@R1, @#$testa		;
+		bne	1$			;
+		mov	R1, R5			;
+		inc	@R5			;
+		mov	PC, R1			;
+		cmp	@R5, #37		;
+		bge	3$			;
+		inc	@#$apar1		;
+		asl	$apar2			;
+		cmp	@R5, #20		;
+		beq	tst020			;
+		br	4$			;
+3$:		jsr	PC, setash		;
+4$:		jmp	tstash			;
+;_____________________________________________________________________________
+;
+tst020:		mov	#40000,	@#$apar0	; установка параметров
+		mov	#177762, @#$apar1	; для теста 20 ASH
+		mov	#1, @#$apar2		;
+		jmp	tstash			;
+;_____________________________________________________________________________
+;
+; Установка параметров теста ASH взависимости от номера
+;
+setash:		cmp	@R5, #37		;
+		bne	1$			; 37 (0, 20, 0, nZvc)
+		clr	@#$apar0		;
+		mov	#20, @#$apar1		;
+		clr	@#$apar2		;
+		mov	#4, @#$apar3		;
+		rts	PC			;
+						;
+1$:		cmp	@R5, #40		; 
+		bne	2$			; 40 (0, 0, 0, nZvc)
+		clr	@#$apar1		;
+		rts	PC			;
+						;
+2$:		cmp	@R5, #41		;
+		bne	3$			; 41 (0, -20. 0, nZvc)
+		mov	#-20, @#$apar1		;
+		rts	PC			;
+						;
+3$:		cmp	@R5, #42		;
+		bne	4$			; 42 (100000, -17, -1, Nzvc)
+		mov	#100000, @#$apar0	;
+		inc	@#$apar1		;
+		dec	@#$apar2		;
+		mov	#10, @#$apar3		;
+		rts	PC			;
+						;
+4$:		cmp	@R5, #43		;
+		bne	5$			; 43 (125252, -1, 152525, Nzvc)
+		mov	#125252, @#$apar0	;
+		mov	#-1, @#$apar1		;
+		mov	#152525, @#$apar2	;
+		rts	PC			;
+						;
+5$:		cmp	@R5, #44		;
+		bne	6$			; 44 (125252, 1, 52524, nzVC)
+		mov	#1, @#$apar1		;
+		mov	#52524,	@#$apar2	;
+		mov	#3, @#$apar3		;	
+		rts	PC			;
+						;
+6$:		cmp	@R5, #45		;
+		bne	7$			; 45 (125252, -2, 165252, NzvC)
+		mov	#-2, @#$apar1		;
+		mov	#165252, @#$apar2	;
+		mov	#11, @#$apar3		;
+		rts	PC			;
+						;
+7$:		cmp	@R5, #46		;
+		bne	10$			; 46 (125252, 20, 0, nZVC)
+		mov	#-1, @#$apar0		;
+		mov	#20, @#$apar1		;
+		clr	@#$apar2		;
+		mov	#7, @#$apar3		;
+		rts	PC			;
+						;
+10$:		cmp	@R5, #47		;
+		bne	11$			;
+		dec	@#$apar1		; 47 (125252, 17, 100000, NzvC)
+		mov	#100000, @#$apar2	;
+		mov	#11, @#$apar3		;
+		rts	PC			;
+						;
+11$:		cmp	@R5, #50		;
+		bne	12$			; 50 (137777, 17, 100000, NzVC)
+		mov	#137777, @#$apar0	;
+		mov	#13, @#$apar3		;
+		rts	PC			;
+						;
+12$:		cmp	@R5, #51		; на тесте 51 выходим из цикла
+		beq	nxtash			;
+		error	15			;
+;_____________________________________________________________________________
+;
+; Завершение многозаходного теста инструкции ASH
+;
+nxtash:		tst	(SP)+			; извлекли адрес возврата из стека
+		mov	#-7, R4			;
+		mov	#w454, R2		;
+		mov	#w456, R3		; тест ash #n, R1
+		mov	PC, R1			;
+		mov	#-52526, R1		;
+		ash	#5, R1			;
+		mfps	@#$qpsw			;
+		cmpb	#3, @#$qpsw		;
+		beq	1$			;
+		error	16			;
+						;
+1$:		cmp	#52500,	R1		; тест ash @n, R0
+		beq	3$			;
+2$:		error	17			;
+3$:		cmp	@R5, #51 		;
+		bne	2$			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	@w456, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	4$			;		
+		error	20			;
+						;
+4$:		cmp	#177525, R0		;
+		beq	tst052			;
+err021:		error	21			;
+;_____________________________________________________________________________
+;
+tst052:		cmp	@R5, #52 		; тест ash @#n, R0
+		bne	err021			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	@#w454, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	22			;
+1$:		cmp	#177525, R0		;
+		beq	tst053			;
+err023:		error	23
+;_____________________________________________________________________________
+;
+tst053:		cmp	@R5, #53		; тест ash @Rs, R0
+		bne	err023			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	@R2, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;			
+		error	24			;
+1$:		cmp	#177525, R0		;
+		beq	tst054			;
+err025:		error	25			;
+;_____________________________________________________________________________
+;
+tst054:		cmp	@R5, #54		; тест ash (Rs)+, R0
+		bne	err025			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	(R2)+, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	26			;
+1$:		cmp	#177525, R0		;
+		beq	tst055			;
+err027:		error	27
+;_____________________________________________________________________________
+;
+tst055:		cmp	@R5, #55		; тест ash -(Rs), R0
+		bne	err027			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	-(R2), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	30			;
+1$:		cmp	#177525, R0		;
+		beq	tst056			;
+err031:		error	31			;
+;_____________________________________________________________________________
+;
+tst056:		cmp	@R5, #56		; тест ash n(Rs), R0
+		bne	err031			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	2(R3), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	32			;
+1$:		cmp	#177252, R0		;
+		beq	tst057			;
+err033:		error	33			;
+;_____________________________________________________________________________
+;
+tst057:		cmp	@R5, #57		; тест ash @n(Rs), R0
+		bne	err033			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	@0(R3),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	34      		;
+1$:		cmp	#177525, R0		;
+		beq	tst060			;
+err035:		error	35			;
+;_____________________________________________________________________________
+;
+tst060:		cmp	@R5, #60		; тест ash @(Rs)+, R0
+		bne	err035			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	@(R3)+,	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	36			;
+1$:		cmp	#177525, R0		;
+		beq	tst061			;
+err037:		error	37			;
+;_____________________________________________________________________________
+;
+tst061:		cmp	@R5, #61		; тест ash @-(Rs), R0
+		bne	err037			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		ash	@-(R3),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	40			;
+1$:		cmp	#177525, R0		;
+		beq	tst062			;
+err041:		error	41			;
+;_____________________________________________________________________________
+;
+; Тест инструкции ASHC, многозаходный
+;
+; apar0 - значение младшего слова для сдвига
+; apar1 - значение старшего слова для сдвига
+; apar2 - параметр сдвига
+; apar3 - значение младшего слова для контроля
+; apar4 - значение старшего слова для контроля
+; apar5 - контрольное PSW дпа сравнения
+;
+tst062:		cmp	@R5, #62		;
+		bne	err041			;
+		inc	@R5			;
+		mov	#62, @#$testa		;
+		clr	@#$apar0		;
+		mov	#1, @#$apar1		;
+		clr	@#$apar2		;
+		clr	@#$apar3		;
+		mov	#1, @#$apar4		;
+		clr	@#$apar5		;
+						;
+tashc:		mov	PC, R3			;
+		mov	R5, R2			;
+		mov	@#$apar0, R0		;
+		mov	@#$apar1, R1		;
+		clc				;
+		bit	#1, @#$pass		;
+		bne	1$			;
+		mov	@#$apar2, R5		;
+		ashc	R5, R0			;
+		br	2$			;
+1$:		ashc	$apar2, R0		;
+						;
+2$: 		mfps	@#$qpsw			;
+		cmpb	@#$apar5, @#$qpsw	;
+		beq	3$			;
+		error	42			;
+3$:		inc	@#$testa		;
+		cmp	@#$apar3, R0		;
+		beq	4$			;
+		error	43			;
+4$:		cmp	@#$apar4, R1		;
+		beq	5$			;
+		error	44			;
+5$:		mov	R2, R5			;
+		cmp	@R5, @#$testa		;
+		beq	tashc1			;
+		error	45			;
+;_____________________________________________________________________________
+;
+tashc1:		inc	@R5			; тест ashc n, Rd
+		cmp	@R5, #160		;
+		bge	1$			;
+		inc	@#$apar2		;
+		clc				;
+		rol	@#$apar4		;
+		rol	@#$apar3		;
+		cmp	@R5, #121		;
+		bne	2$			;
+		jsr	R4, set121		;
+1$:		jsr	PC, setahc		;
+						;
+2$:		mov	PC, R1			;
+		mov	@#$apar0, R2		;
+		mov	@#$apar1, R3		;
+		clc				;
+		bit	#1, @#$pass		;
+		bne	3$			;
+		mov	@#$apar2, R4		;
+		ashc	R4, R2			;
+		br	4$			;
+3$:		ashc	$apar2, R2		;
+						;
+4$:		mfps	@#$qpsw			;
+		cmpb	@#$apar5, @#$qpsw	;
+		beq	5$			;
+		error	46			;
+5$:		inc	@#$testa		;
+		cmp	@#$apar3, R2		;
+		beq	6$			;
+		error	47			;
+6$:		cmp	@#$apar4, R3		;
+		beq	7$			;
+		error	50			;
+7$:		cmp	@R5, @#$testa		;
+		beq	tashc2			;			
+		error	51			;
+;_____________________________________________________________________________
+;
+tashc2:		inc	@R5			; тест ashc n, Rd
+		cmp	@R5, #160		;
+		bge	1$			;		
+		inc	@#$apar2		;
+		clc				;
+		rol	@#$apar4		;
+		rol	@#$apar3		;
+		cmp	@R5, #121		;
+		bne	2$			;
+		jsr	R4, set121		;
+1$:		jsr	PC, setahc		;
+						;
+2$:		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	@#$apar0, R4		;
+		mov	@#$apar1, R5		;
+		clc				;
+		bit	#1, @#$pass		;
+		bne	3$			;
+		mov	@#$apar2, R0		;
+		ashc	R0, R4			;
+		br	4$			;
+3$:		ashc	$apar2, R4		;
+						;
+4$:		mfps	@#$qpsw			;
+		cmpb	@#$apar5, @#$qpsw	;
+		beq	5$			;
+		error	52			;
+5$:		inc	@#$testa		;
+		cmp	@#$apar3, R4		;
+		beq	6$			;
+		error	53			;
+6$:		cmp	@#$apar4, R5		;
+		beq	7$			;
+		error	54			;
+7$:		cmp	@R1, @#$testa		;
+		beq	tashc3			;
+		error	55			;
+;_____________________________________________________________________________
+;
+tashc3:		mov	R1, R5			;
+		inc	@R5			;
+		cmp	@R5, #160		;
+		bge	1$			;
+		inc	@#$apar2		;
+		clc				;
+		rol	@#$apar4		;
+		rol	@#$apar3		;
+		cmp	@R5, #121		;
+		bne	2$			;
+		jsr	R4, set121		;
+						;
+1$:		jsr	PC, setahc		;
+2$:		jmp	tashc			; возврат из set121 сюда
+;_____________________________________________________________________________
+;
+set121:		cmp	(R4)+, (R4)+		; увеличили адрес возврата на 4
+		mov	#40000,	@#$apar0	;
+		clr	@#$apar1		;
+		mov	#177742, @#$apar2	;
+		clr	@#$apar3		;
+		inc	@#$apar4		;
+		rts	R4			;
+;_____________________________________________________________________________
+;
+setahc:		cmp	@R5, #160		;
+		bne	1$			;
+		clr	@#$apar0		;
+		clr	@#$apar3		;
+		mov	#4, @#$apar5		;
+		rts	PC			;
+						;
+1$:		cmp	@R5, #161		;
+		bne	2$			;
+		mov	#177746, @#$apar2	;
+		rts	PC			;
+						;
+2$:		cmp	@R5, #162		;
+		bne	3$			;
+		mov	#32, @#$apar2		;
+		rts	PC			;
+						;
+3$:		cmp	@R5, #163		;	
+		bne	4$			;
+		mov	#52525,	@#$apar0	;
+		mov	#177760, @#$apar2	;
+		clr	@#$apar3		;
+		mov	#52525,	@#$apar4	;
+		clr	@#$apar5		;
+		rts	PC			;
+						;
+4$:		cmp	@R5, #164		;
+		bne	5$			;
+		mov	#125252, @#$apar0	;
+		dec	@#$apar3		;
+		mov	#125252, @#$apar4	;
+		mov	#10, @#$apar5		;
+		rts	PC			;
+						;
+5$:		cmp	@R5, #165		;
+		bne	6$			;
+		mov	#-1, @#$apar0		;
+		mov	#-1, @#$apar4		;
+		rts	PC			;
+						;
+6$:		cmp	@R5, #166		;
+		bne	7$			;
+		mov	#100000, @#$apar0	;
+		mov	#177740, @#$apar2	;
+		inc	@#$apar5		;
+		rts	PC			;
+						;
+7$:		cmp	@R5, #167		;
+		bne	10$			;
+		clr	@#$apar0		;
+		dec	@#$apar1		;
+		mov	#20, @#$apar2		;
+		clr	@#$apar4		;
+		inc	@#$apar5		;
+		rts	PC			;
+						;
+10$:		cmp	@R5, #170		;
+		bne	11$			;
+		mov	#125252, @#$apar1	;
+		mov	#125252, @#$apar3	;
+		rts	PC			;
+						;
+11$:		cmp	@R5, #171		;
+		bne	12$			;
+		dec	@#$apar2		;
+		mov	#52525,	@#$apar3	;
+		clr	@#$apar5		;
+		rts	PC			;
+						;
+12$:		cmp	@R5, #172		;
+		bne	13$			;
+		mov	#52525,	@#$apar1	;
+		inc	@#$apar2		;
+		rts	PC			;
+						;
+13$:		cmp	@R5, #173		;
+		bne	14$			;
+		mov	#-1, @#$apar1		;
+		dec	@#$apar2		;
+		mov	#77777,	@#$apar3	;
+		mov	#100000, @#$apar4	;
+		rts	PC			;
+						;
+14$:		cmp	@R5, #174		;
+		bne	15$			;
+		mov	#100000, @#$apar0	;
+		dec	@#$apar1		;
+		clr	@#$apar4		;
+		mov	#2, @#$apar5		;
+		rts	PC			;
+						;
+15$:		cmp	@R5, #175		;
+		bne	16$			;
+		mov	#-1, @#$apar0		;
+		clr	@#$apar1		;
+		inc	@#$apar2		;
+		clr	@#$apar3		;
+		mov	#7, @#$apar5		;
+		rts	PC			;
+						;
+16$:		cmp	@R5, #176		;
+		beq	nxtahc			;
+		error	56			;
+;_____________________________________________________________________________
+;
+nxtahc:		tst	(SP)+			; удалим адрес возврата из стека
+		mov	PC, R1			; продолжим тестрование ashc
+		mov	#0, R1			; вне цикла
+		mov	#1, R1			;
+		clc				;
+		ashc	#10, R1			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	1$			;
+		error	57			;
+1$:		cmp	#400, R1		;
+		beq	tst176			;
+		error	60			;
+;_____________________________________________________________________________
+;
+tst176:		cmp	@R5, #176 		;
+		beq	1$			;
+		error	61			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R3			;
+		mov	#-1, R3			;
+		clc				;
+		ashc	#17, R3			;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	2$			;
+		error	62			;
+2$:		cmp	#100000, R3		;
+		beq	tst177			;
+		error	63			;
+;_____________________________________________________________________________
+;
+tst177:		cmp	@R5, #177		;
+		beq	1$			;		
+		error	64			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#0, R5			;
+		mov	#52525,	R5		;
+		clc				;
+		ashc	#0, R5			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	65			;
+2$:		cmp	#52525,	R5		;
+		beq	tst200			;
+		error	66			;
+;_____________________________________________________________________________
+;
+tst200:		mov	R1, R5			;
+		cmp	@R5, #200		;
+		beq	1$			;
+		error	67			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R1			;
+		mov	#20010,	R1		;
+		clc				;
+		ashc	#-15, R1		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	70			;
+2$:		cmp	#101, R1		;
+		beq	tst201			;
+		error	71			;
+;_____________________________________________________________________________
+;
+tst201:		cmp	@R5, #201		;
+		beq	1$			;
+		error	72			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R3			;
+		mov	#-1, R3			;
+		clc				;
+		ashc	#20, R3			;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	2$			;
+		error	73			;
+2$:		cmp	#0, R3			;
+		beq	tst202			;
+		error	74			;
+;_____________________________________________________________________________
+;
+tst202:		cmp	@R5, #202		;
+		beq	1$			;
+		error	75			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#0, R5			;
+		mov	#1, R5			;
+		clc				;
+		ashc	#-1, R5			;
+		mfps	@#$qpsw			;
+		cmpb	#1, @#$qpsw		;
+		beq	2$			;
+		error	76			;
+2$:		cmp	#100000, R5		;
+		beq	tst203			;
+		error	77			;
+;_____________________________________________________________________________
+;
+tst203:		mov	R1, R5			;
+		cmp	@R5, #203		;
+		beq	1$			;
+		error	100			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R1			;
+		mov	#125252, R1		;
+		clc				;
+		ashc	#-20, R1		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	2$			;
+		error	101			;
+2$:		cmp	#125252, R1		;
+		beq	tst204			;
+		error	102			;
+;_____________________________________________________________________________
+;
+tst204:		cmp	@R5, #204		;
+		beq	1$			;
+		error	103			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R2		;
+		mov	#125252, R3		;
+		clc				;
+		ashc	#25, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#3, @#$qpsw		;
+		beq	2$			;
+		error	104			;
+2$:		cmp	#52500,	R2		;
+		beq	3$			;
+		error	105			;
+3$:		cmp	#0, R3			;
+		beq	tst205			;
+		error	106			;
+;_____________________________________________________________________________
+;
+tst205:		cmp	@R5, #205		;
+		beq	1$			;
+		error	107			;
+1$:		inc	@R5			;
+		mov	#-7, R2			;
+		mov	#w454, R3		;
+		mov	#w456, R4		;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	w454, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	2$			;
+		error	110			;
+2$:		cmp	#177525, R0		;
+		beq	3$			;
+		error	111			;
+3$:		cmp	#52525,	R1		;
+		beq	tst206			;
+err112:		error	112			;
+;_____________________________________________________________________________
+;
+tst206:		cmp	@R5, #206		;
+		bne	err112			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	@w456, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	113			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	114			;
+2$:		cmp	#52525,	R1		;
+		beq	tst207			;
+err115:		error	115			;
+;_____________________________________________________________________________
+;
+tst207:		cmp	@R5, #207		;
+		bne	err115			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	@#w454, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	116			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	117			;
+2$:		cmp	#52525,	R1		;
+		beq	tst210			;
+err120:		error	120			;
+;_____________________________________________________________________________
+;
+tst210:		cmp	@R5, #210		;
+		bne	err120			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	@R3, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	121			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	122			;
+2$:		cmp	#52525,	R1		;
+		beq	tst211			;
+err123:		error	123			;
+;_____________________________________________________________________________
+;
+tst211:		cmp	@R5, #211		;
+		bne	err123			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	(R3)+, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	124			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	125			;
+2$:		cmp	#52525,	R1		;
+		beq	tst212			;
+err126:		error	126			;
+;_____________________________________________________________________________
+;
+tst212:		cmp	@R5, #212		;
+		bne	err126			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	-(R3), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	127			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	130			;
+2$:		cmp	#52525,	R1		;
+		beq	tst213			;
+err131:		error	131			;
+;_____________________________________________________________________________
+;
+tst213:		cmp	@R5, #213		;
+		bne	err131			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	2(R4), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	132			;
+1$:		cmp	#177252, R0		;
+		beq	2$			;
+		error	133			;
+2$:		cmp	#125252, R1		;
+		beq	tst214			;
+err134:		error	134			;
+;_____________________________________________________________________________
+;
+tst214:		cmp	@R5, #214		;
+		bne	err134			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	@0(R4),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;	
+		error	135			;
+1$:		cmp	#-253, R0		;
+		beq	2$			;
+		error	136			;
+2$:		cmp	#52525,	R1		;
+		beq	tst215			;
+err137:		error	137			;
+;_____________________________________________________________________________
+;
+tst215:		cmp	@R5, #215 ; 'Н'		; тест ashc @(Rs)+, R0
+		bne	err137			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	@(R4)+,	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	140			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	141			;
+2$:		cmp	#52525,	R1		;
+		beq	tst216			;
+err142:		error	142			;
+;_____________________________________________________________________________
+;
+tst216:		cmp	@R5, #216		; тест ashc @-(Rs), R0
+		bne	err142			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mov	#125252, R1		;
+		clc				;
+		ashc	@-(R4),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	143			;
+1$:		cmp	#177525, R0		;
+		beq	2$			;
+		error	144			;
+2$:		cmp	#52525,	R1		;
+		beq	tstmul			;
+err145:		error	145			;
+;_____________________________________________________________________________
+;
+; Тестирование инструкции MUL
+;
+tstmul:		cmp	@R5, #217		;
+		bne	err145			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#1, R0			;
+		mul	#0, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#4, @#$qpsw		;
+		beq	1$			;
+		error	146			;
+1$:		cmp	#0, R0			;
+		beq	2$			;		
+		error	147			;
+2$:		cmp	#0, R1			;
+		beq	tst220			;
+err150:		error	150			;
+;_____________________________________________________________________________
+;
+tst220:		cmp	@R5, #220		;
+		bne	err150			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R0			;
+		mul	#1, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	151			;
+1$:		cmp	#-1, R0			;
+		beq	2$			;
+		error	152			;
+2$:		cmp	#-1, R1			;
+		beq	tst221			;
+err153:		error	153			;
+;_____________________________________________________________________________
+;
+tst221:		cmp	@R5, #221 		;
+		bne	err153			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#2, R2			;
+		mul	#2, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	1$			;
+		error	154			;
+1$:		cmp	#0, R2			;
+		beq	2$			;
+		error	155			;
+2$:		cmp	#4, R3			;
+		beq	tst222			;
+err156:		error	156			;
+;_____________________________________________________________________________
+;
+tst222:		cmp	@R5, #222		;
+		bne	err156			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#1000, R4		;
+		mul	#200, R4		;
+		mfps	@#$qpsw			;
+		cmpb	#1, @#$qpsw		;
+		beq	1$			;
+		error	157			;
+1$:		cmp	#1, R4			;
+		beq	2$			;
+		error	160			;
+2$:		cmp	#0, R5			;
+		beq	tst223			;
+err161:		error	161			;
+;_____________________________________________________________________________
+;
+tst223:		cmp	@R1, #223		;
+		bne	err161			;
+		mov	R1, R5			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#2, R0			;
+		mul	#77777,	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#1, @#$qpsw		;
+		beq	1$			;
+		error	162			;
+1$:		cmp	#0, R0			;
+		beq	2$			;
+		error	163			;
+2$:		cmp	#-2, R1			;
+		beq	tst224			;
+err164:		error	164			;
+;_____________________________________________________________________________
+;
+tst224:		cmp	@R5, #224		;
+		bne	err164			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#7777, R2		;
+		mul	#10, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	1$			;
+		error	165			;
+1$:		cmp	#0, R2			;
+		beq	2$			;
+		error	166			;
+2$:		cmp	#77770,	R3		;
+		beq	tst225			;
+err167:		error	167			;
+;_____________________________________________________________________________
+;
+tst225:		cmp	@R5, #225		;
+		bne	err167			;
+		inc	@R5   			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#77777,	R4		;
+		mul	#77777,	R4		;
+		mfps	@#$qpsw			;
+		cmpb	#1, @#$qpsw		;
+		beq	1$			;
+		error	170			;
+1$:		cmp	#37777,	R4		;
+		beq	2$			;
+		error	171			;
+2$:		cmp	#1, R5			;
+		beq	tst226			;
+err172:		error	172			;
+;_____________________________________________________________________________
+;
+tst226:		cmp	@R1, #226		;
+		bne	err172			;
+		mov	R1, R5			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R2			;
+		mul	#77777,	R2		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	173			;
+1$:		cmp	#-1, R2			;
+		beq	2$			;
+		error	174			;
+2$:		cmp	#100001, R3		;
+		beq	tst227			;
+err175:		error	175			;
+;_____________________________________________________________________________
+;
+tst227:		cmp	@R5, #227		;
+		bne	err175			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-2, R0			;
+		mul	#77777,	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	176			;
+1$:		cmp	#-1, R0			;
+		beq	2$			;
+		error	177			;
+2$:		cmp	#2, R1			;
+		beq	tst230			;
+err200:		error	200			;
+;_____________________________________________________________________________
+;
+tst230:		cmp	@R5, #230		;
+		bne	err200			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R2		;
+		mul	#2, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	201			;
+1$:		cmp	#-1, R2			;
+		beq	2$			;
+		error	202			;
+2$:		cmp	#52524,	R3		;
+		beq	tst231			;
+err203:		error	203			;
+;_____________________________________________________________________________
+;
+tst231:		cmp	@R5, #231		;
+		bne	err203			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#125252, R4		;
+		mul	#40000,	R4		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	204			;
+1$:		cmp	#165252, R4		;
+		beq	2$			;
+		error	205			;
+2$:		cmp	#100000, R5		;
+		beq	tst232			;
+err206:		error	206			;
+;_____________________________________________________________________________
+;
+tst232:		cmp	@R1, #232		;
+		bne	err206			;
+		mov	R1, R5			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#107070, R0		;
+		mul	#107070, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#1, @#$qpsw		;
+		beq	1$			;
+		error	207			;
+1$:		cmp	#31222,	R0		;
+		beq	2$			;
+		error	210			;
+2$:		cmp	#26100,	R1		;
+		beq	tst233			;
+err211:		error	211			;
+;_____________________________________________________________________________
+;
+tst233:		cmp	@R5, #233		;
+		bne	err211			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R1			;
+		mul	#1, R1			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	212			;
+1$:		cmp	#-1, R1			;
+		beq	2$			;
+		error	213			;
+2$:		cmp	#-1, R1			;
+		beq	tst234			;
+err214:		error	214			;
+;_____________________________________________________________________________
+;
+tst234:		cmp	@R5, #234		;
+		bne	err214			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R3			;
+		mul	#0, R3			;
+		mfps	@#$qpsw			;
+		cmpb	#4, @#$qpsw		;
+		beq	1$			;
+		error	215			;
+1$:		cmp	#0, R3			;
+		beq	2$			;
+		error	216			;
+2$:		cmp	#0, R3			;
+		beq	tst235			;
+err217:		error	217			;
+;_____________________________________________________________________________
+;
+tst235:		cmp	@R5, #235		;
+		bne	err217			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#77777,	R5		;
+		mul	#100000, R5		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	220			;
+1$:		cmp	#100000, R5		;
+		beq	2$			;
+		error	221			;
+2$:		cmp	#100000, R5		;
+		beq	tst236			;
+err222:		error	222			;
+;_____________________________________________________________________________
+;
+tst236:		cmp	@R1, #236		;
+		bne	err222			;
+		mov	R1, R5			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R1			;
+		mul	#77777,	R1		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	1$			;
+		error	223			;
+1$:		cmp	#-77777, R1		;
+		beq	2$			;
+		error	224			;
+2$:		cmp	#-77777, R1		;
+		beq	tst237			;
+err225:		error	225			;
+;_____________________________________________________________________________
+;
+tst237:		cmp	@R5, #237		;
+		bne	err225			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#77777,	R3		;
+		mul	#77777,	R3		;
+		mfps	@#$qpsw			;
+		cmpb	#1, @#$qpsw		;
+		beq	1$			;
+		error	226			;
+1$:		cmp	#1, R3			;
+		beq	2$			;
+		error	227			;
+2$:		cmp	#1, R3			;
+		beq	tst240			;
+err230:		error	230			;
+;_____________________________________________________________________________
+;
+tst240:		cmp	@R5, #240		;
+		bne	err230			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#2, R5			;
+		mul	#2, R5			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	1$			;
+		error	231			;
+1$:		cmp	#4, R5			;
+		beq	2$			;
+		error	232			;
+2$:		cmp	#4, R5			;
+		beq	tst241			;
+err233:		error	233			;
+;_____________________________________________________________________________
+;
+tst241:		cmp	@R1, #241		;
+		bne	err233			;
+		mov	R1, R5			;
+		inc	@R5			;
+		mov	#40000,	R2		;
+		mov	#464, R3		;
+		mov	#466, R4		;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	w464, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	234			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	235			;
+2$:		cmp	#100000, R1		;
+		beq	tst242			;
+err236:		error	236			;
+;_____________________________________________________________________________
+;
+tst242:		cmp	@R5, #242		;
+		bne	err236			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	@w466, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	237			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	240			;
+2$:		cmp	#100000, R1		;
+		beq	tst243			;
+err241:		error	241			;
+;_____________________________________________________________________________
+;
+tst243:		cmp	@R5, #243		;
+		bne	err241			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	@#w464, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	242			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	243			;
+2$:		cmp	#100000, R1		;
+		beq	tst244			;
+err244:		error	244			;
+;_____________________________________________________________________________
+;
+tst244:		cmp	@R5, #244		;
+		bne	err2444			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	R2, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	245			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	246			;
+2$:		cmp	#100000, R1		;
+		beq	tst245			;
+err247:		error	247			;
+;_____________________________________________________________________________
+;
+tst245:		cmp	@R5, #245		;
+		bne	err247			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	(R3)+, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	250			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	251			;
+2$:		cmp	#100000, R1		;
+		beq	tst246			;
+err252:		error	252			;
+;_____________________________________________________________________________
+;
+tst246:		cmp	@R5, #246		;
+		bne	err252			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	-(R3), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	253			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	254			;
+2$:		cmp	#100000, R1		;
+		beq	tst247			;
+err255:		error	255			;
+;_____________________________________________________________________________
+;
+tst247:		cmp	@R5, #247		;
+		bne	err255			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	2(R4), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	256			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	257			;
+2$:		cmp	#100000, R1		;
+		beq	tst250			;
+err260:		error	260			;
+;_____________________________________________________________________________
+;
+tst250:		cmp	@R5, #250		;
+		bne	err260			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	@0(R4),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	261			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	262			;
+2$:		cmp	#100000, R1		;
+		beq	tst251			;
+err263:		error	263			;
+;_____________________________________________________________________________
+;
+tst251:		cmp	@R5, #251		;
+		bne	err263			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	@(R4)+,	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	264			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	265			;
+2$:		cmp	#100000, R1		;
+		beq	tst252			;
+err266:		error	266			;
+;_____________________________________________________________________________
+;
+tst252:		cmp	@R5, #252		;
+		bne	err266			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#125252, R0		;
+		mul	@-(R4),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#11, @#$qpsw		;
+		beq	1$			;
+		error	267			;
+1$:		cmp	#165252, R0		;
+		beq	2$			;
+		error	270			;
+2$:		cmp	#100000, R1		;
+		beq	tst253			;
+err271:		error	271			;
+;_____________________________________________________________________________
+;
+tst253:		cmp	@R5, #253		;
+		bne	err271			;
+		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#4, R1			;
+		div	#2, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	1$			;
+		error	272			;
+1$:		cmp	#2, R0			;
+		beq	2$			;
+		error	273			;
+2$:		cmp	#0, R1			;
+		beq	tst254			;
+		error	274			;
+;_____________________________________________________________________________
+;
+tst254:		cmp	@R5, #254		;
+		beq	1$			;
+		error	275			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R2			;
+		mov	#-11, R3		;
+		div	#3, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	2$			;
+		error	276			;
+2$:		cmp	#-3, R2			;
+		beq	3$			;
+		error	277			;
+3$:		cmp	#0, R3			;
+		beq	tst255			;
+		error	300			;
+;_____________________________________________________________________________
+;
+tst255:		cmp	@R5, #255		;
+		beq	1$			;
+		error	301			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#0, R4			;
+		mov	#11, R5			;
+		div	#2, R4			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;		
+		error	302			;
+2$:		cmp	#4, R4			;
+		beq	3$			;
+		error	303			;
+3$:		cmp	#1, R5			;
+		beq	tst256			;
+		error	304			;
+;_____________________________________________________________________________
+;
+tst256:		mov	R1, R5			;
+		cmp	@R5, #256		;
+		beq	1$			;
+		error	305			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R0			;
+		mov	#-11, R1		;
+		div	#2, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	2$			;
+		error	306			;
+2$:		cmp	#-4, R0			;
+		beq	3$			;
+		error	307			;
+3$:		cmp	#-1, R1			;
+		beq	tst257			;
+		error	310			;
+;_____________________________________________________________________________
+;
+tst257:		cmp	@R5, #257		;
+		beq	1$			;
+		error	311			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R2			;
+		mov	#2, R3			;
+		div	#-3, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#4, @#$qpsw		;
+		beq	2$			;
+		error	312			;
+2$:		cmp	#0, R2			;
+		beq	3$			;
+		error	313			;
+3$:		cmp	#2, R3			;
+		beq	tst260			;
+		error	314			;
+;_____________________________________________________________________________
+;
+tst260:		cmp	@R5, #260		;
+		beq	1$			;
+		error	315			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#-1, R4			;
+		mov	#-2, R5			;
+		div	#3, R4			;
+		mfps	@#$qpsw			;
+		cmpb	#4, @#$qpsw		;
+		beq	2$			;
+		error	316			;
+2$:		cmp	#0, R4			;
+		beq	3$			;
+		error	317			;
+3$:		cmp	#-2, R5			;
+		beq	tst261			;
+		error	320			;
+;_____________________________________________________________________________
+;
+tst261:		mov	R1, R5			;
+		cmp	@R5, #261		;
+		beq	1$			;
+		error	321			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R0			;
+		mov	#-1, R1			;
+		div	#1, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	2$			;
+		error	322			;
+2$:		cmp	#-1, R0			;
+		beq	3$			;
+		error	323			;
+3$:		cmp	#0, R1			;
+		beq	tst262			;
+		error	324			;
+;_____________________________________________________________________________
+;
+tst262:		cmp	@R5, #262		;
+		beq	1$			;
+		error	325			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#0, R1			;
+		div	#1, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#4, @#$qpsw		;
+		beq	2$			;
+		error	326			;
+2$:		cmp	#0, R0			;
+		beq	3$			;
+		error	327			;
+3$:		cmp	#0, R1			;
+		beq	tst263			;
+		error	330			;
+;_____________________________________________________________________________
+;
+tst263:		cmp	@R5, #263		;
+		beq	1$			;
+		error	331			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R2			;
+		mov	#125252, R3		;
+		div	#2, R2			;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	2$			;
+		error	332			;
+2$:		cmp	#152525, R2		;
+		beq	3$			;
+		error	333			;
+3$:		cmp	#0, R3			;
+		beq	tst264			;
+		error	334			;
+;_____________________________________________________________________________
+;
+tst264:		cmp	@R5, #264		;
+		beq	1$			;
+		error	335			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#-1, R4			;
+		mov	#-1, R5			;
+		div	#-1, R4			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	336			;
+2$:		cmp	#1, R4			;
+		beq	3$			;
+		error	337			;
+3$:		cmp	#0, R5			;
+		beq	tst265			;
+		error	340			;
+;_____________________________________________________________________________
+;
+tst265:		mov	R1, R5			;
+		cmp	@R5, #265		;
+		beq	1$			;
+		error	341			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#25253,	R0		;
+		mov	#1, R1			;
+		div	#125252, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#10, @#$qpsw		;
+		beq	2$			;
+		error	342			;
+2$:		cmp	#100000, R0		;
+		beq	3$			;
+		error	343			;
+3$:		cmp	#1, R1			;
+		beq	tst266			;
+		error	344			;
+;_____________________________________________________________________________
+;
+tst266:		cmp	@R5, #266		;
+		beq	1$			;
+		error	345			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#37777,	R2		;
+		mov	#77777,	R3		;
+		div	#77777,	R2		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	346			;
+2$:		cmp	#77777,	R2		;
+		beq	3$			;
+		error	347			;
+3$:		cmp	#77776,	R3		;
+		beq	tst267			;		
+		error	350			;
+;_____________________________________________________________________________
+;
+tst267:		cmp	@R5, #267		;
+		beq	1$			;
+		error	351			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#0, R4			;
+		mov	#100000, R5		;
+		div	#2, R4			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	352			;
+2$:		cmp	#40000,	R4		;
+		beq	3$			;
+		error	353			;
+3$:		cmp	#0, R5			;
+		beq	tst270			;
+		error	354			;
+;_____________________________________________________________________________
+;
+tst270:		mov	R1, R5			;
+		cmp	@R5, #270		;
+		beq	1$			;
+		error	355			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#-1, R0			;
+		mov	#77777,	R1		;
+		div	#-2, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	356			;
+2$:		cmp	#40000,	R0		;
+		beq	3$			;
+		error	357			;
+3$:		cmp	#-1, R1			;
+		beq	tst271			;
+		error	360			;
+;_____________________________________________________________________________
+;
+tst271:		cmp	@R5, #271		;
+		beq	1$			;
+		error	361			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R2			;
+		mov	#52525,	R3		;
+		div	#52525,	R2		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	362			;
+2$:		cmp	#1, R2			;
+		beq	3$			;
+		error	363			;
+3$:		cmp	#0, R3			;
+		beq	tst272			;
+		error	364			;
+;_____________________________________________________________________________
+;
+tst272:		cmp	@R5, #272		;
+		beq	1$			;
+		error	365			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	R5, R1			;
+		mov	#0, R4			;
+		mov	#77777,	R5		;
+		div	#0, R4			;
+		mfps	@#$qpsw			;
+		bic	#14, @#$qpsw		;
+		cmpb	#3, @#$qpsw		;
+		beq	tst273			;
+		error	366			;
+;_____________________________________________________________________________
+;
+tst273:		mov	R1, R5			;
+		cmp	@R5, #273		;
+		beq	1$			;	
+		error	367			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#77777,	R0		;
+		mov	#-1, R1			;
+		div	#2, R0			;
+		mfps	@#$qpsw			;
+		bic	#14, @#$qpsw		;
+		cmpb	#2, @#$qpsw		;
+		beq	tst274			;
+		error	370			;
+;_____________________________________________________________________________
+;
+tst274:		cmp	@R5, #274		;
+		beq	1$			;
+		error	371			;
+1$:		inc	@R5			;
+		mov	#2, R2			;
+		mov	#w474, R3		;
+		mov	#w476, R4		;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	w474, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	372			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	373			;
+3$:		cmp	#1, R1			;
+		beq	tst275			;
+		error	374			;
+;_____________________________________________________________________________
+;
+tst275:		cmp	@R5, #275		;
+		beq	1$			;
+		error	375			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	@w476, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	376			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	377			;
+3$:		cmp	#1, R1			;
+		beq	tst276			;
+		error	400			;
+;_____________________________________________________________________________
+;
+tst276:		cmp	@R5, #276		;
+		beq	1$			;
+		error	401			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	@#w474, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	402			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	403			;
+3$:		cmp	#1, R1			;
+		beq	tst277			;
+		error	404			;
+;_____________________________________________________________________________
+;
+tst277:		cmp	@R5, #277		;
+		beq	1$			;
+		error	405			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	R2, R0			;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	406			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	407			;
+3$:		cmp	#1, R1			;
+		beq	tst300			;
+		error	410			;
+;_____________________________________________________________________________
+;
+tst300:		cmp	@R5, #300		;
+		beq	1$			;
+		error	411			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	(R3)+, R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	412			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	413			;
+3$:		cmp	#1, R1			;
+		beq	tst301			;
+l15476:		error	414			;
+;_____________________________________________________________________________
+;
+tst301:		cmp	@R5, #301		;
+		beq	1$			;
+		error	415			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	-(R3), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	416			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	417			;
+3$:		cmp	#1, R1			;
+		beq	tst302			;
+		error	420			;
+;_____________________________________________________________________________
+;
+tst302:		cmp	@R5, #302 		;
+		beq	1$			;
+		error	421			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	2(R4), R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	422			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	423			;
+3$:		cmp	#1, R1			;
+		beq	tst303			;
+		error	424			;
+;_____________________________________________________________________________
+;
+tst303:		cmp	@R5, #303		;
+		beq	1$			;
+		error	425			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	@0(R4),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	426			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	427			;
+3$:		cmp	#1, R1			;
+		beq	tst304			;
+		error	430			;
+;_____________________________________________________________________________
+;
+tst304:		cmp	@R5, #304		;
+		beq	1$			;
+		error	431			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	@(R4)+,	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;	
+		error	432			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;		
+		error	433			;
+3$:		cmp	#1, R1			;
+		beq	tst305			;
+		error	434			;
+;_____________________________________________________________________________
+;
+tst305:		cmp	@R5, #305		;
+		beq	1$			;
+		error	435			;
+1$:		inc	@R5			;
+		mov	PC, R1			;
+		mov	#0, R0			;
+		mov	#52525,	R1		;
+		div	@-(R4),	R0		;
+		mfps	@#$qpsw			;
+		cmpb	#0, @#$qpsw		;
+		beq	2$			;
+		error	436			;
+2$:		cmp	#25252,	R0		;
+		beq	3$			;
+		error	437			;
+3$:		cmp	#1, R1			;
+		beq	tst306			;
+		error	440			;
+;_____________________________________________________________________________
+;
+tst306:		cmp	@R5, #306		;
+		beq	1$			;
+		error	441			;
+1$:		inc	@R5			;
+		mov	#311, @R5		;
+		jmp	@#skiptt		;
+;_____________________________________________________________________________
+;
+skiptt:		mov	PC, R1			;
+		inc	$pass			;
+		bic	#100000, $pass		;
+		iot				;
+		.word	$tstok			;
+	        mov	$pass, R0		;
+		jsr	PC, outhex		;
+		dec	pcnt			;
+		bne	doagn			;
+		halt				;
+doagn:		jmp	@#start			; повторим проход
+						;
+$tstok:		.ascii <15><12>			;
+		.asciz	<12><15>"Test passed OK (EA)"
+		.even				;
+pcnt:		.word	npass			;
+;_____________________________________________________________________________
+;
+pwrdn:		mov	#pwrup,	@#vec24		; пропадание питания
+		halt				;	
+						;
+pwrup:		mov	#start,	SP		; восстановление питания
+		mov	#pwrdn,	@#vec24		;
+		iot				;
+		.word	power			;
+		br	doagn			;
+;_____________________________________________________________________________
+;
+; Вывод	адреса ошибки и номера, который расположен сразу за инструкцией вызова
+;
+octerr:		mov	@0(SP),	@#$fatal	; сохраним код ошибки
+		bit	#20000,	@#w422		;
+		bne	3$			;
+		iot				; переводим строку
+		.word 	$crlf			;
+						;
+		mov	R0, -(SP)		; сохраним регистр
+		movb	#2, cout		; счетчик выводов 2 слова
+		mov	2(SP), R0		; адрес	возврата из подпрограммы
+		sub	#4, R0			; адрес	инструкции вызова
+						;
+1$:		movb	#6, @#csym		; число символов
+		clr	-(SP)			; вывода числа из R0
+2$:		clc				;
+		rol	R0			;
+		rol	@SP			;
+		bis	#'0, @SP 		; превращаем в символ цифры
+		jsr	PC, putch		; выводимна терминал
+		clr	@SP			;
+		rol	R0			;
+		rol	@SP			;
+		rol	R0			;
+		rol	@SP			;
+		decb	csym			; 
+		bne	2$			; не все знаки выведены
+						;
+		tst	(SP)+			;
+		mov	@2(SP),	R0		; достаём номер ошибки
+		iot				; выводим пробелы "   "
+		.word	$spa3			; 
+						;
+		decb	cout			; все числа выведены?
+		bne	1$			; нет - продолжаем
+  		mov	@#$fatal, R0		; выведем на семисегментник
+		jsr	PC, outhex		;
+		mov	(SP)+, R0		; восстановим регистр
+						;
+3$:		tstb	numtt			; нулевой терминал
+		beq	4$			;
+		inc	@#$mail			;
+		br	.			;
+4$:		halt				; останов
+;_____________________________________________________________________________
+;
+; Точка обработки IOT -  печать сообщения
+; Адрес строки размещается сразу за инструкцией iot
+;
+type:		mov	R0, -(SP)		; за инструкцией iot следует
+		mov	@2(SP),	R0		; алрес выводимой строки
+						;
+1$:		movb	(R0)+, -(SP)		; получим симол строки
+		bne	2$			; не ноль - выводим
+		tst	(SP)+			; найден конец строки
+		mov	(SP)+, R0		; извлечем символ из стека
+		add	#2, @SP			; корректируем адес воврата
+		rti				;
+						;
+2$:		jsr	PC, putch		;
+		tst	(SP)+			; извлечем символ из стека
+		br	1$			; продолжаем вывод строки
+;_____________________________________________________________________________
+;
+; Посылка символа 2(SP) в терминал.
+
+putch:		bitb	#40, @#distt		;
+		bne	2$			;
+1$:		tstb	@tpb			; проверим готовности терминала
+		bpl	1$			; не готов - ждем дальше
+		movb	2(SP), @tps		; посылаем символ из стека
+2$:		rts	PC			;
+;_____________________________________________________________________________
+;
+outhex:		mov	R1, -(SP)		;
+		mov	R0, -(SP)		;
+						;
+		bic	#177760, R0		;
+		movb	1$(R0), R1		;
+		mov	(SP), R0		;
+		asr	R0			;
+		asr	R0			;
+		asr	R0			;
+		asr	R0			;
+		bic	#177760, R0		;
+		movb	1$(R0), R0		;
+		swab	R0			;
+		bis	R0, R1			;
+		mov	R1, @#177714		;
+						;
+		mov	(SP), R0		;
+		swab	R0			;
+		bic	#177760, R0		;
+		movb	1$(R0), R1		;
+		movb	1(SP), R0		;
+		asr	R0			;
+		asr	R0			;
+		asr	R0			;
+		asr	R0			;
+		bic	#177760, R0		;
+		movb	1$(R0), R0		;
+		swab	R0			;
+		bis	R0, R1			;
+		mov	R1, @#177715		;
+						;
+		mov	(SP)+, R0		;
+		mov	(SP)+, R1		;
+		rts	PC			;
+						;
+1$:		.byte	077, 006, 133, 117	;
+		.byte	146, 155, 175, 007	;
+		.byte	177, 157, 167, 174	;
+		.byte	071, 136, 171, 161	;
+						;
+hang:		mov	(SP), R0		;
+		jsr	PC, outhex		;
+1$:		wait				;
+		br	1$			;
+;_____________________________________________________________________________
+;
+		.end				;
