@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2017 by 1801BM1@gmail.com
+// Copyright (c) 2014-2019 by 1801BM1@gmail.com
 //______________________________________________________________________________
 //
 // Version of 1801VM2 processor with Q-bus external interface
@@ -246,27 +246,27 @@ reg   [8:0]    cpsw;                   // PSW copy
 reg   [15:0]   qreg;                   // ALU Q register (Q-bus data)
 reg   [15:0]   areg;                   // ALU A register (Q-bus address)
                                        //
-wire  [15:0]   alu_inx;                //
-wire  [15:0]   alu_iny;                //
-wire  [15:0]   alu_an;                 //
-wire  [15:0]   alu_or;                 //
-wire  [15:0]   alu_cf;                 //
+wire  [15:0]   alu_inx;                // ALU X operand selector
+wire  [15:0]   alu_iny;                // ALU Y operand selector
+wire  [15:0]   alu_an;                 // ALU operands 'and'
+wire  [15:0]   alu_or;                 // ALU operands 'or'
+wire  [15:0]   alu_cf;                 // ALU carry
 wire  [15:0]   alu_cp;                 //
-wire  [15:0]   alu_af;                 //
+wire  [15:0]   alu_af;                 // ALU function
 wire  [15:0]   alu_sh;                 //
-reg   [15:0]   alu_fr;                 //
-reg   [15:0]   alu_cr;                 //
-reg   [15:0]   xb;                     //
+reg   [15:0]   alu_fr;                 // ALU function register
+reg   [15:0]   alu_cr;                 // ALU carry register
+reg   [15:0]   xb;                     // ALU result register
 wire  [15:0]   xbo;                    //
 wire  [15:0]   x, ax;                  // ALU X (input) and X* (output) bus
 wire  [15:0]   y, ay;                  // ALU Y (input) and Y* (output) bus
                                        //
 wire           alu_cin;                //
-wire           alu_a, alu_b;           //
+wire           alu_a, alu_b;           // ALU function controls
 wire           alu_c, alu_d;           //
 wire           alu_e, alu_f;           //
 wire           alu_g, alu_h;           //
-wire           rshift, lshift, nshift; //
+wire           rshift, lshift, nshift; // ALU shifter controls
 wire           sh_ci1, sh_ci2, sh_ci3; //
 wire           alu_xb;                 //
                                        //
@@ -320,12 +320,12 @@ wire           brd_wq;                 // buffer data register write from Q-bus
 wire           brd_wa;                 // buffer data register write from ALU
 wire           to_clr;                 // not assert internal to_rply
                                        //
-wire           pli_req;                // interrupt unit query
-wire           pli_ack;                // interrupt unit ack
+wire           pli_req;                // interrupt module query
+wire           pli_ack;                // interrupt module ack
 wire           pli_rclr;               //
 wire           sd_word;                //
 reg            word27;                 //
-reg            sm0, sm1, sm2, sm3;     // interrupt unit strobes
+reg            sm0, sm1, sm2, sm3;     // interrupt module strobes
 reg            pli6r;                  //
 reg            pli8r;                  //
 wire           evnt_ack;               //
@@ -384,7 +384,7 @@ wire           ea_trdy1_clr;           //
 reg            tlz;                    //
 reg            wait_vdiv;              //
 reg            wait_div;               //
-reg            wait_ndiv;              //
+reg            zero_div;               //
                                        //
 wire  [20:0]   ea_f;                   //
 reg            ea_f0r, ea_f4r;         //
@@ -419,7 +419,7 @@ wire           wtbt, to_rply;
 
 //______________________________________________________________________________
 //
-// Removed aliases
+// Removed aliases (inherited from schematics)
 //
 // reg            sd1;
 // wire           nrs;
@@ -1131,7 +1131,9 @@ assign plr[24] = (ra_fr & en_alu) ? ~plm[24] : ~plm_wt[24];
 
 assign set_cend =  na[0] & mc_stb & pla[25] & ~pla[26];
 assign wt_state = ~na[0] & mc_stb & pla[25] & ~pla[26];
-
+//
+// ALU operation is modifiable from extended arithmetics unit
+//
 assign plm1m   = plm[1] | (~plm[25] & ~dc_fb);
 assign plm18m  = plm[18] | (~ea_1t & ea_sh2 & ea_shl);
 assign plm19m  = plm[19] & ( ea_1t | ~ea_shl);
@@ -1662,16 +1664,17 @@ assign cond_v  = ~ea_shr
                  & ((alu_cr[14] ^ alu_cr[15]) | ~sf_dir |  sf_byte)
                  & (sf_dir | (cond_n ^ cond_c0))));
 
-assign cond_c  = (wait_ndiv | ~ea_div)
+assign cond_c  = (zero_div | ~ea_div)
                & ((~sf_sub ^ cond_c0) | sf_inv | ea_mul)
                & cond_c1
                & cond_c2;
 
-assign cond_c0 = sf_lr  & ~sf_byte & alu_fr[15]
-               | sf_lr  &  sf_byte & alu_fr[7]
-               | sf_dir & ~sf_byte & alu_cr[15] & ~ea_mul & ~ea_div
-               | sf_dir &  sf_byte & alu_cr[7]
-               | sf_rr  & ~ea_shr2 & alu_fr[0];
+assign cond_c0 = (~sf_lr  |  sf_byte | alu_fr[15])
+               & (~sf_lr  | ~sf_byte | alu_fr[7])
+               & (~sf_rr  |  ea_shr2 | alu_fr[0])
+               & (~sf_dir | ~sf_byte | alu_cr[7])
+               & (~sf_dir |  sf_byte | alu_cr[15] | ea_mul | ea_div);
+
 assign cond_c1 = ~ea_mul | ((~eq1 | ~ea22[15]) & (~zh | ~zl | ea22[15]));
 assign cond_c2 = ~ea_shr2 | ea_20r;
 
@@ -1917,15 +1920,15 @@ assign ea_sh2     = ea_nrdy &  dc_i9 &  dc_i10;
 assign ea_div     = ea_nrdy &  dc_i9 & ~dc_i10;
 assign ea_mul     = ea_nrdy & ~dc_i9 & ~dc_i10;
 assign sh_cin     = (ea_shl | ea_div) ? ear2[15] : psw[0];
-assign ea_vdiv    = wait_ndiv
-                  | ~(ea_mxinr ^ alu_fr[15] ^ alu_cr[15])
-                  | ~(ea_mxinr ^ tlz ^ acc[15]);
+assign ea_vdiv    = zero_div
+                  | (ea_mxinr ^ alu_fr[15] ^ alu_cr[15])
+                  | (ea_mxinr ^ tlz ^ acc[15]);
 
 assign eas_dir    = nshift & ~(ea_div & ea_f[3]);
 assign eas_left   = lshift |  (ea_div & ea_f[3]);
 assign eas_right  = rshift;
 
-assign ea_px[1]   = (ea_ct[3:0] == 4'b0000);
+assign ea_px[1]   = (ea_ct[4:1] == 4'b0000);
 assign ea_px[2]   = (ea_ct[3:0] == 4'b0010);
 assign ea_px[3]   = (ea_ct[3:0] == 4'b0011);
 assign ea_px[4]   = (ea_ct[3:0] == 4'b0100);
@@ -1947,7 +1950,7 @@ begin
    if (wr1) ea_1tm   <= ea_1t;
    if (wr1) ea_f0r   <= ea_f[0];
    if (ea_ctld)
-      ea_f4r <= 1'b1;
+      ea_f4r <= 1'b0;
    else
       if (wr1) ea_f4r <= ea_f[4];
 end
@@ -2000,10 +2003,10 @@ end
 always @(*)
 begin
    if (wr2 & ea_fn23r) wait_div <= ~cond_z;
-   if (wr2 & ea_1tm)  wait_ndiv <= cond_z;
+   if (wr2 & ea_1tm)  zero_div <= cond_z;
    if (wr1 & ea_1t) tlz <= ear1[15];
 
-   if (rd2 & ~ea_1t & ~(tlz ^ xb[15]))
+   if (rd2 & ~ea_1t & (tlz ^ xb[15]))
       wait_vdiv <= 1'b1;
    else
       if (ea_1t)

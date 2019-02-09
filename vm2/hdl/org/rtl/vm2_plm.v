@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2017 by 1801BM1@gmail.com
+// Copyright (c) 2014-2019 by 1801BM1@gmail.com
 //
 // 1801VM2 programmable logic matrices (PLM)
 //______________________________________________________________________________
@@ -13,7 +13,90 @@
 //
 // Outputs:
 //
-//    sp[36:31] - next microinstruction address [5:0]
+//    plm[8]   - microinstruction type selection
+//    plm[0]      x0 - system control register strobe
+//                01 - two operand microinstruction (x, y)
+//                11 - one operand microinstruction (x, const/vector)
+//
+//    plm[2]   - write result target
+//    plm[3]      000   - y
+//    plm[29]     001   - x
+//                010   - acc
+//                011   - x, fr1, fr (address register, read phase)
+//                101   - x, fr
+//                110   - acc, fw (address register, write phase)
+//                111   - x, fw
+//
+//    plm[9:12] - y operand for two-ops microinstruction
+//    plm[4]    - x operand
+//    plm[5]      0000  - R0
+//    plm[6]      0001  - R1
+//    plm[7]      0010  - R2
+//                0011  - R3
+//                0100  - R4
+//                0101  - R5
+//                0110  - R6
+//                0111  - R7
+//                1000  - EA_RA1 (Extended Arithmetics Register 1)
+//                1001  - EA_RA2 (Extended Arithmetics Register 2)
+//                1010  - EA_CNT (Extended Arithmetics Counter)
+//                1011  - SRC (Source Register))
+//                1100  - PSW
+//                1101  - ACC (Accumulator)
+//                1110  - AREG (QBus Address )
+//                1111  - QREG (QBus Data)
+//
+//    plm[9]    - constant/vector selector for single-op microinstruction
+//    plm[10]     0000  - psw                - PSW
+//    plm[11]     0001  - 00000000iiiiiii0   - offset from opcode, MARK, SOB
+//    plm[12]     0010  - 000001             - INC, DEC
+//                0011  - 000002             - INC
+//                0100  - 000000             - CLR
+//                0101  - 000004
+//                0110  - cpsw               - copy PSW
+//                0111  - bir                - command buffer (prefetched 2nd/3rd word)
+//                1000  - branch             - sign extended offset in BR instruction
+//                1001  - nnnnnnnnnnnnnnnn   - result sign extention
+//                1010  - 000000000000000c   - C flag
+//                1011  - 000020
+//                1100  - vector             - defined by vsel, see the next table
+//                1101  - 000024
+//                1110  - cpc                - copy of PC
+//                1111  - cpc                - copy of PC
+//    plm[20:17]
+//    vsel[0:3] - vector index
+//                0000  - 000030
+//                0001  - 000020
+//                0010  - 000010
+//                0011  - 000014
+//                0100  - 000004
+//                0101  - 000174
+//                0110  - 000000
+//                1000  - 000250
+//                1001  - 000024
+//                1010  - 000100
+//                1011  - 000170
+//                1100  - 000034
+//                1101  - 000274
+//
+//    plm[20:18]  - ALU result shift mode
+//                000   - not used
+//                001   - not used
+//                010   - shift right, arithmetic, msb replicated
+//                011   - shift right, param bit shifted in
+//                100   - shift left, zero shited in
+//                101   - shift left, param bit shifted in
+//                110   - no shift
+//                111   - no shift, byte xchg
+//
+//    plm[36:31] - next microinstruction address [5:0]
+//
+// System control outputs (sp[0] == 0):
+//    sp[3:1]  - interrupt reason register (ri[0:2])
+//    sp[13]   - INIT output set (INIT reset is done by timer)
+//    sp[14]   - go to waiting state
+//    sp[15]   - reset interrupt source
+//    sp[20:17] - set vector vsel[0:3]
 //
 module vm2_plm
 (

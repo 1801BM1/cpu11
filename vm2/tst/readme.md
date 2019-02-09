@@ -12,6 +12,7 @@ Pitest may be configured to calculate specified number of pi digits
 #### \org
 Original ROM binaries and restored sources:
 - 791401, basic PDP-11 instructions test
+- 799402, extended arithmetics PDP-11 instructions test (ASH, ASHC, MUL and DIV)
 - 691404, 1801BM2 interrupt test on MC1201.02 board
 
 #### \out
