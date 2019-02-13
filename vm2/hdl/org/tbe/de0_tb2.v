@@ -53,7 +53,7 @@ endmodule
 // Primary testbench top module
 //
 module tb2();
-integer i;
+integer i, i0;
 
 wire        clko;       // internal clock
 reg         clk;        // processor clock
@@ -212,9 +212,13 @@ begin
 
       if (sel_all)
       begin
-@ (negedge clk);
+
+      for (i0=0; i0<`SIM_CONFIG_PREFETCH_BUG; i0 = i0 + 1)
+      begin
+         @ (negedge clk);
+         @ (posedge clk);
+      end
 #2
-//@ (posedge clk);
          rply   = 1'b0;
          ad_oe  = 1'b1;
       end
@@ -241,8 +245,9 @@ always @(negedge dout)
 begin
    if (sel_all)
    begin
-// @ (negedge clk);
+//@ (negedge clk);
 //@ (posedge clk);
+#2
       rply = 1'b0;
    end
 
