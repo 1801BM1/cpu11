@@ -46,7 +46,6 @@ if exist .\%1\hdl\%2\syn\%3\work		rd  .\%1\hdl\%2\syn\%3\work /s /q
 if exist .\%1\hdl\%2\syn\%3\iseconfig		rd  .\%1\hdl\%2\syn\%3\iseconfig /s /q
 if exist .\%1\hdl\%2\syn\%3\ipcore_dir		rd  .\%1\hdl\%2\syn\%3\ipcore_dir /s /q
 if exist .\%1\hdl\%2\syn\%3\%3_xdb		rd  .\%1\hdl\%2\syn\%3\%3_xdb /s /q
-mkdir .\%1\hdl\%2\syn\%3\work
 exit /b
 
 :blank

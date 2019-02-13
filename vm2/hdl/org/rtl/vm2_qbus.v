@@ -134,7 +134,7 @@ reg            all_rdy_t0;             //
 reg            all_rdy_t1;             //
 reg            alu_nrdy;               // ALU not ready
 reg            sta_nrdy;               // state not ready
-reg            cmd_nrdy;               // instruction decoder not ready
+reg            cmd_nrdy;               // instruction completion
 wire           pli_nrdy;               // interrupt polling not ready
 reg            tim_nrdy0;              //
 reg            tim_nrdy1;              //
@@ -185,6 +185,7 @@ wire  [36:0]   pla;                    //
 reg   [4:0]    plm_rn;                 //
 wire  [6:0]    rn_wa;                  //
 wire           pc2_wa;                 //
+wire           pc2_was;                //
 wire  [6:0]    rn_ry;                  //
 wire  [6:0]    rn_rx;                  //
 wire  [7:0]    wa;                     //
@@ -310,6 +311,7 @@ reg   [5:0]    iocmd_st;               //
 reg   [1:0]    iopc_st;                //
 reg   [5:0]    io_st;                  //
 reg            buf_res;                //
+reg            pc2_res;                // ignore pc2 write
 wire           wr1, wr2;               //
 wire           rd1, rd2;               //
 wire           salu;                   //
@@ -726,8 +728,8 @@ assign io_alt     = ~plr[24] & ~io_rcd & ~io_x001 & plr[21];
 assign io_wr      = (io_x001 & ~dc_mop1) | (~io_rcd & ~io_iak & plr[23]);
 assign io_rd      = (io_x001 & ~dc_mop0) | plr[22];
 assign io_in      = io_rcd | (io_rd & ~io_cmd);
-assign io_cmd     = io_rd & ~plr[21] & ~plr[24];
-assign io_rcd     = io_rd & ~plr[24] & plr[23] & plr[21];
+assign io_cmd     = ~plr[24] &         & plr[22] & ~plr[21];
+assign io_rcd     = ~plr[24] & plr[23] & plr[22] &  plr[21];
 assign io_rcd1    = ra_fr2 & ~na1w;
 assign io_x001    = ~plr[23] & ~plr[22] & plr[21];
 
@@ -987,6 +989,24 @@ begin
    else
       if (set_cend)
          cmd_nrdy <= 1'b1;
+end
+
+//
+// Instructions with two operands and sorces address mode is @PC
+// For this instruction we suppress the pc2 write in source read phase
+//
+always @(*)
+begin
+   if (mc_res)
+      pc2_res <= 1'b0;
+   else
+      if (ir_stb)
+         pc2_res =  (breg[14:12] != 3'o0)    // two ops instructions
+                  & (breg[14:12] != 3'o7)    //
+                  & (breg[11:6] == 6'o17)    // source is @PC
+                  & (breg[5:3] != 3'o6)      // not E(Rn) destination
+                  & (breg[5:3] != 3'o7)      // not @E(Rn) destination
+                  & (breg[2:0] != 3'o7);     // not PC related detination
 end
 
 always @(*)
@@ -1803,7 +1823,8 @@ assign ry[7]   = (plm[12:10] == 3'b111);
 
 assign rn_wa[6:0] = (wr2 & wa_gpr) ? wa[6:0] : 7'b0000000;
 assign pc_wax     =  wr2 & wa_r1;
-assign pc2_wa     =  wr2 & wa_gpr  & wa[7];
+assign pc2_was    =  wr2 & wa_gpr  & wa[7];
+assign pc2_wa     =  pc2_was & ~(pc2_res & ~io_rcd & ~io_cmd);
 assign acc_wa     =  wr2 & wa_reg  & wa[5];
 assign rs_wa      =  wr2 & wa_reg  & wa[3];
 assign ra_wa      =  wr2 & ra_fw;

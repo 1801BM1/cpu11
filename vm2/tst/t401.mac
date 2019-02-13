@@ -77,7 +77,7 @@
 		vect	30			;
 		vect	34			;
 		vect	40			;
-		vect	44, $apthd, $endad	;
+		vect	44			;
 		vect	50			;
 		vect	54			;
 		vect	60			;
@@ -3124,27 +3124,15 @@ next:		cmp	@R5, #123 		; тест 123, вывод сообщения
 		inc	-(R5)			;
 		halt				; нарушен порядок тестов
 						;
-1$:		inc	$pass			;
-		cmpb	$pass, #1		;
-		bne	get42			;
-		iot				;
+1$:		iot				;
 		endpas				;
-						;
 		mov	numpas, R0		;
 		jsr	PC, outhex		;
 		inc	numpas			;
 ;_____________________________________________________________________________
 	
-get42:		mov	@#42, R0		;
-		beq	doagn			;
-$endad:		jsr	PC, @R0			;
-		nop				;
-		nop				;
-		nop				;
-						;
 doagn:		clr	$testn			;
-		halt				;
-;		halt				; проход закончен
+		halt				; проход закончен
 		jmp	start			;
 						;
 pwrdn:		mov	#pwrup, @#24		;
@@ -3159,14 +3147,13 @@ pwrup:		mov	#start, SP		;
 ;
 ; Точка обработки IOT -  печать сообщения
 ;
-type:		bitb	#40, @#$envm		;
+type:		mtps	#340			;
+		mov	@0(SP),	R3		;
 ;		mov	#000177, @#177714	;
 ;		mov	#000000, @#177715	;
 ;		br	type			;
 ;		halt				;
-		bne	3$			;
-		mov	@0(SP),	R3		;
-						;
+;		bne	3$			;
 1$:		tstb	@R3			;
 		beq	3$			;
 2$:		tstb	@tps			;
