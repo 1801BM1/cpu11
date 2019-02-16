@@ -57,6 +57,9 @@ integer i, i0;
 
 wire        clko;       // internal clock
 reg         clk;        // processor clock
+reg         clk_f1;     //
+reg         clk_f2;     //
+                        //
 reg         sp;         // peripheral timer input
 reg         dclo;       // processor reset
 reg         aclo;       // power fail notoficaton
@@ -316,14 +319,26 @@ end
 //
 initial
 begin
+   clk_f1 = 1;
+   clk_f2 = 1;
+   clk = 0;
    forever
       begin
          clk = 0;
+         clk_f1 = 0;
          #(`SIM_CONFIG_CLOCK_HPERIOD);
          clk = 1;
+         clk_f2 = 0;
+         #(`SIM_CONFIG_CLOCK_HPERIOD);
+         clk = 0;
+         clk_f1 = 1;
+         #(`SIM_CONFIG_CLOCK_HPERIOD);
+         clk = 1;
+         clk_f2 = 1;
          #(`SIM_CONFIG_CLOCK_HPERIOD);
       end
 end
+
 
 //_____________________________________________________________________________
 //
@@ -380,10 +395,11 @@ end
 //
 vm2 cpu
 (
-   .pin_clk(clk),             // processor clock
+   .pin_clk_p(clk_f1),        // processor clock, rising edge f1
+   .pin_clk_n(~clk_f1),       // processor clock, falling edge f1
    .pin_init_n(init),         // peripheral reset
    .pin_dclo_n(dclo),         // processor reset
-   .pin_aclo_n(aclo),         // power fail notoficaton
+   .pin_aclo_n(aclo),         // power fail notificaton
    .pin_halt_n(halt),         // halt mode request
    .pin_evnt_n(evnt),         // timer interrupt requests
    .pin_virq_n(virq),         // vectored interrupt request

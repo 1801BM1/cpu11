@@ -40,3 +40,8 @@ To setup compilation environment:
 - run build.bat test_filename_without_extension
 - see the compilation results in /out folder
 - if some error occured, see the vt52.log file in shared folder
+
+Test timings (taken from async original core to compare):
+t401 - 674.560 nanoseconds
+t402 - 4.219.640 nanoseconds
+t404 - 1.500.800 nanoseconds
