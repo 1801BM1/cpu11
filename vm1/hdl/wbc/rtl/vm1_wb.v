@@ -1880,7 +1880,7 @@ assign   yadr[3:0] = (vc_vsel                         ? vsel         : 4'b0000)
 assign   yadr[4]   = vc_vsel;
 assign   yadr[5]   = vc_csel;
 
-vm1_aram vm1_aram_reg(
+vm1_vcram vm1_vcram_reg(
    .clock(clk_n),
    .address_a(xadr),
    .data_a(xbus_in),

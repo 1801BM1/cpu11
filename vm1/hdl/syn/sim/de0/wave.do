@@ -218,20 +218,20 @@ add wave -noupdate -group USTB /tb1/cpu0/core/ustb1_h
 add wave -noupdate -group USTB /tb1/cpu0/core/ustb1_hl
 add wave -noupdate -group USTB /tb1/cpu0/core/au_alsl
 add wave -noupdate -expand -group Registers -radix octal -childformat {{{/tb1/cpu0/core/psw[15]} -radix octal} {{/tb1/cpu0/core/psw[14]} -radix octal} {{/tb1/cpu0/core/psw[13]} -radix octal} {{/tb1/cpu0/core/psw[12]} -radix octal} {{/tb1/cpu0/core/psw[11]} -radix octal} {{/tb1/cpu0/core/psw[10]} -radix octal} {{/tb1/cpu0/core/psw[9]} -radix octal} {{/tb1/cpu0/core/psw[8]} -radix octal} {{/tb1/cpu0/core/psw[7]} -radix octal} {{/tb1/cpu0/core/psw[6]} -radix octal} {{/tb1/cpu0/core/psw[5]} -radix octal} {{/tb1/cpu0/core/psw[4]} -radix octal} {{/tb1/cpu0/core/psw[3]} -radix octal} {{/tb1/cpu0/core/psw[2]} -radix octal} {{/tb1/cpu0/core/psw[1]} -radix octal} {{/tb1/cpu0/core/psw[0]} -radix octal}} -subitemconfig {{/tb1/cpu0/core/psw[15]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[14]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[13]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[12]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[11]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[10]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[9]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[8]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[7]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[6]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[5]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[4]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[3]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[2]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[1]} {-height 15 -radix octal} {/tb1/cpu0/core/psw[0]} {-height 15 -radix octal}} /tb1/cpu0/core/psw
-add wave -noupdate -expand -group Registers -label R0 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[15]}
-add wave -noupdate -expand -group Registers -label R1 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[7]}
-add wave -noupdate -expand -group Registers -label R2 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[11]}
-add wave -noupdate -expand -group Registers -label R3 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[3]}
-add wave -noupdate -expand -group Registers -label R4 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[13]}
-add wave -noupdate -expand -group Registers -label R5 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[5]}
-add wave -noupdate -expand -group Registers -label PC -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[1]}
-add wave -noupdate -expand -group Registers -label R6 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[9]}
-add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[2]}
-add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[4]}
-add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[6]}
-add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[10]}
-add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[12]}
-add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_aram_reg/altsyncram_component/mem_data[14]}
+add wave -noupdate -expand -group Registers -label R0 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[15]}
+add wave -noupdate -expand -group Registers -label R1 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[7]}
+add wave -noupdate -expand -group Registers -label R2 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[11]}
+add wave -noupdate -expand -group Registers -label R3 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[3]}
+add wave -noupdate -expand -group Registers -label R4 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[13]}
+add wave -noupdate -expand -group Registers -label R5 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[5]}
+add wave -noupdate -expand -group Registers -label PC -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[1]}
+add wave -noupdate -expand -group Registers -label R6 -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[9]}
+add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[2]}
+add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[4]}
+add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[6]}
+add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[10]}
+add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[12]}
+add wave -noupdate -expand -group Registers -radix octal {/tb1/cpu0/core/vreg_rm/vm1_vcram_reg/altsyncram_component/mem_data[14]}
 add wave -noupdate -group Tbecnh /tb1/ad_oe
 add wave -noupdate -group Tbecnh -radix octal /tb1/addr
 add wave -noupdate -group Tbecnh -radix octal /tb1/ad_mux

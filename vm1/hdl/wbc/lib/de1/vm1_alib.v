@@ -16,7 +16,7 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module vm1_aram (
+module vm1_vcram (
    address_a,
    address_b,
    byteena_a,
