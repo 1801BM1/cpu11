@@ -14,7 +14,7 @@
 // Interface is compatible with Altera Dual-Port Single Clock RAM.
 // Writing on Port B is not used, because Port B is for ROM only.
 //
-module vm1_aram(
+module vm1_vcram(
    input [5:0]  address_a,
    input [5:0]  address_b,
    input [1:0]  byteena_a,
