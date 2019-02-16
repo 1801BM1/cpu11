@@ -16,3 +16,9 @@ The 1801BM2 is the futher development of 1801BM1, MUL and DIV instructions added
 two-stage pipeline and instruction prefetch were implemented, the microinstructions
 took only one internal clock to complete (1801BM1 required two clock periods per
 microinstruction). These features improved the processor performance significantly.
+
+## Original factory schematics and description
+There are the links to original manufacturer's 1801BM2 gate-level schematics and description (djvu, in Russian).
+- [1801BM2 Schematics](http://www.1801bm1.com/files/retro/1801/vm2/Doc/1801BM2_schematics.djvu)
+- [1801BM2 Techdocs Volume I](http://www.1801bm1.com/files/retro/1801/vm2/Doc/1801BM2_description_vol1.djvu)
+- [1801BM2 Techdocs Volume II](http://www.1801bm1.com/files/retro/1801/vm2/Doc/1801BM2_description_vol2.djvu)

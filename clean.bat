@@ -24,7 +24,7 @@ call :aclean %1 wbc de1
 call :aclean %1 wbc de2-115
 call :xclean %1 wbc ax309
 
-del *.sdo *.vo *.qip *.sft *.wlf *.jdi *.ver *.mem *.xrf *.bak msim_transcript. vm1_run_msim*.do modelsim.ini *.rpt /q /s
+del *.qws *.sdo *.vo *.qip *.sft *.wlf *.jdi *.ver *.mem *.xrf *.bak msim_transcript. vm1_run_msim*.do modelsim.ini *.rpt /q /s
 
 for /r "./%~1/hdl" %%9 in (*.v) do atxt32 %%9 %%9 -s3 -f
 exit /b

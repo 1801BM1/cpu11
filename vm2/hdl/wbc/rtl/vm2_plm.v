@@ -39,11 +39,11 @@
 //                0111  - R7
 //                1000  - EA_RA1 (Extended Arithmetics Register 1)
 //                1001  - EA_RA2 (Extended Arithmetics Register 2)
-//                1010  - EA_CNT (Extended Arithmetics Counter)
+//                1010  - EA_CNT (Extended Arithmetics Counter), no connection
 //                1011  - SRC (Source Register))
 //                1100  - PSW
 //                1101  - ACC (Accumulator)
-//                1110  - AREG (QBus Address )
+//                1110  - AREG (QBus Address), no connection
 //                1111  - QREG (QBus Data)
 //
 //    plm[9]    - constant/vector selector for single-op microinstruction
@@ -63,6 +63,20 @@
 //                1101  - 000024
 //                1110  - cpc                - copy of PC
 //                1111  - cpc                - copy of PC
+//
+//    plm[13]     - ALU operation
+//    plm[14]     00000 -  y
+//    plm[15]     00001 - ~y
+//    plm[16]     01000 - ~x
+//    plm[17]     01001 -  x
+//                10001 -  x-y
+//                11000: op = " y-x";
+//                11001: op = " x+y";
+//                10000: op = " x^y";
+//                10010: op = " x|y";
+//                10100: op = " x&y";
+//                10101: op = "x&~y";
+//
 //    plm[20:17]
 //    vsel[0:3] - vector index
 //                0000  - 000030
