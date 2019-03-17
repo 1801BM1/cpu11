@@ -27,8 +27,8 @@
 `define  SIM_CONFIG_CLK_HIGH           1
 `define  SIM_CONFIG_CLK_LOW            1
 
-//`define  SIM_CONFIG_DEBUG_MC           1
-//`define  SIM_CONFIG_DEBUG_IO           1
+// `define  SIM_CONFIG_DEBUG_MC           1
+// `define  SIM_CONFIG_DEBUG_IO           1
 `define  SIM_CONFIG_DEBUG_TTY          1
 //
 // The amount clki clocks to delay RPLY for DIN to reproduce the (PC)

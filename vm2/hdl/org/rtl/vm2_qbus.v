@@ -166,7 +166,8 @@ reg            tim_nrdy0;              //
 reg            tim_nrdy1;              //
 wire           mc_rdy;                 //
 reg            sa1, sa2;               //
-reg            in_cmd0, in_cmd1;       //
+reg            br_iocmd;               // instruction reading to breag in progress
+reg            br_ready;               // breg contains valid read instruction
 reg            ir_stb;                 //
 wire           bir_stb;                //
 wire           bra_req;                //
@@ -187,7 +188,7 @@ reg            acmp_te, acmp_en;       //
 wire           din_set, dout_set;      //
 reg            din_clr, dout_clr;      //
 wire           sync_clr;               //
-wire           rcmd_set;               //
+wire           rcmd_set;               // set command re-fetch request
                                        //
 reg   [15:0]   ireg;                   // primary instruction register
 reg   [15:0]   breg;                   // prefetch instruction register
@@ -378,7 +379,6 @@ reg            dc_i9;                  //
 reg            dc_i10;                 //
 reg            dc_fb;                  //
 reg            dc_rtt;                 //
-reg            dc_aux0;                //
 reg            dc_mop0;                //
 reg            dc_mop1;                //
 wire           alt_cnst;               //
@@ -441,7 +441,8 @@ wire           tout;                   //
                                        //
 //______________________________________________________________________________
 //
-wire           io_clr;
+reg            br_cmdrq;               // breg read cmd request
+wire           to_block;               // block timeout false reply
 wire           wra;
 wire           wtbt, to_rply;
 
@@ -726,14 +727,14 @@ end
 
 always @(*)
 begin
-   if (mc_res | io_clr | (sync & ~ardy_s0))
+   if (mc_res | to_block | (sync & ~ardy_s0))
       adr_req <= 1'b0;
    else
       if (wra)
          adr_req <= 1'b1;
 end
 
-assign to_rply = ~to_clr & ~word27 & ~tevent & io_qto;
+assign to_rply = ~to_clr & ~word27 & tevent & io_qto;
 assign ua_rply = (din | dout) & sel1;
 always @(*)
 begin
@@ -756,7 +757,7 @@ assign io_rd      = (io_x001 & ~dc_mop0) | plr[22];
 assign io_in      = io_rcd | (io_rd & ~io_cmd);
 assign io_cmd     = ~plr[24] &         & plr[22] & ~plr[21];
 assign io_rcd     = ~plr[24] & plr[23] & plr[22] &  plr[21];
-assign io_rcd1    = ra_fr2 & ~na1w;
+assign io_rcd1    = ra_fr2 & na1w;
 assign io_x001    = ~plr[23] & ~plr[22] & plr[21];
 
 assign dout_set   = ~dout_clr & bus_dat;
@@ -890,7 +891,7 @@ end
 
 //______________________________________________________________________________
 //
-assign adr_eq  = ~acmp_en | (pc == areg);
+assign adr_eq  = ~acmp_en | (pc1 == areg);
 assign mdfy = acmp_en & ~acmp_te & adr_eq;
 always @(*)
 begin
@@ -938,7 +939,7 @@ assign dc_i7  = ~ir_stb | (breg[2:0] == 3'b111);
 assign dc_bi  = pld[5];
 assign dc_f8  = ir_stb & psw[8];
 assign dc_fl  = ~dc_fb & ((ir_stb & dc_bi) | (~dc_mop0 & dc_mop1));
-assign dc_aux = dc_j7 | bra | dc_aux0;
+assign dc_aux = dc_j7 | bra | br_cmdrq;
 assign alt_cnst = (~dc_fb & plm[30]) | (dc_fb & plm[30] & plm[5] & plm[6]);
 
 always @(*)
@@ -958,10 +959,10 @@ end
 always @(*)
 begin
    if (io_cmdr)
-      dc_aux0 <= 1'b0;
+      br_cmdrq <= 1'b0;
    else
       if (rcmd_set)
-         dc_aux0 <= 1'b1;
+         br_cmdrq <= 1'b1;
 end
 //______________________________________________________________________________
 //
@@ -1039,26 +1040,26 @@ end
 always @(*)
 begin
    if (io_cmd & wra)
-      in_cmd0 <= 1'b0;
+      br_iocmd <= 1'b0;
    else
       if (sk)
-         in_cmd0 <= 1'b1;
+         br_iocmd <= 1'b1;
 end
 
 always @(*)
 begin
    if (   reset
-        | ~in_cmd0
+        | ~br_iocmd
         | buf_res
         | word27
         | (~f1 & clr_cend))
-      in_cmd1 <= 1'b0;
+      br_ready <= 1'b0;
    else
-      if (~f1 & in_cmd0 & bir_stb)
-         in_cmd1 <= 1'b1;
+      if (~f1 & br_iocmd & bir_stb)
+         br_ready <= 1'b1;
 end
 
-assign bra_req = cmd_nrdy & in_cmd1;
+assign bra_req = cmd_nrdy & br_ready;
 always @(*)
 begin
    if (reset)
@@ -1159,11 +1160,10 @@ begin
    if (mw_stb)
    begin
       na0r <= na[0];
+      na1w <= na[1];
       get_state <= get_sta0;
       plm_wt[30:8] <= plm[30:8];
    end
-
-   if (wr2) na1w <= ~na[1];
 end
 
 assign plr[8]  = plm_wt[8];
@@ -1450,9 +1450,9 @@ end
 // QBus and INIT timer counter
 //
 assign pli_nrdy = tinit | tim_nrdy0 | tim_nrdy1;
-assign tevent   = ~tout | tinit | tim_nrdy1;
+assign tevent   = ~(~tout | tinit | tim_nrdy1);
 assign tena     = ~reset & (pli_nrdy | din | dout);
-assign tovf     = (~io_qto & ~tevent) | thang;
+assign tovf     = (~io_qto & tevent) | thang;
 
 always @(*)
 begin
@@ -1856,7 +1856,7 @@ assign acc_wa     =  wr2 & wa_reg  & wa[5];
 assign rs_wa      =  wr2 & wa_reg  & wa[3];
 assign ra_wa      =  wr2 & ra_fw;
 assign ra_wx      =  alu_wr & ra_fr;
-assign wra        =  (ra_wx | ra_wa) & ~io_clr
+assign wra        =  (ra_wx | ra_wa) & ~to_block
                   & (plr[21] | plr[22] | plr[23])
                   & (~dc_mop0 | ~dc_mop1 | ~io_x001);
 
@@ -1951,7 +1951,7 @@ always @(*) if (mw_stb) ra_fw <= ra_fwn;
 assign ra_fwn = plm[2] & plm[3];
 assign ra_fr  =  ra_fr1 | (plm[2] & ~plm[3]);
 assign ra_fr1 = ~plm[2] & plm[3] & plm[29];
-always @(*) if (wr2) ra_fr2 <= ra_fr1;
+always @(*) if (mw_stb) ra_fr2 <= ra_fr1;
 always @(*) if (wr2) wr7 <= wa_gpr & wa[7] & ~ra_fr2;
 
 //______________________________________________________________________________
@@ -2234,13 +2234,13 @@ begin
    if (to_clr | word27)
       io_qto <= 1'b0;
    else
-      if (tevent)
+      if (~tevent)
          io_qto <= 1'b1;
 end
 
 assign thang      = ~iocmd_st[2] & iocmd_st[5];
-assign abort      = ~iocmd_st[0] & ~iocmd_st[1] & ~tevent & ~io_qto;
-assign io_clr     = thang | (io_rcd1 & iocmd_st[5]);
+assign abort      = iocmd_st[0] | iocmd_st[1] | (tevent & ~io_qto);
+assign to_block   = thang | (io_rcd1 & iocmd_st[5]);
 assign rcmd_set   = thang | (buf_res & iocmd_st[4]);
 
 always @(*)
