@@ -127,7 +127,7 @@ vm2 cpu
    .pin_dmgo_n(de0_fl_byte_n),         // bus granted output
    .pin_iako_n(de0_gpio0_d[15]),       // interrupt vector input
    .pin_sel_n(de0_gpio0_d[16]),        // mode access select
-   .pin_clko(de0_gpio0_d[17]),         // peripheral timer input
+   .pin_clko(de0_gpio0_clkout[0]),     // peripheral timer input
    .pin_waki_n(de0_gpio0_d[18]),       //
    .pin_wrq_n(de0_gpio0_d[19])         //
 );
@@ -142,6 +142,7 @@ assign   de0_gpio0_d[11]   = 1'bZ;
 assign   de0_gpio0_d[12]   = 1'bZ;
 assign   de0_gpio0_d[13]   = 1'bZ;
 assign   de0_gpio0_d[14]   = 1'bZ;
+assign   de0_gpio0_d[17]   = 1'bZ;
 assign   de0_gpio0_d[18]   = 1'bZ;
 
 //______________________________________________________________________________
@@ -195,9 +196,10 @@ assign   de0_vga_r      = 4'h0;
 assign   de0_vga_g      = 4'h0;
 assign   de0_vga_b      = 4'h0;
 
-assign   de0_gpio0_clkout  = 2'b00;
-assign   de0_gpio1_clkout  = 2'b00;
-//assign de0_gpio0_d       = 32'hzzzzzzzz;
+// assign   de0_gpio0_clkout  = 2'b00;
+assign   de0_gpio0_clkout[1] = 1'b0;
+assign   de0_gpio1_clkout    = 2'b00;
+// assign de0_gpio0_d       = 32'hzzzzzzzz;
 assign   de0_gpio0_d[31:20]= 12'hzzz;
 assign   de0_gpio1_d       = 32'hzzzzzzzz;
 
