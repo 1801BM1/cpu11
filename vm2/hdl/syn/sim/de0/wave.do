@@ -13,29 +13,29 @@ add wave -noupdate -expand -group Pins /tb2/cpu/pin_dout_n
 add wave -noupdate -expand -group Pins /tb2/cpu/pin_iako_n
 add wave -noupdate -expand -group Pins /tb2/cpu/pin_rply_n
 add wave -noupdate -expand -group Pins /tb2/cpu/pin_sel_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_dclo_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_aclo_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_sack_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_evnt_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_halt_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_virq_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_init_n
-add wave -noupdate -expand -group Pins -expand -group misc /tb2/cpu/pin_init_ena
-add wave -noupdate -expand -group Clock -expand -group phase /tb2/cpu/core/f1
-add wave -noupdate -expand -group Clock -expand -group phase /tb2/clko
-add wave -noupdate -expand -group Clock -expand -group phase /tb2/clk
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_dclo_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_aclo_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_sack_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_evnt_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_halt_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_virq_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_init_n
+add wave -noupdate -expand -group Pins -group misc /tb2/cpu/pin_init_ena
+add wave -noupdate -expand -group Clock -expand -group phase /tb2/cpu/pin_clk_p
+add wave -noupdate -expand -group Clock -group eclk /tb2/clko
+add wave -noupdate -expand -group Clock -group eclk /tb2/clk
 add wave -noupdate -group Reset /tb2/cpu/core/reset
 add wave -noupdate -group Reset /tb2/cpu/core/abort
 add wave -noupdate -group Reset /tb2/cpu/core/mc_res
 add wave -noupdate -group Reset /tb2/cpu/core/tout
 add wave -noupdate -group Reset /tb2/cpu/core/dclo
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/aclo
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/aclo_ack
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/aclo_fall
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/aclo_rise
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/aclo_stb
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/aclo_res
-add wave -noupdate -group Reset -expand -group aclo /tb2/cpu/core/ac0
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/aclo
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/aclo_ack
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/aclo_fall
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/aclo_rise
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/aclo_stb
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/aclo_res
+add wave -noupdate -group Reset -group aclo /tb2/cpu/core/ac0
 add wave -noupdate -group Interrupt /tb2/cpu/core/aclo_fall
 add wave -noupdate -group Interrupt /tb2/cpu/core/aclo_rise
 add wave -noupdate -group Interrupt /tb2/cpu/core/halt
@@ -69,7 +69,6 @@ add wave -noupdate -group Timer /tb2/cpu/core/tabort
 add wave -noupdate -group Timer /tb2/cpu/core/tim_nrdy0
 add wave -noupdate -group Timer /tb2/cpu/core/tim_nrdy1
 add wave -noupdate -group PLM -group Ready /tb2/cpu/core/abort
-add wave -noupdate -group PLM -group Ready /tb2/cpu/core/sa1
 add wave -noupdate -group PLM -group Ready /tb2/cpu/core/all_rdy
 add wave -noupdate -group PLM -group Ready /tb2/cpu/core/all_rdy_t0
 add wave -noupdate -group PLM -group Ready /tb2/cpu/core/all_rdy_t1
@@ -89,7 +88,6 @@ add wave -noupdate -group PLM -group Ready /tb2/cpu/core/mc_drdy1
 add wave -noupdate -group PLM /tb2/cpu/core/rta
 add wave -noupdate -group PLM /tb2/cpu/core/rta_fall
 add wave -noupdate -group PLM /tb2/cpu/core/iop_stb
-add wave -noupdate -group PLM /tb2/cpu/core/sa1
 add wave -noupdate -group PLM /tb2/cpu/core/mc_stb
 add wave -noupdate -group PLM /tb2/cpu/core/mw_stb
 add wave -noupdate -group PLM /tb2/cpu/core/wra
@@ -131,7 +129,6 @@ add wave -noupdate -group PLM -radix octal -childformat {{{/tb2/cpu/core/ri[2]} 
 add wave -noupdate -group PLM /tb2/cpu/core/wr2
 add wave -noupdate -group PLM /tb2/cpu/core/wr1
 add wave -noupdate -group PLM /tb2/cpu/core/pi_stb_rc
-add wave -noupdate -group PLM /tb2/cpu/core/pi_stb_xt
 add wave -noupdate -group PLM /tb2/cpu/core/pi_stb
 add wave -noupdate -group State /tb2/cpu/core/alu_st
 add wave -noupdate -group State /tb2/cpu/core/en_alu
@@ -164,93 +161,91 @@ add wave -noupdate -group Ircmd /tb2/cpu/core/io_cmd
 add wave -noupdate -group Ircmd /tb2/cpu/core/br_cmdrq
 add wave -noupdate -group Ircmd /tb2/cpu/core/br_iocmd
 add wave -noupdate -group Ircmd /tb2/cpu/core/br_ready
-add wave -noupdate -expand -group IOB -group BUS -radix octal -childformat {{{/tb2/cpu/core/ad[15]} -radix octal} {{/tb2/cpu/core/ad[14]} -radix octal} {{/tb2/cpu/core/ad[13]} -radix octal} {{/tb2/cpu/core/ad[12]} -radix octal} {{/tb2/cpu/core/ad[11]} -radix octal} {{/tb2/cpu/core/ad[10]} -radix octal} {{/tb2/cpu/core/ad[9]} -radix octal} {{/tb2/cpu/core/ad[8]} -radix octal} {{/tb2/cpu/core/ad[7]} -radix octal} {{/tb2/cpu/core/ad[6]} -radix octal} {{/tb2/cpu/core/ad[5]} -radix octal} {{/tb2/cpu/core/ad[4]} -radix octal} {{/tb2/cpu/core/ad[3]} -radix octal} {{/tb2/cpu/core/ad[2]} -radix octal} {{/tb2/cpu/core/ad[1]} -radix octal} {{/tb2/cpu/core/ad[0]} -radix octal}} -subitemconfig {{/tb2/cpu/core/ad[15]} {-height 15 -radix octal} {/tb2/cpu/core/ad[14]} {-height 15 -radix octal} {/tb2/cpu/core/ad[13]} {-height 15 -radix octal} {/tb2/cpu/core/ad[12]} {-height 15 -radix octal} {/tb2/cpu/core/ad[11]} {-height 15 -radix octal} {/tb2/cpu/core/ad[10]} {-height 15 -radix octal} {/tb2/cpu/core/ad[9]} {-height 15 -radix octal} {/tb2/cpu/core/ad[8]} {-height 15 -radix octal} {/tb2/cpu/core/ad[7]} {-height 15 -radix octal} {/tb2/cpu/core/ad[6]} {-height 15 -radix octal} {/tb2/cpu/core/ad[5]} {-height 15 -radix octal} {/tb2/cpu/core/ad[4]} {-height 15 -radix octal} {/tb2/cpu/core/ad[3]} {-height 15 -radix octal} {/tb2/cpu/core/ad[2]} {-height 15 -radix octal} {/tb2/cpu/core/ad[1]} {-height 15 -radix octal} {/tb2/cpu/core/ad[0]} {-height 15 -radix octal}} /tb2/cpu/core/ad
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/ad_oe
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/ad_rd
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/bus_adr
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/brd_rqh
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/brd_rql
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/adr_req
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/bus_dat
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/bus_free
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/ardy
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/ardy_s0
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/bfree
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/dmr
-add wave -noupdate -expand -group IOB -group BUS /tb2/cpu/core/ct_oe
-add wave -noupdate -expand -group IOB -group BUS -radix octal /tb2/cpu/core/pin_ad_in
-add wave -noupdate -expand -group IOB -group BUS -radix octal /tb2/cpu/core/pin_ad_out
-add wave -noupdate -expand -group IOB /tb2/cpu/core/wr1
-add wave -noupdate -expand -group IOB /tb2/cpu/core/wr2
-add wave -noupdate -expand -group IOB /tb2/cpu/core/alu_wr
-add wave -noupdate -expand -group IOB /tb2/cpu/core/io_start
-add wave -noupdate -expand -group IOB /tb2/cpu/core/io_start_xt
-add wave -noupdate -expand -group IOB /tb2/cpu/core/iop_stb
-add wave -noupdate -expand -group IOB /tb2/cpu/core/iop_stb_xt
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_cmd
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_cmdr
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_in
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_wr
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_rd
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_iak
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_sel
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_rcd
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_rcd1
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_rcdr
-add wave -noupdate -expand -group IOB -group io /tb2/cpu/core/io_pswr
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_una
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_sel
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_iak
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_rd
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_wr
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_word
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/dc_mop0
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/dc_mop1
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/rdat
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/sk
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_in
-add wave -noupdate -expand -group IOB -expand -group iop /tb2/cpu/core/iop_rcd
-add wave -noupdate -expand -group IOB /tb2/cpu/core/io_st
-add wave -noupdate -expand -group IOB /tb2/cpu/core/iopc_st
-add wave -noupdate -expand -group IOB /tb2/cpu/core/brd_wq
-add wave -noupdate -expand -group IOB {/tb2/cpu/core/iopc_st[1]}
-add wave -noupdate -expand -group IOB /tb2/cpu/core/alu_wr
-add wave -noupdate -expand -group IOB /tb2/cpu/core/brd_wa
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/din
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/din_clr
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/din_clr_rc
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/din_set
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/in_ua
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/sel1
-add wave -noupdate -expand -group IOB -expand -group DIN /tb2/cpu/core/sel2
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/dout
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/dout_clr
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/dout_s0
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/dout_set
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/bus_dat
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/wtbt
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/ardy
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/ardy_s0
-add wave -noupdate -expand -group IOB -group DOUT /tb2/cpu/core/drdy
-add wave -noupdate -expand -group IOB -group TOCLR /tb2/cpu/core/iop_rcd
-add wave -noupdate -expand -group IOB -group TOCLR /tb2/cpu/core/word27
-add wave -noupdate -expand -group IOB -group TOCLR /tb2/cpu/core/rd_end
-add wave -noupdate -expand -group IOB -group TOCLR /tb2/cpu/core/sd_word
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/to_rply
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/to_block
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/ua_rply
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/irply
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/rply
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/rply0
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/rply1
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/rply2
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/rply3
-add wave -noupdate -expand -group IOB -expand -group RPLY /tb2/cpu/core/rplys
-add wave -noupdate -expand -group IOB -expand -group SYNC /tb2/cpu/core/sync
-add wave -noupdate -expand -group IOB -expand -group SYNC /tb2/cpu/core/sync_s0
-add wave -noupdate -expand -group IOB -expand -group SYNC /tb2/cpu/core/sync_set
-add wave -noupdate -expand -group IOB -expand -group SYNC /tb2/cpu/core/sync_clr
-add wave -noupdate -expand -group IOB -expand -group SYNC /tb2/cpu/core/sync_clw
+add wave -noupdate -group IOB -group BUS -radix octal -childformat {{{/tb2/cpu/core/ad[15]} -radix octal} {{/tb2/cpu/core/ad[14]} -radix octal} {{/tb2/cpu/core/ad[13]} -radix octal} {{/tb2/cpu/core/ad[12]} -radix octal} {{/tb2/cpu/core/ad[11]} -radix octal} {{/tb2/cpu/core/ad[10]} -radix octal} {{/tb2/cpu/core/ad[9]} -radix octal} {{/tb2/cpu/core/ad[8]} -radix octal} {{/tb2/cpu/core/ad[7]} -radix octal} {{/tb2/cpu/core/ad[6]} -radix octal} {{/tb2/cpu/core/ad[5]} -radix octal} {{/tb2/cpu/core/ad[4]} -radix octal} {{/tb2/cpu/core/ad[3]} -radix octal} {{/tb2/cpu/core/ad[2]} -radix octal} {{/tb2/cpu/core/ad[1]} -radix octal} {{/tb2/cpu/core/ad[0]} -radix octal}} -subitemconfig {{/tb2/cpu/core/ad[15]} {-height 15 -radix octal} {/tb2/cpu/core/ad[14]} {-height 15 -radix octal} {/tb2/cpu/core/ad[13]} {-height 15 -radix octal} {/tb2/cpu/core/ad[12]} {-height 15 -radix octal} {/tb2/cpu/core/ad[11]} {-height 15 -radix octal} {/tb2/cpu/core/ad[10]} {-height 15 -radix octal} {/tb2/cpu/core/ad[9]} {-height 15 -radix octal} {/tb2/cpu/core/ad[8]} {-height 15 -radix octal} {/tb2/cpu/core/ad[7]} {-height 15 -radix octal} {/tb2/cpu/core/ad[6]} {-height 15 -radix octal} {/tb2/cpu/core/ad[5]} {-height 15 -radix octal} {/tb2/cpu/core/ad[4]} {-height 15 -radix octal} {/tb2/cpu/core/ad[3]} {-height 15 -radix octal} {/tb2/cpu/core/ad[2]} {-height 15 -radix octal} {/tb2/cpu/core/ad[1]} {-height 15 -radix octal} {/tb2/cpu/core/ad[0]} {-height 15 -radix octal}} /tb2/cpu/core/ad
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/ad_oe
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/ad_rd
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/bus_adr
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/brd_rqh
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/brd_rql
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/adr_req
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/bus_dat
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/bus_free
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/ardy
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/ardy_s0
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/bfree
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/dmr
+add wave -noupdate -group IOB -group BUS /tb2/cpu/core/ct_oe
+add wave -noupdate -group IOB -group BUS -radix octal /tb2/cpu/core/pin_ad_in
+add wave -noupdate -group IOB -group BUS -radix octal /tb2/cpu/core/pin_ad_out
+add wave -noupdate -group IOB /tb2/cpu/core/wr1
+add wave -noupdate -group IOB /tb2/cpu/core/wr2
+add wave -noupdate -group IOB /tb2/cpu/core/alu_wr
+add wave -noupdate -group IOB /tb2/cpu/core/io_start
+add wave -noupdate -group IOB /tb2/cpu/core/iop_stb
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_cmd
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_cmdr
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_in
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_wr
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_rd
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_iak
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_sel
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_rcd
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_rcd1
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_rcdr
+add wave -noupdate -group IOB -group io /tb2/cpu/core/io_pswr
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_una
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_sel
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_iak
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_rd
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_wr
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_word
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/dc_mop0
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/dc_mop1
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/rdat
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/sk
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_in
+add wave -noupdate -group IOB -group iop /tb2/cpu/core/iop_rcd
+add wave -noupdate -group IOB /tb2/cpu/core/io_st
+add wave -noupdate -group IOB /tb2/cpu/core/iopc_st
+add wave -noupdate -group IOB /tb2/cpu/core/brd_wq
+add wave -noupdate -group IOB {/tb2/cpu/core/iopc_st[1]}
+add wave -noupdate -group IOB /tb2/cpu/core/alu_wr
+add wave -noupdate -group IOB /tb2/cpu/core/brd_wa
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/din
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/din_clr
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/din_clr_rc
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/din_set
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/in_ua
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/sel1
+add wave -noupdate -group IOB -group DIN /tb2/cpu/core/sel2
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/dout
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/dout_clr
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/dout_s0
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/dout_set
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/bus_dat
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/wtbt
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/ardy
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/ardy_s0
+add wave -noupdate -group IOB -group DOUT /tb2/cpu/core/drdy
+add wave -noupdate -group IOB -group TOCLR /tb2/cpu/core/iop_rcd
+add wave -noupdate -group IOB -group TOCLR /tb2/cpu/core/word27
+add wave -noupdate -group IOB -group TOCLR /tb2/cpu/core/rd_end
+add wave -noupdate -group IOB -group TOCLR /tb2/cpu/core/sd_word
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/to_rply
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/to_block
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/ua_rply
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/irply
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/rply
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/rply0
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/rply1
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/rply2
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/rply3
+add wave -noupdate -group IOB -group RPLY /tb2/cpu/core/rplys
+add wave -noupdate -group IOB -group SYNC /tb2/cpu/core/sync
+add wave -noupdate -group IOB -group SYNC /tb2/cpu/core/sync_s0
+add wave -noupdate -group IOB -group SYNC /tb2/cpu/core/sync_set
+add wave -noupdate -group IOB -group SYNC /tb2/cpu/core/sync_clr
+add wave -noupdate -group IOB -group SYNC /tb2/cpu/core/sync_clw
 add wave -noupdate -group Registers /tb2/cpu/core/axy_wh
 add wave -noupdate -group Registers -group qreg -radix octal -childformat {{{/tb2/cpu/core/qreg[15]} -radix octal} {{/tb2/cpu/core/qreg[14]} -radix octal} {{/tb2/cpu/core/qreg[13]} -radix octal} {{/tb2/cpu/core/qreg[12]} -radix octal} {{/tb2/cpu/core/qreg[11]} -radix octal} {{/tb2/cpu/core/qreg[10]} -radix octal} {{/tb2/cpu/core/qreg[9]} -radix octal} {{/tb2/cpu/core/qreg[8]} -radix octal} {{/tb2/cpu/core/qreg[7]} -radix octal} {{/tb2/cpu/core/qreg[6]} -radix octal} {{/tb2/cpu/core/qreg[5]} -radix octal} {{/tb2/cpu/core/qreg[4]} -radix octal} {{/tb2/cpu/core/qreg[3]} -radix octal} {{/tb2/cpu/core/qreg[2]} -radix octal} {{/tb2/cpu/core/qreg[1]} -radix octal} {{/tb2/cpu/core/qreg[0]} -radix octal}} -subitemconfig {{/tb2/cpu/core/qreg[15]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[14]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[13]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[12]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[11]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[10]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[9]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[8]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[7]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[6]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[5]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[4]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[3]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[2]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[1]} {-height 15 -radix octal} {/tb2/cpu/core/qreg[0]} {-height 15 -radix octal}} /tb2/cpu/core/qreg
 add wave -noupdate -group Registers -group qreg /tb2/cpu/core/brd_wa
@@ -260,11 +255,8 @@ add wave -noupdate -group Registers -group qreg /tb2/cpu/core/brd_rx
 add wave -noupdate -group Registers -group qreg /tb2/cpu/core/brd_ry
 add wave -noupdate -group Registers -group areg -radix octal -childformat {{{/tb2/cpu/core/areg[15]} -radix octal} {{/tb2/cpu/core/areg[14]} -radix octal} {{/tb2/cpu/core/areg[13]} -radix octal} {{/tb2/cpu/core/areg[12]} -radix octal} {{/tb2/cpu/core/areg[11]} -radix octal} {{/tb2/cpu/core/areg[10]} -radix octal} {{/tb2/cpu/core/areg[9]} -radix octal} {{/tb2/cpu/core/areg[8]} -radix octal} {{/tb2/cpu/core/areg[7]} -radix octal} {{/tb2/cpu/core/areg[6]} -radix octal} {{/tb2/cpu/core/areg[5]} -radix octal} {{/tb2/cpu/core/areg[4]} -radix octal} {{/tb2/cpu/core/areg[3]} -radix octal} {{/tb2/cpu/core/areg[2]} -radix octal} {{/tb2/cpu/core/areg[1]} -radix octal} {{/tb2/cpu/core/areg[0]} -radix octal}} -subitemconfig {{/tb2/cpu/core/areg[15]} {-height 15 -radix octal} {/tb2/cpu/core/areg[14]} {-height 15 -radix octal} {/tb2/cpu/core/areg[13]} {-height 15 -radix octal} {/tb2/cpu/core/areg[12]} {-height 15 -radix octal} {/tb2/cpu/core/areg[11]} {-height 15 -radix octal} {/tb2/cpu/core/areg[10]} {-height 15 -radix octal} {/tb2/cpu/core/areg[9]} {-height 15 -radix octal} {/tb2/cpu/core/areg[8]} {-height 15 -radix octal} {/tb2/cpu/core/areg[7]} {-height 15 -radix octal} {/tb2/cpu/core/areg[6]} {-height 15 -radix octal} {/tb2/cpu/core/areg[5]} {-height 15 -radix octal} {/tb2/cpu/core/areg[4]} {-height 15 -radix octal} {/tb2/cpu/core/areg[3]} {-height 15 -radix octal} {/tb2/cpu/core/areg[2]} {-height 15 -radix octal} {/tb2/cpu/core/areg[1]} {-height 15 -radix octal} {/tb2/cpu/core/areg[0]} {-height 15 -radix octal}} /tb2/cpu/core/areg
 add wave -noupdate -group Registers -group areg /tb2/cpu/core/ra_wa
-add wave -noupdate -group Registers -group areg /tb2/cpu/core/ra_wa_xt
 add wave -noupdate -group Registers -group areg /tb2/cpu/core/ra_wx
-add wave -noupdate -group Registers -group areg /tb2/cpu/core/ra_wx_xt
 add wave -noupdate -group Registers -group areg /tb2/cpu/core/wra
-add wave -noupdate -group Registers -group areg /tb2/cpu/core/wra_xt
 add wave -noupdate -group Registers -group areg /tb2/cpu/core/acmp_en
 add wave -noupdate -group Registers -group areg /tb2/cpu/core/adr_eq
 add wave -noupdate -group Registers -group areg /tb2/cpu/core/ra_ry
@@ -365,11 +357,8 @@ add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/rta_fall
 add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/mc_stb
 add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/mw_stb
 add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/io_start
-add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/io_start_xt
 add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/iop_stb
-add wave -noupdate -group ALU -group ENALU /tb2/cpu/core/iop_stb_xt
 add wave -noupdate -group ALU /tb2/cpu/core/alu_nrdy
-add wave -noupdate -group ALU /tb2/cpu/core/alu_wr_xt
 add wave -noupdate -group ALU /tb2/cpu/core/alu_wr
 add wave -noupdate -group ALU -radix octal -childformat {{{/tb2/cpu/core/alu_st[2]} -radix octal} {{/tb2/cpu/core/alu_st[1]} -radix octal} {{/tb2/cpu/core/alu_st[0]} -radix octal}} -subitemconfig {{/tb2/cpu/core/alu_st[2]} {-height 15 -radix octal} {/tb2/cpu/core/alu_st[1]} {-height 15 -radix octal} {/tb2/cpu/core/alu_st[0]} {-height 15 -radix octal}} /tb2/cpu/core/alu_st
 add wave -noupdate -group ALU /tb2/cpu/core/alu_xb
@@ -423,7 +412,7 @@ add wave -noupdate -group EA -group alu_sh /tb2/cpu/core/plm20m
 add wave -noupdate -group EA -group alu_sh /tb2/cpu/core/plm19m
 add wave -noupdate -group EA -group alu_sh /tb2/cpu/core/plm18m
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 3} {4370402 ps} 0}
+WaveRestoreCursors {{Cursor 3} {2391353 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 144
 configure wave -valuecolwidth 50
@@ -439,4 +428,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {4043974 ps} {4911214 ps}
+WaveRestoreZoom {2328173 ps} {3195413 ps}

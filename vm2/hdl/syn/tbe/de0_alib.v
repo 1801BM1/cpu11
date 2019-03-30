@@ -17,40 +17,32 @@
 `timescale 1 ps / 1 ps
 // synopsys translate_on
 
-module de0_corepll (
+module de0_pll100 (
    inclk0,
    c0,
    c1,
-   c2,
-   c3,
    locked);
 
    input   inclk0;
    output     c0;
    output     c1;
-   output     c2;
-   output     c3;
    output     locked;
 
    wire [4:0] sub_wire0;
-   wire  sub_wire3;
-   wire [0:0] sub_wire8 = 1'h0;
-   wire [2:2] sub_wire5 = sub_wire0[2:2];
-   wire [0:0] sub_wire4 = sub_wire0[0:0];
-   wire [3:3] sub_wire2 = sub_wire0[3:3];
+   wire  sub_wire2;
+   wire [0:0] sub_wire6 = 1'h0;
+   wire [0:0] sub_wire3 = sub_wire0[0:0];
    wire [1:1] sub_wire1 = sub_wire0[1:1];
    wire  c1 = sub_wire1;
-   wire  c3 = sub_wire2;
-   wire  locked = sub_wire3;
-   wire  c0 = sub_wire4;
-   wire  c2 = sub_wire5;
-   wire  sub_wire6 = inclk0;
-   wire [1:0] sub_wire7 = {sub_wire8, sub_wire6};
+   wire  locked = sub_wire2;
+   wire  c0 = sub_wire3;
+   wire  sub_wire4 = inclk0;
+   wire [1:0] sub_wire5 = {sub_wire6, sub_wire4};
 
    altpll   altpll_component (
-            .inclk (sub_wire7),
+            .inclk (sub_wire5),
             .clk (sub_wire0),
-            .locked (sub_wire3),
+            .locked (sub_wire2),
             .activeclock (),
             .areset (1'b0),
             .clkbad (),
@@ -89,24 +81,16 @@ module de0_corepll (
       altpll_component.bandwidth_type = "AUTO",
       altpll_component.clk0_divide_by = 1,
       altpll_component.clk0_duty_cycle = 50,
-      altpll_component.clk0_multiply_by = 1,
+      altpll_component.clk0_multiply_by = 2,
       altpll_component.clk0_phase_shift = "0",
       altpll_component.clk1_divide_by = 1,
       altpll_component.clk1_duty_cycle = 50,
-      altpll_component.clk1_multiply_by = 1,
+      altpll_component.clk1_multiply_by = 2,
       altpll_component.clk1_phase_shift = "5000",
-      altpll_component.clk2_divide_by = 1,
-      altpll_component.clk2_duty_cycle = 50,
-      altpll_component.clk2_multiply_by = 1,
-      altpll_component.clk2_phase_shift = "10000",
-      altpll_component.clk3_divide_by = 1,
-      altpll_component.clk3_duty_cycle = 50,
-      altpll_component.clk3_multiply_by = 1,
-      altpll_component.clk3_phase_shift = "15000",
       altpll_component.compensate_clock = "CLK0",
       altpll_component.inclk0_input_frequency = 20000,
       altpll_component.intended_device_family = "Cyclone III",
-      altpll_component.lpm_hint = "CBX_MODULE_PREFIX=de0_corepll",
+      altpll_component.lpm_hint = "CBX_MODULE_PREFIX=de0_pll100",
       altpll_component.lpm_type = "altpll",
       altpll_component.operation_mode = "NORMAL",
       altpll_component.pll_type = "AUTO",
@@ -137,8 +121,8 @@ module de0_corepll (
       altpll_component.port_scanwrite = "PORT_UNUSED",
       altpll_component.port_clk0 = "PORT_USED",
       altpll_component.port_clk1 = "PORT_USED",
-      altpll_component.port_clk2 = "PORT_USED",
-      altpll_component.port_clk3 = "PORT_USED",
+      altpll_component.port_clk2 = "PORT_UNUSED",
+      altpll_component.port_clk3 = "PORT_UNUSED",
       altpll_component.port_clk4 = "PORT_UNUSED",
       altpll_component.port_clk5 = "PORT_UNUSED",
       altpll_component.port_clkena0 = "PORT_UNUSED",
@@ -151,7 +135,6 @@ module de0_corepll (
       altpll_component.port_extclk1 = "PORT_UNUSED",
       altpll_component.port_extclk2 = "PORT_UNUSED",
       altpll_component.port_extclk3 = "PORT_UNUSED",
-      altpll_component.self_reset_on_loss_lock = "ON",
+      altpll_component.self_reset_on_loss_lock = "OFF",
       altpll_component.width_clock = 5;
 endmodule
-

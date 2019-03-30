@@ -84,30 +84,26 @@ module de0
 );
 
 wire clk50;
-wire clk_p1;
-wire clk_p2;
-wire clk_n1;
-wire clk_n2;
+wire clk_p;
+wire clk_n;
 
 assign clk50 = de0_clock_50;
 
 //______________________________________________________________________________
 //
-de0_corepll corepll
+de0_pll100 corepll
 (
    .inclk0(clk50),
-   .c0(clk_p1),
-   .c1(clk_p2),
-   .c2(clk_n1),
-   .c3(clk_n2)
+   .c0(clk_p),
+   .c1(clk_n),
 );
 
 //______________________________________________________________________________
 //
 vm2 cpu
 (
-   .pin_clk_p(clk_p1),                 // processor clock, rising edge f1
-   .pin_clk_n(clk_n1),                 // processor clock, falling edge f1
+   .pin_clk_p(clk_p),                  // processor clock, rising edge f1
+   .pin_clk_n(clk_n),                  // processor clock, falling edge f1
    .pin_init_n(de0_gpio0_d[0]),        // peripheral reset
    .pin_dclo_n(de0_gpio0_d[1]),        // processor reset
    .pin_aclo_n(de0_gpio0_d[2]),        // power fail notoficaton
@@ -127,7 +123,7 @@ vm2 cpu
    .pin_dmgo_n(de0_fl_byte_n),         // bus granted output
    .pin_iako_n(de0_gpio0_d[15]),       // interrupt vector input
    .pin_sel_n(de0_gpio0_d[16]),        // mode access select
-   .pin_clko(de0_gpio0_clkout[0]),     // peripheral timer input
+   .pin_clko(de0_gpio1_clkout[0]),     // peripheral timer input
    .pin_waki_n(de0_gpio0_d[18]),       //
    .pin_wrq_n(de0_gpio0_d[19])         //
 );
@@ -196,9 +192,8 @@ assign   de0_vga_r      = 4'h0;
 assign   de0_vga_g      = 4'h0;
 assign   de0_vga_b      = 4'h0;
 
-// assign   de0_gpio0_clkout  = 2'b00;
-assign   de0_gpio0_clkout[1] = 1'b0;
-assign   de0_gpio1_clkout    = 2'b00;
+assign   de0_gpio0_clkout    = 2'b00;
+assign   de0_gpio1_clkout[1] = 1'b0;
 // assign de0_gpio0_d       = 32'hzzzzzzzz;
 assign   de0_gpio0_d[31:20]= 12'hzzz;
 assign   de0_gpio1_d       = 32'hzzzzzzzz;
