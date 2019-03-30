@@ -59,18 +59,18 @@ period of high frequency clock. This model can be used to build in-board replace
 - synchronous Wishbone compatible version of 1801BM1 synchronous core, uses single clock,
 FPGA-optimized, follows the original command execution timings, is intended for SoC building
 
-#### \sch    
+#### \cad\vm1    
 - topology in Sprint Layout format
 - topology in PCD-2004 pcb format
 - schematics in PCD-2004 pcb format
-- schematics in pdf [BM1A](/vm1/sch/vm1_ma.pdf)/[BM1Г](/vm1/sch/vm1_mg.pdf) (gate level)
+- schematics in pdf (gate level)
 
 #### \tst
 - test software, including restored factory test sources and ROM images. Build batch should
 be run befor building FPGA bitstream to include test software image
 
 ## How to simulate
-- run "tst\build.bat t401" to prebuild desired test software image (t401 in command sample)
+- run "tst\build.bat t401" to prebuild desired test software image (t401 is a sample)
 - run ModelSim simulator
 - set "vm1/hdl/org/sim/de0" as working directory in ModelSim (File->Change Directory)
 - execute "do run.do" console command
