@@ -31,7 +31,7 @@ module vm2_qbus
 // address is no corrupted. If zero parameter is specified the model follows
 // the original 1801BM2 behaviour (with prefetch bug).
 //
-   VM2_CORE_FIX_PREFETCH = 0
+   VM2_CORE_FIX_PREFETCH = 1
 )
 (
    input          pin_clk_p,     // positive edge clock
@@ -45,19 +45,13 @@ module vm2_qbus
    input          pin_virq,      // vectored interrupt request
                                  //
    input          pin_ar,        // address ready
-   input          pin_dmr,       // bus grant request
-   input          pin_sack,      // bus grant acknowlegement
    input          pin_rply,      // transaction acknowlegement
-                                 //
-   output         pin_clko,      // internal clock output
-   output         pin_dmgo,      // bus grant
    output         pin_sel,       // halt mode access
    output         pin_iako,      // interrupt vector input
                                  //
    input  [15:0]  pin_ad_in,     // data bus input
    output [15:0]  pin_ad_out,    // address/data bus output
    output         pin_ad_ena,    // address/data bus enable
-   output         pin_ctrl_ena,  //
                                  //
    output         pin_sync,      // address strobe
    output         pin_wtbt,      // write/byte status
@@ -69,7 +63,7 @@ module vm2_qbus
 //
 reg            virq, halt, evnt;       // interrupt requests
 reg            dclo, aclo;             // cold reset, power monitor
-reg            aclo_stb, aclo_res;     //
+reg            aclo_stb;               //
                                        //
 reg            ac0;                    // initial ACLO rising edge detected
 reg            dble_cnt0;              // double QBUS timeout error counter
@@ -91,23 +85,17 @@ reg            vec_stb;                // vector interrupt acknowlegement
                                        //
 wire  [15:0]   ad;                     // internal address/data bus
 reg            ad_oe;                  // external AD pins output enable
-reg            ct_oe;                  //
                                        //
 wire           bus_free;               //
 wire           bus_adr;                // address on ad bus strobe
 reg            bus_dat;                // data on ad bus strobe
-wire           bfree;                  //
                                        //
 wire           sel, sel1;              //
 reg            sel2;                   //
                                        //
 wire           init;                   //
 reg            init_out;               //
-reg            dmgo_out;               //
-wire           dmgo;                   //
-reg            dmr;                    //
 wire           ar;                     //
-wire           sack;                   //
 wire           iako;                   //
 reg            iako_out;               //
 wire           wtbt_out;               //
@@ -161,7 +149,6 @@ wire           reset;                  // system reset
 wire           abort;                  // abort by bus timeout
 wire           mc_res;                 // microcode reset
 wire           mc_stb;                 // mc read phase strobe
-wire           mw_stb;                 // mc write phase strobe
 wire           pi_stb_rc;              // peripheral strobe
 reg            pi_stb;                 //
 wire           all_rdy;                //
@@ -173,7 +160,7 @@ reg            cmd_nrdy;               // instruction completion
 wire           pli_nrdy;               // interrupt polling not ready
 reg            tim_nrdy0;              // wait abort exception status
 reg            tim_nrdy1;              // wait nINIT pulse generation
-wire           mc_rdy, mc_rdy_rc;      //
+wire           mc_rdy_rc;              //
 reg            br_iocmd;               // instruction read IO in progress
 reg            br_ready;               // breg contains valid read instruction
 reg            ir_stb;                 //
@@ -193,7 +180,7 @@ reg            set_cend;               // set command end flag
 reg            acmp_en;                // PC address comparator enable
                                        //
 wire           din_set, dout_set;      //
-reg            din_clr, dout_clr;      //
+reg            dout_clr;               //
 wire           dout_clr_fc;            //
 wire           sync_clr;               //
 wire           rcmd_set;               //
@@ -221,7 +208,6 @@ wire  [36:0]   pla;                    //
 reg   [4:0]    plm_rn;                 //
 wire  [6:0]    rn_wa;                  //
 wire           pc2_wa;                 //
-wire  [7:7]    wa;                     //
 wire           wa_pc;                  // program counter selected
 wire           wa_r1, wa_r2;           //
 wire           ra_wa;                  // write address register from X*-bus
@@ -242,7 +228,6 @@ wire           psw_wa, psw8_wa;        //
 wire           psw_stb, pswc_stb;      //
 wire           wr_psw;                 //
 wire           brd_rql, brd_rqh;       //
-wire           qd_swap;                //
 wire           qswp, rd2h;             //
 reg            qa0;                    //
 reg            wr7;                    // read command start cycle
@@ -324,9 +309,9 @@ wire           plm19m;                 //
 wire           plm20m;                 //
                                        //
 wire           en_alu_rc;              //
-wire           mc_drdy, mc_drdy_rc;    //
+wire           mc_drdy_rc;             //
 reg            mc_drdy0, mc_drdy1;     //
-reg   [2:0]    alu_st;                 // ALU state machine
+reg   [1:0]    alu_st;                 // ALU state machine
 reg   [5:0]    iocmd_st;               //
 reg   [1:0]    iopc_st;                //
 reg   [5:1]    io_st;                  //
@@ -334,7 +319,6 @@ reg            buf_res;                //
 reg            pc2_res;                // ignore pc2 write
 wire           wr1;                    // ALU read args phase strobe
 wire           wr2;                    // ALU write result phase strobe
-wire           ad_rd;                  // external AD pins read enable
 wire           alu_wr;                 // ALU write result
 wire           brd_wq;                 // buffer data register write from Q-bus
 wire           brd_wa;                 // buffer data register write from ALU
@@ -344,7 +328,6 @@ reg            pli_ack;                // interrupt module ack
 wire           pli_req;                // interrupt module query
 wire           sd_word;                //
 reg            word27;                 //
-wire           rd_end;                 //
 reg            pli6r;                  //
 reg            pli8r;                  //
 reg            wcpu;                   //
@@ -436,7 +419,7 @@ reg            to_rply;                //
 // iop_start   F-R         R-R
 // alu_wr      F-R         R-R
 // mc_stb      F-R         R-R
-// mw_stb      R-F         R-R
+// mw_stb      R-F         R-R   - replased with wr1
 // pi_stb      R-F         R-R
 // sync_clr    R-F         R-R
 //______________________________________________________________________________
@@ -453,19 +436,19 @@ reg            to_rply;                //
 // assign mw_stb     = alu_st[0] & ~alu_st[1];
 // assign alu_wr     = alu_st[1] & ~alu_st[2] & ea_rdy;
 // assign pi_stb     = ~plm[0] & ~all_rdy_t0 & all_rdy_t1;
-// assign sync_clr    = mc_res | (~iop_wr & ~rply3 & rply2);
+// assign sync_clr   = mc_res | (~iop_wr & ~rply3 & rply2);
+// assign mc_rdy     = alu_nrdy & plm[0];
+// assign mc_drdy    = ~plm[27] | mc_drdy1;
 //______________________________________________________________________________
 //
 // Extrenal pin assignments
 //
 assign pin_ad_out    = ad;
-assign pin_ad_ena    = ad_oe & ~sack;
+assign pin_ad_ena    = ad_oe;
 assign pin_init      = init;
-assign pin_dmgo      = dmgo_out;
 assign pin_sel       = sel;
 assign pin_iako      = iako;
 
-assign pin_ctrl_ena  = ct_oe;
 assign pin_sync      = sync;
 assign pin_wtbt      = wtbt_out;
 assign pin_dout      = dout;
@@ -475,16 +458,12 @@ assign pin_din       = din;
 //
 // Reset and phase clock generator
 //
-assign pin_clko = ~pin_clk_p;
-
 always @(posedge pin_clk_p)
 begin
    dclo <= pin_dclo;
    aclo <= pin_aclo;
+   aclo_stb <= aclo;
 end
-
-always @(posedge pin_clk_p) aclo_stb <= aclo;
-always @(posedge pin_clk_n) aclo_res <= aclo;
 
 assign init = init_out | dclo;
 always @(posedge pin_clk_p)
@@ -509,7 +488,7 @@ begin
          ac0 <= pli[3];
 end
 
-assign reset = dclo | (~ac0 & aclo_res);
+assign reset = dclo | (~ac0 & aclo_stb);
 assign mc_res = abort | reset;
 //______________________________________________________________________________
 //
@@ -528,12 +507,9 @@ end
 
 //______________________________________________________________________________
 //
-always @(posedge pin_clk_n) dmr <= pin_dmr;
-always @(posedge pin_clk_p) dmgo_out <= dmgo;
-
 assign sel  = (sel2 & bus_adr) | sel1;
 assign sel1 = (iop_sel | iop_stb & io_sel) & din;
-always @(posedge pin_clk_n)
+always @(posedge pin_clk_p)
 begin
    if (wra)
       sel2 <= psw[8] ^ io_alt;
@@ -555,19 +531,7 @@ begin
    if (din)
       ad_oe <= 1'b0;
    else
-      if (sack)
-         ad_oe <= 1'b0;
-      else
-         ad_oe <= 1'b1;
-end
-
-always @(posedge pin_clk_n)
-begin
-   if (sack)
-      ct_oe <= 1'b0;
-   else
-      if (bfree)
-         ct_oe <= 1'b1;
+      ad_oe <= 1'b1;
 end
 
 //______________________________________________________________________________
@@ -575,8 +539,6 @@ end
 // QBus state machine
 //
 assign ar   = pin_ar;
-assign sack = pin_sack;
-
 assign wtbt_out =  (bus_adr & wtbt) | (bus_dat & ~iop_word);
 assign iako = iop_iak & din & iako_out;
 
@@ -588,7 +550,7 @@ begin
    if (din_set)
       din <= 1'b1;
    else
-      if (din_clr_rc | mc_res | ~ct_oe)
+      if (din_clr_rc | mc_res)
          din <= 1'b0;
 end
 
@@ -615,14 +577,11 @@ end
 
 assign rta        = sync & ~ardy;
 assign creq       = sync_s0 | adr_req;
-assign dmgo       = dmr & ~ct_oe & ~sync_s0 & ~in_ua;
-assign bfree      = ~sync & ~ar & (ardy | ~(irply | to_rply | ua_rply));
-assign bus_free   = bfree & ~dmr & ct_oe;
+assign bus_free   = ~sync & ~ar & (ardy | ~(irply | to_rply | ua_rply));
 assign bus_adr    = (~sync | ~ardy_s0) & (sync_s0 | sync_set);
 
 assign brd_rqh    = bus_dat & (iop_word |  qa0);
 assign brd_rql    = bus_dat & (iop_word | ~qa0);
-assign qd_swap    = qa0;
 
 always @(posedge pin_clk_n)
 begin
@@ -664,7 +623,7 @@ begin
    if (mc_res)
       sync_s0 <= 1'b0;
    else
-      if (~ct_oe | sync_clr)
+      if (sync_clr)
          sync_s0 <= 1'b0;
       else
          if (sync_set)
@@ -688,8 +647,8 @@ assign rply    = (irply | to_rply | ua_rply) & ~rply3;
 always @(posedge pin_clk_n) to_rply <= iop_rcd & ~word27 & tabort & ~to_rply;
 always @(posedge pin_clk_n) irply <= pin_rply;
 
-assign rdat       = iop_rd & rply0 & ~rply2;
-assign rplys      = ~in_ua & (~sync_s0 | ~ardy_s0);
+assign rdat       = iop_rd & rply0;
+assign rplys      = in_ua | (sync_s0 & ardy_s0);
 assign in_ua      = (iop_sel | iop_stb & io_sel | iop_iak) & (din | (~adr_req & bus_free));
 
 assign io_iak     = (plr[24:21] == 4'b1111);    // Interrupt acknowlegement
@@ -710,14 +669,14 @@ assign io_rd      = (io_x001 & ~dc_mop0) | plr[22];
 assign io_in      = io_rcd | (io_rd & ~io_cmd);
 
 assign dout_set   = ~dout_clr & bus_dat;
-assign din_set    = ~din_clr_rc & (iop_rd | io_rd & iop_stb) & ~rplys & ~rply3;
+assign din_set    = ~din_clr_rc & (iop_rd | io_rd & iop_stb) & rplys & ~rply3;
 assign wtbt       = ~din_clr_rc & ~iop_rd & iop_wr;
 
 assign io_rcd1_xt = ra_fr1 & na[1];
 always @(posedge pin_clk_n)
 begin
+   if (wr1) iop_una <= io_iak | io_sel;
    if (wr2) io_rcd1 <= io_rcd1_xt;
-   if (mw_stb) iop_una = io_iak | io_sel;
 end
 
 always @(posedge pin_clk_p)
@@ -765,32 +724,21 @@ begin
          iop_wr <= io_wr;
 end
 
+assign din_clr_rc = ~(rply3 | ~rply1);
 assign dout_clr_fc = ~(rply2 | ~rply0) & (wtbt | dout_clr);
 always @(posedge pin_clk_n) dout_clr = dout_clr_fc;
 
-always @(posedge rply3 or posedge pin_clk_p)
-begin
-   if (rply3)
-      din_clr <= 1'b0;
-   else
-      if (reset)
-         din_clr <= 1'b0;
-      else
-         if (din_clr_rc)
-            din_clr <= 1'b1;
-end
-assign din_clr_rc = ~(rply3 | ~rply1);
 
-always @(posedge pin_clk_n) rply1 <= rply0 & rply & ~rplys;
-always @(posedge pin_clk_p) rply2 <= rply1 | (rply | rply1) & rply2;
+always @(posedge pin_clk_n) rply1 <= rply0;
+always @(posedge pin_clk_p) rply2 <= rply1;
 always @(posedge pin_clk_n) rply3 <= rply2;
 
-always @(posedge rply3 or posedge pin_clk_p)
+always @(posedge pin_clk_p)
 begin
-   if (rply3)
+   if (rply0)
       rply0 <= 1'b0;
    else
-      rply0 <= rply & ~rplys;
+      rply0 <= rply & rplys;
 end
 
 always @(posedge pin_clk_p)
@@ -828,9 +776,10 @@ begin
       tabort <= 1'b0;
    else
       tabort <= ~tim_nrdy1 & qtim[0] & qtim[1] & qtim[4] & qtim[5];
-
-   tevent <= tabort & (~iop_rcd | word27);
 end
+
+always @(posedge pin_clk_p)
+   tevent <= tabort & (~iop_rcd | word27);
 
 //______________________________________________________________________________
 //
@@ -952,7 +901,6 @@ begin
          alu_nrdy <= 1'b1;
 end
 
-assign mc_rdy     = alu_nrdy & plm[0];
 assign mc_rdy_rc  = alu_nrdy & (mc_stb ? pla[0] : plm[0]);
 always @(posedge pin_clk_p) set_cend <= set_cend_rc;
 always @(posedge pin_clk_n) cmd_nrdy <= ~mc_res & ~ir_stb & (set_cend | cmd_nrdy);
@@ -1055,11 +1003,11 @@ begin
 end
 
 always @(posedge pin_clk_n)
-if (mw_stb)
+if (wr1)
       get_state <= ~na[0] & plm[25] & ~plm[26];
 
 always @(posedge pin_clk_p)
-if (mw_stb)
+if (wr1)
       plm_wt[30:21] <= plm[30:21];
 
 always @(posedge pin_clk_p)
@@ -1098,11 +1046,11 @@ if (mc_stb)
       plm[30]  <= ~pla[30];
    end
 
-assign plr[21] = mw_stb ? ~plm[21] : ~plm_wt[21];
-assign plr[22] = mw_stb ? ~plm[22] : ~plm_wt[22];
-assign plr[23] = mw_stb ? ~plm[23] : ~plm_wt[23];
-assign plr[24] = mw_stb ? ~plm[24] : ~plm_wt[24];
-assign plr[30] = mw_stb ?  plm[30] :  plm_wt[30];
+assign plr[21] = wr1 ? ~plm[21] : ~plm_wt[21];
+assign plr[22] = wr1 ? ~plm[22] : ~plm_wt[22];
+assign plr[23] = wr1 ? ~plm[23] : ~plm_wt[23];
+assign plr[24] = wr1 ? ~plm[24] : ~plm_wt[24];
+assign plr[30] = wr1 ?  plm[30] :  plm_wt[30];
 
 assign set_cend_rc = mc_stb &  na_rc[0] & pla[25] & ~pla[26];
 assign wt_state_rc = mc_stb & ~na_rc[0] & pla[25] & ~pla[26];
@@ -1178,7 +1126,7 @@ begin
    if (sd_word)
       word27 <= 1'b1;
    else
-      if (mc_res | (rd_end & plm[27]))
+      if (mc_res | (wr1 & plm[27]))
          word27 <= 1'b0;
 end
 
@@ -1698,7 +1646,7 @@ begin
    end
    else
       if (brd_wq)
-         qreg  <= qd_swap ? {8'o000, pin_ad_in[15:8]} : pin_ad_in;
+         qreg  <= qa0 ? {8'o000, pin_ad_in[15:8]} : pin_ad_in;
 end
 
 //______________________________________________________________________________
@@ -1751,7 +1699,7 @@ end
 //______________________________________________________________________________
 //
 always @(posedge pin_clk_p)
-if (mw_stb)
+if (wr1)
 begin
    //
    // Register (breg, cpsw, cpc) is accessed on Y bus, not constant
@@ -1951,12 +1899,9 @@ assign en_alu_rc  = ~alu_st[0]
                   & ((~ra_fr_rc & ~ra_fwn_rc) | (~rta & ~rta_fall))
                   | (~ac0 & ~alu_st[0] & mc_stb);
 
-assign rd_end     = alu_st[1];
-assign alu_wr     = alu_st[0] & ~alu_st[2] & ea_rdy;
-assign wr2        = alu_st[2];
-assign mw_stb     = alu_st[0];
+assign alu_wr     = alu_st[0] & ea_rdy;
 assign wr1        = alu_st[0];
-assign ad_rd      = bir_stb | rdat;
+assign wr2        = alu_st[1];
 
 //
 // Internal to_reply is asserted only for prefetch transactions
@@ -1966,8 +1911,7 @@ assign brd_wq     = rdat & ( iop_in | iop_rcd);
 assign io_start   = wra | (wr2 & iop_una);
 
 always @(posedge pin_clk_p) alu_st[0] <= en_alu_rc & ~mc_res;
-always @(posedge pin_clk_n) alu_st[1] <= alu_st[0];
-always @(posedge pin_clk_p) alu_st[2] <= alu_st[1] & ~mc_res;
+always @(posedge pin_clk_p) alu_st[1] <= alu_st[0] & ~mc_res;
 
 always @(posedge pin_clk_n)
 begin
@@ -1976,7 +1920,7 @@ begin
       if (word27 | io_cmd)
          iopc_st[0] <= 1'b1;
       else
-         if (io_rcd & ~word27)
+         if (io_rcd)
             iopc_st[0] <= 1'b0;
    end
    else
@@ -1984,7 +1928,7 @@ begin
       if (word27 | io_cmdr)
          iopc_st[0] <= 1'b1;
       else
-         if (io_rcdr & ~word27)
+         if (io_rcdr)
             iopc_st[0] <= 1'b0;
    end
 
@@ -2002,11 +1946,10 @@ begin
          iopc_st[1] <= 1'b1;
       else
          if (~io_rcdr)
-            iopc_st[1] <= iopc_st[0]  | word27 | io_cmdr;
+            iopc_st[1] <= iopc_st[0] | word27 | io_cmdr;
    end
 end
 
-assign mc_drdy    = ~plm[27] | mc_drdy1;
 assign mc_drdy_rc = (mc_stb ? pla[27] : ~plm[27]) | mc_drdy1;
 always @(posedge pin_clk_n)
 begin
@@ -2057,7 +2000,7 @@ begin
 end
 
 assign thang      = ~iocmd_st[2] & iocmd_st[5];
-assign abort      = iocmd_st[1] | tevent;
+assign abort      = iocmd_st[0] | tevent;
 assign to_block   = thang | (io_rcd1 & iocmd_st[5]);
 assign rcmd_set   = thang | (buf_res & iocmd_st[4]);
 
@@ -2119,75 +2062,6 @@ begin
       if (mdfy | to_rply)
          buf_res <= 1'b1;
 end
-
-//______________________________________________________________________________
-//
-// Input bus X register indices for phase read 1
-// For debug purposes only, for diagram synchronizing
-//
-// Index 10 is for ea_cnt, no read to bus X implemented in original core
-// Index 14 is for areg, no read to bus X implemented in original core
-//
-wire [6:0]  rn_rx, rn_ry;
-wire        pc1_rx, pc1_ry;
-wire        pc2_rx, ra_ry;
-wire        ea1_rx, ea1_ry;
-wire        ea2_rx, ea2_ry;
-wire        rs_rx, rs_ry;
-wire        psw_rx, psw_ry;
-wire        acc_rx, acc_ry;
-wire        brd_rx, brd_ry;
-wire        cpsw_ry;
-wire        bir_ry;
-wire        pc_ry;
-
-assign rn_rx[0]   = (plm[7:4] == 4'b0000);            // register index 0
-assign rn_rx[1]   = (plm[7:4] == 4'b1000);            // register index 1
-assign rn_rx[2]   = (plm[7:4] == 4'b0100);            // register index 2
-assign rn_rx[3]   = (plm[7:4] == 4'b1100);            // register index 3
-assign rn_rx[4]   = (plm[7:4] == 4'b0010);            // register index 4
-assign rn_rx[5]   = (plm[7:4] == 4'b1010);            // register index 5
-assign rn_rx[6]   = (plm[7:4] == 4'b0110);            // register index 6
-                                                      //
-assign pc1_rx     = (plm[7:4] == 4'b1110) & ~ra_fr1;  // register index 7
-assign pc2_rx     = (plm[7:4] == 4'b1110) &  ra_fr1;  // register index 7
-assign ea1_rx     = (plm[7:4] == 4'b0001);            // register index 8
-assign ea2_rx     = (plm[7:4] == 4'b1001);            // register index 9
-assign rs_rx      = (plm[7:4] == 4'b1101);            // register index 11
-assign psw_rx     = (plm[7:4] == 4'b0011);            // register index 12
-assign acc_rx     = (plm[7:4] == 4'b1011);            // register index 13
-assign brd_rx     = (plm[7:4] == 4'b1111);            // register index 15
-
-//______________________________________________________________________________
-//
-// Input bus Y register indices for phase read 1
-// For debug purposes only, for diagram synchronizing
-//
-// Index 10 is for ea_cnt, no read to bus X implemented in original core
-// plm[8] == 0 indicates operations with two operands
-// plm[8] == 1 indicates operations with constant
-//
-assign rn_ry[0]   = (plm[12:8] == 5'b00000);          // register index 0
-assign rn_ry[1]   = (plm[12:8] == 5'b10000);          // register index 1
-assign rn_ry[2]   = (plm[12:8] == 5'b01000);          // register index 2
-assign rn_ry[3]   = (plm[12:8] == 5'b11000);          // register index 3
-assign rn_ry[4]   = (plm[12:8] == 5'b00100);          // register index 4
-assign rn_ry[5]   = (plm[12:8] == 5'b10100);          // register index 5
-assign rn_ry[6]   = (plm[12:8] == 5'b01100);          // register index 6
-                                                      //
-assign pc1_ry     = (plm[12:8] == 5'b11100);          // register index 7
-assign ea1_ry     = (plm[12:8] == 5'b00010);          // register index 8
-assign ea2_ry     = (plm[12:8] == 5'b10010);          // register index 9
-assign rs_ry      = (plm[12:8] == 5'b11010);          // register index 11
-assign psw_ry     = (plm[12:8] == 5'b00110);          // register index 12
-assign acc_ry     = (plm[12:8] == 5'b10110);          // register index 13
-assign ra_ry      = (plm[12:8] == 5'b01110);          // register index 14
-assign brd_ry     = (plm[12:8] == 5'b11110);          // register index 15
-                                                      //
-assign cpsw_ry    = (plm[12:8] == 5'b01101);          // constant index 6
-assign bir_ry     = (plm[12:8] == 5'b11101);          // constant index 7
-assign pc_ry      = (plm[12:8] == 5'b01111)           // constant index 14
-                  | (plm[12:8] == 5'b11111);          // constant index 15
 
 //______________________________________________________________________________
 //
