@@ -118,14 +118,8 @@ vm2 cpu
    .pin_wtbt_n(de0_gpio0_d[9]),        // write/byte status
    .pin_sync_n(de0_gpio0_d[10]),       // address strobe
    .pin_rply_n(de0_gpio0_d[11]),       // transaction reply
-   .pin_dmr_n(de0_gpio0_d[12]),        // bus request shared line
-   .pin_sack_n(de0_gpio0_d[13]),       // bus acknowlegement
-   .pin_dmgo_n(de0_fl_byte_n),         // bus granted output
    .pin_iako_n(de0_gpio0_d[15]),       // interrupt vector input
-   .pin_sel_n(de0_gpio0_d[16]),        // mode access select
-   .pin_clko(de0_gpio1_clkout[0]),     // peripheral timer input
-   .pin_waki_n(de0_gpio0_d[18]),       //
-   .pin_wrq_n(de0_gpio0_d[19])         //
+   .pin_sel_n(de0_gpio0_d[16])         // mode access select
 );
 
 assign   de0_gpio0_d[1]    = 1'bZ;

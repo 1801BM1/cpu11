@@ -38,8 +38,8 @@ May not be synthesizable with some tools, presented for simulation purposes only
 
 #### \hdl\syn
 - synchronous Verilog HDL model, the frontend bus is Q-Bus, removed extra phase clocks, uses only
-direct clock and 180 degree shift to operate, does not contain latches and can be synthesized for
-synchronous FPGAs. All internal and external timings are exactly the same as in asynchronous
+direct clock and 180 degree shift one to operate, does not contain latches and can be synthesized
+for synchronous FPGAs. All internal and external timings are exactly the same as in asynchronous
 original model with precision to half period of high frequency clock. This model can be used
 to build in-board replacement of real 1801BM2 chip. Shared access windows feature is cut.
 
@@ -56,13 +56,13 @@ Not implemented yet, is coming.
 
 #### \tst
 - test software, including restored factory test sources and ROM images. Build batch should
-be run befor building FPGA bitstream to include test software image
+be run before building FPGA bitstream to include test software image
 
 ## How to simulate
 - run "tst\build.bat t401" to prebuild desired test software image (t401 is a sample)
 - run ModelSim simulator
 - set "vm2/hdl/org/sim/de0" as working directory in ModelSim (File->Change Directory)
 - execute "do run.do" console command
-- wait, simulation make take some time till complete
+- wait, simulation may take some time till complete
 - see the results in waveform and console output
 

@@ -10,24 +10,24 @@ Links to raw panoramic photos (CAUTION: files are VERY LARGE, browser might hang
 
 ## 1801BM1
 
-The 1801BM1 is single chip processor, was designed in early 1980-th and had PDP-11
-compatible architecture. Notable, it was not an exact clone of one of original DEC processors,
-but had its own internal architecture and PLM-based state machine.
+The 1801BM1 is single chip processor designed in early 1980-th with PDP-11
+compatible architecture. Notable, it is not an exact clone of one of original DEC processors,
+but has its own internal architecture and PLM-based state machine.
 
-It supported PDP-11 basic instruction set and extra instructions SOB and XOR from Extended
-Instruction Set (EIS). No MMU was implemented. There were produced two versions
+It supports PDP-11 basic instruction set and extra instructions SOB and XOR from Extended
+Instruction Set (EIS). No MMU is implemented. There were designed and produced two versions
 of 1801BM1 - K1801BM1A and K1801BM1Г (Cyrillic letter "Г"), they had the same architecture
 but completely different PLM content, implementing different state machines. The goal of this
 micro program refactoring was to add MUL instruction support into K1801BM1Г.
 
 The processor was produced in 5u NMOS process with depletion mode loads, one metal
 and one polycrystalline silicon layer and self-aligned gates. The 1801BM1A contains 16632 gates,
-1801BM1Г - 16646 gates, operates at 5MHz/5V and provides 500K register-register instructions per
-second. The front-end bus is Qbus compatible, the multicore configuration was supported with
-up to 4 processors one the same bus. Also there was the built-in timer, 1801BM1Г supported
+1801BM1Г - 16646 gates, operates at 5MHz/5V and provides 625K register-register instructions per
+second. The front-end bus is Qbus compatible, the multicore configuration is supported with
+up to 4 processors one the same bus. Also there is the built-in timer, 1801BM1Г supported
 timer interrupts.
 
-There was no internal ODT implemented, the in-system test and debug were supported
+There is no internal ODT implemented, the in-system test and debug are supported
 with special HALT mode and external ROM.
 
 ## Directory structure
@@ -44,16 +44,15 @@ There are three models: original asynchronous, refactored synchronous and Wishbo
 - asynchronous Verilog HDL model, is as close as possible to the original gate-level schematics.
 In practice can be used for modeling purposes only, because processor contains latches (note,
 it differs from flip-flop), those work in non-reliable fashion on synchronous FPGAs. Also model
-does not contain line delays, in some simulating environment it can be very critical. Nonetheless,
-this model is included in package as demo of closest possible approximation to the original die.
-May not be synthesizable with some tools, simulation only.
+does not contain gate and line delays, in some simulating environment it can be very critical. 
+Nonetheless, this model is included in package as demo of closest possible approximation 
+to the original die. May be not synthesizable with some tools, simulation only.
 
 #### \hdl\syn
-- synchronous Verilog HDL model, the frontend bus is Q-Bus, requires extra high frequency clock
-line to operate, does not contain latches and can be synthesized for synchronous FPGAs. All internal
-and external timings are exactly the same as in asynchronous original model with precision to half
-period of high frequency clock. This model can be used to build in-board replacement of real
-1801BM1 chip
+- synchronous Verilog HDL model, the frontend bus is Q-Bus, does not contain latches and can be
+synthesized for synchronous FPGAs. All internal and external timings are exactly the same as
+in asynchronous original model with precision to half period of high frequency clock. This model
+can be used to build in-socket replacement of real 1801BM1 chip
 
 #### \hdl\wbc
 - synchronous Wishbone compatible version of 1801BM1 synchronous core, uses single clock,
@@ -67,14 +66,14 @@ FPGA-optimized, follows the original command execution timings, is intended for 
 
 #### \tst
 - test software, including restored factory test sources and ROM images. Build batch should
-be run befor building FPGA bitstream to include test software image
+be run before building FPGA bitstream to include test software image
 
 ## How to simulate
 - run "tst\build.bat t401" to prebuild desired test software image (t401 is a sample)
 - run ModelSim simulator
 - set "vm1/hdl/org/sim/de0" as working directory in ModelSim (File->Change Directory)
 - execute "do run.do" console command
-- wait, simulation make take some time till complete
+- wait, simulation may take some time till complete
 - see the results in waveform and console output
 
 ## Implemented resources
