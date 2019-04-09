@@ -110,7 +110,6 @@ vm2 cpu
    .pin_halt_n(de0_gpio0_d[3]),        // halt interrupt requests
    .pin_evnt_n(de0_gpio0_d[4]),        // timer interrupt requests
    .pin_virq_n(de0_gpio0_d[5]),        // vectored interrupt request
-   .pin_ar_n(de0_gpio0_d[6]),          // address ready
                                        //
    .pin_ad_n(de0_dram_dq),             // inverted address/data bus
    .pin_dout_n(de0_gpio0_d[7]),        // data output strobe

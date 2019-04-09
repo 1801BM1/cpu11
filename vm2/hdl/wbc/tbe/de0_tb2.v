@@ -66,7 +66,6 @@ reg         evnt;       // timer interrupt requests
 reg         halt;       // radial interrupt requests
 reg         virq;       // vectored interrupt request
                         //
-reg         ar;         //
 tri1        init;       // peripheral reset
                         //
 wire [15:0] ad_mux;     //
@@ -189,7 +188,6 @@ always @(negedge din)
 begin
    if (~sync)
    begin
-      ar = 1;
       if (addr == 16'o177560)
       begin
          ad_oe    = 1'b1;
@@ -242,7 +240,6 @@ end
 
 always @(negedge dout)
 begin
-   ar = 1;
    if (sel_all)
    begin
 //@ (negedge clk);
@@ -280,9 +277,6 @@ begin
       $stop;
    end
 end
-
-always @(negedge sync) ar = 0;
-always @(posedge sync) ar = 1;
 
 //_____________________________________________________________________________
 //
@@ -351,7 +345,6 @@ begin
    tty_rx_ie   = 0;
    tty_tx_rdy  = 1;
 
-   ar       = 1;
    dclo     = 0;
    aclo     = 0;
    evnt     = 1;
@@ -392,8 +385,6 @@ vm2 cpu
    .pin_halt_n(halt),         // halt mode request
    .pin_evnt_n(evnt),         // timer interrupt requests
    .pin_virq_n(virq),         // vectored interrupt request
-                              //
-   .pin_ar_n(ar)        ,     // address ready strobe
    .pin_rply_n(rply),         // transaction reply
                               //
    .pin_ad_n(ad),             // inverted address/data bus

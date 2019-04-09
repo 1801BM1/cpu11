@@ -502,14 +502,6 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to de0_dram*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to de0_fl*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to de0_gpio*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to de0_vga*
-set_global_assignment -name VERILOG_FILE ../../tbe/config.v
-set_global_assignment -name VERILOG_FILE ../../tbe/de0_tb2.v
-set_global_assignment -name VERILOG_FILE ../../tbe/de0_alib.v
-set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v
-set_global_assignment -name VERILOG_FILE ../../rtl/vm2.v
-set_global_assignment -name VERILOG_FILE ../../rtl/vm2_qbus.v
-set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/vm2_plm.v
-set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE SPEED
 set_global_assignment -name AUTO_RESOURCE_SHARING OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
@@ -518,4 +510,12 @@ set_global_assignment -name REMOVE_REDUNDANT_LOGIC_CELLS ON
 set_global_assignment -name ROUTER_CLOCKING_TOPOLOGY_ANALYSIS ON
 set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
+set_global_assignment -name VERILOG_FILE ../../tbe/config.v
+set_global_assignment -name VERILOG_FILE ../../tbe/de0_tb2.v
+set_global_assignment -name VERILOG_FILE ../../tbe/de0_alib.v
+set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v
+set_global_assignment -name VERILOG_FILE ../../rtl/vm2.v
+set_global_assignment -name VERILOG_FILE ../../rtl/vm2_wb.v
+set_global_assignment -name VERILOG_FILE ../../rtl/vm2_plm.v
+set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

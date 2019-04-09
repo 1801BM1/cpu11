@@ -16,8 +16,8 @@ module vm2_qbus
 // - two operands PDP-11 instruction is being executed
 // - source has addressing method @PC (field value 17 octal)
 // - destination does not involve PC (dst register field !=7)
-// - no extra instruction words are used by destination (no (Rn), @E(Rn))
-// - Q-bus is slow and opcode  prefetch is not completed before microcode
+// - no extra instruction words are used by destination (no E(Rn), @E(Rn))
+// - Q-bus is slow and opcode prefetch is not completed before microcode
 // starts source field  processing and fetching the source data (slow RPLY/AR)
 //
 // At the source operand processing the source address is taken from PC and
@@ -44,7 +44,6 @@ module vm2_qbus
    input          pin_evnt,      // timer interrupt requests
    input          pin_virq,      // vectored interrupt request
                                  //
-   input          pin_ar,        // address ready
    input          pin_rply,      // transaction acknowlegement
    output         pin_sel,       // halt mode access
    output         pin_iako,      // interrupt vector input
@@ -56,7 +55,23 @@ module vm2_qbus
    output         pin_sync,      // address strobe
    output         pin_wtbt,      // write/byte status
    output         pin_dout,      // data output strobe
-   output         pin_din        // data input strobe
+   output         pin_din,       // data input strobe
+                                 //
+                                 // adr MSB is halt mode flag
+   input          wbm_gnt_i,     // master wishbone granted
+   output [16:0]  wbm_adr_o,     // master wishbone address
+   output [15:0]  wbm_dat_o,     // master wishbone data output
+   input  [15:0]  wbm_dat_i,     // master wishbone data input
+   output         wbm_cyc_o,     // master wishbone cycle
+   output         wbm_we_o,      // master wishbone direction
+   output [1:0]   wbm_sel_o,     // master wishbone byte election
+   output         wbm_stb_o,     // master wishbone strobe
+   input          wbm_ack_i,     // master wishbone acknowledgement
+                                 //
+   input  [15:0]  wbi_dat_i,     // interrupt vector input
+   input          wbi_ack_i,     // interrupt vector acknowledgement
+   output         wbi_stb_o,     // interrupt vector strobe
+   output         wbi_una_o      // unaddressed read access
 );
 
 //______________________________________________________________________________
@@ -95,7 +110,6 @@ reg            sel2;                   //
                                        //
 wire           init;                   //
 reg            init_out;               //
-wire           ar;                     //
 wire           iako;                   //
 reg            iako_out;               //
 wire           wtbt_out;               //
@@ -106,8 +120,8 @@ reg            rply0, rply1;           //
 reg            rply2, rply3;           //
 reg            din;                    //
 reg            dout, dout_s0;          //
-reg            sync, sync_s0;          //
-reg            ardy, ardy_s0;          //
+reg            sync;                   //
+reg            sync_s0, sync_s1;       //
 reg            adr_req;                //
 reg            drdy;                   //
 reg            sk;                     //
@@ -538,7 +552,6 @@ end
 //
 // QBus state machine
 //
-assign ar   = pin_ar;
 assign wtbt_out =  (bus_adr & wtbt) | (bus_dat & ~iop_word);
 assign iako = iop_iak & din & iako_out;
 
@@ -575,17 +588,17 @@ begin
          dout <= 1'b1;
 end
 
-assign rta        = sync & ~ardy;
+assign rta        = sync_s0 & ~sync_s1;
 assign creq       = sync_s0 | adr_req;
-assign bus_free   = ~sync & ~ar & (ardy | ~(irply | to_rply | ua_rply));
-assign bus_adr    = (~sync | ~ardy_s0) & (sync_s0 | sync_set);
+assign bus_free   = ~sync;
+assign bus_adr    = (~sync | ~sync_s1) & (sync_s0 | sync_set);
 
 assign brd_rqh    = bus_dat & (iop_word |  qa0);
 assign brd_rql    = bus_dat & (iop_word | ~qa0);
 
 always @(posedge pin_clk_n)
 begin
-   if (sync_s0 & ~ardy_s0 | mc_res)
+   if (sync_s0 & ~sync_s1 | mc_res)
       rta_fall <= 1'b0;
    else
       if (wra)
@@ -609,7 +622,7 @@ begin
       if (dout_clr)
          bus_dat <= 1'b0;
       else
-         if (~rply & ardy & (drdy | brd_wa) & (wtbt | dout_clr))
+         if (~rply & sync_s1 & (drdy | brd_wa) & (wtbt | dout_clr))
             bus_dat <= 1'b1;
 end
 
@@ -618,6 +631,7 @@ assign sync_clw = (wtbt | dout_clr) & sync_clr;
 assign sync_clr = mc_res | (~iop_wr & ~rply3 & rply1);
 
 always @(posedge pin_clk_n) sync <= sync_s0;
+always @(posedge pin_clk_p) sync_s1 <= sync_s0;
 always @(posedge mc_res or posedge pin_clk_p)
 begin
    if (mc_res)
@@ -630,11 +644,9 @@ begin
             sync_s0 <= 1'b1;
 end
 
-always @(posedge pin_clk_p) ardy_s0 <= sync & (ar | ardy_s0);
-always @(posedge pin_clk_n) ardy <= ardy_s0;
 always @(posedge pin_clk_n)
 begin
-   if (mc_res | to_block | (sync_s0 & ~ardy_s0))
+   if (mc_res | to_block | rta)
       adr_req <= 1'b0;
    else
       if (wra)
@@ -648,7 +660,7 @@ always @(posedge pin_clk_n) to_rply <= iop_rcd & ~word27 & tabort & ~to_rply;
 always @(posedge pin_clk_n) irply <= pin_rply;
 
 assign rdat       = iop_rd & rply0;
-assign rplys      = in_ua | (sync_s0 & ardy_s0);
+assign rplys      = in_ua | (sync_s0 & sync_s1);
 assign in_ua      = (iop_sel | iop_stb & io_sel | iop_iak) & (din | (~adr_req & bus_free));
 
 assign io_iak     = (plr[24:21] == 4'b1111);    // Interrupt acknowlegement
