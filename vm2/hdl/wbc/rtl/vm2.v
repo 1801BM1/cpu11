@@ -12,7 +12,6 @@ module vm2
    input          pin_evnt_n,    // timer interrupt requests
    input          pin_virq_n,    // vectored interrupt request
                                  //
-   input          pin_ar_n,      // address ready strobe
    input          pin_rply_n,    // transaction reply
    output         pin_init_n,    // peripheral reset (open drain)
                                  //
@@ -48,7 +47,7 @@ assign pin_din_n     = ~pin_din_out;
 assign pin_wtbt_n    = ~pin_wtbt_out;
 assign pin_sync_n    = ~pin_sync_out;
 //
-// "Open drain" outputs
+// "Open drain" output
 //
 assign pin_init_n    = pin_init_ena ? 1'b0 : 1'bZ;
 //
@@ -71,7 +70,6 @@ vm2_qbus core
    .pin_evnt      (~pin_evnt_n),
    .pin_virq      (~pin_virq_n),
 
-   .pin_ar        (~pin_ar_n),
    .pin_rply      (~pin_rply_n),
    .pin_sel       (pin_sel_out),
    .pin_iako      (pin_iako_out),

@@ -16,8 +16,8 @@ module vm2_qbus
 // - two operands PDP-11 instruction is being executed
 // - source has addressing method @PC (field value 17 octal)
 // - destination does not involve PC (dst register field !=7)
-// - no extra instruction words are used by destination (no (Rn), @E(Rn))
-// - Q-bus is slow and opcode  prefetch is not completed before microcode
+// - no extra instruction words are used by destination (no E(Rn), @E(Rn))
+// - Q-bus is slow and opcode prefetch is not completed before microcode
 // starts source field  processing and fetching the source data (slow RPLY/AR)
 //
 // At the source operand processing the source address is taken from PC and
