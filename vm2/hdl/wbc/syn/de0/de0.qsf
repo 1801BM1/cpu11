@@ -25,7 +25,7 @@
 # Notes:
 #
 # 1) The default values for assignments are stored in the file:
-#		vm2_assignment_defaults.qdf
+#		de0_assignment_defaults.qdf
 #    If this file doesn't exist, see file:
 #		assignment_defaults.qdf
 #
@@ -510,12 +510,15 @@ set_global_assignment -name REMOVE_REDUNDANT_LOGIC_CELLS ON
 set_global_assignment -name ROUTER_CLOCKING_TOPOLOGY_ANALYSIS ON
 set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
-set_global_assignment -name VERILOG_FILE ../../tbe/config.v
+set_global_assignment -name SOURCE_FILE ../../lib/de0/config.v
+set_global_assignment -name VERILOG_FILE ../../lib/de0/de0_top.v
+set_global_assignment -name VERILOG_FILE ../../lib/de0/de0_alib.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_tb2.v
-set_global_assignment -name VERILOG_FILE ../../tbe/de0_alib.v
-set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v
-set_global_assignment -name VERILOG_FILE ../../rtl/vm2.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
 set_global_assignment -name VERILOG_FILE ../../rtl/vm2_wb.v
 set_global_assignment -name VERILOG_FILE ../../rtl/vm2_plm.v
 set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
+set_global_assignment -name HEX_FILE ../../../../tst/out/test.hex
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
