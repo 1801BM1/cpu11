@@ -58,7 +58,7 @@ assign pin_iako_n    = ~pin_iako_out;
 //
 // Core instantiation
 //
-vm2_qbus core
+vm2_wb core
 (
    .pin_clk_p     (pin_clk_p),
    .pin_clk_n     (pin_clk_n),

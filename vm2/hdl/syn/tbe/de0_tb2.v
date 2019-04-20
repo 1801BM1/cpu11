@@ -124,7 +124,7 @@ begin
    addr <= ~ad;
    wflg <= ~wtbt;
 
-   if (~ad < 16'o020000)
+   if (~ad < 16'o040000)
    begin
       sel_all = 1'b1;
       sel_ram = 1'b1;

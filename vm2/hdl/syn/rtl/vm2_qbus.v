@@ -517,11 +517,7 @@ assign mc_res = abort | reset;
 //
 always @(posedge pin_clk_p)
 begin
-   //
-   // This is strange behaviour:
-   // INIT does not reset EVNT if latch is active
-   //
-   evnt <= pin_evnt & init;
+   evnt <= pin_evnt & ~init;
    halt <= pin_halt;
    virq <= pin_virq;
 end
