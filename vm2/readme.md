@@ -46,7 +46,6 @@ to build in-board replacement of real 1801BM2 chip. Shared access windows featur
 #### \hdl\wbc
 - synchronous Wishbone compatible version of 1801BM2 synchronous core, uses single clock,
 FPGA-optimized, follows the original command execution timings, is intended for SoC building.
-Not implemented yet, is coming.
 
 #### \cad\vm2    
 - topology in Sprint Layout format
@@ -66,3 +65,27 @@ be run before building FPGA bitstream to include test software image
 - wait, simulation may take some time till complete
 - see the results in waveform and console output
 
+## Implemented resources
+- RAM 8Kx16bit at 000000<sub>8</sub> with initialized content from test.mif file
+- TTY at 177560<sub>8</sub>, 60<sub>8</sub>/64<sub>8</sub> vector interrupts, 
+  tx/rx with cts/rts handshake, 115200/8/N/1, RS-232 levels (board dependent).
+- 50Hz system timer interrupt (IRQ2, edge sensitive, vector 100<sub>8</sub>),
+  enabled by board switch[0], if timer is enabled the board led[0] lights
+- 4x7-segment display, segments attached to output registers at 177714<sub>8</sub>/177715<sub>8</sub>,
+  see the test software source for the details
+- switches and buttons can be read from input register at 177714<sub>8</sub>
+- board button[0] is reset, short press less than 1 sec causes system reset, 
+  long press over 1 second simulates power reset (excluding RAM content)
+
+## Fmax and FPGA resources
+- Wisnbone compatible 1801BM1A core
+- register file and constant generator in flip-flops, no RAM block
+- speed optimization chosen
+- slow model, worst corner
+
+All results are just approximite estimations by synthesis tools (Quartus/XST) on sample
+projects.
+
+| Board   | FPGA            | Family      | Fmax    | LUTs | FFs  | MEM   |
+|---------|-----------------|-------------|---------|------|------|-------|
+| DE0     | EP3C16F484C7N   | Cyclone III | 105 MHz | 1892 | 1370 | 0 M9K |

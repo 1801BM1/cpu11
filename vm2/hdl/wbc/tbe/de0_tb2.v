@@ -109,6 +109,7 @@ always @(posedge lcd_en)
 begin
 #2
    $display("tty: %03O (%c)", lcd_data, (lcd_data > 8'o037) ? lcd_data : 8'o52);
+   $stop;
 end
 `endif
 
