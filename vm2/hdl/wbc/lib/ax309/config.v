@@ -16,6 +16,12 @@
 
 //______________________________________________________________________________
 //
+// Test software start address
+//
+`define  CONFIG_SIM_START_ADDRESS      16'o000000
+
+//______________________________________________________________________________
+//
 // Reset button debounce interval (in ms))
 //
 `define  CONFIG_RESET_BUTTON_DEBOUNCE_MS  5
@@ -28,15 +34,8 @@
 
 //______________________________________________________________________________
 //
-// CONFIG_VM1_CORE_REG_USES_RAM == 0 - VM1 core uses RAM block for register file
-// CONFIG_VM1_CORE_REG_USES_RAM != 0 - VM1 core uses flip-flops for register file
+// CONFIG_VM2_CORE_FIX_PREFETCH == 0 - no prefetch bugfix applied
+// CONFIG_VM2_CORE_FIX_PREFETCH != 0 - prefetch bug is fixed
 // Default value (if undefined) - 1
 //
-`define CONFIG_VM1_CORE_REG_USES_RAM         1
-//
-// CONFIG_VM1_CORE_MULG_VERSION == 0 - VM1 core implements microprogram revision A
-// CONFIG_VM1_CORE_MULG_VERSION != 0 - VM1 core implements microprogram revision G
-// Default value (if undefined) - 0
-//
-`define CONFIG_VM1_CORE_MULG_VERSION         0
-
+`define CONFIG_VM2_CORE_FIX_PREFETCH         1
