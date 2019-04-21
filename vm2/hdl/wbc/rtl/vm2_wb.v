@@ -382,6 +382,10 @@ reg            wb_iops;                // Wishbone IO storage strobe
 reg   [15:0]   wb_dat;                 // Wishbone master input data
                                        //
 wire           wb_start;               //
+wire           wb_wclr, wb_wset;       //
+reg            wb_swait;               //
+reg   [5:0]    wb_wcnt;                //
+                                       //
 reg            wb_cyc;                 //
 reg            wb_stb;                 //
 reg            wb_we;                  //
@@ -1877,7 +1881,8 @@ end
 //
 // Wishbone master and interrupt interfaces
 //
-assign wb_start   = iop_stb;
+assign wb_start   = (wb_wclr & iop_stb)
+                  | (wb_wclr & wb_swait);
 assign wb_wdone   = wb_stb & wbm_ack_i &  wb_we;
 assign wb_rdone   = wb_stb & (wbm_ack_i | to_rply) & ~wb_we;
 assign wb_idone   = wb_iak & wbi_ack_i;
@@ -1916,6 +1921,9 @@ assign wio_wr = iop_stb ? wio_wr_rc : wio_wr_xt;
 assign wio_rd = iop_stb ? wio_rd_rc : wio_rd_xt;
 assign wio_wo = iop_stb ? wio_wo_rc : wio_wo_xt;
 
+assign wb_wset    = iop_stb & vm_clk_slow & (wb_wcnt != 6'o00);
+assign wb_wclr    = reset | ~vm_clk_slow | (vm_clk_ena & (wb_wcnt == 6'o01));
+
 always @(posedge vm_clk_p)
 begin
    wb_iops <= iop_stb;
@@ -1928,6 +1936,27 @@ begin
       wb_adr[16]   <= sel;
       qa0 <= areg[0] & ~wio_wo_xt & (wio_rd_xt | wio_wr_xt);
    end
+
+   if (wb_wclr)
+      wb_swait <= 1'b0;
+   else
+      if (wb_wset)
+         wb_swait <= 1'b1;
+
+   if (reset)
+      wb_wcnt <= 6'o00;
+   else
+      if (wb_swait)
+      begin
+         if (vm_clk_ena)
+            wb_wcnt <= wb_wcnt - 6'o01;
+      end
+      else
+      begin
+         if (~vm_clk_ena & vm_clk_slow & (wb_wcnt != 6'o77))
+            wb_wcnt <= wb_wcnt + 6'o01;
+      end
+
    if (iop_stb)
    begin
       //
