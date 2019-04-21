@@ -94,6 +94,7 @@ end
 
 initial
 begin
+   switch = 10'b0000000000;
    uart_rxd = 1'b1;
    uart_rts = 1'b0;
 end
