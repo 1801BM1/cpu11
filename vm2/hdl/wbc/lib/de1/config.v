@@ -15,7 +15,7 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
-`define  CONFIG_SIM_TIME_LIMIT         2000000
+`define  CONFIG_SIM_TIME_LIMIT         5000000
 //
 // External clock frequency
 //
@@ -24,17 +24,6 @@
 // Test software start address
 //
 `define  CONFIG_SIM_START_ADDRESS      16'o000000
-
-//
-// Generated processor clock phase durations
-// In system clocks
-//
-`define  CONFIG_SIM_CLK_HIGH           1
-`define  CONFIG_SIM_CLK_LOW            1
-
-//`define  CONFIG_SIM_DEBUG_MC         _CONFIG_
-//`define  CONFIG_SIM_DEBUG_IO         _CONFIG_
-`define  CONFIG_SIM_DEBUG_TTY          _CONFIG_
 
 //______________________________________________________________________________
 //
@@ -48,24 +37,24 @@
 
 //______________________________________________________________________________
 //
+//`define  CONFIG_SIM_DEBUG_MC         _CONFIG_
+//`define  CONFIG_SIM_DEBUG_IO         _CONFIG_
+`define  CONFIG_SIM_DEBUG_TTY          _CONFIG_
+
+//______________________________________________________________________________
+//
 // Reset button debounce interval (in ms))
 //
 `define  CONFIG_RESET_BUTTON_DEBOUNCE_MS   5
 //
 // Internal reset pulse width (in system clocks)
 //
-`define  CONFIG_RESET_PULSE_WIDTH_CLK      31
+`define  CONFIG_RESET_PULSE_WIDTH_CLK      15
 
 //______________________________________________________________________________
 //
-// CONFIG_VM1_CORE_REG_USES_RAM == 0 - VM1 core uses RAM block for register file
-// CONFIG_VM1_CORE_REG_USES_RAM != 0 - VM1 core uses flip-flops for register file
+// CONFIG_VM2_CORE_FIX_PREFETCH == 0 - no prefetch bugfix applied
+// CONFIG_VM2_CORE_FIX_PREFETCH != 0 - prefetch bug is fixed
 // Default value (if undefined) - 1
 //
-`define CONFIG_VM1_CORE_REG_USES_RAM         1
-//
-// CONFIG_VM1_CORE_MULG_VERSION == 0 - VM1 core implements microprogram revision A
-// CONFIG_VM1_CORE_MULG_VERSION != 0 - VM1 core implements microprogram revision G
-// Default value (if undefined) - 0
-//
-`define CONFIG_VM1_CORE_MULG_VERSION         0
+`define CONFIG_VM2_CORE_FIX_PREFETCH         1

@@ -18,7 +18,7 @@
 module wbc_mem
 (
    input          wb_clk_i,
-   input  [15:0]  wb_adr_i,
+   input  [16:0]  wb_adr_i,
    input  [15:0]  wb_dat_i,
    output [15:0]  wb_dat_o,
    input          wb_cyc_i,
@@ -224,7 +224,7 @@ wire        ena_us, ena_ms, i50Hz;     //
 wire        sys_rst, pwr_rst;          //
                                        //
 wire        wb_clk;                    //
-wire [15:0] wb_adr;                    // master address out bus
+wire [16:0] wb_adr;                    // master address out bus
 wire [15:0] wb_out;                    // master data out bus
 wire [15:0] wb_mux;                    // master data in bus
 wire        wb_cyc;                    // master wishbone cycle
@@ -233,6 +233,7 @@ wire [1:0]  wb_sel;                    // master wishbone byte election
 wire        wb_stb;                    // master wishbone strobe
 wire        wb_ack;                    // master wishbone acknowledgement
                                        //
+wire        vm_una;                    //
 wire        vm_istb;                   //
 wire        vm_iack;                   //
 wire [15:0] vm_ivec;                   //
@@ -240,7 +241,6 @@ wire [2:0]  mx_stb;                    //
 wire [2:0]  mx_ack;                    // system wishbone data mux
 wire [15:0] mx_dat[2:0];               //
                                        //
-wire [2:1]  vm_sel;                    //
 wire [15:0] vm_in14;                   //
 reg  [15:0] vm_reg0, vm_reg1;          //
                                        //
@@ -248,7 +248,8 @@ wire        vm_init_out;               //
 wire        vm_dclo_in;                //
 wire        vm_aclo_in;                //
 wire        vm_virq;                   //
-wire [3:1]  vm_irq;                    //
+wire        vm_halt;                   //
+wire        vm_evnt;                   //
                                        //
 wire        tx_irq, tx_ack;            //
 wire        rx_irq, rx_ack;            //
@@ -259,9 +260,8 @@ wire [31:0] baud;                      //
 assign      sys_init = vm_init_out;
 assign      baud = 921600/115200-1;
 
-assign      vm_irq[1] = 1'b0;
-assign      vm_irq[2] = i50Hz & de2_sw[0];
-assign      vm_irq[3] = 1'b0;
+assign      vm_halt  = 1'b0;
+assign      vm_evnt  = i50Hz & de2_sw[0];
 
 //______________________________________________________________________________
 //
@@ -307,29 +307,22 @@ wbc_rst reset
 //
 // CPU instantiation
 //
-`ifdef CONFIG_VM1_CORE_REG_USES_RAM
-defparam cpu.VM1_CORE_REG_USES_RAM = `CONFIG_VM1_CORE_REG_USES_RAM;
+`ifdef CONFIG_VM2_CORE_FIX_PREFETCH
+defparam cpu.VM2_CORE_FIX_PREFETCH = `CONFIG_VM2_CORE_FIX_PREFETCH;
 `endif
 
-`ifdef CONFIG_VM1_CORE_MULG_VERSION
-defparam cpu.VM1_CORE_MULG_VERSION = `CONFIG_VM1_CORE_MULG_VERSION;
-`endif
-
-vm1_wb cpu
+vm2_wb cpu
 (
    .vm_clk_p(sys_clk_p),               // positive processor clock
    .vm_clk_n(sys_clk_n),               // negative processor clock
    .vm_clk_slow(1'b0),                 // slow clock sim mode
    .vm_clk_ena(1'b1),                  // slow clock strobe
-   .vm_clk_tve(1'b1),                  // VE-timer clock enable
-   .vm_clk_sp(1'b0),                   // external pin SP clock
                                        //
-   .vm_pa(2'b00),                      // processor number
-   .vm_init_in(1'b0),                  // peripheral reset
-   .vm_init_out(vm_init_out),          // peripheral reset
+   .vm_init(vm_init_out),              // peripheral reset
    .vm_dclo(vm_dclo_in),               // processor reset
    .vm_aclo(vm_aclo_in),               // power fail notoficaton
-   .vm_irq(vm_irq),                    // radial interrupt requests
+   .vm_halt(vm_halt),                  // halt mode interrupt requests
+   .vm_evnt(vm_evnt),                  // timer interrupt requests
    .vm_virq(vm_virq),                  // vectored interrupt request
                                        //
    .wbm_gnt_i(1'b1),                   // master wishbone granted
@@ -345,18 +338,7 @@ vm1_wb cpu
    .wbi_dat_i(vm_ivec),                // interrupt vector input
    .wbi_stb_o(vm_istb),                // interrupt vector strobe
    .wbi_ack_i(vm_iack),                // interrupt vector acknowledgement
-                                       //
-   .wbs_adr_i(wb_adr[3:0]),            // slave wishbone address
-   .wbs_dat_i(wb_out),                 // slave wishbone data input
-   .wbs_cyc_i(wb_cyc),                 // slave wishbone cycle
-   .wbs_we_i(wb_we),                   // slave wishbone direction
-   .wbs_stb_i(mx_stb[0]),              // slave wishbone strobe
-   .wbs_ack_o(mx_ack[0]),              // slave wishbone acknowledgement
-   .wbs_dat_o(mx_dat[0]),              // slave wishbone data output
-                                       //
-   .vm_reg14(vm_in14),                 // register 177714 data input
-   .vm_reg16(16'o000000),              // register 177716 data input
-   .vm_sel(vm_sel)                     // register select outputs
+   .wbi_una_o(vm_una)                  // unaddresse read request
 );
 
 //______________________________________________________________________________
@@ -416,6 +398,8 @@ wbc_vic #(.N(2)) vic
    .wb_dat_o(vm_ivec),
    .wb_stb_i(vm_istb),
    .wb_ack_o(vm_iack),
+   .wb_una_i(vm_una),
+   .rsel(`CONFIG_SIM_START_ADDRESS),
    .ivec({16'o000064, 16'o000060}),
    .ireq({tx_irq, rx_irq}),
    .iack({tx_ack, rx_ack})
@@ -436,9 +420,9 @@ assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
 // Simulation stop flag and console (no DE2-115 simulation project)
 // Be careful - on real DE2-115 board LCD requires power enabled
 //
-// assign lcd_rs    = wb_stb & wb_cyc & ((wb_adr == 16'o177676) | (wb_adr == 16'o177674));
+// assign lcd_rs    = wb_stb & wb_cyc & (wb_adr[15:0] == 16'o000172);
 // assign lcd_data  = wb_out[7:0];
-// assign lcd_en    = (wb_adr == 16'o177566) & wb_stb & wb_we & wb_ack;
+// assign lcd_en    = (wb_adr[15:0] == 16'o177566) & wb_stb & wb_we & wb_ack;
 //
 //______________________________________________________________________________
 //
@@ -458,13 +442,15 @@ begin
    end
    else
    begin
-      if (vm_sel[2] & wb_we & ~wb_adr[0]) vm_reg0 <= wb_out;
-      if (vm_sel[2] & wb_we &  wb_adr[0]) vm_reg1 <= wb_out;
+      if (mx_stb[0] & wb_we & ~wb_adr[0]) vm_reg0 <= wb_out;
+      if (mx_stb[0] & wb_we &  wb_adr[0]) vm_reg1 <= wb_out;
    end
 end
 
 assign vm_in14[3:0]     = de2_button;
 assign vm_in14[15:4]    = de2_sw[11:0];
+assign mx_dat[0]        = vm_in14;
+assign mx_ack[0]        = mx_stb[0];
 
 assign   de2_ledg[8:5]  = 4'hz;
 assign   de2_ledg[0]    = de2_sw[0];
