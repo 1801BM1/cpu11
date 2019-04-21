@@ -315,7 +315,7 @@ entry:		mov	#$stack, SP		;
 		mov	#$txbuf, $txend		;
 		mov	#$txbuf, $txbeg		;
 						;
-		mov	#14001, R0		; '1801' logo
+		mov	#14002, R0		; '1802' logo
 		jsr	PC, outhex		;
 						;
 		mov	#100, @#RXCSR		;

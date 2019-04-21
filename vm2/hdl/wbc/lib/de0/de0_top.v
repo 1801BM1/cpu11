@@ -134,6 +134,8 @@ wire        sys_init;                  // peripheral reset
 wire        sys_plock;                 //
 wire        ena_us, ena_ms, i50Hz;     //
 wire        sys_rst, pwr_rst;          //
+reg         sys_clk_slow;              //
+reg         sys_clk_ena;               //
                                        //
 wire        wb_clk;                    //
 wire [16:0] wb_adr;                    // master address out bus
@@ -229,8 +231,8 @@ vm2_wb cpu
 (
    .vm_clk_p(sys_clk_p),               // positive processor clock
    .vm_clk_n(sys_clk_n),               // negative processor clock
-   .vm_clk_slow(1'b0),                 // slow clock sim mode
-   .vm_clk_ena(1'b1),                  // slow clock strobe
+   .vm_clk_slow(sys_clk_slow),         // slow clock sim mode
+   .vm_clk_ena(sys_clk_ena),           // slow clock strobe
                                        //
    .vm_init(vm_init_out),              // peripheral reset
    .vm_dclo(vm_dclo_in),               // processor reset
@@ -379,6 +381,14 @@ assign mx_ack[0]        = mx_stb[0];
 
 //______________________________________________________________________________
 //
+always @(posedge wb_clk)
+begin
+   sys_clk_slow <= de0_sw[8];
+   sys_clk_ena  <= ena_us;
+end
+
+//______________________________________________________________________________
+//
 // Temporary and debug assignments
 //
 assign   de0_dram_dq    = 16'hzzzz;
@@ -435,6 +445,7 @@ assign de0_led[1]       = vm_dclo_in;
 assign de0_led[2]       = vm_aclo_in;
 assign de0_led[3]       = sys_rst;
 assign de0_led[4]       = pwr_rst;
+assign de0_led[8]       = sys_clk_slow;
 assign de0_led[9]       = de0_sw[9];
 
 assign   de0_gpio0_clkout  = 2'b00;
