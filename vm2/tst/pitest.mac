@@ -34,7 +34,8 @@
 ;
 ; Test configuration values
 ;
-		HMUL	= 0  			; hardware multiplication, 0 - no
+		HMUL	= 1  			; hardware multiplication, 0 - no
+		HDIV 	= 1  			; hardware division, 0 - no
 		OPT 	= 3.			; use 3 if N<=14000, limits R3 to 0x1f'ff'ff'ff
 		MAXD 	= 1200.			; maximal digits (memory limited)
 ;_____________________________________________________________________________
@@ -393,8 +394,44 @@ l2:		bne	l1			;
 l0:						;
 		.endm				;
 						;
-		.macro div32x16 ?div32 ?exit 	; R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
-		cmp	R3, R1			; may work wrong if R1>$7fff
+		.macro div32x16 ?div32 ?exit ?l1 ?l2
+						; R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
+.if ne HDIV					; may work wrong if R1>$7fff
+		mov	R3, R4			;
+		inc	R4			;
+		asl 	R4 			; this division implementation is limited 
+		cmp	R4, R1			; may work wrong if R1>$3fff or R3>$7fff
+		bcc 	div32			;
+						;
+		mov 	R2, R4			;
+		mov 	R3, R2			;
+		mov	R4, R3			;
+		div 	R1, R2			;
+l1: 		clr 	R1			;
+    		br 	exit			;
+						;
+div32:						;
+		mov 	R2, R4			;
+		clr	R2			;
+		div 	R1, R2			;
+						;
+		asl 	R1			;
+		mov 	R2, R0			;
+		mov 	R3, R2			;
+		mov 	R4, R3			;
+		div 	R1, R2			;
+						;
+		asl	R2			;
+		asr 	R1			;
+		cmp 	R3, R1			;
+		bcs 	l2			;
+						;
+		inc	R2			;
+		sub 	R1, R3			;
+l2:  		mov 	R0, R1			;
+						;
+.iff						;
+		cmp	R3, R1			; 
 		bcc 	div32			;
 						;
 		.rept 	16.			;
@@ -422,6 +459,7 @@ div32:		mov	R2, R0			;
 		div0				;
 		.endm				;
 		mov	R4,R1			;
+		.endc				;
 exit:						;
 		.endm				;
 ;_____________________________________________________________________________
@@ -498,7 +536,7 @@ spigot:         .print	#mes2			;
 	 	clr	dv+2			;
 		mov	kv, iv			; i <-k
 						;
-2$:		mov 	iv, R0			;
+21$:		mov 	iv, R0			;
 		asl	R0			;
 		mov	R0, R5			;
 		add 	#ra, R0			;
@@ -528,7 +566,7 @@ spigot:         .print	#mes2			;
 		mul32x16			;
 		mov 	R0, dv 			; d <- d*i
 	        mov	R4, dv+2 		;
-	        jmp 	2$			;
+	        jmp 	21$			;
 						;
 4$:      	mov	R1, R3			;
 		mov	#10000., R1		;

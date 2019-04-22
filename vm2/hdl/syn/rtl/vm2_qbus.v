@@ -454,6 +454,8 @@ reg            to_rply;                //
 // assign alu_wr     = alu_st[1] & ~alu_st[2] & ea_rdy;
 // assign pi_stb     = ~plm[0] & ~all_rdy_t0 & all_rdy_t1;
 // assign sync_clr    = mc_res | (~iop_wr & ~rply3 & rply2);
+// assign mc_rdy     = alu_nrdy & plm[0];
+// assign mc_drdy    = ~plm[27] | mc_drdy1;
 //______________________________________________________________________________
 //
 // Extrenal pin assignments
