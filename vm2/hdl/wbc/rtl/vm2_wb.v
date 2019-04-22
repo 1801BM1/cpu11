@@ -101,7 +101,6 @@ wire           init;                   //
 reg            init_out;               //
 reg            adr_req;                //
 reg            drdy;                   //
-reg            sk;                     //
 reg            rdat;                   //
                                        //
 wire           io_start;               // start IO transaction
@@ -126,16 +125,15 @@ reg            iop_in;                 // prefetch cmd & read data
 reg            iop_rcd;                // prefetch cmd
 reg            iop_una;                // unaddressed access
 wire           iop_stb;                // IO opcode strobe
+reg            iop_sta;                //
                                        //
 wire           reset;                  // system reset
 wire           abort;                  // abort by bus timeout
 wire           mc_res;                 // microcode reset
-wire           mc_stb;                 // mc read phase strobe
+reg            mc_stb;                 // mc read phase strobe
 wire           pi_stb_rc;              // peripheral strobe
 reg            pi_stb;                 //
 wire           all_rdy;                //
-reg            all_rdy_t0;             //
-reg            all_rdy_t1;             //
 reg            alu_nrdy;               // ALU not ready
 reg            sta_nrdy;               // branch state not ready
 reg            cmd_nrdy;               // instruction completion
@@ -154,7 +152,7 @@ wire           tovf;                   // Q-bus timeout interrupt
 wire           thang;                  // prefetch was timed out
                                        //
 reg            rta_fall;               //
-wire           rta, creq;              //
+wire           creq;                   //
 reg            get_state;              //
 wire           wt_state_rc;            //
 wire           set_cend_rc;            //
@@ -348,12 +346,13 @@ reg            div_vfr;                // sticky division overflow flag
 wire           div_vf;                 // result division overflow flag
                                        //
 reg   [4:0]    ea_ct;                  // internal EA phase counter
-reg            ea_1t, ea_1tm, ea_1tc;  // first cycle after counter load
-wire  [20:0]   ea_f;                   // counter phases
+wire  [4:0]    ea_cta;                 //
+reg            ea_1tm, ea_1tc;         // first cycle after counter load
+reg  [20:0]    ea_f;                   // counter phases
 reg            ea_f0r, ea_f4r;         //
 reg            ea_fn23r;               //
-wire           ea_fn12;                //
-wire           ea_f218;                //
+reg            ea_fn12;                //
+reg            ea_f218;                //
 wire           ea_ctse;                //
                                        //
 wire           eas_dir;                //
@@ -378,7 +377,6 @@ reg            to_rply;                //
 //______________________________________________________________________________
 //
 reg   [16:0]   wb_adr;                 // Wishbone master output address
-reg            wb_iops;                // Wishbone IO storage strobe
 reg   [15:0]   wb_dat;                 // Wishbone master input data
                                        //
 wire           wb_start;               //
@@ -409,43 +407,6 @@ reg            wio_ia_xt,              //
                wio_wr_xt,              //
                wio_rd_xt,              //
                wio_wo_xt;              //
-//______________________________________________________________________________
-//
-// Strobe shift descriptions.
-//
-// Original strobes were extended and shifted in various way to convert the
-// design to synchronous one and improve speed characteristics. Here the strobe
-// mofifications are documented. R/F means rising/falling edge of primary clock
-// R2/F2 means rising/falling edge of secondary clock (90 degree shifted)
-//
-//             Original    Synch
-// wr1         F2-R2       R-R
-// wr2         F-R         R-R
-// wra         F-R         R-R
-// iop_stb     F-R         R-R
-// iop_start   F-R         R-R
-// alu_wr      F-R         R-R
-// mc_stb      F-R         R-R
-// mw_stb      R-F         R-R   - replased with wr1
-// pi_stb      R-F         R-R
-// sync_clr    R-F         R-R
-//______________________________________________________________________________
-//
-// Saved original strobe assignments for reference purposes
-//
-// assign iop_stb    = (io_st[2] & ~io_st[4] & io_st[5]) | (~io_st[1] & io_start);
-// assign io_start   = wra | (wr2 & iop_una);
-// assign wr2        = alu_st[2] & ~alu_st[1];
-// assign wra        = (ra_wx | ra_wa) & ~to_block
-//                   & (plr[21] | plr[22] | plr[23])
-//                   & (~dc_mop0 | ~dc_mop1 | ~io_x001);
-// assign mc_stb     = all_rdy_t0 & all_rdy_t1;
-// assign mw_stb     = alu_st[0] & ~alu_st[1];
-// assign alu_wr     = alu_st[1] & ~alu_st[2] & ea_rdy;
-// assign pi_stb     = ~plm[0] & ~all_rdy_t0 & all_rdy_t1;
-// assign sync_clr   = mc_res | (~iop_wr & ~rply3 & rply2);
-// assign mc_rdy     = alu_nrdy & plm[0];
-// assign mc_drdy    = ~plm[27] | mc_drdy1;
 //______________________________________________________________________________
 //
 // Reset and phase clock generator
@@ -492,12 +453,11 @@ end
 //
 // QBus state machine
 //
-assign rta        = wb_iops;
 assign creq       = wb_cyc | adr_req;
 
 always @(posedge vm_clk_p)
 begin
-   if (rta | mc_res)
+   if (iop_sta | mc_res)
       rta_fall <= 1'b0;
    else
       if (wra)
@@ -506,7 +466,7 @@ end
 
 always @(posedge vm_clk_n)
 begin
-   if (mc_res | to_block | rta)
+   if (mc_res | to_block | iop_sta)
       adr_req <= 1'b0;
    else
       if (wra)
@@ -689,15 +649,12 @@ end
 //
 // Main microcode state machine
 //
-assign mc_stb     = all_rdy_t0;
 assign pi_stb_rc  = ~pla[0] & mc_stb;
 always @(posedge vm_clk_p) pi_stb <= pi_stb_rc;
 assign all_rdy    = ~mc_res & ~alu_nrdy & (~sta_nrdy | bra_stb)
-                  & ~pli_nrdy & ~cmd_nrdy & ~all_rdy_t1;
+                  & ~pli_nrdy & ~cmd_nrdy & ~mc_stb;
 
-always @(posedge vm_clk_p) all_rdy_t0 <= all_rdy;
-always @(posedge vm_clk_n) all_rdy_t1 <= all_rdy_t0;
-
+always @(posedge vm_clk_p) mc_stb <= all_rdy;
 always @(posedge vm_clk_n)
 begin
    if (mc_res | pi_stb | alu_wr)
@@ -719,7 +676,7 @@ begin
    if (io_cmd & wra)
       br_iocmd <= 1'b0;
    else
-      if (sk)
+      if (iop_sta)
          br_iocmd <= 1'b1;
 end
 
@@ -807,10 +764,6 @@ begin
          na[5] <=  pla[36];
       end
 end
-
-always @(posedge vm_clk_n)
-if (wr1)
-      get_state <= ~na[0] & plm[25] & ~plm[26];
 
 always @(posedge vm_clk_p)
 if (wr1)
@@ -1150,9 +1103,12 @@ end
 assign ws_cend  = ~sta_nrdy;
 assign ws_wait  =  sta_nrdy & wr2;
 
-always @(posedge vm_clk_p) bra_stb <= bra_req | (wr2 & get_state);
 always @(posedge vm_clk_p)
 begin
+   if (wr1)
+      get_state <= ~na[0] & plm[25] & ~plm[26];
+   bra_stb <= bra_req | (wr2 & get_state);
+
    if (mc_res | mc_stb)
       bra <= 1'b0;
    else
@@ -1606,31 +1562,29 @@ assign ea_mop1    = ea_mul & ((ea_f[0] & ~acc[15]) | (~ea_f[0] & ~ear2[0]));
 // Extended aritmetics internal phase counter,
 // decremented every wr2 write cycle
 //
-always @(posedge vm_clk_p)
-begin
-   if (ea_ctld)
-      ea_ct[4:0] <= ea_ctse ? ax[4:0] : ~ax[4:0];
-   else
-      if (wr2 & ea_nrdy)
-         ea_ct <= ea_ct - 5'b00001;
-end
+always @(posedge vm_clk_p) ea_ct <= ea_cta;
+assign ea_cta = ea_ctld ? (ea_ctse ? ax[4:0] : ~ax[4:0]) :
+                          ((wr2 & ea_nrdy) ? (ea_ct - 5'b00001) : ea_ct);
 //
 // The first cycle after EA counter load (ea_ctld)
 //
-always @(posedge vm_clk_n) if (wr2) ea_1t <= ea_ctld;
-always @(posedge vm_clk_p) if (wr2) ea_1tc <= ea_1t;
+always @(posedge vm_clk_p) if (wr2) ea_1tc <= ea_ctld;
 always @(posedge vm_clk_p) if (wr1) ea_1tm <= ea_1tc;
 
-assign ea_f[0]    = (ea_ct == 5'b00000);
-assign ea_f[1]    = (ea_ct == 5'b00001);
-assign ea_f[2]    = (ea_ct == 5'b00010);
-assign ea_f[3]    = (ea_ct == 5'b00011);
-assign ea_f[4]    = (ea_ct == 5'b00100);
-assign ea_f[19]   = (ea_ct == 5'b10011);
-assign ea_f[20]   = (ea_ct == 5'b10100);
+always @(posedge vm_clk_p)
+begin
+   ea_f[0]  <= (ea_cta == 5'b00000);
+   ea_f[1]  <= (ea_cta == 5'b00001);
+   ea_f[2]  <= (ea_cta == 5'b00010);
+   ea_f[3]  <= (ea_cta == 5'b00011);
+   ea_f[4]  <= (ea_cta == 5'b00100);
+   ea_f[19] <= (ea_cta == 5'b10011);
+   ea_f[20] <= (ea_cta == 5'b10100);
 
-assign ea_fn12    = ea_f[2] | ea_f[1];                               // phases 2:1
-assign ea_f218    = ~ea_f[19] & ~ea_f[20] & ~ea_f[0] & ~ea_f[1];     // phases 21,18:2
+   ea_fn12  <= (ea_cta == 5'b00010) | (ea_cta == 5'b00001);
+   ea_f218  <= ~(ea_cta == 5'b10011) & ~(ea_cta == 5'b10100) &
+               ~(ea_cta == 5'b00000) & ~(ea_cta == 5'b00001);
+end
 
 always @(posedge vm_clk_p)
 begin
@@ -1659,10 +1613,10 @@ end
 //
 always @(posedge vm_clk_p)
 begin
-   if (~ea_1t & (tlz ^ xb[15]))
+   if (~ea_ctld & ~(ea_1tc & wr1) & (tlz ^ xb[15]))
       div_vfr <= 1'b1;
    else
-      if (ea_1t)
+      if (ea_ctld)
          div_vfr <= 1'b0;
 end
 assign div_vf = div_vfr | (tlz ^ xb[15]);
@@ -1710,7 +1664,7 @@ end
 //
 assign en_alu_rc  = ~alu_st[0]
                   & ((mc_drdy_rc & mc_rdy_rc & io_rdy) | ~ea_rdy)
-                  & ((~ra_fr_rc & ~ra_fwn_rc) | (rta | ~rta_fall))
+                  & ((~ra_fr_rc & ~ra_fwn_rc) | (iop_sta | ~rta_fall))
                   | (~ac0 & ~alu_st[0] & mc_stb);
 
 assign alu_wr     = alu_st[0] & ea_rdy;
@@ -1767,13 +1721,13 @@ end
 assign mc_drdy_rc = (mc_stb ? pla[27] : ~plm[27]) | mc_drdy1;
 always @(posedge vm_clk_n)
 begin
-   if (sk)
+   if (iop_sta)
       mc_drdy0 <= 1'b0;
    else
       if (io_start & io_in)
          mc_drdy0 <= 1'b1;
 
-   if (mc_res | ((mc_drdy0 | (io_start & io_in)) & ~sk))
+   if (mc_res | ((mc_drdy0 | (io_start & io_in)) & ~iop_sta))
       mc_drdy1 <= 1'b0;
    else
       if (brd_wq)
@@ -1785,8 +1739,6 @@ assign iop_stb = (io_st[2] & ~io_st[3] & io_st[5]) | (~io_st[1] & io_start);
 
 always @(posedge vm_clk_p)
 begin
-   sk <= iop_stb;
-
    if (mc_res | (wb_done & ~io_st[2]))
       io_st[1] <= 1'b0;
    else
@@ -1889,7 +1841,7 @@ assign wb_idone   = wb_iak & wbi_ack_i;
 assign wb_done    = mc_res | wb_idone | wb_wdone | (wb_rdone & ~wio_wr_xt);
 
 
-assign wbm_adr_o  = wb_iops ? {sel, areg[15:0]} : wb_adr;
+assign wbm_adr_o  = iop_sta ? {sel, areg[15:0]} : wb_adr;
 assign wbm_dat_o  = qreg;
 assign wbm_cyc_o  = wb_cyc;
 assign wbm_we_o   = wb_we;
@@ -1926,8 +1878,8 @@ assign wb_wclr    = reset | ~vm_clk_slow | (vm_clk_ena & (wb_wcnt == 6'o01));
 
 always @(posedge vm_clk_p)
 begin
-   wb_iops <= iop_stb;
-   if (wb_iops)
+   iop_sta <= iop_stb;
+   if (iop_sta)
    begin
       //
       // Store the operation address

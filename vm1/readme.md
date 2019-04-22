@@ -99,7 +99,7 @@ projects.
 
 | Board   | FPGA            | Family      | Fmax    | LUTs | FFs | MEM   |
 |---------|-----------------|-------------|---------|------|-----|-------|
-| DE0     | EP3C16F484C6N   | Cyclone III | 111 MHz | 1420 | 427 | 1 M9K |
+| DE0     | EP3C16F484C7N   | Cyclone III | 111 MHz | 1420 | 427 | 1 M9K |
 | DE1     | EP2C20F484C7N   | Cyclone II  | 94 MHz  | 1410 | 464 | 1 M4K |
 | DE2-115 | EP4CE115F29C7N  | Cyclone IV  | 111 MHz | 1370 | 425 | 1 M9K |
 | AX309   | XC6SLX9FTG256-2 | Spartan 6   | 72 MHz  | n/a  | 387 | 1 BR8 |
