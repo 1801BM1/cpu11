@@ -12,7 +12,7 @@
 //
 // Global system clock
 //
-`define  CONFIG_SYS_CLOCK              66666667
+`define  CONFIG_SYS_CLOCK              80000000
 
 //______________________________________________________________________________
 //
