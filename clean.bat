@@ -9,6 +9,7 @@ exit
 if exist .\vm1 call :proj vm1
 if exist .\vm2 call :proj vm2
 if exist .\vm3 call :proj vm3
+if exist .\lsi call :proj lsi
 exit
 
 :proj

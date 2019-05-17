@@ -19,14 +19,7 @@
 // External clock frequency
 //
 `define  SIM_CONFIG_CLOCK_HPERIOD      5
-
 //
-// Generated processor clock phase durations
-// In system clocks
-//
-`define  SIM_CONFIG_CLK_HIGH           1
-`define  SIM_CONFIG_CLK_LOW            1
-
 //`define  SIM_CONFIG_DEBUG_MC           1
 //`define  SIM_CONFIG_DEBUG_IO           1
 `define  SIM_CONFIG_DEBUG_TTY          1
