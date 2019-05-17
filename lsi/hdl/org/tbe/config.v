@@ -14,11 +14,11 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
-`define  SIM_CONFIG_TIME_LIMIT         4000000
+`define  SIM_CONFIG_TIME_LIMIT         100000
 //
 // External clock frequency
 //
-`define  SIM_CONFIG_CLOCK_HPERIOD      5
+`define  SIM_CONFIG_CLOCK_HPERIOD      10
 //
 // `define  SIM_CONFIG_DEBUG_MC           1
 // `define  SIM_CONFIG_DEBUG_IO           1
