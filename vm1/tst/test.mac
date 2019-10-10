@@ -281,7 +281,7 @@ entry:		mov	#037406, @#177714	;
 						;
 ;_____________________________________________________________________________
 ;
-start:		
+start:
 ;		mov	#1, @#VECSR		;
 ;		clr	@#VECNT			;
 ;		mov	#0, @#VELIM		;
@@ -297,10 +297,33 @@ start:
 						;
 1$:		jsr	PC, getch		;
 		jsr	PC, putch		;
+		cmpb	#'0, R0			;
+		bne	2$			;
+		jsr	PC, testc		;
+2$:		br	1$			;
+
+mes1:		.asciz	<15><12><15><12>"Press key to select test [0-0]: "
+	        .even
+;_____________________________________________________________________________
+;
+testc:		.print	#mes2			;
+						;
+1$:		mov	#177, R1		;
+		mov	#'0, R0			;
+		sec				;
+		movb	(R1), PC		;
+;		mfps	R5			;
+;		nop				; this nop allows bcc
+		bcc	2$			; work correctly
+		mov	#'1, R0			;
+;		adc	R0			;
+2$:		jsr	PC, putch		;
+		mov	R5, R0			;
+		jsr	PC, outhex		;
 		br	1$			;
-						
-mes1:	.asciz	<15><12><15><12>"Press any key (echo test TVE).."<12><15>
-						
+
+mes2:		.asciz	<15><12>"movb Rx, Rx carry flag test "<15><12>
+	        .even
 ;_____________________________________________________________________________
 ;
 ;						;

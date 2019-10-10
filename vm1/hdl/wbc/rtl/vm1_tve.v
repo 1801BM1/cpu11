@@ -45,15 +45,15 @@ wire              tve_back;      // timer capture load
 //
 // Reading the timer registers content to the shared bus
 //
-assign   tve_dout = (tve_csr_oe ? {8'b11111111, tve_csr} : 16'o000000)
-                  | (tve_cnt_oe ? tve_count : 16'o000000)
-                  | (tve_lim_oe ? tve_limit : 16'o000000);
+assign tve_dout = (tve_csr_oe ? {8'b11111111, tve_csr} : 16'o000000)
+                | (tve_cnt_oe ? tve_count : 16'o000000)
+                | (tve_lim_oe ? tve_limit : 16'o000000);
 
 //
 // Hidden clock prescaler, generates the /4 and /128 frequencies
 //
-assign   tve_tclk128 = (tve_pre[6:0] == 7'b1111111);
-assign   tve_spclk   = tve_edge[1] & ~tve_edge[2];
+assign tve_tclk128 = (tve_pre[6:0] == 7'b1111111);
+assign tve_spclk   = tve_edge[1] & ~tve_edge[2];
 
 //
 // Actually we do not care about power-up values in these registers, so
@@ -137,10 +137,10 @@ begin
    end
 end
 
-assign   tve_zero = (tve_count == 16'o000000) & ~tve_csr[1];
-assign   tve_back = tve_csr[4] & tve_csr[1] & tve_spclk & tve_tclk4;
-assign   tve_load = ~tve_zprev & tve_zero & tve_tclk4 & ~tve_csr[1];
-assign   tve_irq  = tve_intrq[0];
+assign tve_zero = (tve_count == 16'o000000) & ~tve_csr[1];
+assign tve_back = tve_csr[4] & tve_csr[1] & tve_spclk & tve_tclk4;
+assign tve_load = ~tve_zprev & tve_zero & tve_tclk4 & ~tve_csr[1];
+assign tve_irq  = tve_intrq[0];
 
 always @(posedge tve_clk or posedge tve_dclo)
 begin

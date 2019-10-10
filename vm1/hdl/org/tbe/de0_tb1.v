@@ -401,10 +401,10 @@ vm1 cpu0
 always @ (negedge cpu0.core.sop_up)
 begin
 #1
-   $display("mj(%O, %02O, %03O), ir(%06O)",
+   $display("mj(%01O, %02O, %02X), ir(%06O)",
       cpu0.core.mj[14:12],
       cpu0.core.mj[11:7],
-      cpu0.core.mj[6:0],
+      ~cpu0.core.mj[6:0],
       cpu0.core.ir);
 end
 
@@ -459,20 +459,22 @@ begin
       default: opcode = "def ";
    endcase
 
-   $display("\nplr(%012O)->(%03O), op(%02O, %s), x(%02O), y(%02O))",
+   $display("\nplr(%09X), na(%02X), op(%01X, %s), x(%01X), y(%01X))",
       cpu0.core.plr[33:0],
-      {cpu0.core.plr[0],
-       cpu0.core.plr[5],
-       cpu0.core.plr[9],
-       cpu0.core.plr[15],
-       cpu0.core.plr[19],
-       cpu0.core.plr[24],
-       cpu0.core.plr[29]},
+      {~cpu0.core.plr[0],
+       ~cpu0.core.plr[5],
+       ~cpu0.core.plr[9],
+       ~cpu0.core.plr[15],
+       ~cpu0.core.plr[19],
+       ~cpu0.core.plr[24],
+       ~cpu0.core.plr[29]},
 
       {cpu0.core.plr[17],
        cpu0.core.plr[16],
        cpu0.core.plr[14],
-       cpu0.core.plr[13]}, opcode,
+       cpu0.core.plr[13]},
+
+       opcode,
 
        cpu0.core.plr[33:30],
        cpu0.core.plr[28:25]);
@@ -496,26 +498,26 @@ begin
 #1
    if (cpu0.core.au_alsl)
    begin
-      if (cpu0.core.au_pswx)  $display("PSW=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
+      if (cpu0.core.au_pswx)  $display("PSW=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
       if (cpu0.core.au_rsx1)
       begin
-         if (cpu0.core.rs_wr[0]) $display("R0=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[1]) $display("R2=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[2]) $display("R4=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[3]) $display("R6=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[4]) $display("R8=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[5]) $display("R10=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[6]) $display("R12=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
+         if (cpu0.core.rs_wr[0]) $display("R0=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[1]) $display("R2=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[2]) $display("R4=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[3]) $display("R6=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[4]) $display("R8=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[5]) $display("R10=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[6]) $display("R12=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
       end
       if (cpu0.core.au_rsx0)
       begin
-         if (cpu0.core.rs_wr[0]) $display("R1=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[1]) $display("R3=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[2]) $display("R5=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[3]) $display("R7=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[4]) $display("R9=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[5]) $display("R11=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
-         if (cpu0.core.rs_wr[6]) $display("R13=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "" : "(byte)");
+         if (cpu0.core.rs_wr[0]) $display("R1=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[1]) $display("R3=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[2]) $display("R5=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[3]) $display("R7=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[4]) $display("R9=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[5]) $display("R11=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
+         if (cpu0.core.rs_wr[6]) $display("R13=%06O %s", cpu0.core.x, cpu0.core.au_alsh ? "(word)" : "(byte)");
       end
    end
 end
