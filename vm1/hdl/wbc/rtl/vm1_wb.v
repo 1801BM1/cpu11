@@ -291,16 +291,15 @@ end
 //
 //______________________________________________________________________________
 //
-assign vm_init_out   = init_out[0] | reset_rc;
-assign wbm_dat_o     = au_ta0 ? {qreg[7:0], 8'o000} : (plrt[6] ? {8'o000, qreg[7:0]} : qreg);
-assign wbm_adr_o     = wb_adr;
+assign vm_init_out = init_out[0] | reset_rc;
+assign wbm_dat_o   = au_ta0 ? {qreg[7:0], 8'o000} : (plrt[6] ? {8'o000, qreg[7:0]} : qreg);
+assign wbm_adr_o   = wb_adr;
 
 //______________________________________________________________________________
 //
 // Control and glue logic
 //
-assign ir_clr           = (~tplm_rc[3] & tplm[3])
-                        | (~ir_seq_rc & ir_seq);
+assign ir_clr = (~tplm_rc[3] & tplm[3]) | (~ir_seq_rc & ir_seq);
 //
 // tplm1 - instruction prefetch
 // tplm3 - instruction fetch
@@ -565,23 +564,23 @@ end
 
 //______________________________________________________________________________
 //
-assign   vm_sel[2]   = wbs_stb_i & (wbs_adr_i[3:1] == 3'b110) & wbs_a;  // 177714
-assign   vm_sel[1]   = wbs_stb_i & (wbs_adr_i[3:1] == 3'b111) & wbs_a;  // 177716
+assign vm_sel[2] = wbs_stb_i & (wbs_adr_i[3:1] == 3'b110) & wbs_a;  // 177714
+assign vm_sel[1] = wbs_stb_i & (wbs_adr_i[3:1] == 3'b111) & wbs_a;  // 177716
 
 always @(posedge vm_clk_p)
 begin
-   wsel_00  <= wbs_we_i & wbs_stb_i & wbs_cyc_i & (wbs_adr_i[3:1] == 3'b000);
-   wsel_02  <= wbs_we_i & wbs_stb_i & wbs_cyc_i & (wbs_adr_i[3:1] == 3'b001);
-   wsel_04  <= wbs_we_i & wbs_stb_i & wbs_cyc_i & (wbs_adr_i[3:1] == 3'b010);
+   wsel_00 <= wbs_we_i & wbs_stb_i & wbs_cyc_i & (wbs_adr_i[3:1] == 3'b000);
+   wsel_02 <= wbs_we_i & wbs_stb_i & wbs_cyc_i & (wbs_adr_i[3:1] == 3'b001);
+   wsel_04 <= wbs_we_i & wbs_stb_i & wbs_cyc_i & (wbs_adr_i[3:1] == 3'b010);
 end
 
-assign   wbs_dat_o   = wbs_d;
-assign   wbs_ack_o   = wbs_a;
+assign wbs_dat_o = wbs_d;
+assign wbs_ack_o = wbs_a;
 //
 // Register 177702 does not generate reply if start_irq is active
 //
-assign   wbs_a_rc    = wbs_cyc_i & wbs_stb_i & ~((wbs_adr_i[3:1] == 3'b001) & start_irq)
-                     & ((~wbs_we_i & ~wbs_r) | (wbs_we_i & ~wbs_w));
+assign wbs_a_rc = wbs_cyc_i & wbs_stb_i & ~((wbs_adr_i[3:1] == 3'b001) & start_irq)
+                & ((~wbs_we_i & ~wbs_r) | (wbs_we_i & ~wbs_w));
 
 always @(posedge vm_clk_p)
 begin
@@ -1261,10 +1260,10 @@ assign au_astb  = au_astb_xa | (ustb & au_astb_xu);
 assign au_qstbx = au_qstb_xa | (ustb & au_qstb_xu);
 always @(posedge vm_clk_n)
 begin
-   au_astb_xa  <= alu_busy_rp & ustb_h & ~(~plr[14] & plr[13]) & ~plr[23] & (plr[7] | plr[8]);
-   au_qstb_xa  <= alu_busy_rp & ustb_h & ~(~plr[14] & plr[13]) & ~plr[23] & ~plr[7] & ~plr[8];
-   au_astb_xu  <= (~plr[14] & plr[13]) & ~plr[23] & (plr[7] | plr[8]);
-   au_qstb_xu  <= (~plr[14] & plr[13]) & ~plr[23] & ~plr[7] & ~plr[8];
+   au_astb_xa <= alu_busy_rp & ustb_h & ~(~plr[14] & plr[13]) & ~plr[23] & (plr[7] | plr[8]);
+   au_qstb_xa <= alu_busy_rp & ustb_h & ~(~plr[14] & plr[13]) & ~plr[23] & ~plr[7] & ~plr[8];
+   au_astb_xu <= (~plr[14] & plr[13]) & ~plr[23] & (plr[7] | plr[8]);
+   au_qstb_xu <= (~plr[14] & plr[13]) & ~plr[23] & ~plr[7] & ~plr[8];
 end
 //
 // X bus (12 entries)
@@ -1393,10 +1392,10 @@ begin
       //
       // Master wishbone abort/reset
       //
-      wb_cyc      <= 1'b0;
-      wb_we       <= 1'b0;
-      wb_sel      <= 2'b00;
-      wb_stb      <= 1'b0;
+      wb_cyc <= 1'b0;
+      wb_we  <= 1'b0;
+      wb_sel <= 2'b00;
+      wb_stb <= 1'b0;
    end
    else
       if (wb_start)
@@ -1404,11 +1403,11 @@ begin
          //
          // Start master bus transaction
          //
-         wb_cyc      <= 1'b1;
-         wb_we       <= ~plrt[8] & ~plrt[7];
-         wb_sel[0]   <= plrt[8] | ~plrt[6] | (wb_uplr ? ~areg[0] : ~au_ta0);
-         wb_sel[1]   <= plrt[8] | ~plrt[6] | (wb_uplr ?  areg[0] :  au_ta0);
-         wb_stb      <= plrt[8] | (plrt[7] & dout_req);
+         wb_cyc    <= 1'b1;
+         wb_we     <= ~plrt[8] & ~plrt[7];
+         wb_sel[0] <= plrt[8] | ~plrt[6] | (wb_uplr ? ~areg[0] : ~au_ta0);
+         wb_sel[1] <= plrt[8] | ~plrt[6] | (wb_uplr ?  areg[0] :  au_ta0);
+         wb_stb    <= plrt[8] | (plrt[7] & dout_req);
       end
       else
       begin
@@ -1417,10 +1416,10 @@ begin
             //
             // Write or single read completion
             //
-            wb_cyc      <= 1'b0;
-            wb_we       <= 1'b0;
-            wb_sel      <= 2'b00;
-            wb_stb      <= 1'b0;
+            wb_cyc <= 1'b0;
+            wb_we  <= 1'b0;
+            wb_sel <= 2'b00;
+            wb_stb <= 1'b0;
          end
          else
             if (wb_rdone & plrt[7])
@@ -1436,7 +1435,7 @@ begin
             else
             begin
                if (wb_we & dout_req)
-                  wb_stb   <= 1'b1;
+                  wb_stb <= 1'b1;
             end
       end
 end
@@ -1830,7 +1829,6 @@ begin
    gpr[11]  = 16'o000000;
    gpr[12]  = 16'o000000;
    gpr[13]  = 16'o000000;
-   gpr[0]   = 16'o000000;
 end
 // synopsys translate_on
 endmodule
@@ -1871,14 +1869,14 @@ end
 assign vc_vsel = (plr[28:25] == 4'b0010) & ((plr[13] & ~plr[14]) | plr[11]);
 assign vc_csel = (plr[28:25] != 4'b0010) & ((plr[13] & ~plr[14]) | plr[11]);
 
-assign   wren      = (wstbl & (plr[32:30] != 3'b000) & plr[20]) | (wstbl & ~plr[20]);
-assign   xadr[5:0] = {2'b00, wstbl ? (plr[20] ? plr[33:30] : 4'b1100) : plr[33:30]};
-assign   yadr[3:0] = (vc_vsel                         ? vsel         : 4'b0000)
-                   | (vc_csel                         ? plr[28:25]   : 4'b0000)
-                   | ((plr[13] & plr[14] & ~plr[11])  ? 4'b1100      : 4'b0000)
-                   | ((~plr[11] & ~plr[13])           ? plr[28:25]   : 4'b0000);
-assign   yadr[4]   = vc_vsel;
-assign   yadr[5]   = vc_csel;
+assign wren      = (wstbl & (plr[32:30] != 3'b000) & plr[20]) | (wstbl & ~plr[20]);
+assign xadr[5:0] = {2'b00, wstbl ? (plr[20] ? plr[33:30] : 4'b1100) : plr[33:30]};
+assign yadr[3:0] = (vc_vsel                        ? vsel       : 4'b0000)
+                 | (vc_csel                        ? plr[28:25] : 4'b0000)
+                 | ((plr[13] & plr[14] & ~plr[11]) ? 4'b1100    : 4'b0000)
+                 | ((~plr[11] & ~plr[13])          ? plr[28:25] : 4'b0000);
+assign yadr[4]   = vc_vsel;
+assign yadr[5]   = vc_csel;
 
 vm1_vcram vm1_vcram_reg(
    .clock(clk_n),
