@@ -4,8 +4,8 @@
 //
 // Wishbone compatible version of 1801VM2 processor
 // has 2 dedicated wishbone interfaces:
-//    - master interface, on this one VM2 core performs addressed I/O, address
-//       most significant bit is for sel (high means access to halt mode space)
+//    - master interface, on this one VM2 core performs addressed I/O, the address
+//      most significant bit is for sel (high means access to halt mode space)
 //    - interrupt vector interface for interrupt acknowlegement and
 //      unaddressed read access (wbi_una_o tag is high)
 //
@@ -453,7 +453,7 @@ end
 //
 // QBus state machine
 //
-assign creq       = wb_cyc | adr_req;
+assign creq = wb_cyc | adr_req;
 
 always @(posedge vm_clk_p)
 begin
@@ -475,22 +475,22 @@ end
 
 always @(posedge vm_clk_n) to_rply <= iop_rcd & ~word27 & tabort & ~to_rply;
 
-assign io_iak     = (plr[24:21] == 4'b1111);    // Interrupt acknowlegement
-assign io_sel     = (plr[24:21] == 4'b1011)     // Unaddressed read
-                  | (plr[24:21] == 4'b1101);    //
-assign io_rcd     = (plr[24:21] == 4'b0111);    // Read command ahead
-assign io_cmd     = (plr[24:21] == 4'b0010)     // Read command
-                  | (plr[24:21] == 4'b0110);    //
-assign io_wri     = (plr[24:21] == 4'b0100)     // Write data
-                  | (plr[24:21] == 4'b0101);    // Write alt data
-assign io_alt     = (plr[24:21] == 4'b0011)     // Read alternating space
-                  | (plr[24:21] == 4'b0101);    // Write alternating space
-assign io_x001    = (plr[24:21] == 4'b0001)     // Operation is defined
-                  | (plr[24:21] == 4'b1001);    // by dc_mop field
+assign io_iak  = (plr[24:21] == 4'b1111);    // Interrupt acknowlegement
+assign io_sel  = (plr[24:21] == 4'b1011)     // Unaddressed read
+               | (plr[24:21] == 4'b1101);    //
+assign io_rcd  = (plr[24:21] == 4'b0111);    // Read command ahead
+assign io_cmd  = (plr[24:21] == 4'b0010)     // Read command
+               | (plr[24:21] == 4'b0110);    //
+assign io_wri  = (plr[24:21] == 4'b0100)     // Write data
+               | (plr[24:21] == 4'b0101);    // Write alt data
+assign io_alt  = (plr[24:21] == 4'b0011)     // Read alternating space
+               | (plr[24:21] == 4'b0101);    // Write alternating space
+assign io_x001 = (plr[24:21] == 4'b0001)     // Operation is defined
+               | (plr[24:21] == 4'b1001);    // by dc_mop field
 
-assign io_wr      = (io_x001 & dc_iowr) | io_wri;
-assign io_rd      = (io_x001 & dc_iord) | plr[22];
-assign io_in      = io_rcd | (io_rd & ~io_cmd);
+assign io_wr   = (io_x001 & dc_iowr) | io_wri;
+assign io_rd   = (io_x001 & dc_iord) | plr[22];
+assign io_in   = io_rcd | (io_rd & ~io_cmd);
 
 assign io_rcd1_xt = ra_fr1 & na[1];
 always @(posedge vm_clk_p) if (wr1) iop_una <= io_iak | io_sel;
@@ -521,7 +521,7 @@ end
 //
 // Q-bus timer, also involved in INIT command pulse timing
 //
-assign tout  = qtim[0] & qtim[2] & qtim[4] & qtim[5];
+assign tout = qtim[0] & qtim[2] & qtim[4] & qtim[5];
 
 always @(posedge vm_clk_n)
 begin
@@ -710,7 +710,7 @@ end
 
 //______________________________________________________________________________
 //
-// Instructions with two operands and sources address mode is @PC
+// Instructions with two operands and source address mode is @PC
 // For this instruction we suppress the pc2 write in source read phase
 //
 always @(posedge vm_clk_p)
@@ -908,14 +908,13 @@ assign qri[9]  = wcpu;              // WAIT instruction execution
 assign qri[10] = evnt_rq;           // system timer interrupt request
 assign qri[11] = tbit | psw[4];     // T-bit step trap request
 assign qri[12] = dc_rtt & (tbit | psw[4]);
-assign qri[13] = psw[8];            // halp mode flag
+assign qri[13] = psw[8];            // halt mode flag
 assign qri[14] = psw[7];            // interrupt disable flag
 assign qri[15] = ac0;               // wait initial nACLO rise
 
-
 //______________________________________________________________________________
 //
-// Extrenal pin assignments
+// External pin assignments
 //
 always @(posedge vm_clk_p)
 begin
