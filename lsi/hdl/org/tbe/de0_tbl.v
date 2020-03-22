@@ -378,12 +378,14 @@ lsi cpu
    .pin_dmgo_n(dmgo),         // bus granted output
                               //
    .pin_ad_n(ad),             // inverted address/data bus
-   .pin_ref_n(dref),          // dynamic RAM refresh
+   .pin_dref_n(dref),         // dynamic RAM refresh
    .pin_sync_n(sync),         // address strobe
    .pin_wtbt_n(wtbt),         // write/byte status
    .pin_dout_n(dout),         // data output strobe
    .pin_din_n(din),           // data input strobe
-   .pin_iako_n(iako)          // interrupt vector input
+   .pin_iako_n(iako),         // interrupt vector input
+                              //
+   .pin_bsel(2'b00)           // boot mode 0 - 24/26 vector
 );
 
 `ifdef SIM_CONFIG_DEBUG_MC
