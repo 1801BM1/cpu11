@@ -1,0 +1,3489 @@
+;
+;			IDENTIFICATION
+;			--------------
+;
+; PRODUCT CODE:		AC-8190B-MC
+; PRODUCT NAME:		CVKABB0	LSI-11 EIS INST	TEST
+; DATE CREATED:		JULY, 1981
+; MAINTAINER:		DIAGNOSTIC GROUP
+; AUTHOR:		PERVEZ A. ZAKI
+;
+; Copyright (c)	1975,1977,1978
+; Digital Equipment Corp., Maynard, Mass.
+;
+; This software	is furnished to	purchaser under	a license for use
+; on a single computer system and can be copied	with inclusion
+; of DEC's copyright notice only for use in such system, except
+; as may otherwise be provided in writing by DEC.
+;
+; The information in this document is subject to change	without
+; notice and should not	be construed as	a commitment by	Digital
+; Equipment Corporation.
+;
+; DEC assumes no responsibility	for the	use or reliability of
+; its software on equipment which is not supplied by DEC.
+;_____________________________________________________________________________
+;
+;			CONTENTS
+;			--------
+; 1.	Abstract
+; 2.	Requirements
+; 2.1	Equipment
+; 2.2	Storage
+; 2.3	Preliminary programs
+; 3.	Loading	procedure
+; 4.	Starting procedure
+; 4.1	Control	switch settings
+; 4.2	Starting address
+; 4.3	Program	and/or operator	action
+; 5.	Operating procedure
+; 5.1	Switch settings
+; 5.2	Subroutine abstracts
+; 6.	Errors
+; 6.1	Error printout
+; 6.2	Error recovery
+; 7.	Restrictions
+; 8.	Miscellaneous
+; 8.1	Execution time
+; 8.2	Stack pointer
+; 8.3	Pass counter
+; 8.4	Test number
+; 8.5	Power fail
+; 9.	Program	description
+;_____________________________________________________________________________
+;
+; 1.	Abstract
+;
+;	This program tests the LSI-11 extended instruction set
+;	(ash, ashc, mul, and div) option using registers 0-5 at
+;	least once with	each instruction. It is	also checked that
+;	extended instructions can be interrupted (by the console
+;	teletype) (however this	test will not be executed when bit
+;	5 of $envm byte	is high). The program should be	run for
+;	at least 2 passes with all switches low. The program is
+;	designed to run	under APT and ACT systems. When	running
+;	under APT with bit 5 of	$envm low it will be required to
+;	have a SLU with	TTY registers having addresses of 176560-66
+;	and interupt vectors of	70 for receiver	and 74 for trans-
+;	mitter.
+;
+; 2.	Requirements
+; 2.1	Equipment
+;
+;	LSI-11 standard	computer with EIS option and 4K	of memory
+;
+; 2.2	Storage
+;
+;	Program	storage	- the routines use memory 0 - 17500
+;
+; 2.3	Preliminary programs
+;
+;	None
+;
+; 3.	Loading	procedure
+;
+;	Use standard procedure for ABS tapes.
+;
+; 4.	Starting procedure
+; 4.1	Control	switch settings
+;
+;	see 5.1	(all low for worst case	testing)
+;
+; 4.2	Starting address
+;
+;	After loading the program it should always be started at 200.
+;	If it is desired to save the pass counter then the program
+;	should be restarted at location	restart	(i.e. 222) otherwise
+;	the program can	be restarted at	200
+;
+; 4.3	Program	and/or operator	action
+; 4.3.1	Stand alone
+;
+;	1) place LTC switch in off position (if	applicable).
+;	2) load	program	into memory using ABS loader or	XXDP+ (.R VKABb??).
+;	3) set switches	(see sec 5.1) all low for worst	case.
+;	4) type	200g if	using ABS loader.
+;	5) the program will loop and "END PASS"	will be	typed after
+;	   completion of first pass and	every 4th pass.	However	type
+;	   out will be suppressed if bit 5 of location $envm is	high
+;	6) a minimum of	two passes should aluays be run.
+;
+; 4.3.2	Under APT
+;
+;	Load the program and start after setting the desired switches
+;	(see sec. 5.1).	However	if the diagnostic is run under APT
+;	with bit 5 of $envm low	then it	will be	required that a	SLU
+;	with TTY registers having addresses of 176560-66, and interrupt
+;	vectors	of 70 for receiver and 74 for transmitter be present,
+;	it will	also be	required to change the pass time from 5	sec.
+;	to 15 seconds and the test time	from 3 to 10 seconds
+;
+; 5.	Operating procedure
+; 5.1	Switch settings
+;
+;	a 16 bit location called $swreg	(i.e. location 422) has	been
+;	used to	give the following options by inserting	a 1 in their
+;	respective positions
+;
+;	bit # octal value	function
+;
+;	15    100000		halt on	error
+;	13    020000		inhibit	printout
+;
+;	An 8 bit byte $envm (i.e. location 421)	has been used to define
+;	the operating mode. All	typeouts can be	suppressed by making
+;	bit 5 of byte $envm high, in other words by placing a 20000 in
+;	location 420
+;
+; 5.2	Subroutine abstracts
+; 5.2.1	Halt routine
+;
+;	This routine called via	jsr instruction	is used	each time
+;	an error is seen and an	error message of the format given
+;	in sec.	6.1 is typed out unless	supressed by the switches
+;	defined	in sec.	5.1
+;
+; 5.2.2	Trap catcher
+;	A ".+2"	- "halt" sequence is repeated from 0-776 to catch
+;	any unexpected traps. Thus any unexpected traps	or
+;	interrupts will	halt at	the vector+2.
+;
+; 6.	Errors
+; 6.1	Error printout
+;
+;	The format is as follows:
+;	ADR	ERRNM
+;
+;	where:
+;	ADR	= address of error
+;	ERRNM	= error	number
+;
+;	in most	cases the comment beside the call for halt subroutine
+;	tells what was being checked and what was expected. All
+;	printouts will be suppressed when bit 5	of location
+;	$envm is high. While running under APT the diagnostic
+;	will not support spooling of console outputs.
+;
+; 6.2	Error recovery
+;
+;	Restart	at 200 or 222 (see sec 4.2)
+;
+; 7.	Restrictions
+;
+;	None
+;
+; 8.	Miscellaneous
+; 8.1	Execution time
+;
+;	Due to the random characteristic of the	interrupt tests, the
+;	execution time can be 5	seconds	or more	per pass.However,
+;	normally first "END PASS" will be typed	 within	5 seconds and
+;	within 50 seconds for every consecutive	10 passes
+;
+; 8.2	Stack pointer
+;
+;	Stack is initially set to 600
+;
+; 8.3	Pass counter
+;
+;	A 16 bit location "$pass" (i.e.	location 406) is used to keep
+;	pass count. It can be cleared by restarting the	program	at 200
+;
+; 8.4	Test number
+;
+;	A 16 bit location "$testn" (i.e. location 404) is used to keep track
+;	of the test number. Upper byte of this location	gives the iteration
+;	number and the lower byte the test that	was being executed
+;
+; 8.5	Power fail
+;
+;	The diagnostic can be power failed with	no errors. To use,
+;	start the test as usual	and power down then up at any time,
+;	the program should restart from	test 0 after typing "POWER"
+;	with no	errors,	However	if the program is stored in a MOS
+;	memory that can	not hold data with power down then the program
+;	will not recover from a	power fail
+;
+; 9.	Program	description
+;
+;	This program tests all the EIS instructions of the LSI-11.
+;	For ash	and ashc instructions every even pass is executed
+;	with destination mode 0	for all	registers and every odd	pass
+;	with destination mode of 67. The diagnostic does not make a
+;	pass with T bit	set
+;_____________________________________________________________________________
+;
+		.asect
+		.nlist	mc, md,	cnd
+		.list	me
+		.title	CVKABA
+;
+; Copyright (c)	August 1975
+; Digital Equipment Corporation.
+; Maynard, Mass. 01754
+;
+; Program by Pervez Zaki
+;
+; This program was assembled using the PDP-11 maindec sysmac
+; Package (maindec-11-DZQAC-C5), Jan. 1981.
+;
+		$tn	= 1			;
+		$swr	= 160000		; halt on error, loop	on test. inhibit error typ0u1
+		. = 0				; trap catcher 0 - 776
+;_____________________________________________________________________________
+;
+; hookS	required by ACT11
+;
+;						;
+;		$svpc=.				; save PC
+;		. = 46				;
+;		$endad				; 1) set loc.46	to address
+;						; of $endad in $eop
+;		. = 52				;
+;		.word	0			; 2) set loc.52	to zero
+;		. = $svpc			; restore PC
+;_____________________________________________________________________________
+;
+		dummy	= 0			;
+		errnm	= 1			;
+		f	= 51			;
+		n	= 176			;
+		PC	= %7			;
+		SP	= %6			;
+		R5	= %5			;
+		R4	= %4			;
+		R3	= %3			;
+		R2	= %2			;
+		R1	= %1			;
+		R0	= %0			;
+						;
+		scope	= 10701			; mov PC, R1
+		scope1	= 10701			; mov PC, R1
+		scope3	= 10703			; mov PC, R3
+		sw09	= 1000			;
+		sw10	= 2000			;
+		sw11	= 4000			;
+		sw12	= 10000			;
+		type	= iot			;
+						;
+;		. = 20				;
+;		$type				;
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		.	= offset		;
+	.if	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff					;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+		.nlist				;
+		vect	0			;
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20, $type		; type out the message
+		vect	24, 200			; power	fail entry
+		vect	30			;
+		vect	34			;
+		vect	40			;
+		vect	44, $apthd, $endad	;
+		vect	50			;
+		vect	54			;
+		vect	60			;
+		vect	64			;
+		vect	70			;
+		vect	74			;
+		vect	100			;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+		.list				;
+;_____________________________________________________________________________
+;
+		. = 200				; starting of the program
+		mov	#$pwrdn, @#24		; prepare to service power down	routine
+		mov	#$devct, R0		; prepare to initialize	the stack
+2$:		clr	-(R0)			;
+		cmp	#$mail,	R0		;
+		bne	2$			;
+restrt:		jmp	begin			;
+						;
+		.nlist				;
+		vect	230			;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+		.list				;
+;_____________________________________________________________________________
+;
+		. = 400				;
+		.sbttl apt mailbox-etable	;
+		.even				;
+$mail:						; mailbox
+$msgty:		.word	0	; amsgty	; message type code
+$fatal:		.word	0	; afatal	; fatal	error number
+$testn:		.word	0	; atestn	; test number
+$pass:		.word	0	; apass		; pass count
+$devct:		.word	0	; adevct	; device count
+$unit:		.word	0	; aunit		; I/O unit number
+$msgad:		.word	0	; amsgad	; message address
+$msglg:		.word	0	; amsglg	; message length
+$etable:					; APT environment table
+$env:		.byte	0	; aenv		; environment byte
+$envm:		.byte	0	; aenvm		; environment mode bits
+$swreg:		.word	0	; aswreg	; APT switch register
+$usur:		.word	0	; ausur		; user switches
+$cpuop:		.word	0	; acpuop	; CPU type, options
+						; bits 15-11=cpu type
+						;	11/04=01, 11/05=02
+						;	11/20=03, 11/40=04
+						;	11/45=05, 11/70=06
+						;	PDQ=07,	Q=10
+						; bit 10 - real	time clock
+						; bit 9	- floating point
+						; bit 8	- memory management
+$etend:						;
+;_____________________________________________________________________________
+;
+;		.mexit
+;		.sbttl	APT parameter block
+;
+; Set locations	24 and 44 as required for APT
+;
+;		.$x = .				; save current location
+;		. = 24				; set power fail to point to start
+;		200				; of program for APT start up
+;		. = 44				; point	to APT indirect	address	pntr.
+;		$apthdr				; point	to APT header block
+;		. = .$x				; reset	location counter
+;_____________________________________________________________________________
+;
+; Setup	APT parameter block as defined in the APT-PDP-11 diagnostic
+; interface spec.
+;
+$apthd:						;
+$hibts:		.word	0			; two high bits	of 18 bit mailbox addr.
+$mbadr:		.word	$mail			; address of APT mailbox (bits 0-15)
+$tstm:		.word	3			; run tim of longest test
+$pastm:		.word	5			; run time in secs. of 1st pass	on 1 unit (quick verify)
+$unitm:		.word	0			; additional run time (secs) of	a pass for each	additional unit
+		.word	$etend-$mail/2		; length mailbox-etable	(words)
+						;
+		. = $apthd			;
+count:		.blkw	1			;
+psword:		.blkw	1			;
+temp1:		.blkw	1			;
+temp2:		.blkw	1			;
+temp3:		.blkw	1			;
+temp4:		.blkw	1			;
+temp5:		.word	0			;
+temp6:		.word	0			;
+typcnt:		.byte	0			;
+$tpcnt:		.byte	0			;
+						;
+s0:		.word	 7			;
+s1:		.word	-7			;
+s2:		.word	s1			;
+s3:		.word	-6			;
+s4:		.word	-1			;
+s5:		.word	40000			;
+s6:		.word	s5			;
+s7:		.word	40000			;
+s8:		.word	-2			;
+s9:		.word	2			;
+s10:		.word	s9			;
+s11:		.word	2			;
+ttyout:		.word	64			;
+$tpb:		.word	177566			;
+$tps:		.word	177564			;
+$crlf:		.asciz	<15><12><40><40><40>	;
+power:		.asciz	<12><15>"POWER"		;
+;_____________________________________________________________________________
+;
+		.nlist				;
+		vect	530			;
+		vect	534			;
+		vect	540			;
+		vect	544			;
+		vect	550			;
+		vect	554			;
+		vect	560			;
+		vect	564			;
+		vect	570			;
+		vect	574			;
+		.list				;
+						;
+		. = 600				;
+begin:		mov	#$testn, R5		; make R5 point	to the location	$testn
+		clr	@#count			; clear	the counter
+		mov	#1, (R5)		; initialize test number
+		mov	#begin,	SP		; ** stack at begin **
+		mtps	#0			; place	#0 in PSW
+						;
+		bitb	#1, @#$env		; are we under APT?
+		beq	2$			; if not then go to 2$
+		mov	#$tps+2, R0		; otherwise set	for other SLU
+		mov	#176564, -(R0)		;
+		mov	#176566, -(R0)		;
+		mov	#74, -(R0)		;
+2$:		mov	#1, @#temp1		; temp1	= 1
+		clr	@#temp2			; temp2	= 0
+		mov	#1, @#temp3		; temp3	= 1
+		clr	@#temp4			; temp4	= 0
+;_____________________________________________________________________________
+;
+; TESTS	1-36 - ash instruction tests
+;
+start:		scope1				;
+		mov	@#temp1, R0		; load R0 with the contents of temp1
+		bit	#1, @#$pass		; is it	an even	pass?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R1		; otherwise execute the	instruction
+						; in mode 0 using R1
+		ash	R1, R0			;
+		br	4$			;
+2$:		ash	temp2, R0		; shift	R0 by the number
+4$:		mfps	@#psword		; specified by temp2
+		cmpb	@#temp4, @#psword	; is the PSW = temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	1			; the PSW is not equal to 0
+						;
+		inc	@#count			; increment the	counter
+		cmp	@#temp3, R0		; is the result	in R0 equal to temp3?
+		beq	.+10			;
+6$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	2			; either incorrect R0 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the
+						; counter?
+		bne	6$			; if not go to the halt	above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers	been
+		bge	8$			; shifted left by 14. and right	by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift	temp3 left
+		cmp	(R5), #20		; has the contents of registers
+		bne	reg1			; been shifted left by 14.?
+		jmp	negat			; if so	go to negat and
+						; initiate right shift
+8$:		jsr	PC, tst37		; if so	go and continue
+						;
+reg1:		scope3				; the rest of the program
+		mov	@#temp1, R1		; load R1 with the contents of temp1
+		bit	#1, @#$pass		; is it	an even	pass?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R2		; otherwise execute ash	instruction
+		ash	R2, R1			; in mode 0 using R1
+		br	4$			;
+2$:		ash	temp2, R1		; shift	R1 by the number
+4$:		mfps	@#psword		; specified by temp2
+		cmpb	@#temp4, @#psword	; is the PSW = temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	3			; the PSW is not equal to 0
+						;
+		inc	@#count			; increment the	counter
+		cmp	@#temp3, R1		; is the result	in R1 equal to temp3?
+		beq	.+10			;
+6$:		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	4			; either incorrect R1 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the halt	above
+		inc	(R5)			;
+		scope3				;
+		cmp	(R5), #37		; has the contents of registers	been
+		bge	8$			; shifted left by 14. and right	by 14.?
+						;
+		inc	@#temp2			;
+		asl	temp3			; shift	temp3 left
+		cmp	(R5), #20		; has the contents of registers	been
+		bne	reg2			; shifted left by 14.?
+		jmp	negat			; if so	go to negat and
+						; initiate right shift
+8$:		jsr PC,	tst37			; if so	go and continue
+						; the rest of the program
+reg2:		scope1				;
+		mov	@#temp1, R2		; load R2 with the contents of temp1
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R3		; otherwise execute ash	instruction
+		ash	R3, R2			; in mode 0 using R2
+		br	4$			;
+2$:		ash	temp2, R2		; shift	R2 by the number
+4$:		mfps	@#psword		; specified by temp2
+		cmpb	@#temp4, @#psword	; is the PSW = temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	5			;
+						;
+		inc	@#count			;
+		cmp	@#temp3, R2		; is the result	in R2 equal to temp3?
+		beq	.+10			;
+6$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	6			; either incorrect R2 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the halt	above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers	been
+		bge	8$			; shifted left by 14, and right	by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shifted temp3	left
+		cmp	(R5), #20		; has the contents of registers	been
+		bne	reg3			; shifted left by 14.?
+		jmp	negat			; if so	go to negat and	initiate right shift
+8$:		jsr	PC, tst37		; if so	go and continue	the rest of the	program
+						;
+reg3:		scope1				;
+		mov	@#temp1, R3		; load R3 with the contents of temp1
+		bit	#1, @#$pass		; is it	an even	pass?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R4		; otherwise execute ash	instruction
+		ash	R4, R3			; in mode 0 using R3
+		br	4$			;
+2$:		ash	temp2, R3		; shift	R3 by the number
+4$:		mfps	@#psword		; specified by temp2
+		cmpb	@#temp4, @#psword	; is the PSW = temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	7			; the PSW is not equal to 0.
+						;
+		inc	@#count			;
+		cmp	@#temp3, R3		; is the result	in R3 equal to temp3?
+		beq	.+10			;
+6$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		10				; either incorrect R3 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the halt	above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers	been
+		bge	8$			; shifted left by 14, and right	by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift	temp3 left?
+		cmp	(R5), #20		; has the contents of registers
+		bne	reg4			; been shifted left by 14.?
+		br	negat			; if so	go to negat and	initiate right shift
+8$:		jsr	PC, tst37		; if so	go and continue	the rest of the	program
+						;
+reg4:		scope3				;
+		mov	@#temp1, R4		; load R4 with the contents of temp1
+		mov	R5, R1			; save R5
+		bit	#1, @#$pass		; is it	an even	pass?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R5		; otherwise execute ash	instruction in mode 0
+		ash	R5, R4			; using	R4
+		br	4$			;
+2$:		ash	temp2, R4		; shift	R4 by the number
+4$:		mfps	@#psword		; specified by temp2
+		cmpb	@#temp4, @#psword	; is PSW = temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; :seen	an error, go to	the halt routine
+		.word	11			; the ps is not	equal to 0
+		inc	@#count			;
+		cmp	@#temp3, R4		; is the result	in R4 equal to temp3?
+		beq	.+10			;
+6$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	12			; either incorrect R4 or incorrect sequence
+		mov	R1, R5			; restore R5
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the halt	above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers	been
+		bge	8$			; shifted left by 14. and right	by 14.?
+						;
+		inc	@#temp2			;
+		asl	temp3			; shift	temp3 left
+		cmp	(R5), #20		; has the contents of register
+		bne	reg5			; been shifted by 14.?
+		br	negat			; if so	go to negat and	initiate right shift
+8$:		jsr	PC, tst37		; if so	go and continue	the rest of the	program
+						;
+reg5:		scope1				;
+		mov	R5, R1			; save R5
+		mov	@#temp1, R5		; load R5 with the contents of temp1
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R0		; otherwise execute ash	instruction
+		ash	R0, R5			; in mode 0 using R5
+		br	4$			;
+2$:		ash	temp2, R5		; shift	R5 by the number specified by temp2
+4$:		mfps	@#psword		;
+		cmpb	@#temp4, @#psword	; is PSW = temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	13			; the ps is not	equal to 0
+						;
+		inc	@#count			;
+		cmp	@#temp3, R5		; is the result	in R5 equal to temp3?
+		beq	.+10			;
+6$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	14			; either incorrect R5 qr incorrect sequence
+						;
+		cmp	(R1), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the halt	above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers	been
+		bge	8$			; shifted left by 14. and right	by 14.?
+						; if so	go and continue
+		inc	@#temp2			; the rest of the program
+		asl	temp3			; shift	temp3 left
+		cmp	(R5), #20		; has the contents of registers	been shifted left by 14.?
+		beq	negat			; if so	go to negat and	initiate right shift
+		br	10$			;
+8$:		jsr	PC, tst37		;
+10$:		jmp	start			; go back to start
+negat:		mov	#40000,	@#temp1		; temp1	= 40000
+		mov	#177762, @#temp2	; temp2=1 77762
+		mov	#1, @#temp3		; temp3=1
+		jmp	start			;
+;_____________________________________________________________________________
+;
+tst37:		cmp	(R5), #37		; is it	test 37?
+		bne	tst40			; if not then try test 40
+		clr	@#temp1			;
+		mov	#16., @#temp2		; 0 shifted by 16
+		clr	@#temp3			; is=0
+		mov	#4, @#temp4		; and PSW=4
+		rts	PC			;
+						;
+tst40:		cmp	(R5), #40		; is it	test 40?
+		bne	tst41			; if not then try test 41
+		clr	@#temp2			; 0 shifted by 0=0 and ps=4
+		rts	PC			;
+						;
+tst41:		cmp	(R5), #41		; is it	test 41?
+		bne	tst42			; if not then try test 42
+		mov	#-16., @#temp2		; shifted by -16. =0 and ps=4
+		rts	PC			;
+						;
+tst42:		cmp	(R5), #42		; is it	test 42?
+		bne	tst43			; if not then try test 43
+		mov	#100000, @#temp1	;
+		inc	@#temp2			; 100000 shifted by -15
+		dec	@#temp3			; is=-1	and ps=10
+		mov	#10,@#temp4		;
+		rts	PC			;
+						;
+tst43:		cmp	(R5), #43		; is it	test 43?
+		bne	tst44			; if not then try test 44
+		mov	#125252, @#temp1	;
+		mov	#-1, @#temp2		; 125252 shifted by -1
+		mov	#152525, @#temp3	; is=152525 and	ps=10
+		rts	PC			;
+						;
+tst44:		cmp	(R5), #44		; is it	test 44?
+		bne	tst45			; if not then try test 45
+		mov	#1, @#temp2		; 125252 shifted by 1
+		mov	#52524,	@#temp3		; is=52524 and ps=3
+		mov	#3, @#temp4		;
+		rts	PC			;
+						;
+tst45:		cmp	(R5), #45		; is it	test 45?
+		bne	tst46			; if not then try test 46
+		mov	#-2, @#temp2		; 125252 shifted by -2
+		mov	#165252, @#temp3	; is=165252 and	ps=11
+		mov	#11, @#temp4		;
+		rts	PC			;
+						;
+tst46:		cmp	(R5), #46		; is it	test 46?
+		bne	tst47			; if not then try test 47
+		mov	#-1, @#temp1		;
+		mov	#16., @#temp2		; -1 shifted by	15.
+		clr	@#temp3			; is=0 and ps=7
+		mov	#7, @#temp4		;
+		rts	PC			;
+						;
+tst47:		cmp	(R5), #47		; is it	test 47?
+		bne	tst50			; if not then try test 50
+		dec	@#temp2			; -1 shifted by	15
+		mov	#100000, @#temp3	; is=100000 and	ps=11
+		mov	#11, @#temp4		;
+		rts	PC			;
+						;
+tst50:		cmp	(R5), #50		; is it	test 50
+		bne	ent51			; if not then try test 51
+		mov	#137777, @#temp1	; 137777 shifted by 15.
+		mov	#13, @#temp4		; is=100000 and	ps=13
+		rts	PC			;
+;_____________________________________________________________________________
+;
+ent51:		cmp	(R5), #51		; is it	entering test 51?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	15			; test number goofed
+						;
+		tst	(SP)+			; restore stack	pointer
+		mov	   #-7,	R4		;
+		mov	   #s1,	R2		;
+		mov	   #s2,	R3		;
+;_____________________________________________________________________________
+;
+; TEST 51 - LSI-11 ash 125252 shifted by #5 = 52500 ps = 3
+;
+tst51:		scope1				;
+		mov	#125252, R1		; load R1 with 125252
+		ash	#5, R1			; shift	R1 by #5
+		mfps	@#psword		; save ps
+						;
+		cmpb	#3, @#psword		; is the ps 3?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	16			; the ps is not	equal to 3
+						;
+		cmp	#52500,	R1		; is the result	52500?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	17			; R1 is	not equal to 52500
+						; or incorrect	sequence
+		cmp	(R5), #51		; is $testn = #51
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 52 - LSI-11 ash 125252 shifted by @s2 = 177525 ps = 10
+;
+tst52:		scope1
+		mov	#125252, R0		; load R0 with 125252
+		ash	@s2, R0			; shift	R0 by @s2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	20			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	21			; R0 is	not equal to 177525
+						; or incorrect sequence
+		cmp	(R5), #52		; is $testn = #52
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 53 - LSI-11 ash 125252 shifted by @#s1 =	177525 ps = 10
+;
+tst53:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@#s1, R0		; shift	R0 by @#s1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	22			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	23			; R0 is	not equal to 177525
+						; or incorrect sequence
+		cmp	(R5), #53		; is $testn = #53
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 54 - LSI-11 ash 125252 shifted by (R2) =	177525 ps = 10
+;
+tst54:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	(R2), R0		; shift	R0 by (R2)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	24			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	25			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #54		; is $testn = #54
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 55 - LSI-11 ash 125252 shifted by (R2)+ = 177525	ps = 10
+;
+tst55:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	(R2)+, R0		; shift	R0 by (R2)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	26			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	27			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #55		; is $testn = #55
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 56 - LSI-11 ash 125252 shifted by -(R2)+	= 177525 ps = 10
+;
+tst56:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	-(R2), R0		; shift	R0 by -(R2)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	30			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	31			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #56		; is $testn = #56
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 57 - LSI-11 ash 125252 shifted by 2(R3) = 177525	ps = 11
+;
+tst57:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	2(R3), R0		; shift	R0 by 2(R3)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps 11?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	32			; the ps is not	equal to 10
+						;
+		cmp	#177252, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	33			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #57		; is $testn = #57
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 60 - LSI-11 ash 125252 shifted by @(R3) = 177525	ps = 10
+;
+tst60:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@(R3), R0		; shift	R0 by @(R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	34			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	35			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #60		; is $testn = #60
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 61 - LSI-11 ash 125252 shifted by @(R3)+	= 177525 ps = 10
+;
+tst61:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@(R3)+,	R0		; shift	R0 by @(R3)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	36			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	37			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #61		; is $testn = #61
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 62 - LSI-11 ash 125252 shifted by @-(R3)	= 177525 ps = 10
+;
+tst62:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@-(R3),	R0		; shift	R0 by @-(R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	40			; the ps is not	equal to 10
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	41			; R0 is	not equal to 177525 or incorrect sequence
+						;
+		cmp	(R5), #62		; is $testn = #62
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 63-157 -	ashc instruction tests
+;
+		mov	#62, @#count		;
+		clr	@#temp1			; temp1=0
+		mov	#1, @#temp2		; temp2=1
+		clr	@#temp3			; temp3=0
+		clr	@#temp4			; temp4=0
+		mov	#1, @#temp5		; temp5=1
+		clr	@#temp6			; 0:1 shifted by 0=0:1,	ps=0
+						;
+reg01:		scope3				;
+		mov	R5, R2			; save R5
+		mov	@#temp1, R0		; place	the contents of	temp1 in register 0
+		mov	@#temp2, R1		; place	the contents of	temp2 in register 1
+		clc				;
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp3, R5		; otherwise execute ashc instruction in	mode 0
+		ashc	R5, R0			; using	R0
+		br	4$			;
+2$:		ashc	temp3, R0		; ashc register	0 by the contents of temp3
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp6, @#psword	; compare ps with the contents of temp6
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	42			; wrong	ps
+						;
+		inc	@#count			;
+		cmp	@#temp4, R0		; is the result	in R0 same as temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	43			; wrong	result in R0
+						;
+		cmp	@#temp5,R1		; is the result	in R1 same as temp5?
+		beq	.+10			; temp1	temp2 shifted by temp3=temp4 temp5
+						; and ps=temp6
+		jsr	PC, $hlt			; seen an error, go to the halt	routine
+		.word	44			; wrong	result in R1
+						;
+		mov	R2, R5			; restore R5
+		cmp	(R5),@#count		; is test number=counter?
+		beq	.+10			;
+		jsr	PC, $hlt			; seen an error, go to the halt	routine
+		.word	45			; no
+						;
+		inc	(R5)			;
+		cmp	(R5), #160		; have the first 159 test been executed?
+		bge	6$			; yes
+		inc	@#temp3			;
+		clc				;
+		rol	@#temp5			; rotate temp5 left by 1 place
+		rol	@#temp4			; introduce carry from temp4 in	temp5
+		cmp	(R5), #121		; is it	test 121?
+		bne	reg23			;
+		jsr	R4, ritsh		; if so	then go	and initiate right shift
+6$:		jsr	PC, tst160		;
+						;
+reg23:		scope1				;
+		mov	@#temp1, R2		; place	the contents of	temp1 in register 2
+		mov	@#temp2, R3		; place	the contents of	temp2 in register 3
+		clc				;
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp3, R4		; otherwise execute ashc instruction in	mode	0
+		ashc	R4,R2			; using	R2
+		br	4$			;
+2$:		ashc	temp3, R2		; ashc register	2 by the contetns of temp3
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp6, @#psword	; compare ps with the contents of temp6
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	46			; wrong	ps
+						;
+		inc	@#count			;
+		cmp	@#temp4, R2		; is the result	in R2 same as temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	47			; wrong	result in R2
+						;
+		cmp	@#temp5, R3		; is the result	in R3 same as temp5?
+		beq	.+10			; temp1	temp2 shifted by temp3=temp4 temp5
+						; and ps=temp6
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	50			;
+		cmp	(R5), @#count		; is test number=counter?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	51			; no
+						;
+		inc	(R5)			;
+		cmp	(R5), #160		; have the first 159 test been executed?
+		bge	6$			; yes
+		inc	@#temp3			;
+		clc				;
+		rol	@#temp5			; rotate temp5 left by 1 place
+		rol	@#temp4			; introduce carry from temp5 in	temp4
+		cmp	(R5), #121		; is it	test 121?
+		bne	reg45			;
+		jsr	R4, ritsh		; if so	then go	and initiate right shift
+6$:		jsr	PC, tst160		;
+						;
+reg45:		scope1				;
+		mov	R5, R1			; save R5
+		mov	@#temp1, R4		; place	the contents of	temp1 in register 4
+		mov	@#temp2, R5		; place	the contents of	temp2 in register 5
+		clc				;
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	2$			; ip not then go to 2$
+		mov	@#temp3, R0		; otherwise execute ashc instruction in	mode 0
+		ashc	R0, R4			; using	R4
+		br	4$			;
+2$:		ashc	temp3, R4		; ashc register	4 by the contents of temp3
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp6, @#psword	; compare ps with the contents of temp6
+		beq   .+10			;
+		jsr   PC, $hlt			; seen an error, go to the halt	routine
+		.word	52			; wrong	ps
+						;
+		inc	@#count			;
+		cmp	@#temp4, R4		; is the result	in R4 same as temp4?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	53			; wrong	result in R4
+						;
+		cmp	@#temp5, R5		; is the result	in R5 same as temp5?
+		beq	.+10			; temp1	temp2 shifted by temp3=temp4 temp5
+						; and ps=temp6
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	54			; wrong	result in R5
+		cmp	(R1), @#count		; is test number=counter?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	55			; no
+						;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+		cmp	(R5), #160		; have the first 159 test been executed?
+		bge	6$			; yes
+		inc	@#temp3			;
+		clc				;
+		rol	@#temp5			; rotate temp5 left by 1 place
+		rol	@#temp4			; introduce carry from temp5 in	temp4
+		cmp	(R5), #121		; is it	test 121?
+		bne	8$			;
+		jsr	R4, ritsh		; if so	then go	and initiate right shift
+6$:		jsr	PC, tst160		;
+8$:		jmp	reg01			;
+						;
+ritsh:		cmp	(R4)+, (R4)+		; make R4 point	to the next reg	tag
+		mov	#40000,	@#temp1		; temp1=4000
+		clr	@#temp2			; temp2=0
+		mov	#-30., @#temp3		; temp3=-30
+		clr	@#temp4			; temp4=0
+		inc	@#temp5			; temp5=1
+		rts	R4			;
+;_____________________________________________________________________________
+;
+tst160:		cmp	(R5), #160		; is it	test 160
+		bne	tst161			; if not then try test 161
+		clr	@#temp1			; 0:0 shifted by 0
+		clr	@#temp4			; is equal to 0:0
+		mov	#4, @#temp6		; and ps=4
+		rts	PC			;
+						;
+tst161:		cmp	(R5), #161		; is it	test 161
+		bne	tst162			;
+		mov	#-32, @#temp3		; 0:0 shifted by -32=0:0, ps=4
+		rts	PC			;
+						;
+tst162:		cmp	(R5), #162		; is it	test 162
+		bne	tst163			; if not then try test 163
+		mov	#32, @#temp3		; 0:0 shifted by 32=0:0, ps=4
+		rts	PC			;
+						;
+tst163:		cmp	(R5), #163		; is it	test 163?
+		bne	tst164			; if not then try test 164
+		mov	#52525,	@#temp1		; 52525:0
+		mov	#-16., @#temp3		; shifted by -16.
+		clr	@#temp4			;
+		mov	#52525,	@#temp5		; is equal to 0:52525
+		clr	@#temp6			; and ps = 0
+		rts	PC			;
+						;
+tst164:		cmp	(R5), #164		; is it	test 164?
+		bne	tst165			; if not then try test 165
+		mov	#125252, @#temp1	; 125252:0 shifted by -16.
+		dec	@#temp4			;
+		mov	#125252, @#temp5	; is equal to -1:125252
+		mov	#10, @#temp6		; and ps=10
+		rts	PC			;
+						;
+tst165:		cmp	(R5), #165		; is it	test 165?
+		bne	tst166			; if not then try test 166
+		mov	#-1, @#temp1		; -1:0 shifted by -16
+		mov	#-1, @#temp5		; is equal to -1:-1, and ps=10
+		rts	PC			;
+						;
+tst166:		cmp	(R5), #166		; is it	test 166?
+		bne	tst167			; if not then try test 167
+		mov	#100000, @#temp1	; 100000:0
+		mov	#-32., @#temp3		; shifted by -32 is equal to -1:-1
+		inc	@#temp6			; and ps=11
+		rts	PC			;
+						;
+tst167:		cmp	(R5), #167		; is it	test 167?
+		bne	tst170			; if not then try test 170
+		clr	@#temp1			;
+		dec	@#temp2			; 0:-1
+		mov	#16., @#temp3		; shifted by 16.
+		clr	@#temp5			; is equal to -1:0
+		inc	@#temp6			; and ps=12
+		rts	PC			;
+						;
+tst170:		cmp	(R5), #170		; is it	test 170?
+		bne	tst171			; if not then try test 171
+		mov	#125252, @#temp2	; 0:125252 shifted by 16
+		mov	#125252, @#temp4	; is equal to 125252:0,	and ps=12
+		rts	PC			;
+						;
+tst171:		cmp	(R5), #171		; is it	test 171?
+		bne	tst172			; if not then try test 172
+		dec	@#temp3			; 0:125252 shifted by 15
+		mov	#52525,	@#temp4		; is equal to 52525:0
+		clr	@#temp6			; and ps=0
+		rts	PC			;
+						;
+tst172:		cmp	(R5), #172		; is it	test 172?
+		bne	tst173			; if not then try test 173
+		mov	#52525,	@#temp2		; 0:52525
+		inc	@#temp3			;
+		rts	PC			;
+						;
+tst173:		cmp	(R5), #173		; is it	test 173?
+		bne	tst174			; if not then try test 173
+		mov	#-1, @#temp2		; 0:-1
+		dec	@#temp3			; shifted by 15.
+		mov	#77777,	@#temp4		;
+		mov	#100000, @#temp5	; is equal to 77777:100000 and ps=0
+		rts	PC			;
+						;
+tst174:		cmp	(R5), #174		; is it	test 174?
+		bne	tst175			; if not then try test 175
+		mov	#100000, @#temp1	;
+		dec	@#temp2			; 100000:-2 shifted by 15.
+		clr	@#temp5			; is equal to 77777:0
+		mov	#2, @#temp6		; and ps=2
+		rts	PC			;
+						;
+tst175:		cmp	(R5), #175		; is it	test 175?
+		bne	ent176			; if not then try test 176
+		mov	#-1, @#temp1		;
+		clr	@#temp2			; -1:0
+		inc	@#temp3			; shifted by 16.
+		clr	@#temp4			; is equal to 0:0
+		mov	#7, @#temp6		; and ps=7
+		rts	PC			;
+;_____________________________________________________________________________
+;
+ent176:		cmp	(R5), #176		; is the program entering test 176?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	56			; test number goofed
+		tst	(SP)+			; restore stack	pointer
+;_____________________________________________________________________________
+;
+; TEST 176 - 1 shifted by 8. = 400 ps =	0
+;
+tst176:		scope1				;
+		mov	#dummy,	R1		; load R1 with dummy
+		mov	#1, R1			; load R1:R1!1 with 1
+		clc				;
+		ashc	#8., R1			; shift	R1, R1!1 by 8.
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is the ps 0?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	57			; the ps is not	equal to 0
+						;
+		cmp	#400, R1		; is the result	400?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	60			; R1 is	not equal to 400
+						;
+		cmp	(R5), #176		; is $testn = #176?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	61			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 177 -  -1 shifted by 15.	= 100000 ps = 11
+;
+tst177:		scope1				;
+		mov	#dummy ,R3		; load R3 with dummy
+		mov	#-1, R3			; load R3!1 with -1
+		clc				;
+		ashc	#15., R3		; shift	R3:R3!1	by 15.
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps 11?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	62			; the ps is not	equal to 11
+						;
+		cmp	#100000, R3		; is the result	100000?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	63			; R3 is	not equal to 100000
+						;
+		cmp	(R5), #177		; is $testn = #177?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	64			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 200 - 52525 shitted by 0	= 52525	ps = 0
+;
+tst200:		scope1				;
+		mov	R5, R1			; save R5
+		mov	#dummy,	R5		; load R5 with dummy
+		mov	#52525,	R5		; load R5!1 with 52525
+		clc				;
+		ashc	#0, R5			; shift	R5:R5!1	by 0
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is the ps 0?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	65			; the ps is not	equal to 0
+						;
+		cmp	#52525,	R5		; is the result	52525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	66			; R5 is	not equal to 52525
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #200		; is $testn = #200?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	67			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 201- 20010 shitted by -13. = 101	ps = 0
+;
+tst201:		scope1				;
+		mov	#dummy,	R1		; load R1 with dummy
+		mov	#20010,	R1		; load R1!1 with 20010
+		clc				;
+		ashc	#-13., R1		; shift	R1, R1!1 by -13.
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is the ps 0?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	70			; the ps is not	equal to 0
+						;
+		cmp	#101, R1		; is the result	101?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	71			; R1 is	not equal to 101
+						;
+		cmp	(R5), #201		; is $testn = #201?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	72			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 202 -  -1 shifted by 16.	=0 ps =	11
+;
+tst202:		scope1				;
+		mov	#dummy,	R3		; load R3 with dummy
+		mov	#-1, R3			; load R3!1 with -1
+		clc				;
+		ashc	#16., R3		; shift	R3:R3!1	by 16.
+		mfps	@#psword		; save	ps
+		cmpb	#11, @#psword		; is the ps 11?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	73			; the ps is not	equal to 11
+						;
+		cmp	#0, R3			; is the result	0?
+		beq	.+10			;
+		jsr	PC, $hlt		;:seen an error, go to the halt	routine
+		.word	74			; R3 is	not equal to 0
+						;
+		cmp	(R5), #202		; is $testn = #202?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	75			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 203 - 1 shifted by -1 = 100000 ps = 1
+;
+tst203:		scope1				;
+		mov	R5, R1			; save R5
+		mov	#dummy,	R5		; load R5 with dummy
+		mov	#1, R5			; load R5!1 with 1
+		clc				;
+		ashc	#-1, R5			; shift	R5:R5!1	by -1
+		mfps	@#psword		; save	ps
+		cmpb	#1, @#psword		; is the p5 1?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	76			; the ps is not	equal to 1
+						;
+		cmp	#100000, R5		; is the result	100000?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	77			; R5 is	not equal to 100000
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #203		; is $testn = #203?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	100			; test is in wrong sequence
+		inc	 (R5)			;
+;_____________________________________________________________________________
+;
+; TEST 204 - 125252 shitted by -16. = 125252 ps	= 11
+;
+tst204:		scope1				;
+		mov	#dummy,	R1		; load R1 with dummy
+		mov	#125252, R1		; load R1!1 with 125252
+		clc				;
+		ashc	#-16., R1		; shift	R1:R1!1	by -16.
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps 11?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	101			; the ps is not	equal to 11
+						;
+		cmp	#125252, R1		; is the result	125252?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	102			; R1 is	not equal to 125252
+						;
+		cmp	(R5), #204		; is $testn = #204?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	103			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 205 - 125252:125252 shifted by 21. = 52500:000000 ps = 3
+;
+tst205:		scope1				;
+		mov	#125252, R2		; load R2 with 125252
+		mov	#125252, R3		; load R2!1 with 125252
+		clc				;
+		ashc	#21., R2		; shift	R2:R2!1	by 21.
+		mfps	@#psword		; save	ps
+		cmpb	#3, @#psword		; is the ps 3?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	104			; the ps is not	equal to 3
+						;
+		cmp	#52500,	R2		; is the result	52500?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	105			; R2 is	not equal to 52500
+						;
+		cmp	#000000, R3		; is the result	000000?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	106			; R2!1 is not equal to 000000
+						;
+		cmp	(R5), #205		; is $testn = #205?
+		beq	.+10			; if not then go to hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	107			; test is in wrong sequence
+		inc (R5)			;
+						;
+		mov	#-7, R2			;
+		mov	#s1, R3			;
+		mov	#s2, R4			;
+;_____________________________________________________________________________
+;
+; TEST 206 - 125252:125252 shifted by s1 = 177525:52525	ps = 10
+;
+tst206:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	s1, R0			; shift	R0:R0!1	by s1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	110			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	111			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	112			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #206		; is the $testn	= #206?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 207 - 125252:125252 shifted by @s2 = 177525:52525 ps = 10
+;
+tst207:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	@s2, R0			; shift	R0:R0!1	by @s2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	113			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	114			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	115			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #207		; is the $testn	= #207?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 210 - 125252:125252 shifted by @#s1 = 177525:52525 ps = 10
+;
+tst210:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	@#s1, R0		; shift	R0:R0!1	by @#s1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	116			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	117			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	120			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #210		; is the $testn	= #210?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 211 - 125252:125252 shifted by (R3) = 177525:52525 ps = 10
+;
+tst211:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	(R3), R0		; shift	R0:R0!1	by (R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	121			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	122			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	123			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #211		; is the $testn	= #211?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 212 - 125252:125252 shifted by (R3)+ = 177525:52525 ps =	10
+;
+tst212:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	(R3)+, R0		; shift	R0:R0!1	by (R3)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	124			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	125			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	126			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #212		; is the $testn	= #212?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 213 - 125252:125252 shifted by -(R3) = 177525:52525 ps =	10
+;
+tst213:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	-(R3), R0		; shift	R0:R0!1	by -(R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	127			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	130			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	131			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #213		; is the $testn	= #213?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 214 - 125252:125252 shifted by 2(R4) = 177525:125252 ps = 11
+;
+tst214:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	2(R4), R0		; shift	R0:R0!1	by 2(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps 11?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	132			;
+						;
+		cmp	#177252, R0		; is the result	177252?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	133			; R0 is	not equal to 177525
+						;
+		cmp	#125252, R1		; is the result	125252?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	134			;.R0!1 is not equal to 125252 or incorrect sequence
+						;
+		cmp	(R5), #214		; is the $testn	= #214?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 215 - 125252:125252 shifted by @(R4) = 177525:52525 ps =	10
+;
+tst215:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	@(R4), R0		; shift	R0:R0!1	by @(R4)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	135			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	136			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	137			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #215		; is the $testn	= #215?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 216 - 125252:125252 shifted by @(R4)+ = 177525:52525 ps = 10
+;
+tst216:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	@(R4)+,	R0		; shift	R0:R0!1	by @(R4)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	140			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	141			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	142			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #216		; is the $testn	= #216?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 217 - 125252:125252 shifted by @-(R4) = 177525:52525 ps = 10
+;
+tst217:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R0!1 with 125252
+		clc				;
+		ashc	@-(R4),	R0		; shift	R0:R0!1	by @-(R4)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	143			;
+						;
+		cmp	#177525, R0		; is the result	177525?
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	144			; R0 is	not equal to 177525
+						;
+		cmp	#52525,	R1		; is the result	52525?
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	145			;.R0!1 is not equal to 52525 or	incorrect sequence
+						;
+		cmp	(R5), #217		; is the $testn	= #217?
+		bne	1$			; if not then go to hlt	above
+		inc	(R5)			;
+;
+; mul instruction tests
+;_____________________________________________________________________________
+;
+; TEST 220 - mul 1 * #0	= 0:0 ps = 4
+;
+tst220:		scope				;
+		mov	#1, R0			; load multiplicand with 1
+		mul	#0, R0			; multiply 1 * #0
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps	= 4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	146			; ps is	wrong
+						;
+		cmp	#0, R0			; is high order	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	147			; high order is	wrong
+						;
+		cmp	#0, R1			; is low order = 0
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	150			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #220		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 221 - mul -1 * #1 = -1:-1 ps = 10
+;
+tst221:		scope				;
+		mov	#-1, R0			; load multiplicand with -1
+		mul	#1, R0			; multiply -1 *	#1
+		mfps	@#psword		; save	ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	151			; ps is	wrong
+						;
+		cmp	#-1, R0			; is high order	= -1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen	an error, go to	the halt routine
+		.word	152			; high order is	wrong
+						;
+		cmp	#-1, R1			; is low order = -1
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to	the halt routine
+		.word	153			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #221		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 222 - mul 2 * #2	= 0:4 ps = 0
+;
+tst222:		scope				;
+		mov	#2, R2			; load multiplicand with 2
+		mul	#2, R2			; multiply 2 * #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an errorv go to the halt	routine
+		.word	154			; ps is	wrong
+						;
+		cmp	#0, R2			; is high order	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	155			; high order is	wrong
+						;
+		cmp	#4, R3			; is low order = 4
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to	the halt routine
+		.word	156			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #222		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 223 - mul 1000 *	#200 = 1:0 ps =	1
+;
+tst223:		scope				;
+		mov	R5, R1			; save R5
+		mov	#1000, R4		; load multiplicand with 1000
+		mul	#200, R4		; multiply 1000	* #200
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	157			; ps is	wrong
+						;
+		cmp	#1, R4			; is high order	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halc	routine
+		.word	160			; high order is	wrong
+						;
+		cmp	#0, R5			; is low order = 0
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	161			; low order is wrong or	wrong sequence
+						;
+		cmp	(R1), #223		; check	the test number
+		bne	1$			; if in	wrong sequence go to the hlt above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 224 - mul 2 * #77777 = 0:177776 ps = 1
+;
+tst224:		scope				;
+		mov	#2,R0			; load multiplicand with 2
+		mul	#77777,	R0		; multiply 2	* #77777
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is p5	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	162			; ps is	wrong
+						;
+		cmp	#0, R0			; is high order	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	163			; high order is	wrong
+						;
+		cmp	#177776, R1		; is low order = 177776
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	164			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #224		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 225 - mul 7777 *	#10 = 0:77770 ps = 0
+;
+tst225:		scope				;
+		mov	#7777, R2		; load multiplicand with 7777
+		mul	#10, R2			; multiply 7777	* #10
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	165			; ps is	wrong
+						;
+		cmp	#0, R2			; is high order	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	166			; high order is	wrong
+						;
+		cmp	#77770,	R3		; is low order = 77770
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	167			; low order is wrong or	wrung sequence
+						;
+		cmp	(R5), #225		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 226 - mul 77777 + #77777	= 37777:1 ps = 1
+;
+tst226:		scope				;
+		mov	R5, R1			; save R5
+		mov	#77777,	R4		; load multiplicand with 77777
+		mul	#77777,	R4		; multiply 77777 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	poutiwe
+		.word	170			; ps is	wrong
+						;
+		cmp	#37777,	R4		; is high order	= 37777
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	171			; high order is	wrong
+						;
+		cmp	#1, R5			; is low order = 1
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	172			; low order is wrong or	wrong sequence
+						;
+		cmp	(R1), #226		; check	the	test number
+		bne	1$			; if in	wrong sequence go to the hlt above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 227 - mul -1 * #77777 = -1:100001 ps = 10
+;
+tst227:		scope				;
+		mov	#-1, R2			; load multiplicand with -1
+		mul	#77777,	R2		; multiply -1 *	#77777
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	173			; ps is	wrong
+						;
+		cmp	#-1,R2			; is high order	= -1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error. go to the halt	routine
+		.word	174			; high order is	wrong
+						;
+		cmp	#100001, R3		; is low order = 100001
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	175			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #227		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 230 - mul -2 * #77777 = -1:2 ps = 11
+;
+tst230:		scope				;
+		mov	#-2, R0			; load multiplicand with -2
+		mul	#77777,	R0		; multiply -2 *	#77777
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	 PC, $hlt		; seen an error, go to the halt	routine
+		.word	176			; ps is	wrong
+						;
+		cmp	#-1, R0			; is high order	= -1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	177			; high order is	wrong
+						;
+		cmp	#2, R1			; is low order = 2
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	200			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #230		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+;TEST 231 - mul	125252 * #2 = -1:52524 ps = 11
+;
+tst231:		scope				;
+		mov	#125252, R2		; load multiplicand with 125252
+		mul	#2, R2			; multiply 125252 * #2
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	201			; ps is	wrong
+						;
+		cmp	#-1,R2			; is high order	= -1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	202			; high order is	wrong
+						;
+		cmp	#52524,	R3		; is low order = 52524
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	203			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #231		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 232 - mul 125252	* #40000 = 165252:100000 ps = 11
+;
+tst232:		scope				;
+		mov	R5, R1			;
+		mov	#125252, R4		; load multiplicand with 125252
+		mul	#40000,	R4		; multiply 125252 * #40000
+		mfps	@#psword		; save	ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	204			; ps is	wrong
+						;
+		cmp	#165252, R4		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	205			; high order is	wrong
+						;
+		cmp	#100000, R5		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	206			; low order is wrong or	wrong sequence
+						;
+		cmp	(R1), #232		; check	the test number
+		bne	1$			; if in	wrong sequence go to the hlt above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 233 - mul 107070	* #107070 = 31222:26100	ps = 1
+;
+tst233:		scope				;
+		mov	#107070, R0		; load multiplicand with 107070
+		mul	#107070, R0		; multiply 107070 * #107070
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	207			; ps is	wrong
+						;
+		cmp	#31222,	R0		; is high order	= 31222
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	210			; high order is	wrong
+						;
+		cmp	#26100,	R1		; is low order = 26100
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	211			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #233		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 234 - mul -1 * #1 = -1:-1 ps = 10
+;
+tst234:		scope				;
+		mov	#-1, R1			; load multiplicand with -1
+		mul	#1, R1			;  multiply -1 * #1
+		mfps	@#psword		; :save	ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	212			; ps is	wrong
+						;
+		cmp	#-1, R1			; is high order	= -1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	213			; high order is	wrong
+						;
+		cmp	#-1, R1			; is low order = -1
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	214			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #234		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 235 - mul -1 * #0 = 0:0 ps = 4
+;
+tst235:		scope				;
+		mov	#-1, R3			; load multiplicand with -1
+		mul	#0, R3			; multiply -1 *	#0
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps	= 4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	215			; ps is	wrong
+						;
+		cmp	#0, R3			; is high order	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	216			; high order is	wrong
+						;
+		cmp	#0, R3			; is low order = 0
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	217			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #235		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 236 - mul 77777 * #100000 = 100000:100000 ps = 11
+;
+tst236:		scope				;
+		mov	R5, R1			; save R5
+		mov	#77777,	R5		; load multiplicand with 77777
+		mul	#100000,R5		; multiply 77777 * #100000
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	220			; ps is	wrong
+						;
+		cmp	#100000, R5		; is high order	= 100000
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	221			; high order is	wrong
+						;
+		cmp	#100000, R5		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	222			; low order is wrong or	wrong sequence
+						;
+		cmp	(R1), #236		; check	the test number
+		bne	1$			; if in	wrong sequence go to the hlt above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 237 - mul -1 * #77777 = 100001:100001 ps	= 10
+;
+tst237:		scope				;
+		mov	#-1, R1			; load multiplicand with -1
+		mul	#77777,	R1		; multiply -1 *	#77777
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	223			;
+						;
+		cmp	#100001, R1		; is high order	= 100001
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	224			; high order is	wrong
+						;
+		cmp	#100001, R1		; is low order = 100001
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	225			;
+						;
+		cmp	(R5), #237		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 240 - mul 77777 * #77777	=11 ps = 1
+;
+tst240:		scope				;
+		mov	#77777,	R3		; load multiplicand with 77777
+		mul	#77777,	R3		; multiply 77777 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	226			; ps is	wrong
+						;
+		cmp	#1, R3			; is high order	= 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	227			; high order is	wrong
+						;
+		cmp	#1, R3			; is low order - 1
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	230			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #240		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 241 - mul 2 * #2	= 4:4 ps = 0
+;
+tst241:		scope				;
+		mov	R5, R1			; save R5
+		mov	#2, R5			; load multiplicand with 2
+		mul	#2, R5			; multiply 2 * #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	231			; ps is	wrong
+						;
+		cmp	#4, R5			; is high order	= 4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	232			; high order is	wrong
+						;
+		cmp	#4, R5			; is low order = 4
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	233			; low order is wrong or	wrong sequence
+						;
+		cmp	(R1), #241		; check	the test number
+		bne	1$			; if in	wrong sequence go to the hlt above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+		mov	#40000,	R2		;
+		mov	#s5, R3			;
+		mov	#s6, R4			;
+;_____________________________________________________________________________
+;
+;TEST 242 - mul	125252 * s5 = 165252:100000 ps = 11
+;
+tst242:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	s5, R0			; multiply 125252 * s5
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	234			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	235			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	236			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #242		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 243 - mul 125252	* @s6 =	165252:100000 ps = 11
+;
+tst243:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@s6, R0			; multiply 125252 * @s6
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	237			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	240			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	241			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #243		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 244 - mul 125252	* @#s5 = 165252:100000 ps = 11
+;
+tst244:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@#s5, R0		; multiply 125252 * @#s5
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	242			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	243			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	244			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #244		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 245 - mul 125252	* R2 = 165252:100000 ps	= 11
+;
+tst245:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	R2, R0			; multiply 125252 * R2
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	245			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	246			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	247			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #245		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 246 - mul 125252	* (R3)+	= 165252:100000	ps = 11
+;
+tst246:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	(R3)+, R0		; multiply 125252 * (R3)+
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	250			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	251			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	252			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #246		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 247 - mul 125252	* -(R3)	= 165252:100000	ps = 11
+;
+tst247:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	-(R3), R0		; multiply 125252 * -(R3)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	253			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	254			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	255			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #247		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 250 - mul 125252	* 2(R4)	= 165252:100000	ps = 11
+;
+tst250:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	2(R4), R0		; multiply 125252 * 2(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	256			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	257			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	260			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #250		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 251 - mul 125252	* @(4) = 165252:100000 ps = 11
+;
+tst251:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@(R4), R0		; multiply 125252 * @(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	261			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	262			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	263			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #251		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 252 - mul 125252	* @(4)+	= 165252:100000	ps = 11
+;
+tst252:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@(R4)+,	R0		; multiply 125252 * @(R4)+
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	264			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	265			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	266			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #252		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 253 - mul 125252	* @-(4)	= 165252:100000	ps = 11
+;
+tst253:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@-(R4),	R0		; multiply 125252 * @-(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	267			; ps is	wrong
+						;
+		cmp	#165252, R0		; is high order	= 165252
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	270			; high order is	wrong
+						;
+		cmp	#100000, R1		; is low order = 100000
+		beq	.+10			;
+1$:		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	271			; low order is wrong or	wrong sequence
+						;
+		cmp	(R5), #253		;
+		bne	1$			; if in	wrong sequence go to the hlt above
+		inc	(R5)			;
+;
+; div instruction tests
+;_____________________________________________________________________________
+;
+; TEST 254  - div 0:4 /	#2 = 2 rem = 0 ps = 0
+;
+tst254:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#4, R0+1		; load low order with 4
+		div	#2, R0			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	272			; ps is	wrong
+						;
+		cmp	#2, R0			; is quotient =	2
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	273			; quotient is wrong
+						;
+		cmp	#0, R1			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	274			; wrong	remainder
+						;
+		cmp	(R5), #254		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	275			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 255 - div -1:-9.	/ #3 = -3 rem =0 ps = 10
+;
+tst255:		scope				;
+		mov	#-1, R2			; load high order with -1
+		mov	#-9., R3		; load low order with -9.
+		div	#3,R2			; divide by #3
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	276			; ps is	wrong
+						;
+		cmp	#-3, R2			; is quotient =	-3
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	277			; quotient is wrong
+						;
+		cmp	#0, R3			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	300			; wrong	remainder
+						;
+		cmp	(R5), #255		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	301			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 256 - div 0:9. /	#2 = 4 rem = 1	ps = 0
+;
+tst256:		scope				;
+		mov	R5, R1			; save R5
+		mov	#0, R4			; load high order with 0
+		mov	#9., R5			; load low order with 9.
+		div	#2, R4			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	302			; ps is	wrong
+						;
+		cmp	#4, R4			; is quotient =	4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	303			; quotient is wrong
+						;
+		cmp	#1, R5			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	304			; wrong	remainder
+		mov	R1, R5			; restore R5
+		cmp	(R5), #256		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	305			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 257 - div -1:-9.	/ #2 = -4 rem =	-1 ps =	10
+;
+tst257:		scope				;
+		mov	#-1, R0			; load high order with -1
+		mov	#-9., R1		; load low order with -9.
+		div	#2, R0			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	306			; ps is	wrong
+						;
+		cmp	#-4, R0			; is quotient =	-4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	307			; quotient is wrong
+						;
+		cmp	#-1, R1			; is remainder = -1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	310			; wrong	remainder
+						;
+		cmp	(R5), #257		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	311			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 260 - div 0:2/ #-3 =0 rem = 2 ps	= 4
+;
+tst260:		scope				;
+		mov	#0, R2			; load high order with 0
+		mov	#2, R3			; load low order with 2
+		div	#-3, R2			; divide by #-3
+		mfps	@#psword		; save ps
+		cmpb	#4,@#psword		; is ps	= 4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	312			; ps is	wrong
+						;
+		cmp	#0, R2			; is quotient =	0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	313			; quotient is wrong
+						;
+		cmp	#2, R3			; is remainder = 2
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	314			; wrong	remainder
+						;
+		cmp	(R5), #260		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	315			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 261 - div -1:-2 / #3 = 0	rem = -2 ps = 4
+;
+tst261:		scope				;
+		mov	R5, R1			; save R5
+		mov	#-1, R4			; load high order with -1
+		mov	#-2, R5			; load low order with -2
+		div	#3, R4			; divide by #3
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps	= 4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	316			;
+						;
+		cmp	#0, R4			; is quotient =	0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	317			;
+						;
+		cmp	#-2, R5			; is remainder = -2
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	320			; wrong	remainder
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #261		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	321			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 262 - div -1:-1 / #1 = -1 rem =0	ps = 10
+;
+tst262:		scope				;
+		mov	#-1, R0			; load high order with -1
+		mov	#-1, R1			; load low order with -1
+		div	#1, R0			; divide by #1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	322			; ps is	wrong
+						;
+		cmp	#-1, R0			; is quotient =	-1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	323			; quotient is wrong
+		cmp	#0, R0+1		; :is remainder	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	324			; wrong	remainder
+						;
+		cmp	(R5), #262		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	325			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 263 - div 0:0 / #1 = 0 rem 0 ps = 4
+;
+tst263:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#0, R1			; load low order with 0
+		div	#1, R0			; divide by #1
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps	= 4
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	326			; ps is	wrong
+						;
+		cmp	#0, R0			; is quotient =	0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	327			; quqtient is wrong
+						;
+		cmp	#0, R1			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	330			; wrong	remainder
+						;
+		cmp	(R5), #263		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	331			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 264  -div -1:125252 / #2	= 152525 rem = 0 ps = 10
+;
+tst264:		scope				;
+		mov	#-1, R2			; load high order with -1
+		mov	#125252, R3		; load low order with 125252
+		div	#2, R2			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	332			; ps is	wrong
+						;
+		cmp	#152525, R2		; is quotient =	152525
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	333			; quotient is wrong
+						;
+		cmp	#0, R3			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	334			; wrong	remainder
+						;
+		cmp	(R5), #264		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	335			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 265 - div -1:-1 / #-1 = 1 rem = 0 ps = 0
+;
+tst265:		scope				;
+		mov	R5, R1			; save R5
+		mov	#-1, R4			; load high order with -1
+		mov	#-1, R5			; load low order with -1
+		div	#-1, R4			; divide by #-1
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	336			; ps is	wrong
+						;
+		cmp	#1, R4			; is quotient =	1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	337			; quotient is wrong
+						;
+		cmp	#0, R5			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	340			; wrong	remainder
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #265		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	341
+		inc	(R5)			; test is in wrong sequence
+;_____________________________________________________________________________
+;
+; TEST 266 - div 25253:1 / #125252 = 100000 rem	=1 ps =	10
+;
+tst266:		scope				;
+		mov	#25253,	R0		; load high order with 25253
+		mov	#1, R1			; load low order with 1
+		div	#125252, R0		; divide by #125252
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps	= 10
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	342			; ps is	wrong
+						;
+		cmp	#100000, R0		; is quotient =	100000
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	343			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	344			; wrong	remainder
+						;
+		cmp	(R5), #266		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	345			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 267 - div 37777:77777 / #77777 =	77777 rem = 77776 ps = 0
+;
+tst267:		scope				;
+		mov	#37777,	R2		; load high order with 37777
+		mov	#77777,	R3		; load low order with 77777
+		div	#77777,	R2		; divide by #77777
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	346			; ps is	wrong
+						;
+		cmp	#77777,	R2		; is quotient =	77777
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	347			; quotient is wrong
+						;
+		cmp	#77776,	R3		; is remainder = 77776
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	350			; wrong	remainder
+						;
+		cmp	(R5), #267		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	351			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 270 - div 0:100000 / #2 = 40000 rem =0 ps = 0
+;
+tst270:		scope				;
+		mov	R5, R1			; save R5
+		mov	#0, R4			; load high order with 0
+		mov	#100000, R5		; load low order with 100000
+		div	#2, R4			; divide by #2
+		mfps	@#psword		; save ps
+						;
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	352			; ps is	wrong
+						;
+		cmp	#40000 ,R4		; is quotient =	40000
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	353			; quotient is wrong
+						;
+		cmp	#0, R5			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	354			; wrong	remainder
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #270		;
+		beq	.+10			; if in	wrong sequence go to the	hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	355			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 271 - div 177777:77777 /	#177776	= 40000	rem = 177777 ps	= 0
+;
+tst271:		scope				;
+		mov	#177777, R0		; load high order with 177777
+		mov	#77777,	R1		; load low order with 77777
+		div	#177776, R0		; divide by #177776
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	356			; ps is	wrong
+						;
+		cmp	#40000,	R0		; is quotient =	40000
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	357			; quotient is wrong
+						;
+		cmp	#177777, R1		; is remainder = 177777
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	360			; wrong	remainder
+						;
+		cmp	(R5), #271		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, so to the halt	routine
+		.word	361			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 272 - div 0:52525 / #52525 = 1 rem = 0 ps = 0
+;
+tst272:		scope				;
+		mov	#0, R2			; load high order with 0
+		mov	#52525,	R3		; load low order with 52525
+		div	#52525,	R2		; divide by #52525
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	362			; ps is	wrong
+						;
+		cmp	#1, R2			; is quotient =	1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	363			; quotient is wrong
+						;
+		cmp	#0, R3			; is remainder = 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	364			; wrong	remainder
+						;
+		cmp	(R5), #272		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	365			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 273  - div 0:77777 / #0 = dummy rem = dummy ps =	3
+;
+tst273:		scope				;
+		mov	R5, R1			; save R5
+		mov	#0, R4			; load high order with 0
+		mov	#77777,	R5		; load low order with 77777
+		div	#0, R4			; divide by #0
+		mfps	@#psword		; save ps
+		bic	#14, @#psword		;
+		cmpb	#3, @#psword		; is ps	= 3
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	366			; ps is	wrong
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #273		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	367			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 274 - div 77777:177777 /	#2 = dummy rem = dummy ps = 2
+;
+tst274:		scope				;
+		mov	#77777,	R0		; load high order with 77777
+		mov	#177777, R1		; load low order with 177777
+		div	#2, R0			; divide by #2
+		mfps	@#psword		; save ps
+		bic	#14, @#psword		;
+		cmpb	#2, @#psword		; is ps	= 2
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	370			; ps is	wrong
+						;
+		cmp	(R5), #274		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	371			; test is in wrong sequence
+		inc	(R5)			;
+						;
+		mov	#2, R2			;
+		mov	#s9, R3			;
+		mov	#s10, R4		;
+;_____________________________________________________________________________
+;
+; TEST 275 - div 0:52525 / s9 =	25252 rem = 1 ps = 0
+;
+tst275:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	s9, R0			; divide by s9
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	372			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	373			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	374			; wrong	remainder
+						;
+		cmp	(R5), #275		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	375			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 276 - div 0:52525 / @s10	= 25252	rem = 1	ps = 0
+;
+tst276:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	@s10, R0		; divide by @s10
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	376			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	377			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	400			; wrong	remainder
+						;
+		cmp	(R5), #276		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	401			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 277 - div 0:52525 / @#s9	= 25252	rem = 1	ps = 0
+;
+tst277:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	@#s9, R0		; divide by @#s9
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	402			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	403			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	404			; wrong	remainder
+						;
+		cmp	(R5), #277		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	405			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 300 - div 0:52525 / R2 =	25252 rem = 1 ps = 0
+;
+tst300:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	R2, R0			; divide by R2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	406			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	407			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	410			; wrong	remainder
+						;
+		cmp	(R5), #300		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	411			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 301 - div 0:52525 / (R3)+ = 25252 rem = 1 ps = 0
+;
+tst301:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	(R3)+, R0		; divide by (R3)+
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	412			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	413			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	414			; wrong	remainder
+						;
+		cmp	(R5), #301		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	415			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 302 - div 0:52525 / -(R3) = 25252 rem = 1 ps = 0
+;
+tst302:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	-(R3), R0		; divide by -(R3)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	416			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	417			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	420			; wrong	remainder
+						;
+		cmp	(R5), #302		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	421			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 303 - div 0:52525 / 2(R4) = 25252 rem = 1 ps = 0
+;
+tst303:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	2(R4), R0		; divide by 2(R4)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	422			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	423			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	424			; wrong	remainder
+						;
+		cmp	(R5), #303		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	425			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 304 - div 0:52525 / @(R4) = 25252 rem = 1 ps = 0
+;
+tst304:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	@(R4), R0		; divide by @(R4)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	426			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	427			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	430			; wrong	remainder
+						;
+		cmp	(R5), #304		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	431			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 305 - div 0:52525 / @(R4)+ = 25252 rem =	1 ps = 0
+;
+tst305:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	@(R4)+,	R0		; divide by @(R4)+
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	432			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	433			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	434			; wrong	remainder
+						;
+		cmp	(R5), #305		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	435			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 306 - div 0:52525 / @(R4)+ = 25252 rem =	1 ps = 0
+;
+tst306:		scope				;
+		mov	#0,R0			; load high order with 0
+		mov	#52525,	R1		; load low order with 52525
+		div	@-(R4),	R0		; divide by @(R4)-
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps	= 0
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	436			; ps is	wrong
+						;
+		cmp	#25252,	R0		; is quotient =	252523
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	437			; quotient is wrong
+						;
+		cmp	#1, R1			; is remainder = 1
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	440			; wrong	remainder
+						;
+		cmp	(R5), #306		;
+		beq	.+10			; if in	wrong sequence go to the hlt
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	441			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 307 - test that EIS aborts properly when	interrupted
+;
+tst307:		bitb	#40, @#$envm		; if type outs has been	suppressed
+		bne	eash+2			; then skip this test
+		mov	@#ttyout, R2		;
+		mov	#rta307, (R2)+		; set interrupt	vector to rta307
+		mov	#340, (R2)		; and the interrupt PSW	as 340
+		mtps	#0			;
+		mov	#30, @#temp1		; prepare to execute this sub test 30 times
+		clr	R4			;
+		movb	#15, @$tpb		; out put a "CR"
+		movb	#100, @$tps		; enable TTY interrupt
+rtash:		bis	#1, R4			; place	a 1 in R4
+asha:		ash	#16., R4		; shiet	R4 for 16 times
+		br	rtash			; stay in the loop until interrupted
+						;
+rta307:		clrb	@$tps			; clear	TTY interrupt
+		cmp	#asha, (SP)		; is the return	address	= asha
+		beq	4$			; if so	then go	to 4$
+1$:		mov	#15, @$tpb		; otherwise out	put a "CR"
+2$:		tstb	@$tps			; loop here until done comes on
+		bpl	2$			;
+		mov	#15, @$tpb		; out put another "CR"
+		mov	#100, @$tps		; enable TTY interrupt
+		rti				;
+						;
+4$:		cmp	R4, #1			; check	R4 to contain proper data
+		beq	6$			;
+		jsr	PC, $hlt		;
+		.word	442			;
+						;
+6$:		bit	#360, 2(SP)		; check	the PSW	before interrupt
+		beq	8$			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	443			; PSW is wrong
+						;
+		bic	#20, 2(SP)		; clear	the T-bit if it	is set
+8$:		dec	@#temp1			;
+		bne	1$			; if the sub test has been executed 30	times
+						; then go to the end of	the test
+		mov	R2, @ttyout		; restore TTY interrupt	vector
+		clr	(R2)			;
+eash:		cmp	(SP)+, (SP)+		; restore the stack pointer
+		cmp	(R5), #307		; check	the test number
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	444			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; TEST 310 - test that EIS aborts properly when	interrupted
+;
+tst310:		bitb	#40, @#$envm		; if type outs has been	suppressed
+		bne	emul+2			; then skip this test
+		mov	@#ttyout, R2		;
+		mov	#rta310, (R2)+		; set interupt vector to rta310
+		mov	#340, (R2)		; and the interrupt PSW	as 340
+		mtps	#10			;
+		mov	#30, @#temp1		; prepare to execute this sub test 30 times
+		mov	#77777,	R4		; place	the multiplier in R4
+		mov	#-1, R0			; and the multiplicand in R0
+		mov	#100001, R1		; and the lower	part of	the result in R1
+		movb	#15, @$tpb		; out put a "CR"
+		movb	#100, @$tps		; enable TTY interrupt
+						;
+rtmul:		mul	R4, R0			; multiply R0 by R4
+		br	rtmul			; stay in the loop until interrupted
+rta310:		clrb	@$tps			; clear	TTY interrupt
+		cmp	#rtmul,	(SP)		; is the return	address	= rtmul
+		beq	4$			; if so	then go	to 4$
+1$:		mov	#15, @$tpb		; otherwise out	put a "cr"
+2$:		tstb	@$tps			; loop here until done comes on
+		bpl	2$			;
+		mov	#15, @$tpb		; out put another "CR"
+		mov	#100, @$tps		; enable TTY interrupt
+		rti				;
+						;
+4$:		cmp	R4, #77777		; check	R4 to contain proper data
+		beq	6$			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	445			; R4 was changed during	the execution
+						; of the instruction
+6$:		cmp	R0, #-1			; check	R0 to contain proper data
+		beq	8$			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	446			; R0 contains wrong value
+						;
+8$:		cmp	R1, #100001		; check	R1 for the proper data
+		beq	10$			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	447			; R1 contains wrong value
+						;
+10$:		bit	#360,2(SP)		; check	the PSW	before interrupt
+		beq	12$			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	450			; PSW is wrong
+						;
+		bic	#20, 2(SP)		; clear	the T-bit if it	is set
+12$:		dec	@#temp1			;
+		bne	1$			; if the sub test has been executed 30 times
+						; then go to the end of	the test
+		mov	R2, @ttyout		; restore TTY interrupt	vector
+		clr	(R2)			;
+emul:		cmp	(SP)+, (SP)+		; restore the stack pointer
+		cmp	(R5), #310		; check	the test number
+		beq	.+10			;
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
+		.word	451			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+;		.sbttl	end of pass routine
+;
+; - increment the pass pass number ($pass)
+; - type "END PASS"
+; - if theres a	monitor	go to it
+; - if there isn't jump	to begin
+; - if it is desired to	have a bell indicate the "END OF PASS" location
+; *$endmg can be  changed to 7.
+;
+$eop:		scope				;
+		inc	$pass			; increment the	pass number
+		bic	#100000, $pass		; don't	allow a	negative number
+		dec	(PC)+			; loop ?
+$eopct:		.word	1			;
+		bgt	$doagn			; yes
+		mov	(PC)+, @(PC)+		; restore counter
+$endct:		.word	4			;
+		.word	$eopct			;
+		type	,$endmg			; type "END PASS"
+		type	,$enull			; type a NULL character
+$get42:		mov	@#42, R0		; get monitor address
+		beq	$doagn			; branch if no monitor
+		reset				; clear	the world
+$endad:		jsr	PC, (R0)		; go to	monitor
+		nop				; save room
+		nop				; for
+		nop				; ACT-11
+						;
+$doagn:		jmp	@(PC)+			; return
+$rtnad:		.word	begin			;
+$enull:		.byte	-1, -1,	0		; null character string
+$endmg:		.asciz	<15><12>"END PASS"	;
+;_____________________________________________________________________________
+;
+;	.sbttl	power fail routine
+;
+$pwrdn:		mov	#$pwrup, @#24		;
+		halt				;
+						;
+$pwrup:		mov	#begin,	SP		; restore the SP
+		mov	#$pwrdn, @#24		;
+		type	,power			; go and type "POWER"
+		br	$doagn			;
+;_____________________________________________________________________________
+;
+; Halt routine
+; Program comes	here on	encountering any error
+;
+$hlt:		mov	@(SP), @#$fatal		; place	the error number at location $fatal
+		bit	#20000,	@#$swreg	; has the operator asked to supress error type outs
+		bne	6$			;
+		type	,$crlf			; go and type a	CR, LF,	followed by 3 spaces
+		mov	R0, -(SP)		; save R0
+		movb	#2, $tpcnt		; allow	type outs if PC	and error number
+		mov	2(SP), R0		; bring	the return PC in R0
+		sub	#4, R0			;
+2$:		movb	#6, @#typcnt		; allow	type out of 6 digits
+		clr	-(SP)			;
+						;
+4$:		clc				;
+		rol	R0			;
+		rol	(SP)			; bring	the C bit from R0 in (SP)
+		bis	#60, (SP)		; prepare to type it out
+		jsr	PC, $tpchr		; and go to out	put a character
+		clr	(SP)			;
+		rol	R0			;
+		rol	(SP)			;
+		rol	R0			;
+		rol	(SP)			;
+		decb	typcnt			; has all the six characters been typed	?
+		bne	4$			; if not then repeat from 4$
+		tst	(SP)+			; restore stack	pointer
+		mov	@2(SP),	R0		; prepare to out put the error number
+		type	,$crlf+2		; go and type 3	spaces
+		decb	$tpcnt			; if both PC and error number has not been
+		bne	2$			; reported then	repeat from 2$
+		mov	(SP)+, R0		; restore R0
+						;
+6$:		tstb	$env			; if we	are not	under APT then go to 8$
+		beq	8$			;
+		inc	@#$msgty		; otherwise inform APT about seeing the	error
+		br	.			; and loop
+8$:		tst	@#$swreg		; is it	required to halt on error	?
+		bpl	10$			; if not then go to 10$
+		halt				;
+10$:		add	#2, (SP)		; adjust the return address
+		rts	PC			; and return
+;_____________________________________________________________________________
+;
+; Type out routine
+; This routine is used to type asciz messages
+;
+$type:		mov	R0, -(SP)		; save R0
+		mov	@2(SP),	R0		; get the address of the assciz	string
+2$:		movb	(R0)+, -(SP)		; push the character to	be typed onto stack
+		bne	4$			; branch if it is not the terminator
+		tst	(SP)+			;
+		mov	(SP)+, R0		; otherwise restore the	stack and R0
+3$:		add	#2, (SP)		; adjust the return PC
+		rti				; and return
+						;
+4$:		jsr	PC, $tpchr		; go to	type a character
+		tst	(SP)+			; restore the stack pointer
+		br	2$			; and return to	2$
+						;
+$tpchr:		bitb	#40, @#$envm		; has the console outputs been suppressed?
+		bne	4$			; if so	then return er0m the subroutine	via 4$
+2$:		tstb	@$tps			; is the printer available?
+		bpl	2$			; if not then loop here
+		movb	2(SP), @$tpb		; output the character
+4$:		rts   PC			;
+;_____________________________________________________________________________
+;
+		.end

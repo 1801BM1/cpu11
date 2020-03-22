@@ -114,7 +114,7 @@ lsi cpu
    .pin_sack_n(de0_gpio0_d[13]),       // bus acknowlegement
    .pin_dmgo_n(de0_fl_byte_n),         // bus granted output
    .pin_iako_n(de0_gpio0_d[14]),       // interrupt vector input
-   .pin_ref_n(de0_gpio0_d[15])         // dynamic RAM refresh
+   .pin_dref_n(de0_gpio0_d[15])        // dynamic RAM refresh
 );
 
 assign   de0_gpio0_d[1]    = 1'bZ;

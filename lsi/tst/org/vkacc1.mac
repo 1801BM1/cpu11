@@ -1,0 +1,3817 @@
+;
+;			IDENTIFICATION
+;			--------------
+;
+; PRODUCT CODE:		AC-8194C-MC
+; PRODUCT NAME:		CVKACC0	LSI-11 FIS INST
+; DATE CREATED:		AUGUST 22, 1975
+; MAINTAINER:		DIAGNOSTIC GROUP
+;
+; This software	is furnished under a license for use only on a single
+; computer system and may be copied only with the inclusion of the above
+; copyright notice. This software, or any other	copies thereof,	may not
+; be provided or otherwise made	available to any other person except for
+; use on such system and to one	who agrees to these license terms.
+; Titl to and ownership	of the software	shall at all times remain in
+; DEC.
+;
+; The information in this document is subject to change	without	notice
+; and should not be construed as a commitment by Digital Equipment
+; Corporation.
+;
+; DEC assumes no responsibility	for the	use or reliability of its;
+; software or equipment	which is not supplied by DEC.
+;
+; Copyright (c)	1975, 1978 by Digital Equipment	Corporation,
+;			Maynard. Mass.
+;_____________________________________________________________________________
+;
+;			CONTENTS
+;			--------
+; 1.	Abstract
+; 2.	Requirements
+; 2.1	Equipment
+; 2.2	Storage
+; 2.3	Preliminary programs
+; 3.	Loading	procedure
+; 4.	Starting procedure
+; 4.1	Control	switch settings
+; 4.2	Starting address
+; 4.3	Program	and/or operator	action
+; 5.	Operating procedure
+; 5.1	Operational switch settings
+; 5.2	Subroutine abstracts
+; 6.	Errors
+; 6.1	Error printout
+; 6.2	Error recovery
+; 6.3	Error counter
+; 7.	Restrictions
+; 8.	Miscellaneous
+; 8.1	Execution time
+; 8.2	Stack pointer
+; 8.3	Pass counter
+; 8.4	Test number
+; 8.5	Power fail
+; 9.	Program	description
+;_____________________________________________________________________________
+;
+; 1.	Abstract
+;
+;	This program tests the LSI-11 floating instruction set (fadd, fsub,
+;	fmul, and fdiv)	option with fixed number patterns, using each register
+;	at least once as the stack pointer. It also checks stack overflow and
+;	that the floating instructions can be interrupted (by the console
+;	teletype). (However, this test will not	be executed when bit 5 of
+;	$envm byte is high). The program should	be run for at least 2 passes
+;	with all switches low. The program is designed to run under APT, and
+;	ACT, systems. When running under APT, with bit 5 of $ennvm low it will
+;	be required to have a SLU with TTY registers - having addresses	of
+;	176560-66 and interrupt	vectors	of 70 for receiver and 74 for
+;	transmitter, under such	a condition it will also be required to
+;	change the run time of first pass from 5 seconds to the	time given in
+;	Sec. 8.1, and the run time for the longest test	from 3 seconds to 30
+;	seconds.
+;
+; 2.	Requirements
+;
+;	LTC switch must	be in off position to run diagnostic.
+;
+; 2.1	Equipment
+;
+;	LSI-11 standard	computer with FIS option and 4K	of memory.
+;
+; 2.2	Storage
+;
+;	Program	storage	- the routines use memory 0 - 17500.
+;
+; 2.3	Preliminary programs
+;
+;	None.
+;
+; 3.	Loading	procedure
+;
+;	Use standard procedure tor ABS tapes.
+;
+; 4.	Starting procedure
+; 4.1	Control	switch settings
+;
+;	See 5.1.1 (allow for worst case	testing).
+;
+; 4.2	Starting address
+;
+;	After loading the program it should always be started at 200. If it
+;	is desired to save the pass counter then the program should be
+;	restarted at location RESTRT (i.e. 222)	otherwise the program can be
+;	restarted at 200.
+;
+; 4.3	Program	and/or operator	action
+; 4.3.1	Stand Alone
+;
+;	1) load	program	into memory usirg A8S loader.
+;	2) set switches	(see Sec 5.1.1>	all low	except bit 7 for worst
+;	   case.
+;	3) type	200G.
+;	4) the program will loop and "END PASS"	will be	typed after
+;	   completion of every pass. However type out will be
+;	   suppressed if bit 5 of location $ENVM is high.
+;	5) a minimum of	two passes should always be run.
+;
+; 4.3.2	Under Apt
+;
+;	Load the program, set the switches (see	Sec.
+;	5.1.1) and start. When under APT. with bit 5 of	$envm low it will be
+;	required to have a SLU with TTY	registers having addresses of
+;	176560-66 and interrupt	vectors	of 70 for receiver and 74 for
+;	transmitter. Under such	a condition it will also be required to
+;	change the run time of first pass from 5 seconds to the	time given in
+;	Sec. 8.1, and the run time for the longest test	from 3 seconds to 30
+;	seconds. The test times	and pass times are suggested with bit 7	of
+;	$swreg low, if it is desired to	enable the iterations then the times
+;	should be multiplied by	a factor of 256.
+;
+; 5.0	Operating procedure
+; 5.1	Operational switch settings
+;
+;	All switches low except	sw<11> is worst	case testing. With bit 11 of
+;	the location $swreg (i.e. location 422), high each subtest will	be
+;	looped upon until completion of	256 passes of that subtest. "END
+;	PASS" will be typed upon completion of a pass of the entire program.
+;	Alternate pass will run	with the T-bit set.
+;
+; 5.1.1	Switch settings
+;
+;	Switch settings	are a 16 bit location called $swreg (i.e.
+;	location 422) has been used to give the	following options by inserting
+;	a 1 in their respective	positions.
+;
+;	BIT #	OCTAL VALUE	FUNCTION
+;	15	100000		Halt On	Error
+;	14	040000		Scope Loop
+;	15	020000		Inhibit	Printout
+;	12	010000		Inhibit	Trace Trapping
+;	11	004000		Enable Iterations Of Subtest
+;	10	002000		Bell On	Error
+;	09	001000		Loop On	Error
+;	08	0004XX		Loop On	Test In	Bits 7 Thru 0
+;
+;	An 8 bit byte $ENVM (i.e. location 421)	has been used to define	the
+;	operating mode.	All typeouts can be suppressed by making bit 5 of
+;	byte $envm high, in other words	by placing a 20000 in location 420.
+;
+; 5.2	Subroutine abstracts
+; 5.2.1	Scope
+;
+;	This subroutine	call (via a TRAP instruction) is placed	between
+;	each subtest in	the instruction	section. It records the	starting
+;	address	of each	subtest	as it is being entered in location "lad$".
+;	If a scope loop	is requested, the current subtest will be looped
+;	upon. sw<11> is	a 1 inhibits iteration of subtests. The	contents
+;	of "lad$" may be used to determine the last subtest successfully
+;	completed.
+;
+; 5.2.2	HLT
+;
+;	This routine (called by	an EMT instruction) prints out an error
+;	message	(see 6.1). If SW<9> is a 1 and a HLT is	executed,
+;	the subtest will be looped upon	until 256 consecutive good passes
+;	are completed. To inhibit typeouts, make sw<13>	a 1. To	ring
+;	the bell on an error, make sw<10> a 1. A high bit 5 in location
+;	"$envm"	will inhibit any typeouts and ringing of bells.
+;
+; 5.2.5	T-bit trep
+;
+;	If sw<12> is a 0, the T-bit will be set	on alternate passes. When
+;	the T-bit is set, the processor	traps after each instruction. The
+;	first instruction executed upon	trapping is an "RTT" which returns
+;	to tne interrupted sequence of instructions. This sequence is
+;	continued until	the end	of the program is reached.
+;
+; 5.2.4	Trap catcher
+;	A  ".+2" - "HALT" sequence is repeated from 0-776 to catch any
+;	unexpected traps. Thus any unexpected traps or interrupts will
+;	halt at	the vector +2.
+;
+; 5.2.5	Floating error trap (to	244)
+;
+;	If a floating point error (overflow, underflow,	or divide by zero)
+;	was expected, the vector will point to a unique	ISP within the
+;	subtest	where the error	occurred which checks the data on the
+;	stack(s). If an	error was not anticipated, an erroneous	trap will
+;	be detected in traper.
+;
+; 5.2.6	NOP
+;
+;	A NOP is placed	just before each FIS instruction. This allows
+;	 the operator to patch in a halt tor debugging purposes.
+;
+; 6.	Errors
+; 6.1	Error printout
+;
+;	The format is as follows:
+;	ERRNM	ADR  PS	 SP  ANS1  ANS2	 ANS3  ANS4  ANS5  ANS6
+;
+;	where:
+;	ERRNM	= error	number
+;	ADR	= Address of Error HLT
+;	PS	= Processor Status
+;	SP	= Contents of Stack Pointer Register
+;	ANS1-6	= Error	Data Read from the Stack(s). From 0 to 6 of
+;		  these	may be typed depending on the number following
+;		  the HLT; e.g., HLT+3 would type ANS1 thru ANS3. HLT
+;		  (by itself) would stop after ERRNM, ADR, PS, and SP.
+;
+;	To find	the failing test, loop at the listing above the	address	typed.
+;	In most	cases the comment beside the HLT tells what was	being checked
+;	and what was expected. All printouts will be suppressed	when bit 5 of
+;	location $envm 1, high.	While running under APT	the diaqnostic will
+;	not support spooling of	console	outputs.
+;
+; 6.2	Error recovery
+;
+;	Restart	at 200 or 222 (See Sec.	4.2).
+;
+; 6.3	Error counter
+;
+;	An error count is kept in location "errors". It	can only be cleared
+;	from the console or by reloading the program.
+;
+; 7.	Restrictions
+;
+;	None.
+;
+; 8.	Miscellaneous
+; 8.1	Execution time
+;
+;	Due to the random characteristics of the interrupt tests, the
+;	execution time can be half a minute or more. However, normally "END
+;	PASS" will be typed within 40 seconds with all switches down.
+;	Execution time will increase by	a factor of 256	when iterations	of
+;	each subtest are enabled.
+;
+; 8.2	Stack pointer
+;
+;	Stack is initially set to 600.
+;
+; 8.3	Pass counter
+;
+;	A 16 bit location "$pass" (i.e.	location 406) is used to keep pass
+;	count. It can be cleared by restarting the program at 200.
+;
+; 8.4	Test number
+;
+;	A 16 bit location  "$testn" (i.e. locaton 404) is used to keep track
+;	of the test number. Upper byte of this location	gives the iteration
+;	number and the lower byte the test that	was being executed.
+;
+; 8.5	Power fail
+;
+;	Each test can be power failed with no errors. To use, start the	test
+;	as usual and power down	then up	at any time. The program should	type
+;	"POWER"	and continue to	run from where the power fail interrupted with
+;	no other error typeouts.
+;
+; 9.	Program	description
+;
+;	This program tests all the MS instructions of the LSI-11 (fadd,	fsub,
+;	fmul, and fdiv). All registers are checked to see if they function
+;	properly as the	stack pointer. The program has many subtests (the
+;	code between 2 scope statements) which are run once before continuing
+;	to the next subtest. sw<11> set	to a 1 causes each subtest to be run
+;	256 times. sw<9> set to	a 1 enables loop on error. The location	$icnt
+;	contains the iteration count and the location $testn contains the test
+;	number.	All the	subtests should	be run sequentially by starting	at
+;	200 not	by starting at the beginning of	the subtest. To	loop on	a
+;	particular subtest, put	the test number	(see listing) in the right
+;	byte of	the location $swreg and	sw<8> set to a 1. This test will be
+;	looped upon until sw<8>	is set to a 0 or the right byte	is changed.
+;	If the test is non-existent, the program will be run as	usual.
+;_____________________________________________________________________________
+;
+;	Table of contents
+;		- switch options and assignments
+;		- ACT-11 hooks
+;		- vector area, stacks, answer area, and	setup routine
+;		- APT mailbox-etable
+;		- APT parameter	block
+;		- starting of the program
+;		- fadd test section
+;		- test floating	add instruction	with underflow
+;		- test floating	add instruction	with overflow
+;		- fsub test section
+;		- test floating	sub instruction	with underflow
+;		- test floating	sub instruction	with overflow
+;		- fmul test section
+;		- test floating	mul instruction	with underflow
+;		- test floating	mul instruction	with overflow
+;		- fdiv test section
+;		- test floating	div instruction	with underflow
+;		- test floating	div instruction	with overflow
+;		- test floating	div instruction	for divide by zero
+;		- test of all FIS at once
+;		- address error	test
+;		- interrupt abort test section
+;		- end of pass routine
+;		- scope	routine
+;		- push and pop subroutines
+;		- hlt routine (error typeout)
+;		- user error routine
+;		- octal	word 8 address typer
+;		- power	down and up routines
+;		- ASCIZ	type out routine
+;_____________________________________________________________________________
+;
+		.asect				;
+		.title	cvkacc			;
+;
+;	Copyright (c) August 1978
+;	Digital	Equipment Corp.
+;	Maynard, Mass. 01754
+;
+;	Program	by diagnostic engineering
+;	This program was assembled using the PDP-11 maindec sysmac
+;	package	(maindec-11-dzqac-b). July 11,1975.
+;
+		$tn	= 1			;
+		$swr	= 160000		; halt on error, loop on test, inhibit error typout
+;
+;		switch			use
+;		------		------------------------
+;		  8		loop on	test in	sw<7:0>
+;		  9		loop on	error
+;		 10		1 - bell on error
+;		 11		inhibit	iterations
+;		 12		inhibit	trace trap
+;		 13		inhibit	error typeouts
+;		 14		loop on	test
+;		 15		halt on	error
+;
+;	Error message format:
+;	  errnm	adr psw	SP ans1	ans2 ans3 ans4 ans5 ans6
+;
+;	Where	errnm =	error number
+;		adr   =	address	of "hlt" instruction + 2
+;		psw   =	processor status word
+;		SP    =	stack pointer
+;		ans1 thru ans6 = data off the stack (s)
+;		note:	ans1 thru ans6 are not always typed, depending on the
+;			number added to	the "hlt". "hlt" alone types none,
+;			"hlt+1"	types ans1, "hlt+2" types ans1 and ans2	etc.
+;_____________________________________________________________________________
+;
+		hlt	= emt			;
+		R0	= %0			;
+		R1	= %1			;
+		R2	= %2			;
+		R3	= %3			;
+		R4	= %4			;
+		R5	= %5			;
+		TTY	= %5			;
+		SP	= %6			;
+		PC	= %7			;
+						;
+		pwrvec	= 24			;
+		scope	= trap			;
+		sw15	= 100000		;
+		sw14	= 40000			;
+		sw13	= 20000			;
+		sw12	= 10000			;
+		sw11	= 4000			;
+		sw10	= 2000			;
+		sw09	= 1000			;
+		sw08	= 400			;
+		type	= iot			;
+		n	= 1			;
+		$f	= 1			;
+;_____________________________________________________________________________
+;
+		. = 0				; trap catcher from 0 -	776
+;						;
+;		.sbttl	ACT11 hooks		;
+; Hooks	required by ACT-11
+;
+;		$svpc	= .			; save PC
+;		$endad				; 1) set loc.46	to address of $endad in	.$eop
+;		. = 52				;
+;		.word 0				; 2) set loc.52	to zero
+;		. =$svpc			; restore PC
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		. 	= offset		;
+	.if 	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc 					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff            			;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+		.nlist
+		vect	0			;
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20			;
+		vect	24, 200			; power fail entry
+		vect	30			;
+		vect	34			;
+		vect	40			;
+		vect	44, $apthd, $endad	;
+		vect	50			;
+		vect	54			;
+		vect	60			;
+		vect	64			;
+		vect	70			;
+		vect	74			;
+		vect	100			;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+		.list				;
+						;
+		. = 200				;
+		jmp	nooop			; go to	type heading & initialization
+restrt:		jmp	begin			;	start the program
+						;
+		.nlist   			;
+		vect	210			;
+		vect	214			;
+		vect	220			;
+		vect	224			;
+		vect	230			;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+		.list				;
+;_____________________________________________________________________________
+;
+		. = 400				;
+;		.sbttl	APT mailbox-etable	;
+;
+		.even
+$mail:						; APT mailbox
+$msgty:		.word	0	; amsgty	; message type code
+$fatal:		.word	0	; afatal	; fatal	error number
+$testn:		.word	0	; atestn	; test number
+$pass:		.word	0	; apass		; pass count
+$devct:		.word	0	; adevct	; device count
+$unit:		.word	0	; aunit		; I/O unit number
+$msgad:		.word	0	; amsgad	: message address
+$msglg:		.word	0	; amsglg	; message length
+$etable:					; APT environment table
+$env:		.byte	0	; aenv		; environment byte
+$envm:		.byte	0	; aenvm		; environment mode bits
+$swreg:		.word	0	; aswreg	; APT switch register
+$uswr:		.word	0	; auswr		; user switches
+$cpuop:		.word	0	; acpuop	; cpu type,options
+						; bits 15-11=cpu type
+						;	11/04=01, 11/05=02
+						;	11/20=03, 11/40=04
+						;	11/45=05, 11/70=06
+						;	PDQ=07,	Q=10
+						; bit 10 - real	time clock
+						; bit 9	- floating point
+						; bit 8	- memory management
+$etend:						;
+;_____________________________________________________________________________
+;
+;		.mexit
+;		.sbttl	APT parameter block
+;
+; Set locations	24 and 44 as required for APT
+;
+;		.$x = .				; save current location
+;		. = 24				; set power fail to point to start
+;		200				; of program for APT start up
+;		. = 44				; point	to APT indirect	address	pntr.
+;		$apthdr				; point	to APT header block
+;		. = .$x				; reset	location counter
+;_____________________________________________________________________________
+;
+; Setup	APT parameter block as defined in the APT-PDP-11 diagnostic
+; interface spec.
+;
+$apthd:						;
+$hibts:		.word	0			; two high bits	of 18 bit mailbox addr.
+$mbadr:		.word	$mail			; address of APT mailbox (bits 0-15)
+$tstm:		.word	3			; run tim of longest test
+$pastm:		.word	5			; run time in secs. of 1st pass	on 1 unit (quick verify)
+$unitm:		.word	0			; additional run time (secs) of	a pass for each	additional unit
+		.word	$etend-$mail/2		; length mailbox-etable	(words)
+						;
+		. =	$apthd			;
+hltad$:		.blkw	1			;
+$psw:		.blkw	1			; processor status word
+$sp:		.blkw	1			; stack	pointer
+ans1:		.blkw	1			; first	answer (see code)
+ans2:		.blkw	1			;
+ans3:		.blkw	1			;
+ans4:		.word	0			;
+ans5:		.word	0			;
+ans6:		.word	0			;
+		.word	0,0,0,0			; a non-SP stack buffer
+errors:		.word	0			;
+fisvec:		.word	244			; FIS trap vector address
+fislvl:		.word	246			;
+lad$:		.word	0			;
+return:		.asciz	<12><15>		; return and linefeed
+space:		.asciz	<15><12><40><40><40>	; return and 3 spaces
+						;
+$icnt:		.byte	0			;
+		.even				;
+$bell:		.word	7			; ring a bell
+savtps:		.word	0			; loc to save teleprinter status
+stack0:		.word	0			; non-SP stack normal limit
+stack2:		.word	0			;
+stack4:		.word	0			;
+stack6:		.word	0			;
+stack8:		.word	0,0,0,0,0		; non-SP stack buffer
+stak10:		.word	0			;
+		stack1	= stack0+1		;
+						;
+temp:		.word	0			;
+times:		.word	0			;
+typcnt:		.word	0			;
+yesrt:		rtt				; return from trace trap
+.pr:		.word	0			; count	and switch
+ttyout:		.word	64			;
+$tps:		.word	177564			; TTY printer status reg
+$tpb:		.word	177566			; TTY printer buffer reg
+						;
+		.nlist				;
+		vect	554			;
+		vect	560			;
+		vect	564			;
+		vect	570			;
+		vect	574			;
+		.list				;
+;_____________________________________________________________________________
+;
+		.sbttl	Starting of the	program
+		. = 600
+						;
+begin:		mov	#begin,	SP		; initialize stack pointer
+		mov	#yesrt,	@#14		; set trace trap vector
+		mov	#$type,	@#20		; set up vector	20
+		mov	#$pwrdn, @#24		; service power	down routine
+						; for any future power down
+		mov	#30, R0			; set R0 to vector 30
+		mov	#hlt$, (R0)+		; set emt vector
+		mov	#340, (R0)+		;
+		mov	#scope$, (R0)+		; set trap vector
+		mov	#340, (R0)		;
+1$:		mov	#6, @#4			; restore time-out vector
+		bitb	#1, @#$env		; are we under APT?
+		beq	2$			; if not then go to 2$
+		mov	#$tpb+2, R0		; otherwise set	for the	other SLU
+		mov	#176566, -(R0)		;
+		mov	#176564, -(R0)		;
+		mov	#74, -(R0)		;
+2$:		clr	$testn			;
+		clr	lad$			; clear	loop address
+;_____________________________________________________________________________
+;
+; TEST 1:	fadd (LSI-11 floating add instruction)
+;		000000.000000 +	000000.000000 =	000000,000000
+;		ps = 004, stack	pointer	= R0
+;
+		scope				;
+tst1:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	000000,000000		; second operand on top
+		.word	000000,000000		; first	operand	on bottom
+		.word	000			; processor priority level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R0		; set up stack pointer
+		nop				;
+		fadd	R0			; floating add on the R0 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R0, $sp			; save "stack pointer"
+		cmpb	#004, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 004
+		.word	1			; the error number is 1
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack4
+		.word	2			; the error number is 2
+						;
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	3			; the error number is 3
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	4			; the error number is 4
+						;
+end1:		cmpb	#1, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	5			; the error number is 5
+;_____________________________________________________________________________
+;
+; TEST 2:	fadd (LSI-11 floating add instruction)
+;		000000.000000 +	152525,052524 =	152525,052524
+;		ps = 010, stack	pointer	= R3
+;
+		scope				;
+tst2:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
+		.word	152525,052524		; second operand on top
+		.word	000000,000000		; first	operand	on bottom
+		.word	040			; processor priority level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R3		; set up stack pointer
+		nop				;
+		fadd	R3			; floating add on the R3 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R3, $sp			; save "stack pointer"
+		cmpb	#010, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 010
+		.word	6			; the error number is 6
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R3)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R3) not equal to #stack4
+		.word	7			; the error number is 7
+						;
+		cmp	#152525, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 152525
+		.word	10			; the error number is 10
+						;
+		cmp	#052524, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 052524
+		.word	11			; the error number is 11
+						;
+end2:		cmpb	#2, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	12			; the error number is 12
+;_____________________________________________________________________________
+;
+; TEST 3:	fadd (LSI-11 floating add instruction)
+;		040200.000000 +	040200.000000 =	040400.000000
+;		ps = 000, stack	pointer	= R1
+;
+		scope				;
+tst3:		jsr	R5, pushr		; push 4 words onto R1 stack, set priority
+		.word	040200,000000		; second operand on top
+		.word	040200,000000		; first	operand	on bottom
+		.word	040			; processor priority level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R1		; set up stack pointer
+		nop				;
+		fadd	R1			; floating add on the R1 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R1, $sp			; save "stack pointer"
+		tstb	$psw			; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+		.word	13			; the error number is 13
+						;
+		cmp	#stack4,$sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack4
+		.word	14			; the error number is 14
+						;
+		cmp	#040400, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 040400
+		.word	15			; the error number is 15
+						;
+		tst	ans2			; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	16			; the error number is 16
+						;
+end3:		cmpb	#3, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	17			; the error number is 17
+;_____________________________________________________________________________
+;
+; TEST 4:	fadd (LSI-11 floating add instruction)
+;		077777.177777 +	177777.177777 =	000000.000000
+;		ps = 004, stack	pointer	= R2
+;
+		scope				;
+tst4:		jsr	R5, pushr		; push 4 words onto R2 stack, set priority
+		.word	177777,177777		; second operand on top
+		.word	077777,177777		; first	operand	on bottom
+		.word	100			; processor priori tv level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R2		; set up stack pointer
+		nop				;
+		fadd	R2			; floating add on the R2 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R2, $sp			; save "stack pointer"
+		cmpb	#004, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 004
+		.word	20			; the error number is 20
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R2)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R2) not equal to #stack4
+		.word	21			; the error number is 21
+						;
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	22			; the error number is 22
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	23			; the error number is 23
+						;
+end4:		cmpb	#4, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	24			; the error number is 24
+;_____________________________________________________________________________
+;
+; TEST 5:	fadd (LSI-11 floating add instruction)
+;		052525.052525 +	152525.052524 =	044600.000000
+;		ps = 200. stack	pointer	= SP
+;
+		scope				;
+tst5:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	152525,052524		; second operand on top
+		.word	052525,052525		; first	operand	on bottom
+		.word	217			; processor priority level
+		.word	traper,340		; FIS trap vector
+		nop				;
+		fadd	SP			; floating add on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa5			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	25			; the error number is 25
+		br	end5			; skip rest of test
+						;
+tsa5:		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	26			; the error number is 26
+						;
+		cmp	#044600, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 044600
+		.word	27			; the error number is 27
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	30			; the error number is 30
+						;
+end5:		cmpb	#5, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	31			; the error number is 31
+;_____________________________________________________________________________
+;
+; TEST 6:	fadd (LSI-11 floating add instruction)
+;		125200.000000 +	025177.177777 =	117200.000000
+;		ps = 210, stack	pointer	= SP
+;
+		scope				;
+tst6:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	025177,177777		; second operand on top
+		.word	125200,000000		; first	operand	on bottom
+		.word	307			; processor priority level
+		.word	traper,340		; FIS trap vector
+		nop				;
+		fadd	SP			; floating add on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa6			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled	up
+		.word	32			; the error number is 32
+		br	end6			; skip rest of test
+						;
+tsa6:		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	33			; the errop number is 33
+						;
+		cmp	#117200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 117200
+		.word	34			; the error number is 34
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	35			; the error number is 35
+						;
+end6:		cmpb	#6, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	36			; the error number is 36
+;_____________________________________________________________________________
+;
+; TEST 7:	fadd (LSI-11 floating add instruction)
+;		135753.024642 +	100125.052525 =	135753.024642
+;		ps = 210, stack	pointer	= R5
+;
+		scope				;
+tst7:		jsr	R5, pushr		; push 4 words onto R5 stack, set priority
+		.word	100125,052525		; second operand	on top
+		.word	135753,024642		; first	operand	on bottom
+		.word	347			; processor priority level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R5		; set up stack pointer
+		nop				;
+		fadd	R5			; floating add on the R5 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R5, $sp			; save "stack pointer"
+		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	37			; the error number is 37
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R5)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R5) not equal to #stack4
+		.word	40			; the error number is 40
+						;
+		cmp	#135753, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 135753
+		.word	41			; the error number is 41
+		cmp	#024642, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 024642
+		.word	42			; the error number is 42
+						;
+end7:		cmpb	#7, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	43			; the error number is 43
+;_____________________________________________________________________________
+;
+; TEST 10:	fadd (LSI-11 floating add instruction)
+;		000052.125252 +	001357.024642 =	001357.024642
+;		ps = 200, stack	pointer	= R1
+;
+		scope				;
+tst10:		jsr	R5, pushr		; push 4 words onto R1 stack, set priority
+		.word	001357,024642		; second operand on top
+		.word	000052,125252		; first	operand	on bottom
+		.word	257			; processor priority level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0m, R1		; set up stack pointer
+		nop				;
+		fadd	R1			; floating add on the R1 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R1, $sp			; save "stack pointer"
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	44			; the error number is 44
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack4
+		.word	45			; the error number is 45
+		cmp	#001357, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 001357
+		.word	46			; the error number is 46
+		cmp	#024642, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 024642
+		.word	47			; the error number is 47
+						;
+end10:		cmpb	#10, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	50			; the error number is 50
+;_____________________________________________________________________________
+;
+; TEST 11:	fadd (LSI-11 floating add instruction)
+;		100400.000000 +	000200.000000 =	100200.000000
+;		ps = 010, stack	pointer	= R5
+;
+		scope				;
+tst11:		jsr	R5, pushr		; push 4 words onto R5 stack, set priority
+		.word	000200,000000		; second operand on top
+		.word	100400,000000		; first	operand	on bottom
+		.word	140			; processor prioritv level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R5		; set up stack pointer
+		nop				;
+		fadd	R5			; floating add on the R5 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R5, $sp			; save "stack pointer"
+		cmpb	#010, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 010
+		.word	51			; the error number is 51
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R5)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R5) not equal to #stack4
+		.word	52			; the error number is 52
+						;
+		cmp	#100200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 100200
+		.word	53			; the error number is 53
+		tst	ans2			; check	seeond half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	54			; the error number is 54
+end11:		cmpb	#11, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	55			; the error number is 55
+;_____________________________________________________________________________
+;
+; TEST 12:	.fadd (LSI-11 floating add instruction)
+;		000425.052525 +	100252.125252 =	000200.000000
+;		ps = 200, stack	pointer	= R4
+;
+		scope				;
+tst12:		jsr	R5, pushr		; push 4 words onto R4 stack, set priority
+		.word	100252,125252		; second operand on top
+		.word	000425,052525		; first	operand	on bottom
+		.word	217			; processor priority level
+		.word	traper,	340		; if is	trap vector
+		mov	#stack0,R4		; set up stack pointer
+		nop				;
+		fadd	R4			; floating add on the R4 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R4, $sp			; save "stack pointer"
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	56			; the error number is 56
+						;
+		cmp	#stack4	,$sp		; check	the stack pointer (R4)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R4) not equal to #stack4
+		.word	57			; the error number is 57
+						;
+		cmp	#000200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000200
+		.word	60			; the error number is 60
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	61			; the error number is 61
+						;
+end12:		cmpb	#12, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	62			; the error number is 62
+;_____________________________________________________________________________
+;
+; TEST 13:	fadd (LSI-11 floating add instruction)
+;		100425.052525 +	000252.125252 =	100200,000000
+;		ps = 210, stack	pointer	= SP
+;
+		scope				;
+tst13:		jsr R5,	pushs			; push 4 words onto stack, set priority
+		.word	000252,125252		; second operand on top
+		.word	100425,052525		; first	operand	on bottom
+		.word	307			; processor priority level
+		.word	traper,340		; FIS trap vector
+		nop				;
+		fadd	SP			; floating add on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa13			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	63			; the error number is 63
+		br	end13			; skip rest of test
+						;
+tsa13:		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	64			; the error number is 64
+						;
+		cmp	#100200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 100200
+		.word	65			; the error number is 65
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	66			; the error number is 66
+						;
+end13:		cmpb	#13, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	67			; the error number is 67
+;_____________________________________________________________________________
+;
+; TEST 14:	fadd (LSI-11 floating add instruction)
+;		077652.125252 +	077452.125252 =	077777.177777
+;		ps = 200, stack	pointer	= SP
+;
+		scope				;
+tst14:		jsr R5,	pushs			; push 4 words onto stack, set priority
+		.word	077452,125252		; second operand on top
+		.word	077652,125252		; first	operand	on bottom
+		.word	257			; processor priority level
+		.word	traper,340		; FIS trap vector
+		nop				;
+		fadd	SP			; floating add on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa14			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	70			; the error number is 70
+		br	end14			; skip rest of test
+						;
+tsa14:		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	71			; the error number is 71
+		cmp	#077777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 077777
+		.word	72			; the error number is 72
+		cmp	#177777, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word	73			; the error number is 73
+						;
+end14:		cmpb	#14, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	74			; the error number is 74
+;_____________________________________________________________________________
+;
+; TEST 15:	fadd (LSI-11 floating add instruction)
+;		177452.125252 +	177652.125252 =	177777.177777
+;		ps = 210, stack	pointer	= R4
+;
+		scope				;
+tst15:		jsr	R5, pushr		; push 4 words onto R4 stack, set priority
+		.word	177652,125252		; second operand on top
+		.word	177452,125252		; first	operand	on bottom
+		.word	357			; processor priority level
+		.word	traper,340		; FIS trap vector
+		mov	#stack0, R4		; set up stack pointer
+		nop				;
+		fadd	R4			; floating add on the R4 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R4, $sp			; save "stack pointer"
+		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	75			; the error number is 75
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R4)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R4) not equal to #stack4
+		.word	76			; the error number is 76
+						;
+		cmp	#177777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 177777
+		.word	77			; the error number is 77
+		cmp	#177777, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word		100		; the error number is 100
+						;
+end15:		cmpb	#15, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	101			; the error number is 101
+;_____________________________________________________________________________
+;
+; TEST 16:	fadd (LSI-11 floating add instruction)
+;		004000.105004 +	104000.104000 =	000401.000000
+;		ps = 000, stack	pointer	= PC
+;
+		scope
+tst16:		jsr	R5, push7		; push 4 words	onto stack, set	priority
+		.word	stk16			; top of stack
+		.word	104000,104000		; second operand on top
+		.word	004000,105004		; first	operand	on bottom
+		.word	144			; processor priority level
+		.word	traper,340		; FIS trap vector
+		nop				;
+		fadd	PC			; floating add on following 4 words
+						;
+stk16:		.word	104000			; should contain 104000
+		.word	104000			; should contain 104000
+		.word	004000			; before fadd, 004000, after 000401
+		.word	105004			; before fadd, 105004, after 000000
+		jsr	PC, pop7		; pop the answer
+		tstb	$psw			; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+		.word	102			; the error number is 102
+						;
+		cmp	#104000, ans1		; check	first half of input data (stk16)
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 104000
+		.word	103			; the error number is 103
+						;
+		cmp	#104000, ans2		; check	second half of input data (stk16+2)
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 104000
+		.word	104			; the error number is 104
+						;
+		cmp	#000401, ans3		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans3 not equal to 000401
+		.word	105			; the error number is 105
+						;
+		tst	ans4			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans4 not equal to 000000
+		.word	106			; the error number is 106
+						;
+end16:		cmpb	#16, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	107			; the error number is 107
+;_____________________________________________________________________________
+;
+; TEST 17:	fadd (LSI-11 floating add instruction)
+;		100200.000000 +	000377.177777 ==> underflow
+;		ps(on stack) = 012, stack pointer = R3
+;
+		scope				;
+tst17:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
+		.word	000377,177777		; second operand on top
+		.word	100200,000000		; first	operand	on bottom
+		.word	157			; processor priority level
+		.word	isr17, 000		; FIS trap vector
+		mov	#stack0, R3		; set up R3 as stack pointer
+		nop				;
+		fadd	R3			; floating add on the R3 stack
+						;
+rta17:		jsr	PC, popr		; pop the "answer"
+		mov	R3, $sp			; save stack pointer (R3)
+		hlt+2				; FIS trap didn't occure
+		.word	110			; the error number is 110
+		br	end17			;
+						;
+isr17:		jsr	PC, poper		; pop all data off the stacks
+		mov	R3, $sp			; save stack pointer (R3)
+		tstb	$psw			; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 000
+		.word	111			; the error number is 111
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R3)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R3) not equal to #stack0
+		.word	112			; the error number is 112
+		cmp	#rta17,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	113			; the error number is 103
+						;
+		cmp	#012, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 012
+		.word	114			; the error number is 114
+						;
+		cmp	#000377, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000377) changed
+		.word	115			; the error number is 115
+		cmp	#177777, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(177777) changed
+		.word	116			; the error number is 116
+						;
+		cmp	#100200, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(100200) changed
+		.word	117			; the error number is 117
+						;
+		tst	ans6			; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(000000) changed
+		.word	120			; the error number is 120
+						;
+end17:		cmpb #17, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	121			; the error number is 121
+;_____________________________________________________________________________
+;
+; TEST 20:	fadd (LSI-11 floating add instruction)
+;		000200.000000 +	100377.177777 ==> underflow
+;		ps(on stack) = 212, stack pointer = SP
+;
+		scope				;
+tst20:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	100377,177777		; second operand on top
+		.word	000200,000000		; first	operand	on bottom
+		.word	257			; processor priority level
+		.word	isr20, 340		; FIS trap vector
+		nop				;
+		fadd	SP			; floating add on the stack
+						;
+rta20:		jsr	PC, pops		; pop the "answer"
+		hlt+2				; FIS trap didn't occure
+		.word	122			; the error number is 122
+		mov	#begin,	SP		; restore the stack pointer
+		br	end20			;
+						;
+isr20:		jsr	PC, popes		; pop all data off the stack
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	isa20			; branch if OK
+		mov	#begin,	SP		; restore the stack pointer
+		hlt				; stack	pointer	fouled up
+		.word	123			; the error number is 123
+		br	end20			; skip rest of test
+						;
+isa20:		cmpb	#340, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 340
+		.word	124			; the error number is 124
+		cmp	#rta20,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	125			; the error number is 125
+						;
+		cmp	#212, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 212
+		.word	126			; the error number is 126
+						;
+		cmp	#100377, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(100377) changed
+		.word	127			; the error number is 127
+						;
+		cmp	#177777, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(177777) changed
+		.word	130			; the error number is 130
+						;
+		cmp	#000200, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(000200) changed
+		.word	131			; the error number is 131
+						;
+		tst	ans6			; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(000000) changed
+		.word	132			; the error number is 132
+						;
+end20:		cmpb	#20, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up.
+		.word	133			; the error number is 133
+;_____________________________________________________________________________
+;
+; TEST 21:	.fadd (LSI-11 floating add instruction)
+;		177452.125253 +	177652.125252 ==> overflow
+;		ps(on stack) = 002, stack pointer = R1
+;
+		scope				;
+tst21:		jsr	R5, pushr		; push 4 words onto R1 stack, set priority
+		.word	177652,125252		; second operand on top
+		.word	177452,125253		; first	operand	on bottom
+		.word	105			; processor priority level
+		.word	isr21,	252		; FIS trap vector
+		mov	#stack0, R1		; set up R1 as stack pointer
+		nop				;
+		fadd	R1			; floating add on the R1 stack
+						;
+rta21:		jsr	PC, popr		; pop the "answer"
+		mov	R1, $sp			; save stack pointer (R1)
+		hlt+2				; FIS trap didn't occure
+		.word	134			; the error number is 134
+		br	end21			;
+						;
+isr21:		jsr	PC, poper		; pop all data off the stacks
+		mov	R1, $sp			; save stack pointer (R1)
+		cmpb	#252, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 252
+		.word	135			; the error number is 135
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack0
+		.word	136			; the error number is 136
+						;
+		cmp	#rta21,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	137			; the error number is 137
+						;
+		cmp	#002, ans2		; check	ps be furl FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 002
+		.word	140			; the error number is 140
+						;
+		cmp	#177652, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(177652) changed
+		.word	141			; the error number is 141
+						;
+		cmp	#125252, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125252) changed
+		.word	142			; he error number is 142
+						;
+		cmp	#177452, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(177452) changed
+		.word	143			; the error number is 143
+						;
+		cmp	#125253, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125253) changed
+		.word	144			; the error number is 144
+						;
+end21:		cmpb	#21, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	145			; the error number is 145
+;_____________________________________________________________________________
+;
+; TEST 22:	fadd (LSI-11 floating add instruction)
+;		077652.125253 +	077452.125252 ==> overflow
+;		ps(on stack) = 002, stack pointer = SP
+;
+		scope				;
+tst22:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	077452,125252		; second operand on top
+		.word	077652,125253		; first	operand	on bottom
+		.word	003			; processor priority level
+		.word	isr22, 344		; FIS trap vector
+		nop				;
+		fadd	SP			; floating add on the stack
+						;
+rta22:		jsr	PC, pops		; pop the "answer"
+		hlt+2				; FIS trap didn't occure
+		.word	146			; the error number is 146
+		mov	#begin,	SP		; restore the stack pointer
+		br	end22			;
+						;
+isr22:		jsr	PC, popes		; pop all data off the stack
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	isa22			; branch if OK
+		mov	#begin,	SP		; restore the stack pointer
+		hlt				; stack	pointer	fouled up
+		.word	147			; the error number is 147
+		br	end22			; skip rest of test
+						;
+isa22:		cmpb	#344, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 344
+		.word	150			; the error number is 150
+						;
+		cmp	#rta22,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	151			; the error number is 151
+						;
+		cmp	#002, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 002
+		.word	152			; the error number is 152
+						;
+		cmp	#077452, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(077452) changed
+		.word	153			; the error number is 153
+						;
+		cmp	#125252, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125252) changed
+		.word	154			; the error number is 154
+						;
+		cmp	#077652, ans5		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(077652) changed
+		.word	155			; the error number is 155
+						;
+		cmp	#125253, ans6		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125253) changed
+		.word	156			; the error number is 156
+						;
+end22:		cmpb	#22, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	157			; the error number is 157
+;_____________________________________________________________________________
+;
+; TEST 23:	fsub (LSI-11 floating subtract instruction)
+;		177520.017552 -	135352.,051107 = 177520.017552
+;		ps = 010, stack	pointer	= R1
+;
+		scope				;
+tst23:		jsr	R5, pushr		; push 4 words onto R1 stack, set priority
+		.word	135352,051107		; second operand on top
+		.word	177520,017552		; first	operand	on bottom
+		.word	040			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R1		; set up stack pointer
+		nop				;
+		fsub	R1			; floating subtract on the R1 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R1, $sp			; save "stack pointer"
+		cmpb	#010, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 010
+		.word	160			; the error number is 160
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack4
+		.word	161			; the error number is 161
+						;
+		cmp	#177520, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 177520
+		.word	162			; the error number is 162
+						;
+		cmp	#017552, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 017552
+		.word	163			; the error number is 163
+						;
+end23:		cmpb	#23, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	164			; the error number is 164
+;_____________________________________________________________________________
+;
+; TEST 24:	fsub (LSI-11 floating subtract instruction)
+;		125252.125252 -	125252.125253 =	017400.000000
+;		ps = 000, stack	pointer	= R0
+;
+		scope				;
+tst24:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	125252,125253		; second operand on top
+		.word	125252,125252		; first	operand	on bottom
+		.word	047			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R0		; set up stack pointer
+		nop				; floating subtract on the R0 stack
+		fsub	R0			;
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R0, $sp			; save "stack pointer"
+		tstb	$psw			; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+		.word	165			; the error number is 165
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack4
+		.word	166			; the error number is 166
+						;
+		cmp	#017400, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 017400
+		.word	167			; the error number is 167
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	170			; the error number is 170
+						;
+end24:		cmpb	#24, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	171			; the error number is 171
+;_____________________________________________________________________________
+;
+; TEST 25:	fsub (LSI-11 floating subtract instruction)
+;		002460.123456 -	100177.177777 =	002460.123456
+;		ps = 000, stack	pointer	= SP
+;
+		scope				;
+tst25:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	100177,177777		; second operand on top
+		.word	002460,123456		; first	operand	on bottom
+		.word	015			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fsub	SP			; floating subtract on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa25			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	172			; the error number is 172
+		br	end25			; skip rest of test
+						;
+tsa25:		cmpb	#000, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+		.word	173			; the error number is 173
+						;
+		cmp	#002460, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 002460
+		.word	174			; the error number is 174
+						;
+		cmp	#123456, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 123456
+		.word	175			; the error number is 175
+						;
+end25:		cmpb	#25, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	176			; the error number is 176
+;_____________________________________________________________________________
+;
+; TEST 26:	fsub (LSI-tt floating subtract instruction)
+;		000425.052525 -	000252.125252 =	000200,000000
+;		ps = 200, stack	pointer	= R4
+;
+		scope				;
+tst26:		jsr	R5, pushr		; push 4 words onto R4 stack, set priority
+		.word	000252,125252		; second operand on top
+		.word	000425,052525		; first	operand	on bottom
+		.word	217			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	 #stack0, R4		; set up stack pointer
+		nop				;
+		fsub	R4			; floating subtract on the R4 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R4, $sp			; save "stack pointer"
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	177			; the error number is 177
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R4)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R4) not equal to #stack4
+		.word	200			; the error number is 200
+						;
+		cmp	#000200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000200
+		.word	201			; the error number is 201
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	202			; the error number is 202
+						; check	the test number
+end26:		cmpb	#26, $testn		;
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	203			; the error number is 203
+;_____________________________________________________________________________
+;
+; TEST 27:	fsub (LSI-11 floating subtract instruction)
+;		177452.125252 -	077652.125252 =	177777.177777
+;		ps = 210, stack	pointer	= SP
+;
+		scope
+tst27:		jsr	R5, pushs		; push 4 words onto stack, set prioritv
+		.word	077652,125252		; second operand on top
+		.word	177452,125252		; first	operand	on bottom
+		.word	357			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fsub	SP			; floating subtract on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa27			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	204			; the error number is 204
+		br	end27			; skip rest of test
+						;
+tsa27:		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	205			; the error number is 205
+						;
+		cmp	#177777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 177777
+		.word	206			; the error number is 206
+						;
+		cmp	#177777, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word	207			; the error number is 207
+						;
+end27:		cmpb	#27, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	210			; the error number is 210
+;_____________________________________________________________________________
+;
+; TEST 30:	fsub (LSI-11 floating subtract instruction)
+;		035152.125252 -	043125,052525 =	143125.052524
+;		ps = 010, stack	pointer	= R3
+;
+		scope				;
+tst30:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
+		.word	043125,052525		; second operand on top
+		.word	035152,125252		; first	operand	on bottom
+		.word	147			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R3		; set up stack pointer
+		nop				;
+		fsub	R3			; floating subtract on the R3 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R3, $sp			; save "stack pointer"
+		cmpb	#010, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 010
+		.word	211			; the error number is 211
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R3)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R3) not equal to #stack4
+		.word	212			; the error number is 212
+						;
+		cmp	#143125, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 143125
+		.word	213			; the error number is 213
+						;
+		cmp	#052524, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 052524
+		.word	214			; the error number is 214
+						;
+end30:		cmpb	#30, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	215			; the error number is 215
+;_____________________________________________________________________________
+;
+; TEST 31:	fsub (LSI-tt floating subtract instruction)
+;		143325.052525 -	135152.125252 =	143325.052525
+;		ps = 210, stack	pointer	= R0
+;
+		scope				;
+tst31:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	135152,125252		; second operand on top
+		.word	143325,052525		; first	operand	on bottom
+		.word	243			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R0		; set up stack pointer
+		nop				;
+		fsub	R0			; floating subtract on the R0 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R0, $sp			; save "stack pointer"
+		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	216			; the error number is 216
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack4
+		.word	217			; the error number is 217
+						;
+		cmp	#143325, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 143325
+		.word	220			; the error number is 220
+						;
+		cmp	#052525, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 052525
+		.word	221			; the error number is 221
+						;
+end31:		cmpb	#31, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	222			; the error number is 222
+;_____________________________________________________________________________
+;
+; TEST 32:	fsub (LSI-11 floating subtract instruction)
+;		135152.125252 -	143325.052525 =	043325,052525
+;		ps = 200, stack	pointer	= R5
+;
+		scope				;
+tst32:		jsr	R5, pushr		; push 4 words onto R5 stack, set priority
+		.word	143325,052525		; second operand on top
+		.word	135152,125252		; first	operand	on bottom
+		.word	357			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R5		; set upstack pointer
+		nop				;
+		fsub	R5			; floating subtract on the R5 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R5, $sp			; save "stack pointer"
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	223			; the error number is 223
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R5)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R5) not equal to #stack4
+		.word	224			; the error number is 224
+						;
+		cmp	#043325, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 043325
+		.word	225			; the error number is 225
+						;
+		cmp	#052525, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 052525
+		.word	226			; the error number is 226
+end32:		cmpb	#32, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	227			; the error number is 227
+;_____________________________________________________________________________
+;
+; TEST 33:	fsub (LSI-11 floating subtract instruction)
+;		043125.052525 -	035152.125252 =	043125.052524
+;		ps = 000, stack	pointer	= R2
+;
+		scope				;
+tst33:		jsr	R5, pushr		; push 4 words onto R2 stack, set priority
+		.word	035152,125252		; second operand on top
+		.word	043125,052525		; first	operand	on bottom
+		.word	040			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R2		; set up	stack pointer
+		nop				;
+		fsub	R2			; floating subtract on the R2 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R2, $sp			; save "stack pointer"
+		tstb	$psw			; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+						;
+		.word	230			; the error number is 230
+		cmp	#stack4, $sp		; check	the stack pointer (R2)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R2) not equal to #stack4
+		.word	231			; the error number is 231
+						;
+		cmp	#043125, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 043125
+		.word	232			; the error number is 232
+						;
+		cmp	#052524, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 052524
+		.word	233			; the error number is 233
+						;
+end33:		cmpb	#33, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	234			; the error number is 234
+;_____________________________________________________________________________
+;
+; TEST 34:	fsub (LSI-11 floating subtract instruction)
+;		000000.000000 -	000000.000000 =	000000.000000
+;		ps = 204, stack	pointer	= R0
+;
+		scope				;
+tst34:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	000000,000000		; second operand on top
+		.word	000000,000000		; first	operand	on buttom
+		.word	217			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R0		; set up stack pointer
+		nop				;
+		fsub	R0			; floating subtract on the R0 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R0, $sp			; save "stack pointer'  '
+		cmpb	#204, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 204
+		.word	235			; the error number is 235
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack4
+		.word	236			; the error number is 236
+						;
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	237			; the error number is 237
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	240			; the error number is 240
+						;
+end34:		cmpb	#34, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	241			; the error number is 241
+;_____________________________________________________________________________
+;
+; TEST 35:	fsub (LSI-11 floating subtract instruction)
+;		000000.000000 -	177777.177777 =	077777.177777
+;		ps = 000, stack	pointer	= R2
+;
+		scope				;
+tst35:		jsr	R5, pushr		; push 4 words onto R2 stack, set priority
+		.word	177777,177777		; second operand on top
+		.word	000000,000000		; first	operand	on bottom
+		.word	100			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R2		; set up stack pointer
+		nop				;
+		 fsub	R2			; floating subtract on the R2 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R2, $sp			; save "stack pointer"
+		tstb	$psw			; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+		.word	242			; the error number is 242
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R2)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R2) not equal to #stack4
+		.word	243			; the error number is 243
+						;
+		cmp	#077777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 077777
+		.word	244			; the error number is 244.
+						;
+		cmp	#177777, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word	245			; the error number is 245
+						;
+end35:		cmpb	#35, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	246			; the error number is 246
+;_____________________________________________________________________________
+;
+; TEST 36:	fsub (LSI-11 floating subtract instruction)
+;		000000.000000 -	077777.177777 =	177777.177777
+;		ps = 210, stack	pointer	= SP
+;
+		scope				;
+tst36:		jsr	R5, pushs		; push 4 words	onto stack, set	priority
+		.word	077777,177777		; second operand on top
+		.word	000000,000000		; first	operand	on bottom
+		.word	217			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fsub	SP			; floating subtract on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa36			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	247			; the error number is 247
+		br	end36			; skip rest of test
+						;
+tsa36:		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 2t0
+		.word	250			; the error number is 250
+						;
+		cmp	#177777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 177777
+		.word	251			; the error number is 25t
+						;
+		cmp	#177777, ans2		; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word	252			; the error number is 252
+						;
+end36:		cmpb	#36, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	253			; the error number is 253
+;_____________________________________________________________________________
+;
+; TEST 37:	fsub (LSI-11 floating subtract instruction)
+;		000425.052525 -	000252.125253 ==> underflow
+;		ps(on stack) = 212, stack pointer = SP
+;
+		scope				;
+tst37:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	000252,125253		; second operand on top
+		.word	000425,052525		; first	operand	on bottom
+		.word	257			; processor priority leveu
+		.word	isr37, 340		; FIS trap vector
+		nop				;
+		fsub	SP			; floating subtract on the stack
+						;
+rta37:		jsr	PC, pops		; pop the "answer"
+		hlt+2				; FIS trap didn't occure
+		.word	254			; the error number is 254
+		mov	#begin,	SP		; restore the stack pointer
+		br	end37			;
+						;
+isr37:		jsr	PC, popes		; pop all data off the stack
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	isa37			; branch if OK
+		mov	#begin,	SP		; restore the stack pointer
+		hlt				; stack	pointer	fouled up
+		.word	255			; the error number is 255
+		br	end37			; skip rest of test
+						;
+isa37:		cmpb	#340, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 340
+		.word	256			; the error number is 256
+						;
+		cmp	#rta37,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	257			; the error number is 257
+						;
+		cmp	#212, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 212
+		.word	260			; the error number is 260
+						;
+		cmp	#000252, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000252) changed
+		.word	261			; the error number is 261
+						;
+		cmp	#125253, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125253) changed
+		.word	262			; the error number is 262
+						;
+		cmp	#000425, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(000425) changed
+		.word	263			; the error number is 263
+						;
+		cmp	#052525, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(052525) changed
+		.word	264			; the error number is 264
+						;
+end37:		cmpb	#37, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	265			; the error number is 265 up
+;_____________________________________________________________________________
+;
+; TEST 40:	fsub (LSI-11 floating subtract instruction)
+;		077652.125253 -	177452.125252 ==> overflow
+;		ps(on stack) = 002, stack pointer = R3
+;
+		scope				;
+tst40:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
+		.word	177452,125252		; second operand on top
+		.word	077652,125253		; first	operand	on bottom
+		.word	015			; processor priority level
+		.word	isr40, 344		; FIS trap vector
+		mov	#stack0, R3		; set up R3 as stack pointer
+		nop				;
+		fsub	R3			; floating subtract on the R3 stack
+						;
+rta40:		jsr	PC, popr		; pop the "answer"
+		mov	R3, $sp			; save stack pointer (R3)
+		hlt+2				; FIS trap didn't occure
+		.word	266			; the error number is 266
+		br	end40			;
+						;
+isr40:		jsr	PC, poper		; pop all data off the stacks
+		mov	R3, $sp			; save stack pointer (R3)
+		cmpb	#344, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 344
+		.word	267			; the error number is 267
+		cmp	#stack0, $sp		; check	the stack pointer (R3)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R3) not equal to #stack0
+		.word	270			; the error number is 270
+						;
+		cmp	#rta40,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	271			; the error number is 271
+						;
+		cmp	#002, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 002
+		.word	272			; the error number is 272
+						;
+		cmp	#177452, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(177452) changed
+		.word	273			; the error number is 273
+						;
+		cmp	#125252, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125252) changed
+		.word	274			; the error number is 274
+						;
+		cmp	#077652, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(077652) changed
+		.word	275			; the error number is 275
+						;
+		cmp	#125253, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125253) changed
+		.word	276			; the error number is 276
+						;
+end40:		cmpb	#40, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	277			; the error number is 277
+;_____________________________________________________________________________
+;
+; TEST 41:	fmul (LSI-11 floating multiply instruction)
+;		000000.000000 *	000000.000000 =	000000.000000
+;		ps = 004, stack	pointer	= R4
+;
+		scope				;
+tst41:		jsr	R5, pushr		; push 4 words onto R4 stack, set priority
+		.word	000000,000000		; second operand on top
+		.word	000000,000000		; first	operand	on bottom
+		.word	111			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R4		; set up stack pointer
+		nop				;
+		fmul	R4			; floating multiply on the R4 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R4, $sp			; save "stack pointer"
+		cmpb	#004, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 004
+		.word	300			; the error number is 300
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R4)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R4) not equal to #stack4
+		.word	301			; the error number is 301
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	302			; the error number is 302
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	303			; the error number is 303
+						;
+end41:		cmpb	#41, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	304			; the error number is 304
+;_____________________________________________________________________________
+;
+; TEST 42:	fmul (LSI-11 floating multiply instruction)
+;		140200.000000 *	052345.123456 =	152345.123456
+;		ps = 210, stack	pointer	= R2
+;
+		scope				;
+tst42:		jsr	R5, pushr		; push 4 words onto R2 stack, set priority
+		.word	052345,123456		; second operand on top
+		.word	140200,000000		; first	operand	on bottom
+		.word	343			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R2		; set up stack pointer
+		nop				;
+		fmul	R2			; floating multiply on the R2 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R2, $sp			; save "stack pointer"
+		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	305			; the error number is 305
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R2)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R2) not equal to #stack4
+		.word	306			; the error number is 306
+						;
+		cmp	#152345, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 152345
+		.word	307			; the error number is 307
+						;
+		cmp	#123456, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 123456
+		.word	310			; the error number is 310
+						;
+end42:		cmpb	#42, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	311			; the error number is 311
+;_____________________________________________________________________________
+;
+; TEST 43:	fmul (LSI-11 floating multiply instruction)
+;		100125.052525 *	135753.024642 =	000000.000000
+;		ps = 004, stack	pointer	= R5
+;
+		scope				;
+tst43:		jsr	R5, pushr		; push 4 words onto R5 stack, set priority
+		.word	135753,024642		; second operand on top
+		.word	100125,052525		; first	operand	on bottom
+		.word	117			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R5		; set up stack pointer
+		nop				;
+		fmul	R5			; floating multiply on	the R5 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R5, $sp			; save "stack pointer"
+		cmpb	#004, $psw		; check	ps (except T bit) .
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 004
+		.word	312			; the error number is 312
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R5)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R5) not equal to #stack4
+		.word	313			; the error number is 313
+						;
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	314			; the error number is 314
+		tst	ans2			; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	315			; the error number is 315
+end43:		cmpb	#43, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	316			; the error number is 316
+;_____________________________________________________________________________
+;
+; TEST 44:	fmul (LSI-11 floating multiply instruction)
+;		161616.161616 *	000052.125252 =	000000,000000
+;		ps = 204, stack	pointer	= R3
+;
+		scope				;
+tst44:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
+		.word	000052,125252		; second operand on top
+		.word	161616,161616		; first	operand	on bottom
+		.word	217			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R3		; set up stack pointer
+		nop				;
+		fmul	R3			; floating multiply on the R3 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R3, $sp			; save "stack pointer"
+		cmpb	#204, $psw		; check	ps (except T bit)
+		beq	.+6 			; branch if OK
+		hlt				; ps not equal to 204
+		.word	317			; the error number is 317
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R3)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R3) not equal to #stack4
+		.word	320			; the error number is 320
+						;
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	321			; the error number is 321
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	322			; the error number is 322
+						;
+end44:		cmpb	#44, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	323			; the error number is 323
+;_____________________________________________________________________________
+;
+; TEST 45:	fmul (LSI-11 floating multiply instruction)
+;		176452.125252 *	041500.000000 =	177777.177777
+;		ps = 210, stack	pointer	= SP
+;
+		scope				;
+tst45:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	041500,000000		; second operand on top
+		.word	176452,125252		; first	operand	on bottom
+		.word	357			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fmul	SP			; floating multiply on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa45			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled	up
+		.word	324			; the error number is 324
+		br	end45			; skip rest of test
+						;
+tsa45:		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	325			; the error number is 325
+						;
+		cmp	#177777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 177777
+		.word	326			; the error number is 326
+						;
+		cmp	#177777, ans2		; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word	327			; the error number is 327
+						;
+end45:		cmpb	#45, $testn		; check	the test number
+		beq	.+6			; branch if uk
+		hlt				; wrong	test, PC must have fouled up
+		.word	330			; the error number is 330
+;_____________________________________________________________________________
+;
+; TEST 46:	fmul (LSI-11 floating multiply instruction)
+;		124252.125252 *	114100.000001 =	000200.000000
+;		ps = 200, stack	pointer	= R1
+;
+		scope				;
+tst46:		jsr	R5, pushr		; push 4 words onto R1 stack, set prioritv
+		.word	114100,000001		; second operand on top
+		.word	124252,125252		; first	operand	on bottom
+		.word	200			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R1		; set up stack pointer
+		nop				;
+		fmul	R1			; floating multiply on the R1 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R1, $sp			; save "stack pointer"
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	331			; the error number is 331
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack4
+		.word	332			; the error number is 332
+						;
+		cmp	#000200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000200
+		.word	333			; the error number is 333
+						;
+		tst	ans2			; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	334			; the error number is 334
+						;
+end46:		cmpb	#46, $testn$		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have touled up
+		.word	335			; the error number is 335
+;_____________________________________________________________________________
+;
+; TEST 47:	fsub (LSI-11 floating subtract instruction)
+;		104000.105004 -	104000.104000 =	100401.000000
+;		ps =	210, stack pointer = PC
+;
+		scope				;
+tst47:		jsr	R5, push7		; push 4 words onto stack, set priority
+		.word	stk47			; top of stack
+		.word	104000,104000		; second operand on top
+		.word	104000,105004		; first	cpe rand on bottom
+		.word	252			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fsub	PC			; floating subtract on following 4 words
+						;
+stk47:		.word	104000			; should contain 104000
+		.word	104000			; should contain 104000
+		.word	104000			; before fsub 104000, after 100401
+		.word	105004			; before fsub 105004, after 000000
+						;
+		jsr	PC, pop7		; pop the answer
+		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	336			; the error number is 336
+						;
+		cmp	#104000, ans1		; check	first half of input data (stk47)
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 104000
+		.word	337			; the error number is 337
+						;
+		cmp	#104000, ans2		; check	second	half of	input data2 (stk47+2)
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 104000
+		.word	340			; the error number is 340
+						;
+		cmp	#100401, ans3		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans3 not equal to 100401
+		.word	341			; the error number is 341
+						;
+		tst	ans4			; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans4 not equal to 000000
+		.word	342			; the error number is 342
+						;
+end47:		cmpb	#47, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up.
+		.word	343			; the error number is 343
+;_____________________________________________________________________________
+;
+; TEST 50:	fmul (LSI-11 floating multiply instruction)
+;		134600.073601 *	104000.	104000 = 000401.000000
+;		ps = 200, stack	pointer	= PC
+;
+		scope				;
+tst50:		jsr	R5, push7		; push 4 words onto stack, set prioritv
+		.word	stk50			; top of stack
+		.word	104000,104000		; second operand on top
+		.word	134600,073601		; first	operand	on bottom
+		.word	246			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fmul	PC			; floating multiply on following 4 words
+						;
+stk50:		.word	104000			; should contain 104000
+		.word	104000			; should contain 104000
+		.word	134600			; before fmul 134600, after 000401
+		.word	073601			; before fmul 073601, after 000000
+						;
+		jsr	PC, pop7		; pop the answer
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	344			; the error number is 344
+						;
+		cmp	#104000, ans1		; check	first half of input data (stk50)
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 104000
+		.word	345			; the error number is 345
+						;
+		cmp	#104000, ans2		; check	second half of input data (stk50+2)
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 104000
+		.word	346			; the error number is 346
+						;
+		cmp	#000401, ans3		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans3 not equal to 000401
+		.word	347			; the error number is 347
+						;
+		tst	ans4			; check	second	half of	answer
+		beq	.+6			; branch if OK
+		hlt +4				; ans4 not equal to 000000
+		.word	350			; the error number is 350
+						;
+end50:		cmpb	#50, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled u)p.
+		.word	351			; the error number is 351
+;_____________________________________________________________________________
+;
+; TEST 51:	fmul (LSI-11 floating multiply instruction)
+;		024252.125252 *	114100.000000 ==> underflow
+;		ps(on stack) = 212, stack pointer = R0
+;
+		scope				;
+tst51:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	114100,000000		; second operand on top
+		.word	024252,125252		; first	cperand	on bottom
+		.word	305			; processor priority level
+		.word	isr51,	057		; FIS trap vector
+		mov	#stack0, R0		; set up R0 as stack pointer
+		nop				;
+		fmul	R0			; floating multiply on the R0 stack
+						;
+rta51:		jsr	PC, popr		; pop the "answer"
+		mov	R0, $sp			; save stack pointer (R0)
+		hlt+2				; FIS trap didn't occure
+		.word	352			; the error number is 352
+		br	end51			;
+						;
+isr51:		jsr	PC, poper		; pop all data off the stacks
+		mov	R0, $sp			; save stack pointer (R0)
+		cmpb	#057, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 057
+		.word	353			; the error number is 353
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack0
+		.word	354			; the error number is 354
+						;
+		cmp	#rta51,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	355			; the error number is 355
+						;
+		cmp	#212, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 212
+		.word	356			; the error number is 356
+						;
+		cmp	#114100, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(114100) changed
+		.word	357			; the error number is 357
+						;
+		tst	ans4			; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000000) changed
+		.word	360			; the error number is 360
+						;
+		cmp	#024252, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(024252) changed
+		.word	361			; the error number is 361
+						;
+		cmp	#125252, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125252) changed
+		.word	362			; the error number is 362
+						;
+end51:		cmpb	#51, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	363			; the error number is 363
+;_____________________________________________________________________________
+;
+; TEST 52:	fmul (LSI-11 floating multiply instruction)
+;		076452.125252 *	041500.000001 ==> overflow
+;		ps(on stack) = 002, stack pointer =	SP
+;
+		scope				;
+tst52:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	041500,000001		; second operand on top
+		.word	076452,125252		; first	operand	on bottom
+		.word	105			; processor priority level
+		.word	isr52, 357		; FIS trap vector
+		nop				;
+		fmul	SP			; floating multiply on the stack
+						;
+rta52:		jsr	PC, pops		; pop the "answer"
+		hlt+2				; FIS trap didn't occure
+		.word	364			; the error number is 364
+		mov	#begin,	SP		; restore the stack pointer
+		br	end52			;
+						;
+isr52:		jsr	PC, popes		; pop all data off the stack
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	isa52			; branch if OK
+		mov	#begin,	SP		; restore the stack pointer
+		hlt				; stack	pointer	fouled up
+		.word	365			; the error number is 365
+		br	end52			; skip rest of test
+						;
+isa52:		cmpb	#357, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 357
+		.word	366			; the error number is 366
+		cmp	#rta52,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	367			; the error number is 367
+						;
+		cmp	#002, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 002
+		.word	370			; the error number is 370
+						;
+		cmp	#041500, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(041500) changed
+		.word	371			; the error number is 371
+						;
+		cmp	#000001, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000001) changed
+		.word	372			; the error number is 372
+						;
+		cmp	#076452, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(076452) changed
+		.word	373			; the error number is 373
+						;
+		cmp	#125252, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125252) changed
+		.word	374			; the error number is 374
+						;
+end52:		cmpb	#52, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	375			; the error number is 375
+;_____________________________________________________________________________
+;
+; TEST 53:	fdiv (LSI-11 floating divide instruction)
+;		167452.125251 /	127652.125252 =	077777.177776
+;		ps = 000, stack	pointer	= R0
+;
+		scope				;
+tst53:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	127652,125252		; second operand on top
+		.word	167452,125251		; first	operand	on bottom
+		.word	111			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R0		; sheck	stack pointer
+		nop				;
+		fdiv	R0			; floating divide on the R0 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R0, $sp			; save "stack pointer"
+		tstb	$psw			; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 000
+		.word	376			; the error number is 376
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack4
+		.word	377			; the error number is 377
+						;
+		cmp	#077777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 077777
+		.word	400			; the error number is 400
+						;
+		cmp	#177776, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177776
+		.word	401			; the error number is 401
+end53:		cmpb	#53, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	402			; the error number is 402
+;_____________________________________________________________________________
+;
+; TEST 54:	fdiv (LSI-11 floating divide	instruction)
+;		167452.125252 /	027652.125253 =	177777.177777
+;		ps = 210, stack	pointer	= SP
+;
+		scope				;
+tst54:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	027652,125253		; second operand on top
+		.word	167452,125252		; first	operand	on bottom
+		.word	300			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fdiv	SP			; floating divide on the stack
+						;
+		jsr	PC, pops		; pop the answer
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	tsa54			; branch if OK
+		mov	#begin,	SP		; restore stack	pointer
+		hlt				; stack	pointer	fouled up
+		.word	403			; the error number is 403
+		br	end54			; skip rest of test
+						;
+tsa54:		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	404			; the error number is 404
+						;
+		cmp	#177777, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 177777
+		.word	405			; the error nu#^er is 405
+						;
+		cmp	#177777, ans2		; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 177777
+		.word	406			; the error number is 406
+						;
+end54:		cmpb	#54, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	407			; the error number is 407
+;_____________________________________________________________________________
+;
+; TEST 55:	fdiv (LSI-tt floating divide instruction)
+;		125252.125252 /	065252.125252 =	100200.000000
+;		ps = 210, stack	pointer	=	R2
+;
+		scope				;
+tst55:		jsr	R5, pushr		; push 4 words onto R2 stack, set priority
+		.word	065252,125252		; second operand on top
+		.word	125252,125252		; first	operand	on bottom
+		.word	217			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R2		; sheck	stack pointer
+		nop				;
+		fdiv	R2			; floating divide on the R2 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R2, $sp			; save "stack pointer"
+		cmpb	#210, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 210
+		.word	410			; the error number is 410
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R2)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R2) not equal to #stack4
+		.word	411			; the error number is 411
+						;
+		cmp	#100200, ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 100200
+		.word	412			; the error number is 412
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	413			; the error number is 413
+						;
+end55:		cmpb	#55, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	414			; the error number is 414
+;_____________________________________________________________________________
+;
+; TEST 56:	fdiv (LSI-11 floating divide instruction)
+;		000000.000000 /	140670.123456 =	000000.000000
+;		ps = 004, stack	pointer	= R3
+;
+		scope				;
+tst56:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
+		.word	140670,123456		; second operand on top
+		.word	000000,000000		; first	operand	on bottom
+		.word	105			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R3		; sheck	stack pointer
+		nop				;
+		fdiv	R3			; floating divide on the R3 stack
+						;
+		jsr	PC, popr		; pop the answer
+		mov	R3, $sp			; save "stack pointer"
+		cmpb	#004, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 004
+		.word	415			; the error number is 415
+						;
+		cmp	#stack4, $sp		; check	the stack pointer (R3)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R3) not equal to #stack4
+		.word	416			; the error number is 416
+						;
+		tst	ans1			; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 000000
+		.word	417			; the error number is 4t7
+						;
+		tst	ans2			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 000000
+		.word	420			; the error number is 420
+						;
+end56:		cmpb	#56, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	421			; the error number is 421
+;_____________________________________________________________________________
+;
+; TEST 57:	fdiv (LSI-11 floating divide instruction)
+;		102500.146000 /	104000.104000 =	036700.000000
+;		ps = 200, stack	pointer	= PC
+;
+tst57:		scope				;
+		jsr	R5, push7		; push 4 words onto stack, set priority
+		.word	stk57			; top of stack
+		.word	104000,104000		; second operand on top
+		.word	102500,146000		; first	operand	on bottom
+		.word	357			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		nop				;
+		fdiv	PC			; floating divide on following 4 words
+stk57:		.word	104000			; should contain 104000
+		.word	104000			; should contain 104000
+		.word	102500			; before fdiv 102500, after 036700
+		.word	146000			; before fdiv 146000, after 000000
+						;
+		jsr	PC, pop7		; pop the answer
+		cmpb	#200, $psw		; check	ps (except T bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 200
+		.word	422			; the error number is 422
+						;
+		cmp	#104000, ans1		; check	first half of input data (stk57)
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 104000
+		.word	423			; the error number is 423
+						;
+		cmp	#104000, ans2		; check	second half of input data (stk57+2)
+		beq	.+6			; branch if OK
+		hlt+2				; ans2 not equal to 104000
+		.word	424			; the error number is 424
+						;
+		cmp	#036700, ans3		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans3 not equal to 036700
+		.word	425			; the error number is 425
+						;
+		tst	ans4			; check	second half of answer
+		beq	.+6			; branch if OK
+		hlt+4				; ans4 not equal to 000000
+		.word	426			; the error number is 426
+						;
+end57:		cmpb	#57, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	427			; the error ncmber is 427
+;_____________________________________________________________________________
+;
+; TEST 60:	fdiv (LSI-11 floating divide instruction)
+;		025252.125251 /	065252.125252 ==> underflow
+;		ps(on stack) = 012, stack pointer = R1
+;
+		scope				;
+tst60:		jsr	R5, pushr		; push 4 words onto R1 stack, set priority
+		.word	065252,125252		; second operand on top
+		.word	025252,125251		; first	operand	on bottom
+		.word	015			; processor priority level
+		.word	isr60, 300		; FIS trap vector
+		mov	#stack0, R1		; set up R1 as stack pointer
+		nop				;
+		fdiv	R1			; floating divide on the R1 stack
+						;
+rta60:		jsr	PC, popr		; pop the "answer"
+		mov	R1, $sp			; save stack pointer (R1)
+		hlt+2				; FIS trap didn't occure
+		.word	430			; the error number is 430
+		br	end60			;
+						;
+isr60:		jsr	PC, poper		; pop all data off the stacks
+		mov	R1, $sp			; save stack pointer (R1)
+		cmpb	#300, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 300
+		.word	431			; the error number is 431
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack0
+		.word	432			; the error number is 432
+						;
+		cmp	#rta60,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	433			; the error number is 433
+						;
+		cmp	#012, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 012
+		.word	434			; the error number is 434
+						;
+		cmp	#065252, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(065252) changed
+		.word	435			; the error number is 435
+						;
+		cmp	#125252, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125252) changed
+		.word	436			; the error number is 436
+						;
+		cmp	#025252, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(025252) changed
+		.word	437			; the error number is 437
+						;
+		cmp	#125251, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125251) changed
+		.word	440			; the error number is 440
+						;
+end60:		cmpb	#60, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have touled up
+		.word	441			; the error number is 441
+;_____________________________________________________________________________
+;
+; TEST 61:	fdiv (LSI-11 floating divide instruction)
+;		067452.125252 /	127652.125252 ==> overflow
+;		ps (on stack) =	202, stack pointer = R4
+;
+		scope				;
+tst61:		jsr	R5, pushr		; push 4 words onto R4 stack, set priority
+		.word	127652,125252		; second operand on top
+		.word	067452,125252		; first	operand	on bottom
+		.word	242			; processor priority ueveu
+		.word	isr61, 357		; FIS trap vector
+		mov	#stack0, R4		; set up R4 as stack pointer
+		nop				;
+		fdiv	R4			; floating divide on the R4 stack
+						;
+rta61:		jsr	PC, popr		; pop the "answer"
+		mov	R4, $sp			; save stack pointer (R4)
+		hlt+2				; FIS trap didn't occure
+		.word	442			; the error number is 442
+		br	end61			;
+						;
+isr61:		jsr	PC, poper		; pop all data off the stacks
+		mov	R4, $sp			; save stack pointer (R4)
+		cmpb	#357, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after fis trap not	equal to 357
+		.word	443			; the error dumber is 443
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R4)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R4) not equal to #stack0
+		.word	444			; the error number is 444
+						;
+		cmp	#rta61,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	445			; the error number is 445
+		cmp	#202, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 202
+		.word	446			; the error number is 446
+						;
+		cmp	#127652, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(127652) changed
+		.word	447			; the error number is 447
+						;
+		cmp	#125252, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125252) changed
+		.word	450			; the error number is 450
+						;
+		cmp	#067452, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(067452) changed
+		.word	451			; the error number is 45t
+						;
+		cmp	#125252, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(125252) changed
+		.word	452			; the error number is 452
+						;
+end61:		cmpb	#61, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	453			; the error number is 453
+;_____________________________________________________________________________
+;
+; TEST 62:	fdiv (LSI-11 floating divide instruction)
+;		052525.052525 /	100125.125252 ==> divide by zero
+;		ps(on stack) = 013, stack pointer = R5
+;
+		scope				;
+tst62:		jsr	R5, pushr		; push 4 words onto R5 stack, set priority
+		.word	100125,125252		; second operand on top
+		.word	052525,052525		; first	operand	on bottom
+		.word	047			; processor priority level
+		.word	isr62, 113		; FIS trap vector
+		mov	#stack0, R5		; set up R5 as stack pointer
+		nop				;
+		fdiv	R5			; floating divide on the R5 stack
+						;
+rta62:		jsr	PC, popr		; pop the "answer"
+		mov	R5, $sp			; save stack pointer (R5)
+		hlt+2				; FIS trap didn't occure
+		.word	454			; the error number is 454
+		br	end62			;
+						;
+isr62:		jsr	PC, poper		; pop all data off the stacks
+		mov	R5, $sp			; save stack pointer (R5)
+		cmpb	#113, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 113
+		.word	455			; the error number is 455
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R5)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R5) not equal to #stack0
+		.word	456			; the error number is 456
+						;
+		cmp	#rta62,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	457			; the error number is 457
+						;
+		cmp	#013, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 013
+		.word	460			; the error number is 460
+						;
+		cmp	#100125, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(100125) changed
+		.word	461			; the error number is 461
+						;
+		cmp	#125252, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(125252) changed
+		.word	462			; the error number is 462
+						;
+		cmp	#052525, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(052525) changed
+		.word	463			; the error number is 463
+						;
+		cmp	#052525, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(052525) changed
+		.word	464			; the error number is 464
+						;
+end62:		cmpb	#62, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	465			; the error nu#tber is 465
+;_____________________________________________________________________________
+;
+; TEST 63:	fdiv (LSI-11 floating divide instruction)
+;		100052.052525 /	000006.123456 ==> divide by zero
+;		ps(on stack) = 2t3, stack pointer = SP
+;
+		scope				;
+tst63:		jsr	R5, pushs		; push 4 words onto stack, set priority
+		.word	000006,123456		; second operand on top
+		.word	100052,052525		; first	cpe rand on bottom
+		.word	357			; processor priority level
+		.word	isr63, 311		; FIS trap vector
+		nop				;
+		fdiv	SP			; floating divide on the stack
+						;
+rta63:		jsr	PC, pops		; pop the "answer"
+		hlt+2				; FIS trap didn't occure
+		.word	466			; the error number is 466
+		mov	#begin,	SP		; restore the stack pointer
+		br	end63			;
+						;
+isr63:		jsr	PC, popes		; pop all data off the stack
+		cmp	#begin,	SP		; check	the stack pointer
+		beq	isa63			; branch if OK
+		mov	#begin,	SP		; restore the stack pointer
+		hlt				; stack	pointer	fouled	up
+		.word	467			; the error number is 467
+		br	end63			; skip rest of test
+						;
+isa63:		cmpb	#311, $psw		; check	ps after FIS trap
+		beq	.+6			; branch if OK
+		hlt				; ps after FIS trap not	equal to 311
+		.word	470			; the error number is 470
+						;
+		cmp	#rta63,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	471			; the error number is 471
+						;
+		cmp	#213, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 213
+		.word	472			; the error number is 472
+						;
+		cmp	#000006	,ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000006) changed
+		.word	473			; the error number is 473
+						;
+		cmp	#123456, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		 hlt	+4			; data on stack	(123456) changed
+		.word	474			; the error number is 474
+						;
+		cmp	#100052, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt +6				; data on stack	(100052) changed
+		.word	475			; the error number is 475
+						;
+		cmp	#052525, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt +6				; data on stack	(052525) changed
+		.word	476			; the error number is 476
+						;
+end63:		cmpb	#63, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	477			; the error number is 477
+;_____________________________________________________________________________
+;
+; TEST 64:	test all instruction together
+;		   032107.065432 * 045670.123456
+; 134343.107070	+ ------------------------------- = 137201.115230
+;		  (135252.125252 - 040616.016161)
+;		ps=010,	stack pointer=R4
+;
+		scope				;
+tst64:		mov	#stak10, R4		; set stack pointer
+		mov	#107070, -(R4)		; load data onto stack
+		mov	#134343, -(R4)		;
+		mov	#065432, -(R4)		;
+		mov	#032107, -(R4)		;
+		mov	#123456, -(R4)		;
+		mov	#045670, -(R4)		;
+		mov	#125252, -(R4)		;
+		mov	#135252, -(R4)		;
+		mov	#016161, -(R4)		;
+		mov	#040616, -(R4)		;
+		mtps	#144			; set processor	status
+
+		nop
+		fsub	R4	; 135252.125252-040616.016161=140616.017434
+		fdiv	R4	; 045670.123456/140616.017434=145246.047065
+		fmul	R4	; 032107.065432*145246.047065=137201.106137
+		fadd	R4	; 134343.107070+137201.106137=137201.115230
+
+		mfps	$psw			; save final ps
+		bic	#20, $psw		; clr T-bit
+		mov	(R4)+, ans1		; save first half of answer
+		mov	(R4)+, ans2		; save second half of answer
+		mov	R4, $sp			; save stack pointer
+		cmpb	#010, $psw		; check	ps (except T-bit)
+		beq	.+6			; branch if OK
+		hlt				; ps not equal to 010
+		.word	500			; the error number is 500
+						;
+		cmp	#stak10, $sp		; check	the stack pointer (R4)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R4) not equal to the
+		.word	501			; the error number is 501
+						; address of stak10
+						;
+		cmp	#137201	,ans1		; check	first half of answer
+		beq	.+6			; branch if OK
+		hlt+2				; ans1 not equal to 137201
+		.word	502			; the error number is 502
+						;
+		cmp	#115230, ans2		; check	second half of answer
+		beq	.+6			; branch if	OK
+		hlt+2				; ans2 not equal to 115230
+		.word	503			; the error number is 503
+						;
+end64:		cmpb	#64, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	504			; the error number is 504
+;_____________________________________________________________________________
+;
+; TEST 65:	test that stack	pointer	address	error causes abort
+;		instruction = fadd, stack pointer = R2
+;
+		scope				;
+tst65:		mov	#isr65,	@#4		; set up address trap vector
+		mov	#340, @#6		;
+		jsr	R5, pushr		; push 4 words onto R2 stack, set priority
+		.word	070707,016161		; second operand on top
+		.word	146314,143434		; first	cperand	on bottom
+		.word	143			; processor prioritv level
+		.word	traper,	340		; FIS trap vector
+		mtps	#143			; set processor	status
+		mov	#177777, R2		; set up R2 as stack pinter
+		nop				;
+		fadd	R2			; floating add on the R2 stack
+						;
+rta65:		jsr	PC, popr		; pop the "answer"
+		mov	R2, $sp			; save stack pointer (R2)
+		hlt+2				; FIS trap didn't occure
+		.word	505			; the error number is 505
+		br	end65			;
+						;
+isr65:		jsr	PC, poper		; pop all data off the stacks
+		mov	R2, $sp			; save stack pointer (R2)
+		cmpb	#340, $psw		; check	ps after adr. err. trap
+		beq	.+6			; branch if OK
+		hlt				; ps after trap	not equal to 340
+		.word	506			; the error number is 506
+		cmp	#177777, $sp		; check	the stack pointer (R2)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R2) not equal to #177777
+		.word	507			; the error number is 507
+						;
+		cmp	#rta65,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	510			; the error number is 510
+						;
+		cmp	#151, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 151
+		.word	511			; the error number is 511
+						;
+		cmp	#070707, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(070707) changed
+		.word	512			; the error number is 512
+						;
+		cmp	#016161, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(016161) changed
+		.word	513			; the error number is 513
+						;
+		cmp	#146314, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(146314) changed
+		.word	514			; the error number is 514
+						;
+		cmp	#143434, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(143434) changed
+		.word	515			; the error number is 515
+						;
+end65:		cmpb	#65, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	516			; the error number is 516
+;_____________________________________________________________________________
+;
+; TEST 66:	test that stack	pointer	address	error causes abort
+;		instruction = fmul, stack pointer = R5
+;
+		scope				;
+tst66:		mov	#isr66,	@#4		; set up address trap vector
+		mov	#340, @#6		; push 4 words onto R5 stack, set priority
+		jsr	R5, pushr		;
+		.word	065432,123456		; second operand on top
+		.word	037654,032107		; first	operand	on bottom
+		.word	202			; processor priori tv level
+		.word	traper,	340		; FIS trap vector
+		mtps	#202			; set processor	status
+		mov	#170000, R5		; set up R5 as stack pointer
+		nop				;
+		fmul	R5			; floating multiply on the R5 stack
+						;
+rta66:		mfps	$psw			; save the psw
+		mov	R5, $sp			;
+		hlt				; FIS trap didn't occure
+		.word	517			; the error number is 517
+		br	end66			;
+						;
+isr66:		jsr	PC, poper		; pop all data off the stacks
+		mov	R5, $sp			; save stack pointer (R5)
+		cmpb	#340, $psw		; check	ps after adr. err. trap
+		beq	.+6			; branch if OK
+		hlt				; ps after trap	not equal to 340
+		.word	520			; the error number is 520
+						;
+		cmp	#170000, $sp		; check	the stack pointer (R5)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R5) not equal to #160000
+		.word	521			; the error number is 52t
+						;
+		cmp	#rta66,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	522			; the error number is 522
+						;
+		cmp	#210, ans2		; check	ps before FIS trap
+		beq	.+6			; branch if OK
+		hlt+2				; ps at	FIS trap time not 210
+		.word	523			; the error number is 523
+						;
+end66:		cmpb	#66, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	524			; test error number is 524
+						;
+		mov	#6, @#4			; restore time-out vector
+		clr	@#6			;
+		mov	#3, times		; reduce number	of iterations
+;_____________________________________________________________________________
+;
+; TEST 67:	test that FIS aborts properly when interrupted
+;		035700.143235 +	000177.134543 =	035700.143235
+;		ps = .ps, stack	pointer	= R1
+;
+		scope				;
+tst67:		bitb	#40, @#$envm		;
+		bne	end67+2			; exit this test if bit	5 of $envm is high
+		mov	@#ttyout, R4		;
+		mov	#isr67,	(R4)+		; set up teleprinter interrupt vector
+		mov	#340, (R4)		;
+		bit	#sw11, @#$swreg		; test for iterations
+		bne	1$			; branch to avoid hang up
+		type	,return+1		; return+1 can be replaced with	the address 0
+						; to type carriage return, line	feed
+		mov	#.+6, lad$		; reset	loop address
+1$:		jsr	R5, pushr		; push 4 words onto R1 stack, set priority
+		.word	000177,134543		; second operand on top
+		.word	035700,143235		; first	operand	on bottom
+		.word	143			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R1		; set up stack pointer
+		mov	#60, temp		; initialize counter for FIS interrupts
+		movb	#100, @$tps		; set TTY interrupt enable
+						;
+rta67:		fadd	R1			; floating add on the stack
+		cmp	-(R1), -(R1)		; reset	the stack pointer for next pass
+		br	rta67			; repeat until interrupted
+						;
+isr67:		clrb	@$tps			; clear	the interrupt enable
+		cmp	#rta67,	(SP)		; check	if interrupt at	FIS instr.
+		beq	3$			; branch if it did
+		cmp	#rta67,	4(SP)		; check	for interrupt with T-bit set
+		beq	4$			; branch if it did
+		dec	@#temp			; did interrupts 0ccur temp # of times
+		beq	end67			; if yes then skip to end of this test
+1$:		movb	#15, @$tpb		; continue to type "cr"
+2$:		tstb	@$tps			; loop here untill done	bit comes on
+		bpl	2$			;
+		movb	#15, @$tpb		; type another "cr"
+		mov	#100, @$tps		; set TTY interrupt enable
+		rti				;
+						;
+3$:		jsr	PC, poper		; save all the stuff on	the stack
+		br	5$			;
+4$:		cmp	(SP)+, (SP)+		; reset	the stack to ignore the	trace trap
+		jsr	PC, poper1		; pop all the stuff off	the stack
+5$:		tst	-(SP)			; save psw for future rti
+		mov	#rta67,	-(SP)		; place	the rti	address	back in	SP
+		cmp	#begin-4, SP		; check	the stack pointer
+		beq	6$			; branch if OK
+		mov	SP, $sp			; save for typing
+		mov	#begin-4, SP		; restore the stack pointer
+		hlt				; stack	pointer	f0uued up
+		.word	525			; the error number is 525
+		br	end67			; skip rest of test
+						;
+6$:		mov	R1, $sp			; save stack pointer
+		cmpb	#344, $psw		; check	ps after interrupt
+		beq	.+6			; branch if OK
+		hlt				; ps after interrupt not equal to lvla
+		.word	526			; the error number is 526
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R1)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R1) not equal to #stack0
+		.word	527			; the error number is 527
+						;
+		cmp	#rta67,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	530			; the error number is 530
+						;
+		cmp	#000177, ans3		; check	data from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000177) changed
+		.word	531			; the error number is 531
+						;
+		cmp	#134543, ans4		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(134543) changed
+		.word	532			; the error number is 532
+						;
+		cmp	#035700, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(035700) changed
+		.word	533			; the error number is 533
+						;
+		cmp	#143235, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(143235) changed
+		.word	534			; the error number is 534
+						;
+		dec	temp			; stay in the loop for 30 times
+		bne	1$			;
+end67:		cmp	(SP)+, (SP)+		; restore stack	pointer	to 500
+		cmpb	#67, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	535			; the error number is 535
+		mtps	#340			;
+;_____________________________________________________________________________
+;
+; TEST 70:	test that FIS aborts properly when interrupted
+;		107070.070707 *	040200.000000 =	107070.070707
+;		ps = .ps, stack	pointer	= R0
+;
+		scope				;
+tst70:		bitb	#40, @#$envm		;
+		bne	end70+2			; exit this test if bit	5 of $envm is high
+		mov	@#ttyout, R4		; set up teleprinter interrupt vector
+		mov	#isr70,	(R4)+		;
+		mov	#340, (R4)		; test for iterations
+		bit	#sw11, @#$swreg		;
+		bne	1$			; branch to avoid hang up
+		type	,return+1		; return+1 can be replaced with	the address 0
+						; to type carriage return, line	feed
+		mov	#.+6, lad$		; reset	loop	address
+1$:		jsr	R5, pushr		; push 4 words onto R0 stack, set priority
+		.word	040200,000000		; second operand on top
+		.word	107070,070707		; first	operand	on bottom
+		.word	100			; processor priority level
+		.word	traper,	340		; FIS trap vector
+		mov	#stack0, R0		; set up stack pointer
+		mov	#60, temp		; initialize counter for FIS interrupts
+		movb	#100, @$tps		; set TTY interrupt enable
+						; floating multiply on the stack
+rta70:		fmul	R0			;
+		cmp	-(R0), -(R0)		; reset	the stack pointer for next pass
+		br	rta70			; repeat until interrupted
+						;
+isr70:		clrb	@$tps			; clear	the interrupt enable
+		cmp	#rta70,	(SP)		; check	if interrupt at	FIS instr.
+		beq	3$			; branch if it did
+		cmp	#rta70,	4(SP)		; check	for interrupt with t-bit set
+		beq	4$			; branch if it did
+		dec	@#temp			; did interrupts occur temp # of times
+		beq	end70			; if yes then skip to end of this test
+1$:		movb	#15, @$tpb		; continue to type "cr"
+2$:		tstb	@$tps			; loop here untill done	bit comes on
+		bpl	2$			; type another "cr"
+		movb	#15, @$tpb		;
+		mov	#100, @$tps		; set TTY interrupt enable
+		rti				;
+						;
+3$:		jsr	PC, poper		; save all the stuff on	the stack
+		br	5$			;
+						;
+4$:		cmp	(SP)+, (SP)+		; reset	the stack to ignore the	trace trap
+		jsr	PC, poper1		; pop all the stuff off	the stack
+5$:		tst	-(SP)			; save psw for future rti
+		mov	#rta70,	-(SP)		; place	the rti	address	back in	SP
+		cmp	#begin-4, SP		; check	the stack pointer
+		beq	6$			; branch if OK
+		mov	SP, $sp			; save for typing
+		mov	#begin-4, SP		; restore the stack mincer
+		hlt				; stack	pointer	fouled	up
+		.word	536			; the error number is 536
+		br	end70			; skip rest of test
+						;
+6$:		mov	R0, $sp			; save stack pointer
+		cmpb	#344, $psw		; check	ps after interrupt
+		beq	.+6			; branch if OK
+		hlt				; ps after interupt not	equal to uvla
+		.word	537			; the error number is 537
+						;
+		cmp	#stack0, $sp		; check	the stack pointer (R0)
+		beq	.+6			; branch if OK
+		hlt				; stack	pointer	(R0) not equal to #stack0
+		.word	540			; the error number is 540
+						;
+		cmp	#rta70,	ans1		; check	FIS trap return	address
+		beq	.+6			; branch if OK
+		hlt+1				; FIS trap at wrong address
+		.word	541			; the error number is 541
+						;
+		cmp	#040200, ans3		; check	dafa from the stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(040200) changed
+		.word	542			; the error number is 542
+						;
+		tst	ans4			; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+4				; data on stack	(000000) changed
+		.word	543			; the error number is 543
+						;
+		cmp	#107070, ans5		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(107070) changed
+		.word	544			; the error number is 544
+						;
+		cmp	#070707, ans6		; check	data from stack
+		beq	.+6			; branch if OK
+		hlt+6				; data on stack	(070707) changed
+		.word	545			; the error number is 545
+						;
+		dec	temp			; stay in the loop for 30 times
+		bne	1$			;
+						;
+end70:		cmp	(SP)+, (SP)+		; restore stack	pointer	to 500
+		cmpb	#70, $testn		; check	the test number
+		beq	.+6			; branch if OK
+		hlt				; wrong	test, PC must have fouled up
+		.word	546			; the error number is 546
+		mtps	#340			;
+		mov	#377, times		; set number of	iterations to 377
+		mov	R4, @ttyout		; restore TTY interrupt	vector
+		clr	(R4)			;
+;_____________________________________________________________________________
+;
+		.sbttl end of pass routine
+
+; - increment the pass number ($pass)
+; - type "END PASS"
+; - if theres a	monitor	go to it
+; - if there isn't jump	to begin
+; - if it is desired to	have a bell indicate the "end of pass" location
+;   $endmg can be changed to 7.
+;
+$eop:		scope				;
+		inc	$pass			; increment the	pass number
+		bic	#100000, $pass		; don't	allow a	neg. number
+		dec	(PC)+			; loop?
+$eopct:		.word	1			;
+		bgt	$doagn			; yes
+		mov	(PC)+,@(PC)+		; restore counter
+$endct:		.word	1			;
+		.word	$eopct			;
+		type	,$endmg			; type "END PASS"
+						;
+$get42:		mov	@#42, R0		; get monitor address
+		beq	$doagn			; branch if no monitor
+		reset				; clear	the world
+$endad:		jsr	PC, (R0)		; go to	monitor
+		nop				; save room
+		nop				; for
+		nop				; ACT-11
+$doagn:						;
+		jmp	@#begin			; return
+$endmg:		.ascii	<15><12>/END PASS/	;
+$enull:		.byte	-1,-1,0			; null character string
+		.even				;
+;_____________________________________________________________________________
+;
+;		.sbttl	scope routine
+;
+scope$:		bit	#sw08, @#$swreg		; kill ldub or loop on spec. test
+		beq	1$			;
+		cmpb	@#$swreg, $testn	; on right test? *sw7-0*
+		beq	over$			;
+1$:		bit	#sw14, @#$swreg		; loop on test
+		bne	kit$			;
+		bit	#sw11, @#$swreg		; kill iterations
+		beq	svlad$			;
+		tstb	$icnt			;
+		beq	2$			; branch if first
+		cmpb	times, $icnt		; done?
+		bne	kit$			; branch if not
+2$:		movb	#1, $icnt		; first	iteration
+svlad$:		incb	$testn			; count	test numbers
+		mov	(SP), lad$		; save loop address
+		rti				; return
+						;
+kit$:		incb	$icnt			;
+over$:		tst	lad$			; first	one?
+		beq	svlad$			;
+		mov	lad$, (SP)		; fudge	return address
+		rti				; fixes	ps
+;_____________________________________________________________________________
+;
+; Subroutine to	push 4 words onto the stack
+;
+pushs:		tst	(SP)+			; pop stack by 1
+		add	#10, R5			;
+		mov	-(R5), -(SP)		; point	to end of data
+		mov	-(R5), -(SP)		; push data onto the stack
+		mov	-(R5), -(SP)		; push data onto the stack
+		mov	-(R5), -(SP)		; push data onto the stack
+		add	#10, R5			; point	to end of data
+		mtps	(R5)+			; set the processor status
+		inc	R5			;
+		mov	(R5)+, @fisvec 		; set up FIS error trap	vector
+		mov	(R5)+, @fislvl 		; trap status
+		jmp	(R5)			; return
+;_____________________________________________________________________________
+;
+; Subroutine to	pop 2 words off	the stack
+; also saves the processor status word (except T bit)
+;
+pops:		mfps	$psw			; save processor status	word
+		bic	#20, $psw		; clear	T-bit
+		mov	(SP)+, R4		; save rts address
+		mov	(SP)+, ans1		; save the answer
+		mov	(SP)+, ans2		;
+		mov	SP, $sp			; save the stack pointer
+		jmp	(R4)			; return
+;_____________________________________________________________________________
+;
+; Subroutne to pop 6 words off the stack.
+; the first two	were put on by the error trap,
+; the last four	were the original input	data.
+; also saves the ps and	stack pointer.
+;
+popes:		mfps	$psw			; save processor status	word
+		mov	(SP)+, R4		; save rts address
+		mov	(SP)+, ans1		; save rti address
+		mov	(SP), ans2		; save rti status
+		bic	#20, ans2		; clear	the T-bit
+		mov	#1$, -(SP)		;
+		rti				; restore the processor	status
+						;
+1$:		mov	(SP)+, ans3		; save data
+		mov	(SP)+, ans4		;
+		mov	(SP)+, ans5		;
+		mov	(SP)+, ans6		;
+		mov	SP, $sp			; save SP
+		jmp	(R4)			; rts
+;_____________________________________________________________________________
+;
+; Subroutine to	push 4 words onto the stack
+;
+pushr:		mov	#stack0, R4		; set R4 to stack
+		mov	(R5)+, (R4)+		; put data on stack
+		mov	(R5)+, (R4)+		;
+		mov	(R5)+, (R4)+		;
+		mov	(R5)+, (R4)+		;
+		mtps	(R5)+			; set the processor status
+		inc	R5			;
+		mov	(R5)+, @fisvec 		; set up FIS error trap	vector
+		mov	(R5)+, @fislvl 		; trap status
+		rts	R5			; return
+;_____________________________________________________________________________
+;
+; Subroutine to	pop 2 words off	the stack
+; also saves the processor status word (except T bit)
+;
+popr:		mfps	$psw			; save processor status	word
+		bic	#20, $psw		; clear	T-bit
+		mov	stack4,	ans1		; save the answer
+		mov	stack6,	ans2		;
+		rts	PC			;
+;_____________________________________________________________________________
+;
+; Subroutne to pop 6 words off the stacks.
+; the two off the SP stack were	put on by the error trap,
+; the four off the software stack were the original input data.
+; also saves the ps and	stack pointer after the	FIS trap.
+;
+poper:		mfps	$psw			; save processor status	word
+poper1:		mov	(SP)+, savrts		; save rts address
+		mov	(SP)+, ans1		; save rti address
+		mov	(SP), ans2		; save rti status
+		bic	#20, ans2		; clear	the T-bit
+		mov	#1$, -(SP)		;
+		rti				; restore processor status
+						;
+1$:		mov	stack0,	ans3		; save data
+		mov	stack2,	ans4		;
+		mov	stack4,	ans5		;
+		mov	stack6,	ans6		;
+		jmp	@(PC)+			; simulated rts
+savrts:		.word	0			;
+;_____________________________________________________________________________
+;
+; Subroutine to	push 4 words onto the PC stack
+;
+push7:		mov	(R5)+, R4		; set R4 to stack
+		mov	(R5)+, (R4)+		; put data on stack
+		mov	(R5)+, (R4)+		;
+		mov	(R5)+, (R4)+		;
+		mov	(R5)+, (R4)+		;
+		mtps	(R5)+			; set the processor status
+		inc	R5			;
+		mov	(R5)+, @fisvec 		; set up FIS error trap	vector
+		mov	(R5)+, @fislvl 		; trap status
+		rts	R5			; return
+;_____________________________________________________________________________
+;
+; Subroutine to	pop 4 words off	the PC "stack"
+; also saves the processor status word (except T bit)
+;
+pop7:		mfps	$psw			; save processor status	word
+		bic	#20, $psw		; clear	T-bit
+		mov	(SP), R0		; get return address
+		sub	#14, R0			; point	to top of "PC stack"
+		mov	(R0)+, ans1		; save tst half	input data
+		mov	(R0)+, ans2		; save 2nd half	input data
+		mov	R0, $sp			; save assumed end PC stack pointer
+		mov	(R0)+, ans3		; save tst half	of answep
+		mov	(R0)+, ans4		; save 2nd half	of answer
+		rts	PC			;
+;_____________________________________________________________________________
+;
+; Erronious trap service routine
+;
+traper:		hlt				; FIS shouldn't	have traped
+		.word	547			; the error number is 547
+		rti				;
+;_____________________________________________________________________________
+;
+;		.sbttl	hlt routine (error typeout)
+;
+hlt$:		bit	#sw10, @#$swreg		; should it ring the bell on error?
+		beq	1$			; no - skip
+		type	,$bell			; ring bell
+1$:		inc	errors			; count	the number of errors
+		bit	#sw13, @#$swreg		; skip typeout if set
+		bne	2$			; skip typeouts
+		type	,return			;
+		mov	@(SP)+,	@#$fatal	; place	the error number in location $fatal
+		mov	-(SP), hltad$		; put address of instruction on	stack
+		sub	#2, hltad$		;
+		mov	@(SP), TTY		; type @(SP) in	octal
+		jsr	PC, printr		; type leading zero's
+		add	#2, (SP)		; adjust the return address
+		type	,space+3		;
+		jsr	PC, error$		; go to	user error routine
+						;
+2$:		tstb	$env			; are we running under APT?
+		beq	4$			; if not then go to 4$
+		inc	@#$msgty		; otherwise inform APT
+		br	.			; and loop
+						;
+4$:		tst	@#$swreg		; halt on error
+		bpl	.+4			; skip if continue
+		halt				; halt on error
+		bit	#sw09, @#$swreg		; check	for inhibit loop on error
+		bne	.+4			; skip if loop on error
+		rti				;
+		clrb	$icnt			;
+		jmp	kit$			; loop on test until no	errors
+;_____________________________________________________________________________
+;
+;		.sbttl user error routine
+;
+error$:		movb	@hltad$, typcnt		; type count is	low byte of hlt
+		add	#2, typcnt		; type count = x+2
+		mov	#hltad$, R3		; top of data to be typed
+err1$:		mov	(R3)+, TTY		; type (R3)+ in	octal
+		jsr	PC, printr		; type leading zero's
+		type	,space+4		; space
+		decb	typcnt			; check	for done
+		bpl	err1$			; branch if not	done
+		rts	PC			;
+;_____________________________________________________________________________
+;
+printr:		movb	#1,.pr			; set zero fill	switch
+		br	.+6			; skip
+prints:		clr	.pr			; supress leading zero's
+		movb	#-6, .pr+1		; set count
+		mov	R4, - (SP)		; save R4
+		mov	#.prbuf, R4		; set pointer to first ascii char.
+		clrb	(R4)			; clear	first byte
+		br	.prf			; rotate first bit
+.prl:		clrb	(R4)			; clear	byte of	character
+		rol	TTY			; rotate bit into C
+		rolb	(R4)			; pack it
+		rol	TTY			; rotate bit into C
+		rolb	(R4)			; pack it
+.prf:		rol	TTY			; rotate bit into C
+		rolb	(R4)			; pack it
+		tstb	(R4)			; is it	zero?
+		beq	.+6			; skip inc
+		incb	.pr			; set fill switch
+		tstb	.pr			; check	fill switch
+		beq	.+6			; skip bitset
+		bisb	#'0,(R4)+		; make into ascii char
+		incb	.pr+1			; inc count
+		bne	.prl			; repeat
+		cmp	#.prbuf, R4		; empty	buffer?
+		bne	.+6			; skip if not
+		movb	#'0,(R4)+		; load 1 zero
+		clrb	(R4)			; null terminator
+		type	,.prbuf			; type it
+		mov	(SP)+, R4		; restore R4
+		rts	PC			; return
+						;
+.prbuf:		.blkw	4			; output buffer
+;_____________________________________________________________________________
+;
+;		.sbttl power down and up routines
+;
+$pwrdn:		mov	#$illup, @#pwrvec	; set for fast up
+		mov	#340, @#pwrvec+2	; prio:7
+		mov	R0, -(SP)		; push R0 on stack
+		mov	R1, -(SP)		; push R1 un stack
+		mov	R2, -(SP)		; push R2 on stack
+		mov	R3, -(SP)		; push R3 on stack
+		mov	R4, -(SP)		; push R4 on stack
+		mov	R5, -(SP)		; push R5 on stack
+		mov	SP, $savr6		; save SP
+		mov	#$pwrup, @#pwrvec	; set up vector
+		halt				;
+		br	.-2			; hang up
+;
+; power	up routine
+;
+$pwrup:		mov	$savr6,	SP		; get SP
+		clr	$savr6			; wait loop for	the TTY
+1$:		inc	$savr6			; wait for the inc
+		bne	1$			; of word
+		mov	(SP)+, R5		; pop stack into R5
+		mov	(SP)+, R4		; pop stack into R4
+		mov	(SP)+, R3		; pop stack into R3
+		mov	(SP)+, R2		; pop stack into R2
+		mov	(SP)+, R1		; pop stack into R1
+		mov	(SP)+, R0		; pop stack into R0
+		mov	#$pwrdn, @#pwrvec	; set up the power down	vector
+		mov	#340, @#pwrvec+2	; prio:7
+		type				; report the power failure
+$pwrmg:		.word	$power ;		: power	fail message pointer
+		rti				; the power up sequence	was started
+						;
+$illup:		halt				;
+		br	.-2			; before the power down	was complete
+$savr6:		.word	0			; put the SP here
+$power:		.asciz	<15><12>"POWER"		;
+		.even				;
+;_____________________________________________________________________________
+;
+; Type out routine - this routine is used to type asciz	messages
+;
+$type:		bitb	#40, @#$envm		; has the console outputs been suppressed?
+		bne	3$			; if so	then return from the subroutine	via 3
+		mov	R0, -(SP)		; otherwise save R0
+		mov	@2(SP),	R0		; get the address of the assciz	string
+2$:		movb	(R0)+, -(SP)		; push the character to	be typed onto stack
+		bne	4$			; branch if it is not the terminator
+		tst	(SP)+			;
+		mov	(SP)+, R0		; otherwise restore the	stack and R0
+3$:		add	#2, (SP)		; adjust the return PC
+		rti				; and return
+						;
+4$:		tstb	@$tps			; is the printer available?
+		bpl	4$			; if not then loop here
+		movb	(SP)+, @$tpb		; out put the character
+		br	2$			; and go back
+$tttle:		.asciz	<15><12>/DVKACC - LSI-11 FIS  INSTRUCTION TEST/
+
+		.even				; that was the heading for the diagnostic
+nooop:		mov	#begin,	SP		; initialize stack pointer to 600
+		bitb	#1, @#$env		; are we under APT
+		bne	22$			; if so	then do	not type heading
+		bitb	#40, @#$envm		; have the console outputs been	suppressed
+		bne	22$			; if so	then do	not print heading
+		mov	#$type,	@#20		; set up vector	20 to print heading
+		type	,$tttle			; type heading "vkacc -LSI-11.."
+22$:		mov	#1, times		; # of iterations in the first pass=1
+		mov	#$devct, R0		; prepare to initialize	the program
+2$:		clr	-(R0)			;
+		cmp	#$mail,	R0		;
+		bne	2$			;
+		jmp	restrt			; start	the program
+;_____________________________________________________________________________
+;
+		.end
