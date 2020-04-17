@@ -34,10 +34,10 @@ wire  c3;            //
 wire  c4;            //
                      //
 reg   sr;            // system reset latches
-reg   sr_t0074;      //
-reg   sr_t0185;      //
 reg   sr_c1;         //
+reg   sr_c3;         //
 reg   sr_c4;         //
+reg   sr_t0074;      //
                      //
 reg   wi;            //
 reg   wi_c2;         //
@@ -57,10 +57,9 @@ reg   [10:0] lir;    // microinstruction register (lc latch)
 reg   [15:0] mtr;    // microinstruction translation
 reg   [2:0] tsr;     // translarion status
 wire  [7:0] tr;      //
-reg   troe;          //
                      //
 reg   qtr;           //
-wire  [7:1] irq;     //
+reg   [7:1] irq;     //
 reg   [7:1] irq_c4;  //
 reg   [7:5] irq_set; //
 reg   [7:5] irq_clr; //
@@ -90,6 +89,7 @@ reg   ldlcb_c4;      //
 reg   ldinc_c4;      //
 reg   ldmir_c4;      //
 reg   lrr_c4;        //
+reg   lrr_c1;        //
 reg   ctsr_c4;       //
                      //
 reg   di_out;        // Q-bus output latches
@@ -105,13 +105,14 @@ reg   wrby;          //
 reg   di_t0783;      //
 reg   di_t0784;      //
 reg   di_t0801;      //
-reg   sy_t0798;      //
+reg   syn_clr;       //
 reg   syn_c4;        //
 reg   inak_c4;       //
+wire  syn_q1;        //
                      // translation array outputs
 wire  tcmax;         // no lc address catch
 wire  ldtsra;        // load translation status
-wire  ldtsrb;        // load translation status
+reg   ldtsrb;        // load translation status
 wire  plm_lra;       // load return address
 wire  plm_lta;       // load translation address
 wire  [2:0] tsra;    // translation status
@@ -128,8 +129,11 @@ wire  [10:0] pta;    // translation address
 // m[16]          in lra      pre-charge  disable ROM pre-charge
 // m[17]          in rni         z           z        pre-charge
 //
-assign pin_m_n[10:0]    = (c2 | c3) ? ~lc[10:0] : 11'bzzzzzzzzzzz;
-assign pin_m_n[15:11]   = 5'hzz;
+// On system reset 0xFFzz microcode is translated - NOP
+//
+assign pin_m_n[10:0]    = (c2 | c3) ? ~lc[10:0]
+                        : (sr_c1 ? 11'b000zzzzzzzz : 11'bzzzzzzzzzzz);
+assign pin_m_n[15:11]   = sr_c1 ? 5'h00 : 5'hzz;
 assign pin_m_n[16]      = (c3 & m16_out) ? 1'b0 : 1'bz;
 assign pin_m_n[17]      = 1'bz;
 
@@ -157,19 +161,15 @@ always @(*)
 begin
    if (c1)
       sr_t0074 <= pin_sr_n;
-
    if (c1)
       sr <= 1'b1;
    else
       if (c2)
          sr <= ~sr_t0074;
-   if (c2)
-         sr_t0185 <= 1'b0;
-   else
-      if (c3)
-         sr_t0185 <= ~sr;
+   if (c3)
+      sr_c3 <= sr;
    if (c1)
-         sr_c1 <= ~sr_t0185;
+      sr_c1 <= sr_c3;
    else
       if (c2)
          sr_c1 <= 1'b0;
@@ -208,7 +208,7 @@ end
 // Microinstruction decoder
 //
 always @(*) if (c3) plm_c3 <= plm;
-always @(*) if (c4) plmq_c4 <= ~sr_c4 & ~m16_out;
+always @(*) if (c4) plmq_c4 <= ~sr_c4 & m16_out;
 assign plmq = c2 & plmq_c4;
 
 mcp_plc plc
@@ -241,7 +241,7 @@ begin
 
    if (c1)
       if (sr_c1)
-         lc[10:0] <= 11'h000;
+         lc[10:0] <= 11'h001;
       else
          begin
             lc[7:0]  <= (ldlca ? lc2[7:0] : 8'hff)
@@ -287,7 +287,7 @@ assign ldlca = c1 & ldlca_c4;
 assign ldlcb = c1 & ldlcb_c4;
 assign ldinc = c1 & ldinc_c4;
 assign ldmir = c1 & ldmir_c4;
-assign lrr   = c2 & lrr_c4;
+assign lrr   = c2 & lrr_c4 & lrr_c1;
 assign ldtr  = c1 & ldtr_c4;
 assign ctsr  = c1 & ctsr_c4;
 
@@ -299,12 +299,12 @@ begin
    ldinc_c4 <=  ~m16_out & ~sr_c4 & (tcmax | ~plm_lra & ~plm_lta);
    ldmir_c4 <= sr | (~m16_out & ~sr_c4);
 
-   ldja_c4  <= ~sr_c4 & (plm_c3[1] | plm_c3[2] & pin_m_n[15]); // load jump condition
-   ldjb_c4  <= ~sr_c4 &  plm_c3[1];                            // from m[15] on c4
-   ldlca_c4 <=  sr_c4 | ~ldja_c4 & ~m16_out & ~plm_c3[3];
-   ldlcb_c4 <=  sr_c4 | ~ldjb_c4 & ~m16_out & ~plm_c3[3];
+   ldja_c4  <= ~sr_c4 & (plm_c3[1] | plm_c3[2] & ~pin_m_n[15]); // load jump condition
+   ldjb_c4  <= ~sr_c4 &  plm_c3[1];                             // from m[15] on c4
+   ldlca_c4 <=  sr_c4 | ~ldja_c4 & m16_out & ~plm_c3[3];
+   ldlcb_c4 <=  sr_c4 | ~ldjb_c4 & m16_out & ~plm_c3[3];
 
-   ldtr_c4  <= ~sr_c4 & ~plm_c3[6] & (~plm_c3[8] | ~mir[4] & ~mir[5]);
+   ldtr_c4  <= ~sr_c4 & (plm_c3[6] | (plm_c3[8] & (mir[4] | mir[5])));
    ctsr_c4  <= ~sr_c4 & plm_c3[14];
 end
 
@@ -312,8 +312,8 @@ always @(*)
 begin
    if (c4)
       lrr_c4 <= ~sr_c4 & ~m16_out;
-   if (c1 & pin_m_n[16])      // no LRA read
-         lrr_c4 <= 1'b0;      // from MicROM
+   if (c1)
+      lrr_c1 <= ~pin_m_n[16];
 end
 
 
@@ -341,17 +341,8 @@ mcp_pta pla
    .tcmax(tcmax)     // no lc address catch
 );
 
-assign tr[7:0] = troe ? (tsr[2] ? mtr[15:8] : mtr[7:0]) : 8'h00;
-assign ldtsrb = ~tcmax & ~sr_c4 & ~m16_out;
-
-always @(*)
-begin
-   if (c4)
-      troe <= 1'b0;
-   else
-      if (c2)
-         troe <= 1'b1;
-end
+assign tr[7:0] = tsr[2] ? mtr[7:0] : mtr[15:8];
+always @(*) if (c4) ldtsrb <= ~tcmax & ~sr_c4 & ~m16_out;
 
 always @(*)
 begin
@@ -388,10 +379,10 @@ end
 //
 // Interrupts
 //
-assign irq[7:1] = (c2 | c3) ? irq_c4[7:1] : 7'h00;
-
 always @(*)
 begin
+   if (c2)
+      irq[7:1] <= irq_c4[7:1];
    if (c4)
       irq_c4[4:1] <= pin_inrrq[4:1];
 
@@ -424,12 +415,12 @@ begin
       end
       else
       begin
-         irq_set[5] <= mir[4] & plm_c3[12];
-         irq_clr[5] <= mir[4] & plm_c3[13];
-         irq_set[6] <= mir[5] & plm_c3[12];
-         irq_clr[6] <= mir[5] & plm_c3[13];
-         irq_set[7] <= mir[6] & plm_c3[12];
-         irq_clr[7] <= mir[6] & plm_c3[13];
+         irq_set[5] <= mir[4] & plm_c3[13];
+         irq_clr[5] <= mir[4] & plm_c3[12];
+         irq_set[6] <= mir[5] & plm_c3[13];
+         irq_clr[6] <= mir[5] & plm_c3[12];
+         irq_set[7] <= mir[6] & plm_c3[13];
+         irq_clr[7] <= mir[6] & plm_c3[12];
       end
    else
       if (c3)
@@ -461,18 +452,20 @@ begin
       wrby <= plm_c3[11] | (~sr_c4 & (plm_c3[9] | plm_c3[10]));
       di_t0783 <= ~sr_c4 & ~syn_out & (plm_c3[17] | plm_c3[18]);
       di_t0784 <= ~sr_c4 & ~m16_out & (plm_c3[4] | plm_c3[5]);
-      sy_t0798 <= ~sr_c4 & ~m16_out
-                  & (plm_c3[5] | plm_c3[4]      // Q1 flag IW microinsturcion
-                     & ~(~mir[6] | ~mtr[14]     // Read-Modify-Write Cycle
-                        & (mtr[13] | mtr[12:6] == 7'b0101111)));
+      syn_clr <= ~sr_c4 & ~m16_out & (plm_c3[5] | plm_c3[4] & (~mir[6] | syn_q1));
       syn_c4  <= syn_out | ~sr_c4 & (plm_c3[15] | plm_c3[16]);
       inak_c4 <= iak_out | ~sr_c4 & plm_c3[19];
    end
    if (c1)
    begin
       di   <= ~sr_c1 & (di_out | syn_out & ~di_t0801) & ~di_t0784;
-      syn  <= ~sr_c1 & syn_c4 & ~sy_t0798;
-      inak <= ~sr_c1 & inak_c4 & ~sy_t0798;
+      syn  <= ~sr_c1 & syn_c4 & ~syn_clr;
+      inak <= ~sr_c1 & inak_c4 & ~syn_clr;
    end
 end
+//
+// Q1 flag of IW microinstruction, controls Read-Modify-Write Cycle
+//
+assign syn_q1 = ~mtr[14] & (mtr[13] | (mtr[12:6] == 7'b0101111));
+
 endmodule

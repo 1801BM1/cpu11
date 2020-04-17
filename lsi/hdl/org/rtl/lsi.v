@@ -77,7 +77,8 @@ reg   init_st;                   // nINIT flag
 reg   fdin_st;                   // fast data input flag
 reg   dref_st;                   // DRAM refresh flag
 reg   dref_rq;                   // DRAM refresh request
-reg   berr_rq;                   // bus error (timeout) request
+wire  berr_rq;                   // bus error (timeout) request
+reg   berr_st;                   // bus error sticky status
 reg   mc_res;                    // microcode reset
 reg   [5:0] qtim;                // Q-bus transaction timer
 wire  qtim_to;                   // Q-bus timer output
@@ -99,7 +100,7 @@ wire  m_wrby;                    // write byte
                                  //
 //______________________________________________________________________________
 //
-wire  pin_ad_ena;                // External pin wires and controls
+reg   pin_ad_ena;                // External pin wires and controls
 wire  pin_init_ena;
 wire  pin_ctrl_ena;
 wire  [15:0] pin_ad_out;
@@ -131,7 +132,17 @@ assign pin_iako_n = ~iako_c1;
 
 //_____________________________________________________________________________
 //
-assign pin_ad_ena    = ~(sack | dmgo_c4) & ~m_di;
+always @(*)
+begin
+// pin_ad_ena <= ~(sack | dmgo_c4) & ~m_di;
+   if (sack | dmgo_c4 | m_di)
+      pin_ad_ena <= 1'b0;
+   else
+      if (~sync_c3 | dout_c3)
+         pin_ad_ena <= 1'b1;
+end
+
+// assign pin_ad_ena    = ~(sack | dmgo_c4) & ~m_di;
 assign pin_init_ena  = init_st;
 assign pin_ctrl_ena  = ~(sack | dmgo_c4);
 assign pin_ad_out    = m_ad;
@@ -155,7 +166,7 @@ assign m_ad = m_di ? (fdin_st ? {12'o0000, fdin} : ~pin_ad_n) : 16'oZZZZ;
 
 assign fdin[0] = pin_bsel[0];    // fast data input
 assign fdin[1] = pin_bsel[1];    // boot mode
-assign fdin[2] = berr_rq;        // bus error
+assign fdin[2] = berr_st;        // bus error
 assign fdin[3] = aclo | aclo_rq; // power failure
 
 //______________________________________________________________________________
@@ -340,10 +351,10 @@ assign m_ra = rply_c1 & (dout_c2 | m_di);
 always @(posedge init_st or posedge mc_clr_berr or posedge qtim_to)
 begin
    if (init_st | mc_clr_berr)
-         berr_rq <= 1'b0;
+         berr_st <= 1'b0;
    else
       if (qtim_to)
-         berr_rq <= 1'b1;
+         berr_st <= 1'b1;
 end
 
 always @(posedge c3 or negedge qtim_en)
@@ -357,6 +368,7 @@ end
 
 assign qtim_to = qtim == 6'b111111;
 assign qtim_en = m_di | dout_c2;
+assign berr_rq = berr_st & qtim_en;
 
 //_____________________________________________________________________________
 //

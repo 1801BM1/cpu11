@@ -24,6 +24,7 @@ import re
 
 netlist = {}
 cmplist = {}
+tcalist = {}
 
 class tcmp(object):
     def __init__(self):
@@ -255,17 +256,22 @@ def comp_by_pin(vnet, npin):
         rcmp = cmplist[rcmp]
     return rcmp
 
-def tc12_expand(l, tc):
+def tc12_expand(l, tc, tlist):
     index = str.find(l, 'x')
     if index < 0:
         index = str.find(l, 'b')
         ad = int(l[index+1:index+12], base=2)
         print("   %s: tcr <= 7'h%02X;   // %04o: " % (l, tc, ad))
+        tl = tlist.get(tc, None)
+        if tl == None:
+            tlist[tc] = [ad]
+            return
+        tl.append(ad)
         return
     str0 = " " + l[:index] + '0' + l[index+1:]
-    tc12_expand(str0, tc)
+    tc12_expand(str0, tc, tlist)
     str1 = " " + l[:index] + '1' + l[index+1:]
-    tc12_expand(str1, tc)
+    tc12_expand(str1, tc, tlist)
 
 def proc_1621_12(arch, verb):
     vlist = []
@@ -349,8 +355,16 @@ def proc_1621_12(arch, verb):
     for l in vlist:
         print("assign pl[%d] = cmp(lc, 11'b%s);" % (vdict[l], l))
     print("\r\nCase table [1621 arrays 1/2]")
+    tcalist = {}
     for l in vlist:
-        tc12_expand("11'b" + l, vlitc[l])
+        tc12_expand("11'b" + l, vlitc[l], tcalist)
+    lktc = list(tcalist.keys())
+    lktc.sort()
+    print("\r\nTCA codes generated [1621 arrays 1/2]")
+    for i in lktc:
+        print("\r\n%02X: " % i,end="")
+        print([oct(x) for x in tcalist[i]], end="")
+    print(tcalist)
 
 def proc_1621_34(arch, verb):
     lta = []

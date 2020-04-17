@@ -8,5 +8,5 @@ These files are deduced from the content read from real MicROMs:
 Some srec_cat commands to convert .mif files:
 
 ```
-srec_cat all.mif -Memory_Initialization_File -unsplit 4 0 3 -fill 0x00 0x0000 0x1800 -o all.rom --VMem 32
+srec_cat all.mif -Memory_Initialization_File -unsplit 4 0 3 -fill 0x00 0x0000 0x1800 -byte-swap 4 -o all.rom --VMem 32
 ```

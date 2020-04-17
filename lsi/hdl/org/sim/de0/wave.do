@@ -1,13 +1,13 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /tbl/clk
-add wave -noupdate -expand -group clocks /tbl/cpu/c1
-add wave -noupdate -expand -group clocks /tbl/cpu/c2
-add wave -noupdate -expand -group clocks /tbl/cpu/c3
-add wave -noupdate -expand -group clocks /tbl/cpu/c4
-add wave -noupdate -group tbench /tbl/addr
-add wave -noupdate -group tbench /tbl/ad_reg
-add wave -noupdate -group tbench /tbl/ad_mux
+add wave -noupdate -group clocks /tbl/cpu/c1
+add wave -noupdate -group clocks /tbl/cpu/c2
+add wave -noupdate -group clocks /tbl/cpu/c3
+add wave -noupdate -group clocks /tbl/cpu/c4
+add wave -noupdate -group tbench -radix octal -childformat {{{/tbl/addr[15]} -radix octal} {{/tbl/addr[14]} -radix octal} {{/tbl/addr[13]} -radix octal} {{/tbl/addr[12]} -radix octal} {{/tbl/addr[11]} -radix octal} {{/tbl/addr[10]} -radix octal} {{/tbl/addr[9]} -radix octal} {{/tbl/addr[8]} -radix octal} {{/tbl/addr[7]} -radix octal} {{/tbl/addr[6]} -radix octal} {{/tbl/addr[5]} -radix octal} {{/tbl/addr[4]} -radix octal} {{/tbl/addr[3]} -radix octal} {{/tbl/addr[2]} -radix octal} {{/tbl/addr[1]} -radix octal} {{/tbl/addr[0]} -radix octal}} -subitemconfig {{/tbl/addr[15]} {-height 15 -radix octal} {/tbl/addr[14]} {-height 15 -radix octal} {/tbl/addr[13]} {-height 15 -radix octal} {/tbl/addr[12]} {-height 15 -radix octal} {/tbl/addr[11]} {-height 15 -radix octal} {/tbl/addr[10]} {-height 15 -radix octal} {/tbl/addr[9]} {-height 15 -radix octal} {/tbl/addr[8]} {-height 15 -radix octal} {/tbl/addr[7]} {-height 15 -radix octal} {/tbl/addr[6]} {-height 15 -radix octal} {/tbl/addr[5]} {-height 15 -radix octal} {/tbl/addr[4]} {-height 15 -radix octal} {/tbl/addr[3]} {-height 15 -radix octal} {/tbl/addr[2]} {-height 15 -radix octal} {/tbl/addr[1]} {-height 15 -radix octal} {/tbl/addr[0]} {-height 15 -radix octal}} /tbl/addr
+add wave -noupdate -group tbench -radix octal /tbl/ad_reg
+add wave -noupdate -group tbench -radix octal -childformat {{{/tbl/ad_mux[15]} -radix octal} {{/tbl/ad_mux[14]} -radix octal} {{/tbl/ad_mux[13]} -radix octal} {{/tbl/ad_mux[12]} -radix octal} {{/tbl/ad_mux[11]} -radix octal} {{/tbl/ad_mux[10]} -radix octal} {{/tbl/ad_mux[9]} -radix octal} {{/tbl/ad_mux[8]} -radix octal} {{/tbl/ad_mux[7]} -radix octal} {{/tbl/ad_mux[6]} -radix octal} {{/tbl/ad_mux[5]} -radix octal} {{/tbl/ad_mux[4]} -radix octal} {{/tbl/ad_mux[3]} -radix octal} {{/tbl/ad_mux[2]} -radix octal} {{/tbl/ad_mux[1]} -radix octal} {{/tbl/ad_mux[0]} -radix octal}} -subitemconfig {{/tbl/ad_mux[15]} {-height 15 -radix octal} {/tbl/ad_mux[14]} {-height 15 -radix octal} {/tbl/ad_mux[13]} {-height 15 -radix octal} {/tbl/ad_mux[12]} {-height 15 -radix octal} {/tbl/ad_mux[11]} {-height 15 -radix octal} {/tbl/ad_mux[10]} {-height 15 -radix octal} {/tbl/ad_mux[9]} {-height 15 -radix octal} {/tbl/ad_mux[8]} {-height 15 -radix octal} {/tbl/ad_mux[7]} {-height 15 -radix octal} {/tbl/ad_mux[6]} {-height 15 -radix octal} {/tbl/ad_mux[5]} {-height 15 -radix octal} {/tbl/ad_mux[4]} {-height 15 -radix octal} {/tbl/ad_mux[3]} {-height 15 -radix octal} {/tbl/ad_mux[2]} {-height 15 -radix octal} {/tbl/ad_mux[1]} {-height 15 -radix octal} {/tbl/ad_mux[0]} {-height 15 -radix octal}} /tbl/ad_mux
 add wave -noupdate -group tbench /tbl/ad_oe
 add wave -noupdate -group tbench /tbl/wflg
 add wave -noupdate -group tbench /tbl/sel_all
@@ -17,7 +17,7 @@ add wave -noupdate -group tbench /tbl/tty_tx_ie
 add wave -noupdate -group tbench /tbl/tty_rx_ie
 add wave -noupdate -group tbench /tbl/ram_read
 add wave -noupdate -group tbench /tbl/ram_write
-add wave -noupdate -group tbench -group qbus /tbl/ad
+add wave -noupdate -group tbench -group qbus -radix octal -childformat {{{/tbl/ad[15]} -radix octal} {{/tbl/ad[14]} -radix octal} {{/tbl/ad[13]} -radix octal} {{/tbl/ad[12]} -radix octal} {{/tbl/ad[11]} -radix octal} {{/tbl/ad[10]} -radix octal} {{/tbl/ad[9]} -radix octal} {{/tbl/ad[8]} -radix octal} {{/tbl/ad[7]} -radix octal} {{/tbl/ad[6]} -radix octal} {{/tbl/ad[5]} -radix octal} {{/tbl/ad[4]} -radix octal} {{/tbl/ad[3]} -radix octal} {{/tbl/ad[2]} -radix octal} {{/tbl/ad[1]} -radix octal} {{/tbl/ad[0]} -radix octal}} -subitemconfig {{/tbl/ad[15]} {-height 15 -radix octal} {/tbl/ad[14]} {-height 15 -radix octal} {/tbl/ad[13]} {-height 15 -radix octal} {/tbl/ad[12]} {-height 15 -radix octal} {/tbl/ad[11]} {-height 15 -radix octal} {/tbl/ad[10]} {-height 15 -radix octal} {/tbl/ad[9]} {-height 15 -radix octal} {/tbl/ad[8]} {-height 15 -radix octal} {/tbl/ad[7]} {-height 15 -radix octal} {/tbl/ad[6]} {-height 15 -radix octal} {/tbl/ad[5]} {-height 15 -radix octal} {/tbl/ad[4]} {-height 15 -radix octal} {/tbl/ad[3]} {-height 15 -radix octal} {/tbl/ad[2]} {-height 15 -radix octal} {/tbl/ad[1]} {-height 15 -radix octal} {/tbl/ad[0]} {-height 15 -radix octal}} /tbl/ad
 add wave -noupdate -group tbench -group qbus /tbl/sync
 add wave -noupdate -group tbench -group qbus /tbl/rply
 add wave -noupdate -group tbench -group qbus /tbl/din
@@ -37,72 +37,250 @@ add wave -noupdate -group tbench -group qbus -group share /tbl/sack
 add wave -noupdate -group tbench -group qbus -group share /tbl/dmgo
 add wave -noupdate -group tbench -group qbus -group share /tbl/din_iako
 add wave -noupdate -group tbench -group qbus -group share /tbl/din_sync
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_ad
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_bbusy
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_di
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_do
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_inrak
-add wave -noupdate -expand -group lsi -group micro -expand /tbl/cpu/m_inrrq
-add wave -noupdate -expand -group lsi -group micro -radix octal -childformat {{{/tbl/cpu/m_n[21]} -radix octal} {{/tbl/cpu/m_n[20]} -radix octal} {{/tbl/cpu/m_n[19]} -radix octal} {{/tbl/cpu/m_n[18]} -radix octal} {{/tbl/cpu/m_n[17]} -radix octal} {{/tbl/cpu/m_n[16]} -radix octal} {{/tbl/cpu/m_n[15]} -radix octal} {{/tbl/cpu/m_n[14]} -radix octal} {{/tbl/cpu/m_n[13]} -radix octal} {{/tbl/cpu/m_n[12]} -radix octal} {{/tbl/cpu/m_n[11]} -radix octal} {{/tbl/cpu/m_n[10]} -radix octal} {{/tbl/cpu/m_n[9]} -radix octal} {{/tbl/cpu/m_n[8]} -radix octal} {{/tbl/cpu/m_n[7]} -radix octal} {{/tbl/cpu/m_n[6]} -radix octal} {{/tbl/cpu/m_n[5]} -radix octal} {{/tbl/cpu/m_n[4]} -radix octal} {{/tbl/cpu/m_n[3]} -radix octal} {{/tbl/cpu/m_n[2]} -radix octal} {{/tbl/cpu/m_n[1]} -radix octal} {{/tbl/cpu/m_n[0]} -radix octal}} -expand -subitemconfig {{/tbl/cpu/m_n[21]} {-radix octal} {/tbl/cpu/m_n[20]} {-radix octal} {/tbl/cpu/m_n[19]} {-radix octal} {/tbl/cpu/m_n[18]} {-radix octal} {/tbl/cpu/m_n[17]} {-radix octal} {/tbl/cpu/m_n[16]} {-radix octal} {/tbl/cpu/m_n[15]} {-radix octal} {/tbl/cpu/m_n[14]} {-radix octal} {/tbl/cpu/m_n[13]} {-radix octal} {/tbl/cpu/m_n[12]} {-radix octal} {/tbl/cpu/m_n[11]} {-radix octal} {/tbl/cpu/m_n[10]} {-radix octal} {/tbl/cpu/m_n[9]} {-radix octal} {/tbl/cpu/m_n[8]} {-radix octal} {/tbl/cpu/m_n[7]} {-radix octal} {/tbl/cpu/m_n[6]} {-radix octal} {/tbl/cpu/m_n[5]} {-radix octal} {/tbl/cpu/m_n[4]} {-radix octal} {/tbl/cpu/m_n[3]} {-radix octal} {/tbl/cpu/m_n[2]} {-radix octal} {/tbl/cpu/m_n[1]} {-radix octal} {/tbl/cpu/m_n[0]} {-radix octal}} /tbl/cpu/m_n
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_ra
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_sr_n
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_syn
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_wi
-add wave -noupdate -expand -group lsi -group micro /tbl/cpu/m_wrby
-add wave -noupdate -expand -group lsi -group pins /tbl/cpu/pin_clk
-add wave -noupdate -expand -group lsi -group pins -group qbus -radix octal /tbl/cpu/pin_ad_n
-add wave -noupdate -expand -group lsi -group pins -group qbus -radix octal /tbl/cpu/pin_ad_out
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_ad_ena
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_sync_n
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_rply_n
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_din_n
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_dout_n
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_iako_n
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_wtbt_n
-add wave -noupdate -expand -group lsi -group pins -group qbus /tbl/cpu/pin_dref_n
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_ctrl_ena
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_sync_out
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_din_out
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_dout_out
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_wtbt_out
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_dmgo_n
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_dmr_n
-add wave -noupdate -expand -group lsi -group pins -group share /tbl/cpu/pin_sack_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_evnt_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_halt_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_rfrq_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_init_ena
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_init_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_virq_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_bsel
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_dclo_n
-add wave -noupdate -expand -group lsi -group pins -group control /tbl/cpu/pin_aclo_n
-add wave -noupdate -expand -group lsi -group reset /tbl/cpu/aclo
-add wave -noupdate -expand -group lsi -group reset /tbl/cpu/dclo
-add wave -noupdate -expand -group lsi -group ints /tbl/cpu/virq
-add wave -noupdate -expand -group lsi -group ints /tbl/cpu/evnt
-add wave -noupdate -expand -group lsi -group ints /tbl/cpu/evnt_rq
-add wave -noupdate -expand -group lsi -group ints /tbl/cpu/aclo_rq
-add wave -noupdate -expand -group lsi -group ints /tbl/cpu/berr_rq
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_clr_aclo
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_clr_berr
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_clr_evnt
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_clr_init
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_res
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_set_fdin
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_set_init
-add wave -noupdate -expand -group lsi -group mc_ext /tbl/cpu/mc_set_rfsh
-add wave -noupdate -expand -group ctrl /tbl/cpu/control/sr
-add wave -noupdate -expand -group ctrl /tbl/cpu/control/sr_c1
-add wave -noupdate -expand -group ctrl /tbl/cpu/control/sr_c4
-add wave -noupdate -expand -group ctrl /tbl/cpu/control/sr_t0074
-add wave -noupdate -expand -group ctrl /tbl/cpu/control/sr_t0185
-add wave -noupdate -expand -group ctrl /tbl/cpu/control/wi
+add wave -noupdate -group lsi -group micro -radix octal -childformat {{{/tbl/cpu/m_ad[15]} -radix octal} {{/tbl/cpu/m_ad[14]} -radix octal} {{/tbl/cpu/m_ad[13]} -radix octal} {{/tbl/cpu/m_ad[12]} -radix octal} {{/tbl/cpu/m_ad[11]} -radix octal} {{/tbl/cpu/m_ad[10]} -radix octal} {{/tbl/cpu/m_ad[9]} -radix octal} {{/tbl/cpu/m_ad[8]} -radix octal} {{/tbl/cpu/m_ad[7]} -radix octal} {{/tbl/cpu/m_ad[6]} -radix octal} {{/tbl/cpu/m_ad[5]} -radix octal} {{/tbl/cpu/m_ad[4]} -radix octal} {{/tbl/cpu/m_ad[3]} -radix octal} {{/tbl/cpu/m_ad[2]} -radix octal} {{/tbl/cpu/m_ad[1]} -radix octal} {{/tbl/cpu/m_ad[0]} -radix octal}} -subitemconfig {{/tbl/cpu/m_ad[15]} {-height 15 -radix octal} {/tbl/cpu/m_ad[14]} {-height 15 -radix octal} {/tbl/cpu/m_ad[13]} {-height 15 -radix octal} {/tbl/cpu/m_ad[12]} {-height 15 -radix octal} {/tbl/cpu/m_ad[11]} {-height 15 -radix octal} {/tbl/cpu/m_ad[10]} {-height 15 -radix octal} {/tbl/cpu/m_ad[9]} {-height 15 -radix octal} {/tbl/cpu/m_ad[8]} {-height 15 -radix octal} {/tbl/cpu/m_ad[7]} {-height 15 -radix octal} {/tbl/cpu/m_ad[6]} {-height 15 -radix octal} {/tbl/cpu/m_ad[5]} {-height 15 -radix octal} {/tbl/cpu/m_ad[4]} {-height 15 -radix octal} {/tbl/cpu/m_ad[3]} {-height 15 -radix octal} {/tbl/cpu/m_ad[2]} {-height 15 -radix octal} {/tbl/cpu/m_ad[1]} {-height 15 -radix octal} {/tbl/cpu/m_ad[0]} {-height 15 -radix octal}} /tbl/cpu/m_ad
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_bbusy
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_di
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_do
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_inrak
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_inrrq
+add wave -noupdate -group lsi -group micro -radix hexadecimal -childformat {{{/tbl/cpu/m_n[21]} -radix octal} {{/tbl/cpu/m_n[20]} -radix octal} {{/tbl/cpu/m_n[19]} -radix octal} {{/tbl/cpu/m_n[18]} -radix octal} {{/tbl/cpu/m_n[17]} -radix octal} {{/tbl/cpu/m_n[16]} -radix octal} {{/tbl/cpu/m_n[15]} -radix octal} {{/tbl/cpu/m_n[14]} -radix octal} {{/tbl/cpu/m_n[13]} -radix octal} {{/tbl/cpu/m_n[12]} -radix octal} {{/tbl/cpu/m_n[11]} -radix octal} {{/tbl/cpu/m_n[10]} -radix octal} {{/tbl/cpu/m_n[9]} -radix octal} {{/tbl/cpu/m_n[8]} -radix octal} {{/tbl/cpu/m_n[7]} -radix octal} {{/tbl/cpu/m_n[6]} -radix octal} {{/tbl/cpu/m_n[5]} -radix octal} {{/tbl/cpu/m_n[4]} -radix octal} {{/tbl/cpu/m_n[3]} -radix octal} {{/tbl/cpu/m_n[2]} -radix octal} {{/tbl/cpu/m_n[1]} -radix octal} {{/tbl/cpu/m_n[0]} -radix octal}} -subitemconfig {{/tbl/cpu/m_n[21]} {-height 15 -radix octal} {/tbl/cpu/m_n[20]} {-height 15 -radix octal} {/tbl/cpu/m_n[19]} {-height 15 -radix octal} {/tbl/cpu/m_n[18]} {-height 15 -radix octal} {/tbl/cpu/m_n[17]} {-height 15 -radix octal} {/tbl/cpu/m_n[16]} {-height 15 -radix octal} {/tbl/cpu/m_n[15]} {-height 15 -radix octal} {/tbl/cpu/m_n[14]} {-height 15 -radix octal} {/tbl/cpu/m_n[13]} {-height 15 -radix octal} {/tbl/cpu/m_n[12]} {-height 15 -radix octal} {/tbl/cpu/m_n[11]} {-height 15 -radix octal} {/tbl/cpu/m_n[10]} {-height 15 -radix octal} {/tbl/cpu/m_n[9]} {-height 15 -radix octal} {/tbl/cpu/m_n[8]} {-height 15 -radix octal} {/tbl/cpu/m_n[7]} {-height 15 -radix octal} {/tbl/cpu/m_n[6]} {-height 15 -radix octal} {/tbl/cpu/m_n[5]} {-height 15 -radix octal} {/tbl/cpu/m_n[4]} {-height 15 -radix octal} {/tbl/cpu/m_n[3]} {-height 15 -radix octal} {/tbl/cpu/m_n[2]} {-height 15 -radix octal} {/tbl/cpu/m_n[1]} {-height 15 -radix octal} {/tbl/cpu/m_n[0]} {-height 15 -radix octal}} /tbl/cpu/m_n
+add wave -noupdate -group lsi -group micro -radix octal {/tbl/cpu/m_n[16]}
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_ra
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_sr_n
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_syn
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_wi
+add wave -noupdate -group lsi -group micro /tbl/cpu/m_wrby
+add wave -noupdate -group lsi -group pins /tbl/cpu/pin_clk
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_ad_ena
+add wave -noupdate -group lsi -group pins -group qbus -radix octal -childformat {{{/tbl/cpu/pin_ad_n[15]} -radix octal} {{/tbl/cpu/pin_ad_n[14]} -radix octal} {{/tbl/cpu/pin_ad_n[13]} -radix octal} {{/tbl/cpu/pin_ad_n[12]} -radix octal} {{/tbl/cpu/pin_ad_n[11]} -radix octal} {{/tbl/cpu/pin_ad_n[10]} -radix octal} {{/tbl/cpu/pin_ad_n[9]} -radix octal} {{/tbl/cpu/pin_ad_n[8]} -radix octal} {{/tbl/cpu/pin_ad_n[7]} -radix octal} {{/tbl/cpu/pin_ad_n[6]} -radix octal} {{/tbl/cpu/pin_ad_n[5]} -radix octal} {{/tbl/cpu/pin_ad_n[4]} -radix octal} {{/tbl/cpu/pin_ad_n[3]} -radix octal} {{/tbl/cpu/pin_ad_n[2]} -radix octal} {{/tbl/cpu/pin_ad_n[1]} -radix octal} {{/tbl/cpu/pin_ad_n[0]} -radix octal}} -subitemconfig {{/tbl/cpu/pin_ad_n[15]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[14]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[13]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[12]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[11]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[10]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[9]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[8]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[7]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[6]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[5]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[4]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[3]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[2]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[1]} {-height 15 -radix octal} {/tbl/cpu/pin_ad_n[0]} {-height 15 -radix octal}} /tbl/cpu/pin_ad_n
+add wave -noupdate -group lsi -group pins -group qbus -radix octal /tbl/cpu/pin_ad_out
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_sync_n
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_rply_n
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_din_n
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_dout_n
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_iako_n
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_wtbt_n
+add wave -noupdate -group lsi -group pins -group qbus /tbl/cpu/pin_dref_n
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_ctrl_ena
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_sync_out
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_din_out
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_dout_out
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_wtbt_out
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_dmgo_n
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_dmr_n
+add wave -noupdate -group lsi -group pins -group share /tbl/cpu/pin_sack_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_evnt_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_halt_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_rfrq_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_init_ena
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_init_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_virq_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_bsel
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_dclo_n
+add wave -noupdate -group lsi -group pins -group control /tbl/cpu/pin_aclo_n
+add wave -noupdate -group lsi -group reset /tbl/cpu/aclo
+add wave -noupdate -group lsi -group reset /tbl/cpu/dclo
+add wave -noupdate -group lsi -group ints /tbl/cpu/virq
+add wave -noupdate -group lsi -group ints /tbl/cpu/evnt
+add wave -noupdate -group lsi -group ints /tbl/cpu/evnt_rq
+add wave -noupdate -group lsi -group ints /tbl/cpu/aclo_rq
+add wave -noupdate -group lsi -group ints /tbl/cpu/berr_rq
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_clr_aclo
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_clr_berr
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_clr_evnt
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_clr_init
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_res
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_set_fdin
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_set_init
+add wave -noupdate -group lsi -group mc_ext /tbl/cpu/mc_set_rfsh
+add wave -noupdate -group ctrl -group sr /tbl/cpu/control/sr
+add wave -noupdate -group ctrl -group sr /tbl/cpu/control/sr_c1
+add wave -noupdate -group ctrl -group sr /tbl/cpu/control/sr_c4
+add wave -noupdate -group ctrl -group sr /tbl/cpu/control/sr_t0074
+add wave -noupdate -group ctrl /tbl/cpu/control/wi
+add wave -noupdate -group ctrl -group plm -radix hexadecimal -childformat {{{/tbl/cpu/control/plm[19]} -radix hexadecimal} {{/tbl/cpu/control/plm[18]} -radix hexadecimal} {{/tbl/cpu/control/plm[17]} -radix hexadecimal} {{/tbl/cpu/control/plm[16]} -radix hexadecimal} {{/tbl/cpu/control/plm[15]} -radix hexadecimal} {{/tbl/cpu/control/plm[14]} -radix hexadecimal} {{/tbl/cpu/control/plm[13]} -radix hexadecimal} {{/tbl/cpu/control/plm[12]} -radix hexadecimal} {{/tbl/cpu/control/plm[11]} -radix hexadecimal} {{/tbl/cpu/control/plm[10]} -radix hexadecimal} {{/tbl/cpu/control/plm[9]} -radix hexadecimal} {{/tbl/cpu/control/plm[8]} -radix hexadecimal} {{/tbl/cpu/control/plm[7]} -radix hexadecimal} {{/tbl/cpu/control/plm[6]} -radix hexadecimal} {{/tbl/cpu/control/plm[5]} -radix hexadecimal} {{/tbl/cpu/control/plm[4]} -radix hexadecimal} {{/tbl/cpu/control/plm[3]} -radix hexadecimal} {{/tbl/cpu/control/plm[2]} -radix hexadecimal} {{/tbl/cpu/control/plm[1]} -radix hexadecimal} {{/tbl/cpu/control/plm[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/control/plm[19]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[18]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[17]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[16]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[15]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/control/plm
+add wave -noupdate -group ctrl -group plm -radix hexadecimal -childformat {{{/tbl/cpu/control/plm_c3[19]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[18]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[17]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[16]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[15]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[14]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[13]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[12]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[11]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[10]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[9]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[8]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[7]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[6]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[5]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[4]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[3]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[2]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[1]} -radix hexadecimal} {{/tbl/cpu/control/plm_c3[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/control/plm_c3[19]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[18]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[17]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[16]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[15]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/plm_c3[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/control/plm_c3
+add wave -noupdate -group ctrl -group plm /tbl/cpu/control/plmq
+add wave -noupdate -group ctrl -group plm /tbl/cpu/control/plmq_c4
+add wave -noupdate -group ctrl {/tbl/cpu/control/pin_m_n[16]}
+add wave -noupdate -group ctrl {/tbl/cpu/control/pin_m_n[15]}
+add wave -noupdate -group ctrl /tbl/cpu/control/c3
+add wave -noupdate -group ctrl -radix hexadecimal -childformat {{{/tbl/cpu/control/mir[15]} -radix hexadecimal} {{/tbl/cpu/control/mir[14]} -radix hexadecimal} {{/tbl/cpu/control/mir[13]} -radix hexadecimal} {{/tbl/cpu/control/mir[12]} -radix hexadecimal} {{/tbl/cpu/control/mir[11]} -radix hexadecimal} {{/tbl/cpu/control/mir[10]} -radix hexadecimal} {{/tbl/cpu/control/mir[9]} -radix hexadecimal} {{/tbl/cpu/control/mir[8]} -radix hexadecimal} {{/tbl/cpu/control/mir[7]} -radix hexadecimal} {{/tbl/cpu/control/mir[6]} -radix hexadecimal} {{/tbl/cpu/control/mir[5]} -radix hexadecimal} {{/tbl/cpu/control/mir[4]} -radix hexadecimal} {{/tbl/cpu/control/mir[3]} -radix hexadecimal} {{/tbl/cpu/control/mir[2]} -radix hexadecimal} {{/tbl/cpu/control/mir[1]} -radix hexadecimal} {{/tbl/cpu/control/mir[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/control/mir[15]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/control/mir[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/control/mir
+add wave -noupdate -group ctrl -radix octal -childformat {{{/tbl/cpu/control/lc[10]} -radix octal} {{/tbl/cpu/control/lc[9]} -radix octal} {{/tbl/cpu/control/lc[8]} -radix octal} {{/tbl/cpu/control/lc[7]} -radix octal} {{/tbl/cpu/control/lc[6]} -radix octal} {{/tbl/cpu/control/lc[5]} -radix octal} {{/tbl/cpu/control/lc[4]} -radix octal} {{/tbl/cpu/control/lc[3]} -radix octal} {{/tbl/cpu/control/lc[2]} -radix octal} {{/tbl/cpu/control/lc[1]} -radix octal} {{/tbl/cpu/control/lc[0]} -radix octal}} -subitemconfig {{/tbl/cpu/control/lc[10]} {-height 15 -radix octal} {/tbl/cpu/control/lc[9]} {-height 15 -radix octal} {/tbl/cpu/control/lc[8]} {-height 15 -radix octal} {/tbl/cpu/control/lc[7]} {-height 15 -radix octal} {/tbl/cpu/control/lc[6]} {-height 15 -radix octal} {/tbl/cpu/control/lc[5]} {-height 15 -radix octal} {/tbl/cpu/control/lc[4]} {-height 15 -radix octal} {/tbl/cpu/control/lc[3]} {-height 15 -radix octal} {/tbl/cpu/control/lc[2]} {-height 15 -radix octal} {/tbl/cpu/control/lc[1]} {-height 15 -radix octal} {/tbl/cpu/control/lc[0]} {-height 15 -radix octal}} /tbl/cpu/control/lc
+add wave -noupdate -group ctrl -radix hexadecimal /tbl/cpu/control/lc2
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/rni
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/lra
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/lrr
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/lta
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldinc
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldja
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldjb
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldlca
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldlcb
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldmir
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldtr
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldtsra
+add wave -noupdate -group ctrl -group lc_stb /tbl/cpu/control/ldtsrb
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/lra_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/lta_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldinc_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldja_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldjb_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldlca_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldlcb_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldmir_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/ldtr_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/lrr_c1
+add wave -noupdate -group ctrl -group lc_stb_c4 /tbl/cpu/control/lrr_c4
+add wave -noupdate -group ctrl -group lc_stb_c4 -radix octal {/tbl/cpu/m_n[16]}
+add wave -noupdate -group ctrl -radix octal -childformat {{{/tbl/cpu/control/mtr[15]} -radix octal} {{/tbl/cpu/control/mtr[14]} -radix octal} {{/tbl/cpu/control/mtr[13]} -radix octal} {{/tbl/cpu/control/mtr[12]} -radix octal} {{/tbl/cpu/control/mtr[11]} -radix octal} {{/tbl/cpu/control/mtr[10]} -radix octal} {{/tbl/cpu/control/mtr[9]} -radix octal} {{/tbl/cpu/control/mtr[8]} -radix octal} {{/tbl/cpu/control/mtr[7]} -radix octal} {{/tbl/cpu/control/mtr[6]} -radix octal} {{/tbl/cpu/control/mtr[5]} -radix octal} {{/tbl/cpu/control/mtr[4]} -radix octal} {{/tbl/cpu/control/mtr[3]} -radix octal} {{/tbl/cpu/control/mtr[2]} -radix octal} {{/tbl/cpu/control/mtr[1]} -radix octal} {{/tbl/cpu/control/mtr[0]} -radix octal}} -subitemconfig {{/tbl/cpu/control/mtr[15]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[14]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[13]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[12]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[11]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[10]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[9]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[8]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[7]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[6]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[5]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[4]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[3]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[2]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[1]} {-height 15 -radix octal} {/tbl/cpu/control/mtr[0]} {-height 15 -radix octal}} /tbl/cpu/control/mtr
+add wave -noupdate -group ctrl -radix octal -childformat {{{/tbl/cpu/control/tsr[2]} -radix octal} {{/tbl/cpu/control/tsr[1]} -radix octal} {{/tbl/cpu/control/tsr[0]} -radix octal}} -subitemconfig {{/tbl/cpu/control/tsr[2]} {-height 15 -radix octal} {/tbl/cpu/control/tsr[1]} {-height 15 -radix octal} {/tbl/cpu/control/tsr[0]} {-height 15 -radix octal}} /tbl/cpu/control/tsr
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/di
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/di_out
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/syn
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/syn_c4
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/syn_out
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/wrby
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/wrb_out
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/iak_out
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/control/inak
+add wave -noupdate -group ctrl -group qbus /tbl/cpu/ccnt
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/qtr
+add wave -noupdate -group ctrl -group pla -radix hexadecimal /tbl/cpu/control/pla/tc_c3
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/tcmax
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/rni
+add wave -noupdate -group ctrl -group pla -radix hexadecimal /tbl/cpu/control/pta
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/lra
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/lta
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/ltsr
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/ltsr_c4
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/lta_c4
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/lra_c4
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/lra_pl
+add wave -noupdate -group ctrl -group pla /tbl/cpu/control/pla/lta_pl
+add wave -noupdate -group data -group reg -group {r[]} -label R0_L -radix hexadecimal -childformat {{{/tbl/cpu/data/r[0][7]} -radix hexadecimal} {{/tbl/cpu/data/r[0][6]} -radix hexadecimal} {{/tbl/cpu/data/r[0][5]} -radix hexadecimal} {{/tbl/cpu/data/r[0][4]} -radix hexadecimal} {{/tbl/cpu/data/r[0][3]} -radix hexadecimal} {{/tbl/cpu/data/r[0][2]} -radix hexadecimal} {{/tbl/cpu/data/r[0][1]} -radix hexadecimal} {{/tbl/cpu/data/r[0][0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/r[0][7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[0][0]} {-height 15 -radix hexadecimal}} {/tbl/cpu/data/r[0]}
+add wave -noupdate -group data -group reg -group {r[]} -label R0_H -radix hexadecimal {/tbl/cpu/data/r[1]}
+add wave -noupdate -group data -group reg -group {r[]} -label R1_L -radix hexadecimal {/tbl/cpu/data/r[2]}
+add wave -noupdate -group data -group reg -group {r[]} -label R1_H -radix hexadecimal {/tbl/cpu/data/r[3]}
+add wave -noupdate -group data -group reg -group {r[]} -label R2_L -radix hexadecimal {/tbl/cpu/data/r[4]}
+add wave -noupdate -group data -group reg -group {r[]} -label R2_H -radix hexadecimal {/tbl/cpu/data/r[5]}
+add wave -noupdate -group data -group reg -group {r[]} -label R3_L -radix hexadecimal {/tbl/cpu/data/r[6]}
+add wave -noupdate -group data -group reg -group {r[]} -label R3_H -radix hexadecimal {/tbl/cpu/data/r[7]}
+add wave -noupdate -group data -group reg -group {r[]} -label R4_L -radix hexadecimal {/tbl/cpu/data/r[8]}
+add wave -noupdate -group data -group reg -group {r[]} -label R4_H -radix hexadecimal {/tbl/cpu/data/r[9]}
+add wave -noupdate -group data -group reg -group {r[]} -label R5_L -radix hexadecimal {/tbl/cpu/data/r[10]}
+add wave -noupdate -group data -group reg -group {r[]} -label R5_H -radix hexadecimal {/tbl/cpu/data/r[11]}
+add wave -noupdate -group data -group reg -group {r[]} -label {PC_H/R[F]} -radix hexadecimal {/tbl/cpu/data/r[12]}
+add wave -noupdate -group data -group reg -group {r[]} -label {PC_L/R[E]} -radix hexadecimal {/tbl/cpu/data/r[13]}
+add wave -noupdate -group data -group reg -group {r[]} -label {SP_H/R[D]} -radix hexadecimal {/tbl/cpu/data/r[14]}
+add wave -noupdate -group data -group reg -group {r[]} -label {SP_L/R[C]} -radix hexadecimal {/tbl/cpu/data/r[15]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[B] psw} -radix hexadecimal {/tbl/cpu/data/r[16]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[A] scratch} -radix hexadecimal {/tbl/cpu/data/r[17]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[9] ir_h} -radix hexadecimal {/tbl/cpu/data/r[18]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[8] ir_l} -radix hexadecimal {/tbl/cpu/data/r[19]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[7] dst_h} -radix hexadecimal {/tbl/cpu/data/r[20]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[6] dst_l} -radix hexadecimal {/tbl/cpu/data/r[21]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[5] src_h} -radix hexadecimal {/tbl/cpu/data/r[22]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[4] src_l} -radix hexadecimal {/tbl/cpu/data/r[23]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[3] ba_h} -radix hexadecimal {/tbl/cpu/data/r[24]}
+add wave -noupdate -group data -group reg -group {r[]} -label {R[2] ba_l} -radix hexadecimal {/tbl/cpu/data/r[25]}
+add wave -noupdate -group data -group reg -radix hexadecimal -childformat {{{/tbl/cpu/data/r[0]} -radix hexadecimal} {{/tbl/cpu/data/r[1]} -radix hexadecimal} {{/tbl/cpu/data/r[2]} -radix hexadecimal} {{/tbl/cpu/data/r[3]} -radix hexadecimal} {{/tbl/cpu/data/r[4]} -radix hexadecimal} {{/tbl/cpu/data/r[5]} -radix hexadecimal} {{/tbl/cpu/data/r[6]} -radix hexadecimal} {{/tbl/cpu/data/r[7]} -radix hexadecimal} {{/tbl/cpu/data/r[8]} -radix hexadecimal} {{/tbl/cpu/data/r[9]} -radix hexadecimal} {{/tbl/cpu/data/r[10]} -radix hexadecimal} {{/tbl/cpu/data/r[11]} -radix hexadecimal} {{/tbl/cpu/data/r[12]} -radix hexadecimal} {{/tbl/cpu/data/r[13]} -radix hexadecimal} {{/tbl/cpu/data/r[14]} -radix hexadecimal} {{/tbl/cpu/data/r[15]} -radix hexadecimal -childformat {{{/tbl/cpu/data/r[15][7]} -radix hexadecimal} {{/tbl/cpu/data/r[15][6]} -radix hexadecimal} {{/tbl/cpu/data/r[15][5]} -radix hexadecimal} {{/tbl/cpu/data/r[15][4]} -radix hexadecimal} {{/tbl/cpu/data/r[15][3]} -radix hexadecimal} {{/tbl/cpu/data/r[15][2]} -radix hexadecimal} {{/tbl/cpu/data/r[15][1]} -radix hexadecimal} {{/tbl/cpu/data/r[15][0]} -radix hexadecimal}}} {{/tbl/cpu/data/r[16]} -radix hexadecimal -childformat {{{/tbl/cpu/data/r[16][7]} -radix hexadecimal} {{/tbl/cpu/data/r[16][6]} -radix hexadecimal} {{/tbl/cpu/data/r[16][5]} -radix hexadecimal} {{/tbl/cpu/data/r[16][4]} -radix hexadecimal} {{/tbl/cpu/data/r[16][3]} -radix hexadecimal} {{/tbl/cpu/data/r[16][2]} -radix hexadecimal} {{/tbl/cpu/data/r[16][1]} -radix hexadecimal} {{/tbl/cpu/data/r[16][0]} -radix hexadecimal}}} {{/tbl/cpu/data/r[17]} -radix hexadecimal} {{/tbl/cpu/data/r[18]} -radix hexadecimal} {{/tbl/cpu/data/r[19]} -radix hexadecimal} {{/tbl/cpu/data/r[20]} -radix hexadecimal} {{/tbl/cpu/data/r[21]} -radix hexadecimal -childformat {{{/tbl/cpu/data/r[21][7]} -radix hexadecimal} {{/tbl/cpu/data/r[21][6]} -radix hexadecimal} {{/tbl/cpu/data/r[21][5]} -radix hexadecimal} {{/tbl/cpu/data/r[21][4]} -radix hexadecimal} {{/tbl/cpu/data/r[21][3]} -radix hexadecimal} {{/tbl/cpu/data/r[21][2]} -radix hexadecimal} {{/tbl/cpu/data/r[21][1]} -radix hexadecimal} {{/tbl/cpu/data/r[21][0]} -radix hexadecimal}}} {{/tbl/cpu/data/r[22]} -radix hexadecimal} {{/tbl/cpu/data/r[23]} -radix hexadecimal} {{/tbl/cpu/data/r[24]} -radix hexadecimal} {{/tbl/cpu/data/r[25]} -radix hexadecimal -childformat {{{/tbl/cpu/data/r[25][7]} -radix hexadecimal} {{/tbl/cpu/data/r[25][6]} -radix hexadecimal} {{/tbl/cpu/data/r[25][5]} -radix hexadecimal} {{/tbl/cpu/data/r[25][4]} -radix hexadecimal} {{/tbl/cpu/data/r[25][3]} -radix hexadecimal} {{/tbl/cpu/data/r[25][2]} -radix hexadecimal} {{/tbl/cpu/data/r[25][1]} -radix hexadecimal} {{/tbl/cpu/data/r[25][0]} -radix hexadecimal}}}} -subitemconfig {{/tbl/cpu/data/r[0]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15]} {-height 15 -radix hexadecimal -childformat {{{/tbl/cpu/data/r[15][7]} -radix hexadecimal} {{/tbl/cpu/data/r[15][6]} -radix hexadecimal} {{/tbl/cpu/data/r[15][5]} -radix hexadecimal} {{/tbl/cpu/data/r[15][4]} -radix hexadecimal} {{/tbl/cpu/data/r[15][3]} -radix hexadecimal} {{/tbl/cpu/data/r[15][2]} -radix hexadecimal} {{/tbl/cpu/data/r[15][1]} -radix hexadecimal} {{/tbl/cpu/data/r[15][0]} -radix hexadecimal}}} {/tbl/cpu/data/r[15][7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[15][0]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16]} {-height 15 -radix hexadecimal -childformat {{{/tbl/cpu/data/r[16][7]} -radix hexadecimal} {{/tbl/cpu/data/r[16][6]} -radix hexadecimal} {{/tbl/cpu/data/r[16][5]} -radix hexadecimal} {{/tbl/cpu/data/r[16][4]} -radix hexadecimal} {{/tbl/cpu/data/r[16][3]} -radix hexadecimal} {{/tbl/cpu/data/r[16][2]} -radix hexadecimal} {{/tbl/cpu/data/r[16][1]} -radix hexadecimal} {{/tbl/cpu/data/r[16][0]} -radix hexadecimal}}} {/tbl/cpu/data/r[16][7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[16][0]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[17]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[18]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[19]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[20]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21]} {-height 15 -radix hexadecimal -childformat {{{/tbl/cpu/data/r[21][7]} -radix hexadecimal} {{/tbl/cpu/data/r[21][6]} -radix hexadecimal} {{/tbl/cpu/data/r[21][5]} -radix hexadecimal} {{/tbl/cpu/data/r[21][4]} -radix hexadecimal} {{/tbl/cpu/data/r[21][3]} -radix hexadecimal} {{/tbl/cpu/data/r[21][2]} -radix hexadecimal} {{/tbl/cpu/data/r[21][1]} -radix hexadecimal} {{/tbl/cpu/data/r[21][0]} -radix hexadecimal}}} {/tbl/cpu/data/r[21][7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[21][0]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[22]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[23]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[24]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25]} {-height 15 -radix hexadecimal -childformat {{{/tbl/cpu/data/r[25][7]} -radix hexadecimal} {{/tbl/cpu/data/r[25][6]} -radix hexadecimal} {{/tbl/cpu/data/r[25][5]} -radix hexadecimal} {{/tbl/cpu/data/r[25][4]} -radix hexadecimal} {{/tbl/cpu/data/r[25][3]} -radix hexadecimal} {{/tbl/cpu/data/r[25][2]} -radix hexadecimal} {{/tbl/cpu/data/r[25][1]} -radix hexadecimal} {{/tbl/cpu/data/r[25][0]} -radix hexadecimal}}} {/tbl/cpu/data/r[25][7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/r[25][0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/r
+add wave -noupdate -group data -group reg -radix hexadecimal /tbl/cpu/data/ra
+add wave -noupdate -group data -group reg -radix hexadecimal /tbl/cpu/data/rb
+add wave -noupdate -group data -group reg /tbl/cpu/data/f03_wr
+add wave -noupdate -group data -group reg /tbl/cpu/data/f47_wr
+add wave -noupdate -group data -group reg /tbl/cpu/data/rsela
+add wave -noupdate -group data -group reg /tbl/cpu/data/rselb
+add wave -noupdate -group data -group reg /tbl/cpu/data/rwra
+add wave -noupdate -group data -group reg /tbl/cpu/data/g
+add wave -noupdate -group data -group mi -radix octal -childformat {{{/tbl/cpu/control/lc[10]} -radix octal} {{/tbl/cpu/control/lc[9]} -radix octal} {{/tbl/cpu/control/lc[8]} -radix octal} {{/tbl/cpu/control/lc[7]} -radix octal} {{/tbl/cpu/control/lc[6]} -radix octal} {{/tbl/cpu/control/lc[5]} -radix octal} {{/tbl/cpu/control/lc[4]} -radix octal} {{/tbl/cpu/control/lc[3]} -radix octal} {{/tbl/cpu/control/lc[2]} -radix octal} {{/tbl/cpu/control/lc[1]} -radix octal} {{/tbl/cpu/control/lc[0]} -radix octal}} -subitemconfig {{/tbl/cpu/control/lc[10]} {-height 15 -radix octal} {/tbl/cpu/control/lc[9]} {-height 15 -radix octal} {/tbl/cpu/control/lc[8]} {-height 15 -radix octal} {/tbl/cpu/control/lc[7]} {-height 15 -radix octal} {/tbl/cpu/control/lc[6]} {-height 15 -radix octal} {/tbl/cpu/control/lc[5]} {-height 15 -radix octal} {/tbl/cpu/control/lc[4]} {-height 15 -radix octal} {/tbl/cpu/control/lc[3]} {-height 15 -radix octal} {/tbl/cpu/control/lc[2]} {-height 15 -radix octal} {/tbl/cpu/control/lc[1]} {-height 15 -radix octal} {/tbl/cpu/control/lc[0]} {-height 15 -radix octal}} /tbl/cpu/control/lc
+add wave -noupdate -group data -group mi -radix hexadecimal -childformat {{{/tbl/cpu/data/dir[15]} -radix hexadecimal} {{/tbl/cpu/data/dir[14]} -radix hexadecimal} {{/tbl/cpu/data/dir[13]} -radix hexadecimal} {{/tbl/cpu/data/dir[12]} -radix hexadecimal} {{/tbl/cpu/data/dir[11]} -radix hexadecimal} {{/tbl/cpu/data/dir[10]} -radix hexadecimal} {{/tbl/cpu/data/dir[9]} -radix hexadecimal} {{/tbl/cpu/data/dir[8]} -radix hexadecimal} {{/tbl/cpu/data/dir[7]} -radix hexadecimal} {{/tbl/cpu/data/dir[6]} -radix hexadecimal} {{/tbl/cpu/data/dir[5]} -radix hexadecimal} {{/tbl/cpu/data/dir[4]} -radix hexadecimal} {{/tbl/cpu/data/dir[3]} -radix hexadecimal} {{/tbl/cpu/data/dir[2]} -radix hexadecimal} {{/tbl/cpu/data/dir[1]} -radix hexadecimal} {{/tbl/cpu/data/dir[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/dir[15]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/dir[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/dir
+add wave -noupdate -group data -group mi -radix hexadecimal /tbl/cpu/data/dir_c1
+add wave -noupdate -group data -group mi /tbl/cpu/data/inpl
+add wave -noupdate -group data -group mi /tbl/cpu/data/m04rs
+add wave -noupdate -group data -group mi /tbl/cpu/data/mo_ad
+add wave -noupdate -group data -group mi /tbl/cpu/data/mo_fa
+add wave -noupdate -group data -group mi /tbl/cpu/data/m_in
+add wave -noupdate -group data -group mi /tbl/cpu/data/inpl_c4
+add wave -noupdate -group data -group mi /tbl/cpu/data/mo_ad_c4
+add wave -noupdate -group data -group mi /tbl/cpu/data/mo_fa_c4
+add wave -noupdate -group data -group mi /tbl/cpu/data/m_in_c4
+add wave -noupdate -group data -group mi /tbl/cpu/data/jump
+add wave -noupdate -group data -group mi /tbl/cpu/data/jm15
+add wave -noupdate -group data -group psw /tbl/cpu/c2
+add wave -noupdate -group data -group psw -radix hexadecimal -childformat {{{/tbl/cpu/data/psw[7]} -radix hexadecimal} {{/tbl/cpu/data/psw[6]} -radix hexadecimal} {{/tbl/cpu/data/psw[5]} -radix hexadecimal} {{/tbl/cpu/data/psw[4]} -radix hexadecimal} {{/tbl/cpu/data/psw[3]} -radix hexadecimal} {{/tbl/cpu/data/psw[2]} -radix hexadecimal} {{/tbl/cpu/data/psw[1]} -radix hexadecimal} {{/tbl/cpu/data/psw[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/psw[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/psw[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/psw
+add wave -noupdate -group data -group psw /tbl/cpu/data/psw_c2
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f0
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f1
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f2
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f3
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f0
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f1
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f6
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f0_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f1_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f2_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f3_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/wr_f4_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f0_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f1_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f4_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_f6_c4
+add wave -noupdate -group data -group psw -group psw_stb /tbl/cpu/data/st_fx
+add wave -noupdate -group data -group alu -radix hexadecimal -childformat {{{/tbl/cpu/data/alu[7]} -radix hexadecimal} {{/tbl/cpu/data/alu[6]} -radix hexadecimal} {{/tbl/cpu/data/alu[5]} -radix hexadecimal} {{/tbl/cpu/data/alu[4]} -radix hexadecimal} {{/tbl/cpu/data/alu[3]} -radix hexadecimal} {{/tbl/cpu/data/alu[2]} -radix hexadecimal} {{/tbl/cpu/data/alu[1]} -radix hexadecimal} {{/tbl/cpu/data/alu[0]} -radix hexadecimal}} -expand -subitemconfig {{/tbl/cpu/data/alu[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/alu[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/alu
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_c
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_c4
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_c8
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_n
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_rd
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_sh
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_sh8
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_v
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_z
+add wave -noupdate -group data -group alu /tbl/cpu/data/alu_z_c4
+add wave -noupdate -group data -group alu -radix hexadecimal /tbl/cpu/data/ax
+add wave -noupdate -group data -group alu -radix hexadecimal /tbl/cpu/data/ay
+add wave -noupdate -group data -group alu -radix hexadecimal -childformat {{{/tbl/cpu/data/c[7]} -radix hexadecimal} {{/tbl/cpu/data/c[6]} -radix hexadecimal} {{/tbl/cpu/data/c[5]} -radix hexadecimal} {{/tbl/cpu/data/c[4]} -radix hexadecimal} {{/tbl/cpu/data/c[3]} -radix hexadecimal} {{/tbl/cpu/data/c[2]} -radix hexadecimal} {{/tbl/cpu/data/c[1]} -radix hexadecimal} {{/tbl/cpu/data/c[0]} -radix hexadecimal}} -expand -subitemconfig {{/tbl/cpu/data/c[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/c[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/c
+add wave -noupdate -group data -group alu -radix hexadecimal -childformat {{{/tbl/cpu/data/fb[7]} -radix hexadecimal} {{/tbl/cpu/data/fb[6]} -radix hexadecimal} {{/tbl/cpu/data/fb[5]} -radix hexadecimal} {{/tbl/cpu/data/fb[4]} -radix hexadecimal} {{/tbl/cpu/data/fb[3]} -radix hexadecimal} {{/tbl/cpu/data/fb[2]} -radix hexadecimal} {{/tbl/cpu/data/fb[1]} -radix hexadecimal} {{/tbl/cpu/data/fb[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/fb[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fb[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/fb
+add wave -noupdate -group data -group alu -radix hexadecimal -childformat {{{/tbl/cpu/data/fa[7]} -radix hexadecimal} {{/tbl/cpu/data/fa[6]} -radix hexadecimal} {{/tbl/cpu/data/fa[5]} -radix hexadecimal} {{/tbl/cpu/data/fa[4]} -radix hexadecimal} {{/tbl/cpu/data/fa[3]} -radix hexadecimal} {{/tbl/cpu/data/fa[2]} -radix hexadecimal} {{/tbl/cpu/data/fa[1]} -radix hexadecimal} {{/tbl/cpu/data/fa[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/fa[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/fa[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/fa
+add wave -noupdate -group data -group pld /tbl/cpu/data/pl
+add wave -noupdate -group data -group pld /tbl/cpu/data/pl_c4
+add wave -noupdate -group data -group pld /tbl/cpu/data/dmi
+add wave -noupdate -group data -group plj /tbl/cpu/data/plj/inpl
+add wave -noupdate -group data -group plj /tbl/cpu/data/plj/icc
+add wave -noupdate -group data -group plj /tbl/cpu/data/plj/psw
+add wave -noupdate -group data -group plj -radix hexadecimal /tbl/cpu/data/plj/mir
+add wave -noupdate -group data -group plj /tbl/cpu/data/plj/jump
+add wave -noupdate -group data -group plj /tbl/cpu/data/plj/jump_c3
+add wave -noupdate -group data -group plj /tbl/cpu/data/plj/pl
+add wave -noupdate -group data -group plb -radix octal -childformat {{{/tbl/cpu/data/plb/dal[4]} -radix octal} {{/tbl/cpu/data/plb/dal[3]} -radix octal} {{/tbl/cpu/data/plb/dal[2]} -radix octal} {{/tbl/cpu/data/plb/dal[1]} -radix octal} {{/tbl/cpu/data/plb/dal[0]} -radix octal}} -subitemconfig {{/tbl/cpu/data/plb/dal[4]} {-height 15 -radix octal} {/tbl/cpu/data/plb/dal[3]} {-height 15 -radix octal} {/tbl/cpu/data/plb/dal[2]} {-height 15 -radix octal} {/tbl/cpu/data/plb/dal[1]} {-height 15 -radix octal} {/tbl/cpu/data/plb/dal[0]} {-height 15 -radix octal}} /tbl/cpu/data/plb/dal
+add wave -noupdate -group data -group plb -radix hexadecimal -childformat {{{/tbl/cpu/data/plb/psw[7]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[6]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[5]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[4]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[3]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[2]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[1]} -radix hexadecimal} {{/tbl/cpu/data/plb/psw[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/plb/psw[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/plb/psw[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/plb/psw
+add wave -noupdate -group data -group plb /tbl/cpu/data/plb/mo_ad
+add wave -noupdate -group data -group plb /tbl/cpu/data/plb/jump
+add wave -noupdate -group data -group plb /tbl/cpu/data/plb/jcond_c2
+add wave -noupdate -group data -group plb /tbl/cpu/data/plb/jcond_c4
+add wave -noupdate -group data -group plb /tbl/cpu/data/plb/moad_c1
+add wave -noupdate -group data -group dal -radix octal -childformat {{{/tbl/cpu/data/dal[15]} -radix octal} {{/tbl/cpu/data/dal[14]} -radix octal} {{/tbl/cpu/data/dal[13]} -radix octal} {{/tbl/cpu/data/dal[12]} -radix octal} {{/tbl/cpu/data/dal[11]} -radix octal} {{/tbl/cpu/data/dal[10]} -radix octal} {{/tbl/cpu/data/dal[9]} -radix octal} {{/tbl/cpu/data/dal[8]} -radix octal} {{/tbl/cpu/data/dal[7]} -radix octal} {{/tbl/cpu/data/dal[6]} -radix octal} {{/tbl/cpu/data/dal[5]} -radix octal} {{/tbl/cpu/data/dal[4]} -radix octal} {{/tbl/cpu/data/dal[3]} -radix octal} {{/tbl/cpu/data/dal[2]} -radix octal} {{/tbl/cpu/data/dal[1]} -radix octal} {{/tbl/cpu/data/dal[0]} -radix octal}} -subitemconfig {{/tbl/cpu/data/dal[15]} {-height 15 -radix octal} {/tbl/cpu/data/dal[14]} {-height 15 -radix octal} {/tbl/cpu/data/dal[13]} {-height 15 -radix octal} {/tbl/cpu/data/dal[12]} {-height 15 -radix octal} {/tbl/cpu/data/dal[11]} {-height 15 -radix octal} {/tbl/cpu/data/dal[10]} {-height 15 -radix octal} {/tbl/cpu/data/dal[9]} {-height 15 -radix octal} {/tbl/cpu/data/dal[8]} {-height 15 -radix octal} {/tbl/cpu/data/dal[7]} {-height 15 -radix octal} {/tbl/cpu/data/dal[6]} {-height 15 -radix octal} {/tbl/cpu/data/dal[5]} {-height 15 -radix octal} {/tbl/cpu/data/dal[4]} {-height 15 -radix octal} {/tbl/cpu/data/dal[3]} {-height 15 -radix octal} {/tbl/cpu/data/dal[2]} {-height 15 -radix octal} {/tbl/cpu/data/dal[1]} {-height 15 -radix octal} {/tbl/cpu/data/dal[0]} {-height 15 -radix octal}} /tbl/cpu/data/dal
+add wave -noupdate -group data -group dal -radix hexadecimal -childformat {{{/tbl/cpu/data/md[7]} -radix hexadecimal} {{/tbl/cpu/data/md[6]} -radix hexadecimal} {{/tbl/cpu/data/md[5]} -radix hexadecimal} {{/tbl/cpu/data/md[4]} -radix hexadecimal} {{/tbl/cpu/data/md[3]} -radix hexadecimal} {{/tbl/cpu/data/md[2]} -radix hexadecimal} {{/tbl/cpu/data/md[1]} -radix hexadecimal} {{/tbl/cpu/data/md[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/data/md[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/data/md[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/data/md
+add wave -noupdate -group data -group dal /tbl/cpu/data/mdh_rd
+add wave -noupdate -group data -group dal /tbl/cpu/data/mdl_rd
+add wave -noupdate -group data -group dal -radix octal /tbl/cpu/data/mu
+add wave -noupdate -group data -group dal -radix octal /tbl/cpu/data/mu_c4
+add wave -noupdate -group data -group dal /tbl/cpu/data/ad_oe
+add wave -noupdate -group data -group dal -radix octal /tbl/cpu/data/ad_out
+add wave -noupdate -group data -group dal /tbl/cpu/data/ad_stb
+add wave -noupdate -group data -group dal /tbl/cpu/data/ad_stb_c4
+add wave -noupdate -group data -group dal /tbl/cpu/data/addr0
+add wave -noupdate -group microm -radix hexadecimal -childformat {{{/tbl/cpu/microm/data[21]} -radix hexadecimal} {{/tbl/cpu/microm/data[20]} -radix hexadecimal} {{/tbl/cpu/microm/data[19]} -radix hexadecimal} {{/tbl/cpu/microm/data[18]} -radix hexadecimal} {{/tbl/cpu/microm/data[17]} -radix hexadecimal} {{/tbl/cpu/microm/data[16]} -radix hexadecimal} {{/tbl/cpu/microm/data[15]} -radix hexadecimal} {{/tbl/cpu/microm/data[14]} -radix hexadecimal} {{/tbl/cpu/microm/data[13]} -radix hexadecimal} {{/tbl/cpu/microm/data[12]} -radix hexadecimal} {{/tbl/cpu/microm/data[11]} -radix hexadecimal} {{/tbl/cpu/microm/data[10]} -radix hexadecimal} {{/tbl/cpu/microm/data[9]} -radix hexadecimal} {{/tbl/cpu/microm/data[8]} -radix hexadecimal} {{/tbl/cpu/microm/data[7]} -radix hexadecimal} {{/tbl/cpu/microm/data[6]} -radix hexadecimal} {{/tbl/cpu/microm/data[5]} -radix hexadecimal} {{/tbl/cpu/microm/data[4]} -radix hexadecimal} {{/tbl/cpu/microm/data[3]} -radix hexadecimal} {{/tbl/cpu/microm/data[2]} -radix hexadecimal} {{/tbl/cpu/microm/data[1]} -radix hexadecimal} {{/tbl/cpu/microm/data[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/microm/data[21]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[20]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[19]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[18]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[17]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[16]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[15]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/data[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/microm/data
+add wave -noupdate -group microm -radix octal -childformat {{{/tbl/cpu/microm/addr[10]} -radix octal} {{/tbl/cpu/microm/addr[9]} -radix octal} {{/tbl/cpu/microm/addr[8]} -radix octal} {{/tbl/cpu/microm/addr[7]} -radix octal} {{/tbl/cpu/microm/addr[6]} -radix octal} {{/tbl/cpu/microm/addr[5]} -radix octal} {{/tbl/cpu/microm/addr[4]} -radix octal} {{/tbl/cpu/microm/addr[3]} -radix octal} {{/tbl/cpu/microm/addr[2]} -radix octal} {{/tbl/cpu/microm/addr[1]} -radix octal} {{/tbl/cpu/microm/addr[0]} -radix octal}} -subitemconfig {{/tbl/cpu/microm/addr[10]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[9]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[8]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[7]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[6]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[5]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[4]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[3]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[2]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[1]} {-height 15 -radix octal} {/tbl/cpu/microm/addr[0]} {-height 15 -radix octal}} /tbl/cpu/microm/addr
+add wave -noupdate -group microm -radix hexadecimal -childformat {{{/tbl/cpu/microm/mout[21]} -radix hexadecimal} {{/tbl/cpu/microm/mout[20]} -radix hexadecimal} {{/tbl/cpu/microm/mout[19]} -radix hexadecimal} {{/tbl/cpu/microm/mout[18]} -radix hexadecimal} {{/tbl/cpu/microm/mout[17]} -radix hexadecimal} {{/tbl/cpu/microm/mout[16]} -radix hexadecimal} {{/tbl/cpu/microm/mout[15]} -radix hexadecimal} {{/tbl/cpu/microm/mout[14]} -radix hexadecimal} {{/tbl/cpu/microm/mout[13]} -radix hexadecimal} {{/tbl/cpu/microm/mout[12]} -radix hexadecimal} {{/tbl/cpu/microm/mout[11]} -radix hexadecimal} {{/tbl/cpu/microm/mout[10]} -radix hexadecimal} {{/tbl/cpu/microm/mout[9]} -radix hexadecimal} {{/tbl/cpu/microm/mout[8]} -radix hexadecimal} {{/tbl/cpu/microm/mout[7]} -radix hexadecimal} {{/tbl/cpu/microm/mout[6]} -radix hexadecimal} {{/tbl/cpu/microm/mout[5]} -radix hexadecimal} {{/tbl/cpu/microm/mout[4]} -radix hexadecimal} {{/tbl/cpu/microm/mout[3]} -radix hexadecimal} {{/tbl/cpu/microm/mout[2]} -radix hexadecimal} {{/tbl/cpu/microm/mout[1]} -radix hexadecimal} {{/tbl/cpu/microm/mout[0]} -radix hexadecimal}} -subitemconfig {{/tbl/cpu/microm/mout[21]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[20]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[19]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[18]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[17]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[16]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[15]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[14]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[13]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[12]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[11]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[10]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[9]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[8]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[7]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[6]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[5]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[4]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[3]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[2]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[1]} {-height 15 -radix hexadecimal} {/tbl/cpu/microm/mout[0]} {-height 15 -radix hexadecimal}} /tbl/cpu/microm/mout
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {232550 ps} 0}
+WaveRestoreCursors {{Cursor 1} {115960515 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 252
-configure wave -valuecolwidth 100
+configure wave -namecolwidth 174
+configure wave -valuecolwidth 55
 configure wave -justifyvalue left
 configure wave -signalnamewidth 1
 configure wave -snapdistance 10
@@ -115,4 +293,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {2164282 ps}
+WaveRestoreZoom {113981796 ps} {119138204 ps}
