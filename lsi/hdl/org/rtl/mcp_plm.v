@@ -73,19 +73,19 @@ case(lc)
    11'b00100110101: tcr <= 7'h58;   // 0465
    11'b00100111111: tcr <= 7'h58;   // 0477
    11'b00101000000: tcr <= 7'h0B;   // 0500
+   11'b00101001000: tcr <= 7'h4A;   // 0510
+   11'b00101001100: tcr <= 7'h4A;   // 0514
    11'b00101010000: tcr <= 7'h4A;   // 0520
    11'b00101010100: tcr <= 7'h4A;   // 0524
    11'b00101011000: tcr <= 7'h4A;   // 0530
    11'b00101011100: tcr <= 7'h4A;   // 0534
    11'b00101100000: tcr <= 7'h07;   // 0540
    11'b00101100010: tcr <= 7'h26;   // 0542
+   11'b00101101000: tcr <= 7'h4A;   // 0550
+   11'b00101101100: tcr <= 7'h4A;   // 0554
    11'b00101110000: tcr <= 7'h4A;   // 0560
    11'b00101110100: tcr <= 7'h4A;   // 0564
    11'b00101111000: tcr <= 7'h4A;   // 0570
-   11'b00101001000: tcr <= 7'h4A;   // 0510
-   11'b00101001100: tcr <= 7'h4A;   // 0514
-   11'b00101101000: tcr <= 7'h4A;   // 0550
-   11'b00101101100: tcr <= 7'h4A;   // 0554
    11'b00110000000: tcr <= 7'h0E;   // 0600
    11'b00110100000: tcr <= 7'h0D;   // 0640
    11'b00110001000: tcr <= 7'h4A;   // 0610
@@ -108,9 +108,9 @@ case(lc)
    11'b10000111011: tcr <= 7'h34;   // 2073
    11'b10001010011: tcr <= 7'h19;   // 2123
    11'b10001111010: tcr <= 7'h19;   // 2172
+   11'b10010010000: tcr <= 7'h62;   // 2220
    11'b10010101100: tcr <= 7'h62;   // 2254
    11'b10010111100: tcr <= 7'h62;   // 2274
-   11'b10010010000: tcr <= 7'h62;   // 2220
    11'b10011010000: tcr <= 7'h62;   // 2320
    11'b10100000110: tcr <= 7'h62;   // 2406
    11'b10100100111: tcr <= 7'h34;   // 2447
@@ -128,17 +128,55 @@ case(lc)
    11'b10110001100: tcr <= 7'h34;   // 2614
    11'b10110100100: tcr <= 7'h34;   // 2644
    11'b10110101100: tcr <= 7'h34;   // 2654
-   11'b10111001100: tcr <= 7'h19;   // 2714
-   11'b10111001111: tcr <= 7'h19;   // 2717
-   11'b10111101100: tcr <= 7'h19;   // 2754
    11'b10111000000: tcr <= 7'h34;   // 2700
    11'b10111001000: tcr <= 7'h34;   // 2710
+   11'b10111001100: tcr <= 7'h19;   // 2714
+   11'b10111001111: tcr <= 7'h19;   // 2717
    11'b10111100000: tcr <= 7'h34;   // 2740
    11'b10111101000: tcr <= 7'h34;   // 2750
+   11'b10111101100: tcr <= 7'h19;   // 2754
    default: tcr <= 7'h00;
 endcase
 endmodule
 
+//______________________________________________________________________________
+//
+//  07: 0540
+//  0B: 0500
+//  0D: 0640
+//  0E: 0600
+//  13: 0100 0111 0121 0133 0143 0155 0164 0176 2571
+//  15: 0310 0321 0331 0342 0353 0362 0374
+//  16: 0120
+//  19: 2123 2172 2516 2622 2630 2714 2717 2754
+//  1A: 1451
+// *1C: 1502 1663 1707 1721 1750
+//  23: 0141
+//  25: 0067
+//  26: 0542
+//  29: 2550 2551 2552 2553
+// *2A: 0415
+//  2C: 0421
+//  32: 0110 0132 0154 0163 0175
+//  34: 2033 2073 2447 2500 2540 2604 2614 2644 2654 2700 2710 2740 2750
+//  38: 0212 0222 0234 0244 0256 0265 0277
+//  49: 0441
+// *4A: 0510 0514 0520 0524 0530 0534 0550 0554 0560 0564
+//      0570 0610 0614 0650 0654 0750 0754 1000 1050 1054
+//  4C: 0134
+//  51: 0101 0112 0123 0137
+//  52: 0177
+//  54: 1244
+//  58: 0412 0422 0424 0434 0443 0446 0456 0465 0477
+//  62: 2254 2274 2220 2320 2406
+//  64: 0122
+//  68: 0200
+//  70: 0400
+//______________________________________________________________________________
+//
+// 1C: REF - handle DRAM refresh routine
+// 2A: DC1 - decode upper byte of PDP-11 opcode
+// 4A: RNI - read next instruction
 //______________________________________________________________________________
 //
 // Array 3/4
@@ -171,13 +209,6 @@ end
 endfunction
 
 wire [99:0] p;
-wire ltsr_n;
-wire [2:0] tsr_n;
-wire [10:0] pta_n;
-
-assign tsr = ~tsr_n;
-assign pta = ~pta_n;
-assign ltsr = ~ltsr_n;
 
 assign p[0]  = cmp({q, ts, tc, tr}, {1'b0, 2'bxx, 7'b1x1x1x1, 8'bxxxxxxxx});
 assign p[1]  = cmp({q, ts, tc, tr}, {1'b0, 2'bxx, 7'b1x1x1x1, 8'bxxxx1xxx});
@@ -264,22 +295,22 @@ assign p[81] = cmp({q, ts, tc, tr}, {1'bx, 2'bxx, 7'b11xx1x1, 8'b0100xxxx});
 assign p[82] = cmp({q, ts, tc, tr}, {1'bx, 2'bxx, 7'b11xx1x1, 8'b0010xxxx});
 assign p[83] = cmp({q, ts, tc, tr}, {1'bx, 2'bxx, 7'b11xx1x1, 8'b0000xxxx});
 
-assign p[84] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx01});
-assign p[85] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx01});
-assign p[86] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx1x});
-assign p[87] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxx100001});
-assign p[88] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx1x});
-assign p[89] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx00000xx});
-assign p[90] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxx10001x});
-assign p[91] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxxx001xx});
-assign p[92] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxxxx1xxx});
-assign p[93] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0100001});
-assign p[94] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0x10xxx});
-assign p[95] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'b11xxx11, 8'bxxxx1xxx});
-assign p[96] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx010001x});
-assign p[97] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0x001xx});
-assign p[98] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0xx1xxx});
-assign p[99] = cmp({q, ts, tc, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0x00000});
+assign p[84] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx01});
+assign p[85] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx01});
+assign p[86] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx1x});
+assign p[87] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxx100001});
+assign p[88] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx1x});
+assign p[89] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx00000xx}); // RNI
+assign p[90] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxx10001x});
+assign p[91] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxxx001xx});
+assign p[92] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxxxx1xxx});
+assign p[93] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0100001}); // RNI
+assign p[94] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0x10xxx}); // RNI
+assign p[95] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b11xxx11, 8'bxxxx1xxx}); // REF
+assign p[96] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx010001x}); // RNI
+assign p[97] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0x001xx}); // RNI
+assign p[98] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0xx1xxx}); // RNI
+assign p[99] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx0x00000}); // RNI
 
 assign lra = p[74];
 assign lta = p[0]  | p[12] | p[13] | p[19] | p[22] | p[25] | p[26] | p[28] | p[29] | p[30]
@@ -290,49 +321,49 @@ assign lta = p[0]  | p[12] | p[13] | p[19] | p[22] | p[25] | p[26] | p[28] | p[2
            | p[82] | p[83] | p[84] | p[85] | p[86] | p[87] | p[88] | p[89] | p[90] | p[91]
            | p[92] | p[93] | p[94] | p[95] | p[96] | p[97] | p[98] | p[99];
 
-assign ltsr_n   = p[0]  | p[12] | p[13] | p[14] | p[19] | p[22] | p[25] | p[26] | p[28] | p[30]
-                | p[37] | p[38] | p[39] | p[40] | p[41] | p[42] | p[43] | p[51] | p[84] | p[85]
-                | p[86] | p[87] | p[88] | p[89] | p[90] | p[91] | p[92] | p[93] | p[94] | p[95]
-                | p[96] | p[97] | p[98] | p[99];
+assign ltsr = p[0]  | p[12] | p[13] | p[14] | p[19] | p[22] | p[25] | p[26] | p[28] | p[30]
+            | p[37] | p[38] | p[39] | p[40] | p[41] | p[42] | p[43] | p[51] | p[84] | p[85]
+            | p[86] | p[87] | p[88] | p[89] | p[90] | p[91] | p[92] | p[93] | p[94] | p[95]
+            | p[96] | p[97] | p[98] | p[99];
 
-assign tsr_n[0] = p[6] | p[7] | p[21] | p[43] | p[53];
-assign tsr_n[1] = p[8] | p[14] | p[15] | p[20] | p[27] | p[54];
-assign tsr_n[2] = p[0]  | p[13] | p[19] | p[22] | p[25] | p[26] | p[28]
+assign tsr[0] = p[6] | p[7] | p[21] | p[43] | p[53];
+assign tsr[1] = p[8] | p[14] | p[15] | p[20] | p[27] | p[54];
+assign tsr[2] = p[0]  | p[13] | p[19] | p[22] | p[25] | p[26] | p[28]
                 | p[30] | p[37] | p[38] | p[39] | p[40] | p[41] | p[42] | p[43];
 
-assign pta_n[0] = p[4] | p[5] | p[13] | p[24] | p[30] | p[33] | p[35] | p[36] | p[37] | p[38]
-                | p[43] | p[45] | p[49] | p[50] | p[52] | p[64] | p[69] | p[70] | p[71] | p[77]
-                | p[78] | p[79] | p[80] | p[83] | p[84] | p[85] | p[86] | p[87] | p[89] | p[92]
-                | p[93] | p[95] | p[98] | p[99];
-assign pta_n[1] = p[28] | p[36] | p[42] | p[43] | p[44] | p[46] | p[47] | p[50] | p[53] | p[64]
-                | p[67] | p[68] | p[69] | p[71] | p[81] | p[83] | p[84] | p[85] | p[86] | p[88]
-                | p[89] | p[90] | p[94] | p[96] | p[99];
-assign pta_n[2] = p[13] | p[16] | p[33] | p[43] | p[44] | p[45] | p[48] | p[50] | p[55] | p[63]
-                | p[64] | p[72] | p[73] | p[78] | p[79] | p[85] | p[86] | p[91] | p[92] | p[95]
-                | p[97] | p[98];
-assign pta_n[3] = p[3] | p[9] | p[13] | p[17] | p[30] | p[35] | p[36] | p[43] | p[45] | p[46]
-                | p[48] | p[56] | p[64] | p[75] | p[78] | p[80] | p[82] | p[85] | p[86] | p[89]
-                | p[92] | p[94] | p[95] | p[98] | p[99];
-assign pta_n[4] = p[2] | p[10] | p[13] | p[18] | p[30] | p[33] | p[43] | p[44] | p[45] | p[47]
-                | p[48] | p[57] | p[64] | p[68] | p[71] | p[73] | p[78] | p[81] | p[84] | p[88]
-                | p[92] | p[94] | p[95] | p[98];
-assign pta_n[5] = p[1] | p[11] | p[13] | p[19] | p[23] | p[25] | p[29] | p[30] | p[33] | p[34]
-                | p[43] | p[44] | p[58] | p[63] | p[64] | p[72] | p[73] | p[75] | p[76] | p[77]
-                | p[79] | p[80] | p[83] | p[94];
-assign pta_n[6] = p[0] | p[19] | p[22] | p[30] | p[31] | p[36] | p[37] | p[38] | p[39] | p[40]
-                | p[41] | p[42] | p[43] | p[46] | p[47] | p[48] | p[49] | p[50] | p[59] | p[61]
-                | p[63] | p[64] | p[65] | p[66] | p[69] | p[75] | p[76] | p[77] | p[79] | p[80]
-                | p[81] | p[82] | p[83] | p[85] | p[86] | p[90] | p[96];
-assign pta_n[7] = p[12] | p[25] | p[26] | p[34] | p[44] | p[45] | p[59] | p[62] | p[66] | p[73]
-                | p[79] | p[80] | p[81] | p[82] | p[84] | p[85] | p[86] | p[87] | p[88] | p[90]
-                | p[91] | p[93] | p[94] | p[96] | p[97];
-assign pta_n[8] = p[19] | p[22] | p[25] | p[26] | p[30] | p[51] | p[59] | p[69] | p[71] | p[72]
-                | p[73] | p[75] | p[78] | p[80] | p[81] | p[82] | p[83] | p[84] | p[85] | p[86]
-                | p[88] | p[89] | p[90] | p[91] | p[92] | p[94] | p[95] | p[96] | p[97] | p[98]
-                | p[99];
-assign pta_n[9] = p[31] | p[34] | p[52] | p[60] | p[61] | p[62] | p[69] | p[73] | p[80] | p[81]
-                | p[82] | p[92] | p[95] | p[98];
-assign pta_n[10] = p[30] | p[32] | p[52] | p[75] | p[76] | p[77] | p[84] | p[85] | p[86] | p[88];
+assign pta[0] = p[4] | p[5] | p[13] | p[24] | p[30] | p[33] | p[35] | p[36] | p[37] | p[38]
+              | p[43] | p[45] | p[49] | p[50] | p[52] | p[64] | p[69] | p[70] | p[71] | p[77]
+              | p[78] | p[79] | p[80] | p[83] | p[84] | p[85] | p[86] | p[87] | p[89] | p[92]
+              | p[93] | p[95] | p[98] | p[99];
+assign pta[1] = p[28] | p[36] | p[42] | p[43] | p[44] | p[46] | p[47] | p[50] | p[53] | p[64]
+              | p[67] | p[68] | p[69] | p[71] | p[81] | p[83] | p[84] | p[85] | p[86] | p[88]
+              | p[89] | p[90] | p[94] | p[96] | p[99];
+assign pta[2] = p[13] | p[16] | p[33] | p[43] | p[44] | p[45] | p[48] | p[50] | p[55] | p[63]
+              | p[64] | p[72] | p[73] | p[78] | p[79] | p[85] | p[86] | p[91] | p[92] | p[95]
+              | p[97] | p[98];
+assign pta[3] = p[3] | p[9] | p[13] | p[17] | p[30] | p[35] | p[36] | p[43] | p[45] | p[46]
+              | p[48] | p[56] | p[64] | p[75] | p[78] | p[80] | p[82] | p[85] | p[86] | p[89]
+              | p[92] | p[94] | p[95] | p[98] | p[99];
+assign pta[4] = p[2] | p[10] | p[13] | p[18] | p[30] | p[33] | p[43] | p[44] | p[45] | p[47]
+              | p[48] | p[57] | p[64] | p[68] | p[71] | p[73] | p[78] | p[81] | p[84] | p[88]
+              | p[92] | p[94] | p[95] | p[98];
+assign pta[5] = p[1] | p[11] | p[13] | p[19] | p[23] | p[25] | p[29] | p[30] | p[33] | p[34]
+              | p[43] | p[44] | p[58] | p[63] | p[64] | p[72] | p[73] | p[75] | p[76] | p[77]
+              | p[79] | p[80] | p[83] | p[94];
+assign pta[6] = p[0] | p[19] | p[22] | p[30] | p[31] | p[36] | p[37] | p[38] | p[39] | p[40]
+              | p[41] | p[42] | p[43] | p[46] | p[47] | p[48] | p[49] | p[50] | p[59] | p[61]
+              | p[63] | p[64] | p[65] | p[66] | p[69] | p[75] | p[76] | p[77] | p[79] | p[80]
+              | p[81] | p[82] | p[83] | p[85] | p[86] | p[90] | p[96];
+assign pta[7] = p[12] | p[25] | p[26] | p[34] | p[44] | p[45] | p[59] | p[62] | p[66] | p[73]
+              | p[79] | p[80] | p[81] | p[82] | p[84] | p[85] | p[86] | p[87] | p[88] | p[90]
+              | p[91] | p[93] | p[94] | p[96] | p[97];
+assign pta[8] = p[19] | p[22] | p[25] | p[26] | p[30] | p[51] | p[59] | p[69] | p[71] | p[72]
+              | p[73] | p[75] | p[78] | p[80] | p[81] | p[82] | p[83] | p[84] | p[85] | p[86]
+              | p[88] | p[89] | p[90] | p[91] | p[92] | p[94] | p[95] | p[96] | p[97] | p[98]
+              | p[99];
+assign pta[9] = p[31] | p[34] | p[52] | p[60] | p[61] | p[62] | p[69] | p[73] | p[80] | p[81]
+              | p[82] | p[92] | p[95] | p[98];
+assign pta[10] = p[30] | p[32] | p[52] | p[75] | p[76] | p[77] | p[84] | p[85] | p[86] | p[88];
 
 endmodule
 
@@ -372,6 +403,7 @@ reg  [2:0] tsr_c4;
 reg  lra_c4;
 reg  lta_c4;
 reg  ltsr_c4;
+reg  tcmax_c4;
 
 mcp_pta12 pta12
 (
@@ -382,10 +414,10 @@ mcp_pta12 pta12
 
 always @(*)
 begin
-   if (c1)
-      tc_c3 <= 7'h7f;
    if (c3)
       tc_c3 <= tc;
+   if (c4)
+      tcmax_c4 <= tc_c3 == 7'h7f;
 end
 
 mcp_pta34 pta34
@@ -407,14 +439,14 @@ assign tsr = tsr_c4;
 assign lra = lra_c4;
 assign lta = lta_c4;
 assign ltsr = ltsr_c4;
-assign tcmax = (tc_c3 == 7'h7f);
+assign tcmax = tcmax_c4;
 
 always @(*)
 begin
    if (c2)
    begin
       pta_c4   <= 11'h000;
-      tsr_c4   <= 1'b0;
+      tsr_c4   <= 3'b000;
       lra_c4   <= 1'b0;
       lta_c4   <= 1'b0;
       ltsr_c4  <= 1'b0;
@@ -626,7 +658,7 @@ assign pl_n[11] = p[16] | p[30] | p[32] | p[33] | p[34];
 assign pl_n[12] = p[51] | p[52] | p[53] | p[54] | p[55];
 assign pl_n[13] = p[14] | p[15] | p[16] | p[17] | p[18] | p[19] | p[21] | p[23] | p[26] | p[27]
                 | p[35] | p[36] | p[37] | p[38] | p[39] | p[40] | p[41] | p[42] | p[43] | p[45]
-                | p[46] | p[47];
+                | p[46] | p[47] | ~psw[4];
 assign pl_n[20:14] = 7'b1111111;
 
 assign pl_c3 = plr_c3;
@@ -671,14 +703,14 @@ assign pl[4]  = (mir[15:8] == 8'h14) & ~icc;       // jif - if ICC is false
 assign pl[5]  = (mir[15:8] == 8'h15) &  icc;       // jit - if ICC is true
 assign pl[6]  = (mir[15:8] == 8'h16) & ~psw[7];    // jnbf - if NB is false
 assign pl[7]  = (mir[15:8] == 8'h17) &  psw[7];    // jnbt - if NB is true
-assign pl[8]  = (mir[15:8] == 8'h10) & ~psw[2];    // jzf - if Z is false
-assign pl[9]  = (mir[15:8] == 8'h11) &  psw[2];    // jzt - if Z is true
-assign pl[10] = (mir[15:8] == 8'h12) & ~psw[0];    // jcf - if C is false
-assign pl[11] = (mir[15:8] == 8'h13) &  psw[0];    // jct - if C is true
-assign pl[12] = (mir[15:8] == 8'h14) & ~psw[1];    // jvf - if V is false
-assign pl[13] = (mir[15:8] == 8'h15) &  psw[1];    // jvt - if V is true
-assign pl[14] = (mir[15:8] == 8'h16) & ~psw[3];    // jnf - if N is false
-assign pl[15] = (mir[15:8] == 8'h17) &  psw[3];    // jnt - if N is true
+assign pl[8]  = (mir[15:8] == 8'h18) & ~psw[2];    // jzf - if Z is false
+assign pl[9]  = (mir[15:8] == 8'h19) &  psw[2];    // jzt - if Z is true
+assign pl[10] = (mir[15:8] == 8'h1a) & ~psw[0];    // jcf - if C is false
+assign pl[11] = (mir[15:8] == 8'h1b) &  psw[0];    // jct - if C is true
+assign pl[12] = (mir[15:8] == 8'h1c) & ~psw[1];    // jvf - if V is false
+assign pl[13] = (mir[15:8] == 8'h1d) &  psw[1];    // jvt - if V is true
+assign pl[14] = (mir[15:8] == 8'h1e) & ~psw[3];    // jnf - if N is false
+assign pl[15] = (mir[15:8] == 8'h1f) &  psw[3];    // jnt - if N is true
 
 always @(*) if (c3) jump_c3 <= ~inpl & |pl;
 assign jump = c4 & jump_c3;
@@ -775,7 +807,6 @@ endfunction
 
 reg jcond_c2;
 reg jcond_c4;
-reg dal8_c4;
 reg moad_c1;
 
 assign jump = jcond_c2;
@@ -783,13 +814,9 @@ assign jump = jcond_c2;
 always @(*)
 begin
    if (c1)
-      jcond_c2 <= 1'b0;
-   if (c1)
       moad_c1 <= mo_ad;
-   if (c2)
-      jcond_c2 <= moad_c1 & ~(jcond_c4 ^ dal8_c4);
-   if (c4)
-      dal8_c4 = dal[0];
+   if (c2 & moad_c1)
+      jcond_c2 <= ~(jcond_c4 ^ dal[0]);
    if (c4)
       jcond_c4 <= cmp(dal[4:1], 4'b1011) & psw[0]              // bcc/bcs, C
                 | cmp(dal[4:1], 4'b1010) & psw[1]              // bvc/bvs, V

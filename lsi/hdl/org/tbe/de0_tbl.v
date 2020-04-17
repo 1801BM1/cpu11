@@ -64,6 +64,7 @@ reg         virq;       // vectored interrupt request
 reg         rfrq;       // dynamic RAM refresh request
                         //
 tri1        init;       // peripheral reset
+wire [1:0]  bsel;       //
                         //
 wire [15:0] ad_mux;     //
 tri1 [15:0] ad;         // inverted address/data bus
@@ -83,6 +84,7 @@ wire        iako;       // interrupt vector strobe
 wire        dref;       //
 reg         din_iako;   //
 reg         din_sync;   //
+reg         in_iako;    //
                         //
 reg [15:0]  addr;       //
 reg         wflg;       //
@@ -97,10 +99,11 @@ wire        ram_read, ram_write;
 
 //_____________________________________________________________________________
 //
-assign      ad    = ad_oe     ? (sel_ram ? ~ad_mux : ~ad_reg) : 16'hZZZZ;
+assign   bsel = `SIM_CONFIG_BOOT_MODE;
+assign   ad = ad_oe ? (sel_ram ? ~ad_mux : ~ad_reg) : 16'hZZZZ;
 
-assign      ram_read  = sel_ram & ~din & ~sync;
-assign      ram_write = sel_ram & ~dout & ~sync;
+assign   ram_read  = sel_ram & ~din & ~sync;
+assign   ram_write = sel_ram & ~dout & ~sync;
 
 memory ram(
    .a(addr),
@@ -156,10 +159,11 @@ begin
    if (~din_sync)
       $display("Read  @ %06O (%06O)", addr, ~ad);
    else
-      if (~din_iako)
+      if (~din_iako | in_iako)
          $display("Read  @ Vector");
       else
          $display("Read  @ Invalid");
+   in_iako = 0;
 `endif
 end
 
@@ -212,6 +216,7 @@ end
 
 always @(negedge iako)
 begin
+   in_iako = 1;
    if (~din)
    begin
       if (~virq)
@@ -256,7 +261,8 @@ begin
       tty_tx_rdy = 0;
       virq       = 1;
 `ifdef  SIM_CONFIG_DEBUG_TTY
-      $display("tty: %06O (%c))", ~ad, (~ad > 16'o000037) ? (~ad & 8'o377) : 8'o52);
+      $display("tty: %06O (%c)", ~ad & 8'o377,
+                ((~ad & 8'o377) > 16'o000037) ? (~ad & 8'o377) : 8'o52);
 `endif
    end
 
@@ -322,6 +328,7 @@ begin
    tty_rx_ie   = 0;
    tty_tx_rdy  = 1;
 
+   in_iako  = 0;
    rfrq     = 1;
    dclo     = 0;
    aclo     = 0;
@@ -385,7 +392,8 @@ lsi cpu
    .pin_din_n(din),           // data input strobe
    .pin_iako_n(iako),         // interrupt vector input
                               //
-   .pin_bsel(2'b00)           // boot mode 0 - 24/26 vector
+   .pin_bsel(bsel)            // boot mode 0 - reserved micROM
+                              // boot mode 3 - 24/26 vector
 );
 
 `ifdef SIM_CONFIG_DEBUG_MC

@@ -15,7 +15,7 @@ module mcp1631
 
 //______________________________________________________________________________
 //
-// Memory array and its inititialization by 1631-10/07/15 content.
+// Memory array and its inititialization with 1631-10/07/15 content
 //
 reg [31:0] mem [0:2047];
 integer i;
@@ -44,6 +44,7 @@ begin
    begin
       //
       // Discharge microinstruction bus lines to low
+      // data[] was set to zeroes if m16 was low on C3
       //
       mout[0]  <= data[0]  ? 1'b0 : 1'bz;
       mout[1]  <= data[1]  ? 1'b0 : 1'bz;
@@ -51,10 +52,10 @@ begin
       mout[3]  <= data[3]  ? 1'b0 : 1'bz;
       mout[4]  <= data[4]  ? 1'b0 : 1'bz;
       mout[5]  <= data[5]  ? 1'b0 : 1'bz;
-      mout[6]  <= data[5]  ? 1'b0 : 1'bz;
-      mout[7]  <= data[5]  ? 1'b0 : 1'bz;
-      mout[8]  <= data[5]  ? 1'b0 : 1'bz;
-      mout[9]  <= data[5]  ? 1'b0 : 1'bz;
+      mout[6]  <= data[6]  ? 1'b0 : 1'bz;
+      mout[7]  <= data[7]  ? 1'b0 : 1'bz;
+      mout[8]  <= data[8]  ? 1'b0 : 1'bz;
+      mout[9]  <= data[9]  ? 1'b0 : 1'bz;
       mout[10] <= data[10] ? 1'b0 : 1'bz;
       mout[11] <= data[11] ? 1'b0 : 1'bz;
       mout[12] <= data[12] ? 1'b0 : 1'bz;
@@ -77,19 +78,30 @@ begin
       //
       // Precharge line 16 of microinstruction bus
       // If discharged to low on C3 then
-      // outputs on C1 will be disabled
+      // MicROM outputs on C1 will be disabled
       //
       mout[16] <= 1'b1;
    end
    if (pin_c3)
    begin
       //
-      // Precharge line 16 of microinstruction bus
+      // Precharge cut off
+      //
+      mout[16] <= 1'bz;
+      //
+      // Precharge line 15 of microinstruction bus
       //
       mout[15] <= 1'b1;
    end
    if (pin_c4)
    begin
+      //
+      // Precharge cut off
+      //
+      mout[15] <= 1'bz;
+      //
+      // Precharge the microinstruction bus to read on C1
+      //
       mout[14:0] <= 15'h7fff;
       mout[21:16] <= 6'h3f;
    end

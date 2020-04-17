@@ -139,11 +139,11 @@ begin
    if (c1) m_in <= m_in_c4;
    if (c2) m_in <= 1'b0;
 
-   if (c4) mo_fa_c4 <= ~dmi[8] & ~pin_wi;
+   if (c4) mo_fa_c4 <= dmi[8] & ~pin_wi;
    if (c1) mo_fa <= mo_fa_c4;
    if (c2) mo_fa <= 1'b0;
 
-   if (c4) mo_ad_c4 <= (dir[4] | dir[5]) & ~dmi[7] & ~pin_wi;
+   if (c4) mo_ad_c4 <= (dir[4] | dir[5]) & dmi[7] & ~pin_wi;
    if (c1) mo_ad <= mo_ad_c4;
    if (c2) mo_ad <= 1'b0;
 end
@@ -173,8 +173,8 @@ begin
          if (st_f1) psw_c2[3] <= alu_n;
          if (st_f4) psw_c2[4] <= alu_c8;
          if (st_f4) psw_c2[5] <= alu_c4;
-         if (st_f6) psw_c2[4] <= alu_z;
-         if (st_f6) psw_c2[5] <= alu_n;
+         if (st_f6) psw_c2[6] <= alu_z;
+         if (st_f6) psw_c2[7] <= alu_n;
       end
    end
 end
@@ -260,8 +260,8 @@ begin
    begin
       fag[2:0] <= fa[2:0];
       wr_g0 <= ~pin_wi & dmi[9];
-      wr_g1 <= ~pin_wi & ~dmi[7] &  dir[4] & ~dir[5];
-      wr_g2 <= ~pin_wi & ~dmi[7] & ~dir[4] &  dir[5];
+      wr_g1 <= ~pin_wi & dmi[7] &  dir[4] & ~dir[5];
+      wr_g2 <= ~pin_wi & dmi[7] & ~dir[4] &  dir[5];
    end
 end
 
@@ -282,13 +282,13 @@ assign rsela[9]  = (dir[3:0] == 4'b0001) & (g[2:0] == 3'b100);
 assign rsela[10] = (dir[3:0] == 4'b0000) & (g[2:0] == 3'b101);
 assign rsela[11] = (dir[3:0] == 4'b0001) & (g[2:0] == 3'b101);
 
-assign rsela[12] = (dir[3:0] == 4'b0000) & (g[2:0] == 3'b110)
+assign rsela[12] = (dir[3:0] == 4'b0001) & (g[2:0] == 3'b111)
                  | (dir[3:0] == 4'b1111);
-assign rsela[13] = (dir[3:0] == 4'b0001) & (g[2:0] == 3'b110)
+assign rsela[13] = (dir[3:0] == 4'b0000) & (g[2:0] == 3'b111)
                  | (dir[3:0] == 4'b1110);
-assign rsela[14] = (dir[3:0] == 4'b0000) & (g[2:0] == 3'b111)
+assign rsela[14] = (dir[3:0] == 4'b0001) & (g[2:0] == 3'b110)
                  | (dir[3:0] == 4'b1101);
-assign rsela[15] = (dir[3:0] == 4'b0001) & (g[2:0] == 3'b111)
+assign rsela[15] = (dir[3:0] == 4'b0000) & (g[2:0] == 3'b110)
                  | (dir[3:0] == 4'b1100);
 
 assign rsela[16] = (dir[3:0] == 4'b1011);
@@ -315,13 +315,13 @@ assign rselb[9]  = (dir[7:4] == 4'b0001) & (g[2:0] == 3'b100);
 assign rselb[10] = (dir[7:4] == 4'b0000) & (g[2:0] == 3'b101);
 assign rselb[11] = (dir[7:4] == 4'b0001) & (g[2:0] == 3'b101);
 
-assign rselb[12] = (dir[7:4] == 4'b0000) & (g[2:0] == 3'b110)
+assign rselb[12] = (dir[7:4] == 4'b0001) & (g[2:0] == 3'b111)
                  | (dir[7:4] == 4'b1111);
-assign rselb[13] = (dir[7:4] == 4'b0001) & (g[2:0] == 3'b110)
+assign rselb[13] = (dir[7:4] == 4'b0000) & (g[2:0] == 3'b111)
                  | (dir[7:4] == 4'b1110);
-assign rselb[14] = (dir[7:4] == 4'b0000) & (g[2:0] == 3'b111)
+assign rselb[14] = (dir[7:4] == 4'b0001) & (g[2:0] == 3'b110)
                  | (dir[7:4] == 4'b1101);
-assign rselb[15] = (dir[7:4] == 4'b0001) & (g[2:0] == 3'b111)
+assign rselb[15] = (dir[7:4] == 4'b0000) & (g[2:0] == 3'b110)
                  | (dir[7:4] == 4'b1100);
 
 assign rselb[16] = (dir[7:4] == 4'b1011);
@@ -404,6 +404,28 @@ begin
    if (c2)
       sb_ext <= sb_ext_c4;
 end
+
+//
+// Minimal required registers initalization, otherwise,
+// undefined content would prevent simulation. Only PDP-11
+// registers are reset, because its behaviour depends on software
+//
+initial
+begin
+   r[0] = 8'h00;
+   r[1] = 8'h00;
+   r[2] = 8'h00;
+   r[3] = 8'h00;
+   r[4] = 8'h00;
+   r[5] = 8'h00;
+   r[6] = 8'h00;
+   r[7] = 8'h00;
+   r[8] = 8'h00;
+   r[9] = 8'h00;
+   r[10] = 8'h00;
+   r[11] = 8'h00;
+end
+
 //
 // Register write strobes
 //
@@ -417,6 +439,7 @@ begin
    end
    if (c3) rwra[25:0] <= rsela[25:0];
    if (c1)
+   begin
       if (f03_wr)
       begin
          if (rwra[0]) r[0][3:0] <= md[3:0];
@@ -439,10 +462,10 @@ begin
          if (rwra[17]) r[17][3:0] <= md[3:0];
          if (rwra[18]) r[18][3:0] <= md[3:0];
          if (rwra[19]) r[19][3:0] <= md[3:0];
-         if (rwra[20]) r[10][3:0] <= md[3:0];
-         if (rwra[21]) r[11][3:0] <= md[3:0];
-         if (rwra[22]) r[12][3:0] <= md[3:0];
-         if (rwra[23]) r[13][3:0] <= md[3:0];
+         if (rwra[20]) r[20][3:0] <= md[3:0];
+         if (rwra[21]) r[21][3:0] <= md[3:0];
+         if (rwra[22]) r[22][3:0] <= md[3:0];
+         if (rwra[23]) r[23][3:0] <= md[3:0];
          if (rwra[24]) r[24][3:0] <= md[3:0];
          if (rwra[25]) r[25][3:0] <= md[3:0];
       end
@@ -475,6 +498,7 @@ begin
          if (rwra[24]) r[24][7:4] <= md[7:4];
          if (rwra[25]) r[25][7:4] <= md[7:4];
       end
+   end
 end
 
 //______________________________________________________________________________
@@ -493,16 +517,14 @@ begin
    if (c1)
    begin
       ad_stb <= ad_stb_c4;
-      ad_oe <= ad_stb;
-      if (ad_stb)
+      ad_oe <= ad_stb_c4;
+      if (ad_stb_c4)
          ad_out[15:0] <= mu_c4[15:0];
    end
+   if (c2)
+      ad_stb <= 1'b0;
    if (c4)
-      if (dmi[4])
-         ad_stb_c4 <= 1'b0;
-      else
-         if (~dmi[6])
-            ad_stb_c4 <= ~pin_wi & dmi[5];
+      ad_stb_c4 <= ~dmi[4] & (dmi[6] | ~pin_wi & dmi[5]);
 end
 
 //______________________________________________________________________________
@@ -523,12 +545,13 @@ begin
    if (c4)
    begin
       mdl_rd <= ~(pl[19] & ~dir[4] & ~dir[5])
-              & ~(pl[19] & dir[5] & ~addr0 & dir[4])
+              & ~(pl[19] & dir[5] & (addr0 ^ dir[4]))
               & ~(pl[20] & inpl)
               & (pl[20] | pl[19]);
       mdh_rd <= (pl[19] & ~dir[4] & ~dir[5])
-              | (pl[19] & dir[5] & ~addr0 & dir[4])
+              | (pl[19] & dir[5] & (addr0 ^ dir[4]))
               | (pl[20] & inpl);
+
       psw_rd <= pl[17];
       alu_rd <= (pl[20:17] == 4'b0000);
       alu_sh <= pl[18];
@@ -553,7 +576,7 @@ begin
       alu_n  <= md[7];
       alu_c4 <= c[3];
       alu_c8 <= alu_sh ? alu[0] : c[7];
-      alu_c  <= alu_sh ? alu[0] : (c[7] ^ pl[11]);
+      alu_c  <= alu_sh ? alu[0] : (~c[7] ^ pl[11]);
       alu_v  <= c[6] ^ c[7];
    end
    if (c3)
@@ -573,18 +596,18 @@ begin
       // AND functions
       //
       ay[0] <= fa[0] ? (fb[0] ? pl[0] : pl[1]) : (fb[0] ? pl[2] : 1'b0);
-      ay[1] <= fa[0] ? (fb[1] ? pl[0] : pl[1]) : (fb[1] ? pl[2] : 1'b0);
-      ay[2] <= fa[0] ? (fb[2] ? pl[0] : pl[1]) : (fb[2] ? pl[2] : 1'b0);
-      ay[3] <= fa[0] ? (fb[3] ? pl[0] : pl[1]) : (fb[3] ? pl[2] : 1'b0);
-      ay[4] <= fa[0] ? (fb[4] ? pl[0] : pl[1]) : (fb[4] ? pl[2] : 1'b0);
-      ay[5] <= fa[0] ? (fb[5] ? pl[0] : pl[1]) : (fb[5] ? pl[2] : 1'b0);
-      ay[6] <= fa[0] ? (fb[6] ? pl[0] : pl[1]) : (fb[6] ? pl[2] : 1'b0);
-      ay[7] <= fa[0] ? (fb[7] ? pl[0] : pl[1]) : (fb[7] ? pl[2] : 1'b0);
+      ay[1] <= fa[1] ? (fb[1] ? pl[0] : pl[1]) : (fb[1] ? pl[2] : 1'b0);
+      ay[2] <= fa[2] ? (fb[2] ? pl[0] : pl[1]) : (fb[2] ? pl[2] : 1'b0);
+      ay[3] <= fa[3] ? (fb[3] ? pl[0] : pl[1]) : (fb[3] ? pl[2] : 1'b0);
+      ay[4] <= fa[4] ? (fb[4] ? pl[0] : pl[1]) : (fb[4] ? pl[2] : 1'b0);
+      ay[5] <= fa[5] ? (fb[5] ? pl[0] : pl[1]) : (fb[5] ? pl[2] : 1'b0);
+      ay[6] <= fa[6] ? (fb[6] ? pl[0] : pl[1]) : (fb[6] ? pl[2] : 1'b0);
+      ay[7] <= fa[7] ? (fb[7] ? pl[0] : pl[1]) : (fb[7] ? pl[2] : 1'b0);
    end
    if (c4)
    begin
       //
-      // Carry chain
+      // Carry chain pl[13] is external carry (+1), pl[14] ic c[0] carry (+2)
       //
       c[0] <= ay[0] | ax[0] & pl[13] | pl[14];
       c[1] <= ay[1] | ax[1] & c[0];
@@ -597,7 +620,7 @@ begin
       //
       // Summ output
       //
-      alu[0] <= pl[14] ^ ax[0];
+      alu[0] <= pl[13] ^ ax[0];
       alu[1] <= c[0] ^ ax[1];
       alu[2] <= c[1] ^ ax[2];
       alu[3] <= c[2] ^ ax[3];
@@ -622,8 +645,11 @@ begin
    begin
       dir_c1[15:5] <= m_in ? ~pin_m_n[15:5] : dir[15:5];
       dir_c1[3:1] <= m_in ? ~pin_m_n[3:1] : dir[3:1];
-      dir_c1[4] <= (m_in ? ~pin_m_n[4] : dir[4]) & ~m04rs;
-      dir_c1[0] <= (m_in ? ~pin_m_n[0] : dir[0]) & ~m04rs;
+      //
+      // Modify microinstruction register for 16-bit ALU operations
+      //
+      dir_c1[0] <= m04rs ? ~dir[0] : (m_in ? ~pin_m_n[0] : dir[0]);
+      dir_c1[4] <= m04rs ? ~dir[4] : (m_in ? ~pin_m_n[4] : dir[4]);
    end
    if (c2)
       dir[15:0] <= dir_c1[15:0];
@@ -684,11 +710,11 @@ mcp_plb plb
    .c2(c2),             //
    .c3(c3),             //
    .c4(c4),             //
-   .dal({pin_ad[15],
-         pin_ad[11],
-         pin_ad[10],
-         pin_ad[9],
-         pin_ad[8]}),
+   .dal({dal[15],
+         dal[11],
+         dal[10],
+         dal[9],
+         dal[8]}),
    .psw(psw),           // processor status word
    .mo_ad(mo_ad),       // translate AD to MI bus
    .jump(jump)          // jump taken
