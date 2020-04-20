@@ -129,18 +129,8 @@ begin
       sel_all = 1'b1;
    if (~ad == 16'o177715)
       sel_all = 1'b1;
-   if (~ad == 16'o177560)
+   if ((~ad >= 16'o177560) & (~ad <= 16'o177567))
       sel_all = 1'b1;
-   if (~ad == 16'o177564)
-      sel_all = 1'b1;
-   if (~ad == 16'o177566)
-      sel_all = 1'b1;
-
-   if (~ad == 16'o000172)
-   begin
-      $display("Access to halt vector");
-      $stop;
-   end
 end
 
 always @(posedge sync)
@@ -190,7 +180,13 @@ begin
       if (addr == 16'o177560)
       begin
          ad_oe    = 1'b1;
-         ad_reg   = 16'o000200 | (tty_rx_ie << 6);
+         ad_reg   = 16'o000000 | (tty_rx_ie << 6);
+      end
+
+      if (addr == 16'o177562)
+      begin
+         ad_oe    = 1'b1;
+         ad_reg   = 16'o000000;
       end
 
       if (addr == 16'o177564)
@@ -263,13 +259,13 @@ begin
 `ifdef  SIM_CONFIG_DEBUG_TTY
       $display("tty: %06O (%c)", ~ad & 8'o377,
                 ((~ad & 8'o377) > 16'o000037) ? (~ad & 8'o377) : 8'o52);
-`endif
-   end
 
-   if (addr == 16'o177676)
-   begin
-      $display("Access to shadow register");
-      $stop;
+      if ((~ad & 8'o377) == 16'o000100)
+      begin
+         $display("ODT invoked, stop");
+         $stop;
+      end
+`endif
    end
 end
 
@@ -287,7 +283,7 @@ end
 
 always @(negedge tty_tx_rdy)
 begin
-   for (i=0; i<256; i = i + 1)
+   for (i=0; i<500; i = i + 1)
    begin
 @ (negedge clk);
 @ (posedge clk);
