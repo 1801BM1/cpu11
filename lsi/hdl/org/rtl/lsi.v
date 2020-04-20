@@ -368,7 +368,7 @@ end
 
 assign qtim_to = qtim == 6'b111111;
 assign qtim_en = m_di | dout_c2;
-assign berr_rq = berr_st & qtim_en;
+assign berr_rq = berr_st & qtim_en & qtim_to;
 
 //_____________________________________________________________________________
 //

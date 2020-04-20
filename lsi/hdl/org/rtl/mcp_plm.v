@@ -148,17 +148,17 @@ endmodule
 //  13: 0100 0111 0121 0133 0143 0155 0164 0176 2571
 //  15: 0310 0321 0331 0342 0353 0362 0374
 //  16: 0120
-//  19: 2123 2172 2516 2622 2630 2714 2717 2754
+// *19: 2123 2172 2516 2622 2630 2714 2717 2754
 //  1A: 1451
 // *1C: 1502 1663 1707 1721 1750
 //  23: 0141
 //  25: 0067
 //  26: 0542
-//  29: 2550 2551 2552 2553
+// *29: 2550 2551 2552 2553
 // *2A: 0415
 //  2C: 0421
 //  32: 0110 0132 0154 0163 0175
-//  34: 2033 2073 2447 2500 2540 2604 2614 2644 2654 2700 2710 2740 2750
+// *34: 2033 2073 2447 2500 2540 2604 2614 2644 2654 2700 2710 2740 2750
 //  38: 0212 0222 0234 0244 0256 0265 0277
 //  49: 0441
 // *4A: 0510 0514 0520 0524 0530 0534 0550 0554 0560 0564
@@ -168,15 +168,21 @@ endmodule
 //  52: 0177
 //  54: 1244
 //  58: 0412 0422 0424 0434 0443 0446 0456 0465 0477
-//  62: 2254 2274 2220 2320 2406
+// *62: 2254 2274 2220 2320 2406
 //  64: 0122
 //  68: 0200
 //  70: 0400
 //______________________________________________________________________________
 //
+// Known translation description
+//
+// 19: PSW - PSW translation that regenerates bit 7 and T-bit, 0x568+flags
 // 1C: REF - handle DRAM refresh routine
+// 29: DMW - destination translation for EIS M0 (tr[5:3])
 // 2A: DC1 - decode upper byte of PDP-11 opcode
+// 34: EII - FIS interrupt test (also used for fadd/fsub), 0x5CF on irq
 // 4A: RNI - read next instruction
+// 62: FII - FIS interrupt test for fmul and fdiv, 0x592 on irq
 //______________________________________________________________________________
 //
 // Array 3/4
@@ -295,11 +301,11 @@ assign p[81] = cmp({q, ts, tc, tr}, {1'bx, 2'bxx, 7'b11xx1x1, 8'b0100xxxx});
 assign p[82] = cmp({q, ts, tc, tr}, {1'bx, 2'bxx, 7'b11xx1x1, 8'b0010xxxx});
 assign p[83] = cmp({q, ts, tc, tr}, {1'bx, 2'bxx, 7'b11xx1x1, 8'b0000xxxx});
 
-assign p[84] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx01});
-assign p[85] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx01});
-assign p[86] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx1x});
+assign p[84] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx01}); // FII
+assign p[85] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx01}); // EII
+assign p[86] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1xx1x11, 8'bxx1xxx1x}); // EII
 assign p[87] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxx100001});
-assign p[88] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx1x});
+assign p[88] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx111x1, 8'bxx1xxx1x}); // FII
 assign p[89] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx11x1x1, 8'bx00000xx}); // RNI
 assign p[90] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxx10001x});
 assign p[91] = cmp({q, ts, tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b1x11xx1, 8'bxxx001xx});
@@ -333,8 +339,8 @@ assign tsr[2] = p[0]  | p[13] | p[19] | p[22] | p[25] | p[26] | p[28]
 
 assign pta[0] = p[4] | p[5] | p[13] | p[24] | p[30] | p[33] | p[35] | p[36] | p[37] | p[38]
               | p[43] | p[45] | p[49] | p[50] | p[52] | p[64] | p[69] | p[70] | p[71] | p[77]
-              | p[78] | p[79] | p[80] | p[83] | p[84] | p[85] | p[86] | p[87] | p[89] | p[92]
-              | p[93] | p[95] | p[98] | p[99];
+              | p[78] | p[79] | p[80] | p[83] | p[85] | p[86] | p[87] | p[89] | p[92] | p[93]
+              | p[95] | p[98] | p[99];
 assign pta[1] = p[28] | p[36] | p[42] | p[43] | p[44] | p[46] | p[47] | p[50] | p[53] | p[64]
               | p[67] | p[68] | p[69] | p[71] | p[81] | p[83] | p[84] | p[85] | p[86] | p[88]
               | p[89] | p[90] | p[94] | p[96] | p[99];

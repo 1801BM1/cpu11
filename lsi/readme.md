@@ -35,3 +35,9 @@ process and operated up to 3.3MHz.
 581 series is the Soviet clone of MCP-1600 chipset, produced by VFSD
 ("Voronezh Factory of Semiconductor Devices" - "Воронежский Завод
 Полупроводниковых Приборов") behind the Iron Curtain in the 1980th.
+
+## Asynchronous model passes the DEC factory tests
+- [VKAAC0](/lsi/tst/org/vkaac0.mac) - basic instruction set factory test
+- [VKABB0](/lsi/tst/org/vkabb0.mac) - extended instruction set factory test
+- [VKACC1](/lsi/tst/org/vkacc1.mac) - float instruction set factory test
+- [VKADC1](/lsi/tst/org/vkadc1.mac) - traps and interrupts factory test
