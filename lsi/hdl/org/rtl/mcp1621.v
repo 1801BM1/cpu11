@@ -34,20 +34,16 @@ wire  c3;            //
 wire  c4;            //
                      //
 reg   sr;            // system reset latches
-reg   sr_c1;         //
-reg   sr_c3;         //
 reg   sr_c4;         //
-reg   sr_t0074;      //
                      //
 reg   wi;            //
 reg   wi_c2;         //
 reg   wi_c3;         //
-wire  plmq;          //
+reg   plmq;          //
 reg   plmq_c4;       //
 reg   comp;          //
-reg   m16_out;       //
+wire  m16_out;       //
                      //
-reg   sr_lc0;        // increment after reset
 reg   [10:0] lc;     // location counter
 reg   [10:0] lc2;    //
 reg   [10:0] rr;     // return register
@@ -55,19 +51,16 @@ reg   [10:0] inc;    // counter increment
 reg   [15:0] mir;    // microinstruction register
 reg   [10:0] lir;    // microinstruction register (lc latch)
 reg   [15:0] mtr;    // microinstruction translation
-reg   [2:0] tsr;     // translarion status
-wire  [7:0] tr;      //
+reg   [2:0] tsr;     // translation status register
                      //
-reg   qtr;           //
 reg   [7:1] irq;     //
 reg   [7:1] irq_c4;  //
 reg   [7:5] irq_set; //
 reg   [7:5] irq_clr; //
-reg   rni_c1;        //
-wire  rni;           //
+reg   rni;           //
                      //
-wire  [19:0] plm;    // microinstruction decoder
-reg   [19:0] plm_c3; // microinstruction decoder, latched on C3
+wire  [19:0] plm_pl; // microinstruction decoder
+reg   [19:0] plm;    // microinstruction decoder, latched on C3
                      //
 wire  ldtr;          // load translation register
 wire  ldmir;         // load microinstruction register
@@ -110,13 +103,14 @@ reg   syn_c4;        //
 reg   inak_c4;       //
 wire  syn_q1;        //
                      // translation array outputs
-wire  tcmax;         // no lc address catch
 wire  ldtsra;        // load translation status
 reg   ldtsrb;        // load translation status
 wire  plm_lra;       // load return address
 wire  plm_lta;       // load translation address
-wire  [2:0] tsra;    // translation status
-wire  [10:0] pta;    // translation address
+reg   [2:0] tsra;    // translation status
+reg   [10:0] pta;    // translation address
+wire  [2:0] plm_tsr; //
+wire  [10:0] plm_pta;//
 
 //______________________________________________________________________________
 //
@@ -132,8 +126,8 @@ wire  [10:0] pta;    // translation address
 // On system reset 0xFFzz microcode is translated - NOP
 //
 assign pin_m_n[10:0]    = (c2 | c3) ? ~lc[10:0]
-                        : (sr_c1 ? 11'b000zzzzzzzz : 11'bzzzzzzzzzzz);
-assign pin_m_n[15:11]   = sr_c1 ? 5'h00 : 5'hzz;
+                        : ((c1 & sr) ? 11'b000zzzzzzzz : 11'bzzzzzzzzzzz);
+assign pin_m_n[15:11]   = (c1 & sr) ? 5'h00 : 5'hzz;
 assign pin_m_n[16]      = (c3 & m16_out) ? 1'b0 : 1'bz;
 assign pin_m_n[17]      = 1'bz;
 
@@ -159,20 +153,8 @@ assign c4 = pin_c4;
 //
 always @(*)
 begin
-   if (c1)
-      sr_t0074 <= pin_sr_n;
-   if (c1)
-      sr <= 1'b1;
-   else
-      if (c2)
-         sr <= ~sr_t0074;
-   if (c3)
-      sr_c3 <= sr;
-   if (c1)
-      sr_c1 <= sr_c3;
-   else
-      if (c2)
-         sr_c1 <= 1'b0;
+   if (c2)
+      sr <= ~pin_sr_n;
    if (c1)
       sr_c4 <= 1'b0;
    else
@@ -199,27 +181,23 @@ begin
       if (c2)
          wi_c2 <= comp | plmq;
    if (c3)
-      wi_c3 <= (pin_bbusy | pin_ra) & (plm[15] | plm[16])
-             | (plm[4] | plm[5]) & (~pin_ra | (plm[4] & ~di_out));
+      wi_c3 <= (pin_bbusy | pin_ra) & (plm_pl[15] | plm_pl[16])
+             | (plm_pl[4] | plm_pl[5]) & (~pin_ra | (plm_pl[4] & ~di_out));
 end
 
 //______________________________________________________________________________
 //
 // Microinstruction decoder
 //
-always @(*) if (c3) plm_c3 <= plm;
+always @(*) if (c3) plm <= plm_pl;
 always @(*) if (c4) plmq_c4 <= ~sr_c4 & m16_out;
-assign plmq = c2 & plmq_c4;
+always @(*) if (c2) plmq <= plmq_c4;
 
 mcp_plc plc
 (
-   .c1(c1),
-   .c2(c2),
-   .c3(c3),
-   .c4(c4),
    .q(plmq),
    .mir(mir),
-   .plm(plm)
+   .plm(plm_pl)
 );
 
 //______________________________________________________________________________
@@ -234,13 +212,11 @@ mcp_plc plc
 //
 always @(*)
 begin
-   if (c1)
-      sr_lc0 <= sr_c1;
    if (c2)
-      lc2 <= {lc[10:1], lc[0] | sr_lc0};
+      lc2 <= lc[10:0];
 
    if (c1)
-      if (sr_c1)
+      if (sr)
          lc[10:0] <= 11'h001;
       else
          begin
@@ -273,7 +249,7 @@ begin
    if (ctsr)
       tsr[2:0] <= 3'b000;
    else
-      if (ldtsra & ldtsrb)
+      if (ldtsrb)
          tsr[2:0] <= tsra[2:0];
 end
 
@@ -294,18 +270,22 @@ assign ctsr  = c1 & ctsr_c4;
 always @(*)
 if (c4)
 begin
-   lra_c4   <= (~m16_out & ~sr_c4 & ~tcmax &  plm_lra) | (plm_c3[3] & ~sr_c4);
-   lta_c4   <=  ~m16_out & ~sr_c4 & ~tcmax & ~plm_lra &  plm_lta;
-   ldinc_c4 <=  ~m16_out & ~sr_c4 & (tcmax | ~plm_lra & ~plm_lta);
+   lra_c4   <= (~m16_out & ~sr_c4 &  plm_lra) | (plm[3] & ~sr_c4);
+   lta_c4   <=  ~m16_out & ~sr_c4 & ~plm_lra &  plm_lta;
+   ldinc_c4 <=  ~m16_out & ~sr_c4 & ~plm_lra & ~plm_lta;
    ldmir_c4 <= sr | (~m16_out & ~sr_c4);
 
-   ldja_c4  <= ~sr_c4 & (plm_c3[1] | plm_c3[2] & ~pin_m_n[15]); // load jump condition
-   ldjb_c4  <= ~sr_c4 &  plm_c3[1];                             // from m[15] on c4
-   ldlca_c4 <=  sr_c4 | ~ldja_c4 & m16_out & ~plm_c3[3];
-   ldlcb_c4 <=  sr_c4 | ~ldjb_c4 & m16_out & ~plm_c3[3];
+   ldja_c4  <= ~sr_c4 & (plm[1] | plm[2] & ~pin_m_n[15]);   // load jump condition
+   ldjb_c4  <= ~sr_c4 &  plm[1];                            // from m[15] on c4
+   ldlca_c4 <=  sr_c4 | ~ldja_c4 & m16_out & ~plm[3];       // keep the register
+   ldlcb_c4 <=  sr_c4 | ~ldjb_c4 & m16_out & ~plm[3];       // if no other strobes
 
-   ldtr_c4  <= ~sr_c4 & (plm_c3[6] | (plm_c3[8] & (mir[4] | mir[5])));
-   ctsr_c4  <= ~sr_c4 & plm_c3[14];
+   ldtr_c4  <= ~sr_c4 & (plm[6] | (plm[8] & (mir[4] | mir[5])));
+   ldtsrb <= ~sr_c4 & ~m16_out & ldtsra;
+   ctsr_c4  <= ~sr_c4 & plm[14];
+
+   tsra <= plm_tsr;
+   pta  <= plm_pta;
 end
 
 always @(*)
@@ -323,58 +303,31 @@ end
 //
 mcp_pta pla
 (
-   .c1(c1),          // clock phases
-   .c2(c2),          //
-   .c3(c3),          //
-   .c4(c4),          //
    .rni(rni),        // read next instruction
    .lc(lc),          // location counter
-   .tr(tr),          // translation register high/low
-   .ts(tsr[1:0]),    // translation status
+   .tr(mtr),         // translation register high/low
+   .ts(tsr),         // translation status
    .irq(irq),        // interrupt requests
-   .qtr(qtr),        //
-   .pta(pta),        // programmable translation address
-   .tsr(tsra),       // translation status register
+   .pta(plm_pta),    // programmable translation address
+   .tsr(plm_tsr),    // translation status register
    .lra(plm_lra),    // load return address
    .lta(plm_lta),    // load translation address
-   .ltsr(ldtsra),    // load translation status register
-   .tcmax(tcmax)     // no lc address catch
+   .ltsr(ldtsra)     // load translation status register
 );
-
-assign tr[7:0] = tsr[2] ? mtr[7:0] : mtr[15:8];
-always @(*) if (c4) ldtsrb <= ~tcmax & ~sr_c4 & ~m16_out;
 
 always @(*)
 begin
    if (c1)
    begin
-      if (sr_c1)
-         rni_c1 <= 1'b0;
+      if (sr)
+         rni <= 1'b0;
       else
          if (ldmir)
-            rni_c1 <= ~pin_m_n[17];
+            rni <= ~pin_m_n[17];
    end
 end
-assign rni = (c2 | c3) & rni_c1;
 
-always @(*)
-begin
-   if (c3)
-      qtr <= (mtr[14:12] == 3'b000) | (mtr[14:12] == 3'b111);
-   else
-      if (c1)
-         qtr <= 1'b0;
-end
-
-always @(*)
-begin
-   if (c1)
-      m16_out <= 1'b0;
-   else
-      if (c3)
-         m16_out <= plm[0];
-end
-
+assign m16_out = plm_pl[0];
 //______________________________________________________________________________
 //
 // Interrupts
@@ -408,26 +361,14 @@ begin
    end
 
    if (c4)
-      if (sr_c4)
-      begin
-         irq_set[7:5] <= 3'b000;
-         irq_clr[7:5] <= 3'b000;
-      end
-      else
-      begin
-         irq_set[5] <= mir[4] & plm_c3[13];
-         irq_clr[5] <= mir[4] & plm_c3[12];
-         irq_set[6] <= mir[5] & plm_c3[13];
-         irq_clr[6] <= mir[5] & plm_c3[12];
-         irq_set[7] <= mir[6] & plm_c3[13];
-         irq_clr[7] <= mir[6] & plm_c3[12];
-      end
-   else
-      if (c3)
-      begin
-         irq_set[7:5] <= 3'b000;
-         irq_clr[7:5] <= 3'b000;
-      end
+   begin
+      irq_set[5] <= ~sr_c4 & mir[4] & plm[13];
+      irq_clr[5] <= ~sr_c4 & mir[4] & plm[12];
+      irq_set[6] <= ~sr_c4 & mir[5] & plm[13];
+      irq_clr[6] <= ~sr_c4 & mir[5] & plm[12];
+      irq_set[7] <= ~sr_c4 & mir[6] & plm[13];
+      irq_clr[7] <= ~sr_c4 & mir[6] & plm[12];
+   end
 end
 
 //______________________________________________________________________________
@@ -448,19 +389,19 @@ begin
       wrb_out <= wrby;
    if (c4)
    begin
-      dou_out <= plm_c3[5];
-      wrby <= plm_c3[11] | (~sr_c4 & (plm_c3[9] | plm_c3[10]));
-      di_t0783 <= ~sr_c4 & ~syn_out & (plm_c3[17] | plm_c3[18]);
-      di_t0784 <= ~sr_c4 & ~m16_out & (plm_c3[4] | plm_c3[5]);
-      syn_clr <= ~sr_c4 & ~m16_out & (plm_c3[5] | plm_c3[4] & (~mir[6] | syn_q1));
-      syn_c4  <= syn_out | ~sr_c4 & (plm_c3[15] | plm_c3[16]);
-      inak_c4 <= iak_out | ~sr_c4 & plm_c3[19];
+      dou_out <= plm[5];
+      wrby <= plm[11] | (~sr_c4 & (plm[9] | plm[10]));
+      di_t0783 <= ~sr_c4 & ~syn_out & (plm[17] | plm[18]);
+      di_t0784 <= ~sr_c4 & ~m16_out & (plm[4] | plm[5]);
+      syn_clr <= ~sr_c4 & ~m16_out & (plm[5] | plm[4] & (~mir[6] | syn_q1));
+      syn_c4  <= syn_out | ~sr_c4 & (plm[15] | plm[16]);
+      inak_c4 <= iak_out | ~sr_c4 & plm[19];
    end
    if (c1)
    begin
-      di   <= ~sr_c1 & (di_out | syn_out & ~di_t0801) & ~di_t0784;
-      syn  <= ~sr_c1 & syn_c4 & ~syn_clr;
-      inak <= ~sr_c1 & inak_c4 & ~syn_clr;
+      di   <= ~sr & (di_out | syn_out & ~di_t0801) & ~di_t0784;
+      syn  <= ~sr & syn_c4 & ~syn_clr;
+      inak <= ~sr & inak_c4 & ~syn_clr;
    end
 end
 //

@@ -388,8 +388,8 @@ lsi cpu
    .pin_din_n(din),           // data input strobe
    .pin_iako_n(iako),         // interrupt vector input
                               //
-   .pin_bsel(bsel)            // boot mode 0 - reserved micROM
-                              // boot mode 3 - 24/26 vector
+   .pin_bsel_n(bsel)          // boot mode 3 - reserved micROM
+                              // boot mode 0 - 24/26 vector
 );
 
 `ifdef SIM_CONFIG_DEBUG_MC
