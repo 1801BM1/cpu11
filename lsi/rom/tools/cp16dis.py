@@ -23,7 +23,7 @@ import sys
 #
 # CP-1621 PLA locations and translation codes  (LSI-11)
 #
-pta = {
+pta_lsi11 = {
     0x037: 0x25, 0x040: 0x13, 0x041: 0x51, 0x048: 0x32, 0x049: 0x13,
     0x04A: 0x51, 0x050: 0x16, 0x051: 0x13, 0x052: 0x64, 0x053: 0x51,
     0x05A: 0x32, 0x05B: 0x13, 0x05C: 0x4C, 0x05F: 0x51, 0x061: 0x23,
@@ -47,6 +47,49 @@ pta = {
     0x560: 0x34, 0x592: 0x19, 0x598: 0x19, 0x584: 0x34, 0x58C: 0x34,
     0x5A4: 0x34, 0x5AC: 0x34, 0x5CC: 0x19, 0x5CF: 0x19, 0x5EC: 0x19,
     0x5C0: 0x34, 0x5C8: 0x34, 0x5E0: 0x34, 0x5E8: 0x34
+}
+#
+# Addres is one of the TRAN targets (LSI-11)
+#
+org_lsi11 = {
+    0x002: "[15]", 0x012: "[15]", 0x020: "[25]", 0x029: "[25]", 0x035: "[2A]",
+    0x037: "[2A]", 0x03D: "[2A]", 0x040: "[25,2A]", 0x041: "[2A,64]", 0x042: "[2A]",
+    0x047: "[4C]", 0x048: "[2A]", 0x04A: "[32]", 0x04B: "[2A]", 0x050: "[2A]",
+    0x052: "[16]", 0x058: "[2A]", 0x05C: "[23]",0x060: "[2A]", 0x064: "[25]",
+    0x168: "[2A]", 0x070: "[2A]", 0x078: "[2A]", 0x07F: "[25,2A]", 0x080: "[13]",
+    0x081: "[26,4A]", 0x088: "[13]", 0x090: "[13]", 0x098: "[13]", 0x09D: "[2A]",
+    0x0A0: "[13]", 0x0A8: "[13]", 0x0B0: "[13]", 0x0B6: "[2A]", 0x0B8: "[13]",
+    0x0C0: "[52]", 0x0C8: "[52]", 0x0D0: "[52]", 0x0D8: "[52]", 0x0E0: "[52]",
+    0x0E5: "[25]", 0x0E8: "[52]", 0x0F0: "[52]", 0x0F8: "[52]", 0x100: "[51]",
+    0x108: "[51]", 0x10B: "[4A]", 0x110: "[51]", 0x113: "[2C]", 0x118: "[51]",
+    0x11D: "[25]", 0x120: "[51]", 0x124: "[49]", 0x128: "[51]", 0x130: "[51]",
+    0x138: "[51]", 0x140: "[68]", 0x141: "[68]", 0x144: "[68]", 0x148: "[68]",
+    0x14C: "[68]", 0x150: "[68]", 0x154: "[68]", 0x158: "[68]", 0x15C: "[68]",
+    0x160: "[70]", 0x161: "[70]", 0x163: "[1A]", 0x164: "[70]", 0x168: "[70]",
+    0x16C: "[70]", 0x170: "[70]", 0x174: "[70]", 0x178: "[68,70]", 0x17C: "[70]",
+    0x180: "[38]", 0x181: "[38]", 0x184: "[26,38,4A]", 0x188: "[38]", 0x18C: "[38]",
+    0x190: "[38]", 0x194: "[38]", 0x198: "[38]", 0x19C: "[38]", 0x1A0: "[58]",
+    0x1A1: "[58]", 0x1A4: "[58]", 0x1A8: "[58]", 0x1AC: "[58]", 0x1B0: "[58]",
+    0x1B4: "[58]", 0x1B8: "[38,58]", 0x1BA: "[4A]", 0x1BC: "[58]", 0x1C0: "[07]",
+    0x1C2: "[26,4A]", 0x1C4: "[07]", 0x1C8: "[07]", 0x1CC: "[07]", 0x1D0: "[07]",
+    0x1D4: "[07]", 0x1D8: "[07]", 0x1DC: "[07]", 0x1E0: "[07]", 0x1E4: "[07]",
+    0x1E8: "[07]", 0x1EC: "[07]", 0x1F0: "[07]", 0x1F4: "[07]", 0x1F8: "[07]",
+    0x1FC: "[07]", 0x200: "[0B]", 0x204: "[0B]", 0x208: "[0B]", 0x20C: "[0B]",
+    0x210: "[0B]", 0x214: "[0B]", 0x218: "[0B]", 0x21C: "[0B]", 0x220: "[0B]",
+    0x224: "[0B]", 0x228: "[0B]", 0x22C: "[0B]", 0x230: "[0B]", 0x234: "[0B]",
+    0x238: "[0B]", 0x23C: "[0B]", 0x240: "[0D]", 0x244: "[0D]", 0x248: "[0D]",
+    0x24C: "[0D]", 0x250: "[0D]", 0x254: "[0D]", 0x258: "[0D]", 0x25C: "[0D]",
+    0x260: "[0D]", 0x264: "[0D]", 0x268: "[0D]", 0x26C: "[0D]", 0x270: "[0D]",
+    0x274: "[0D]", 0x278: "[0D]", 0x27C: "[0D]", 0x280: "[0E]", 0x284: "[0E]",
+    0x288: "[0E]", 0x28C: "[0E]", 0x290: "[0E]", 0x294: "[0E]", 0x298: "[0E]",
+    0x29C: "[0E]", 0x2A0: "[0E,54]", 0x2A4: "[0E]", 0x2A8: "[0E]",0x2AC: "[0E]",
+    0x2B0: "[0E]", 0x2B4: "[0E]", 0x2B8: "[0E]", 0x2BC: "[0E]", 0x2C0: "[13]",
+    0x2C8: "[13]", 0x2D0: "[13]", 0x2D8: "[13]", 0x2E0: "[13]", 0x2E8: "[13]",
+    0x2F0: "[13]", 0x2F8: "[13]", 0x31D: "[1C,26,4A]", 0x343: "[1A]", 0x3B4: "[1A]",
+    0x3C8: "[1A]", 0x3D2: "[1A]", 0x3E9: "[1A]", 0x400: "[2A]", 0x568: "[19]",
+    0x569: "[19]", 0x56A: "[19]", 0x56B: "[19]", 0x579: "[2A]", 0x57C: "[68,70]",
+    0x57D: "[68,70]", 0x592: "[62]", 0x5CF: "[34]", 0x5FC: "[38,58]", 0x5FD: "[38,58]",
+    0x601: "[2A]"
 }
 
 class SymbolTable(object):
@@ -111,29 +154,29 @@ class TargetDecoder(FieldDecoder):
 class RegisterDecoder(FieldDecoder):
     def __init__(self, arch):
         self.arch = arch
-        self.regs = { 'lsi11':   {0x2: 'rbal',
-                                  0x3: 'rbah',
-                                  0x4: 'rsrcl',
-                                  0x5: 'rsrch',
-                                  0x6: 'rdstl',
-                                  0x7: 'rdsth',
-                                  0x8: 'rirl',
-                                  0x9: 'rirh',
-                                  0xa: 'rpswl',
-                                  0xb: 'rpswh',
-                                  0xc: 'spl',
-                                  0xd: 'sph',
-                                  0xe: 'pcl',
-                                  0xf: 'pch'},
+        self.regs = { 'lsi11':   {0x2: 'RBAL',
+                                  0x3: 'RBAH',
+                                  0x4: 'RSRCL',
+                                  0x5: 'RSRCH',
+                                  0x6: 'RDSTL',
+                                  0x7: 'RDSTH',
+                                  0x8: 'RIRL',
+                                  0x9: 'RIRH',
+                                  0xA: 'RPSWL',
+                                  0xB: 'RPSWH',
+                                  0xC: 'SPL',
+                                  0xD: 'SPH',
+                                  0xE: 'PCL',
+                                  0xF: 'PCH'},
                       # Pascal Microengine register definitions are tentative
-                      'pascal':  {0xa: 'ipcl',
-                                  0xb: 'ipch',
-                                  0xc: 'spl',
-                                  0xd: 'sph',
-                                  0xe: 'mpl',
-                                  0xf: 'mph'},
-                      'default': {0x0: 'gl',
-                                  0x1: 'gh'}}
+                      'pascal':  {0xA: 'IPCL',
+                                  0xB: 'IPCH',
+                                  0xC: 'SPL',
+                                  0xD: 'SPH',
+                                  0xE: 'MPL',
+                                  0xF: 'MPH'},
+                      'default': {0x0: 'GL',
+                                  0x1: 'GH'}}
 
     def decode(self, addr, field_value, width):
         if self.arch is not None and field_value in self.regs[self.arch]:
@@ -469,7 +512,7 @@ def pass2_dis_inst(label, addr, opcode):
 
     return line
 
-def pass2(code, disfile, dump=False):
+def pass2(code, disfile, arch, dump=False):
     next_addr = -1
     for addr in range(2048):
         if symtab.has_value(addr) or (code[addr] is not None):
@@ -483,9 +526,13 @@ def pass2(code, disfile, dump=False):
             line = pass2_dis_inst(label, addr, opcode)
             if dump and (code[addr] is not None):
                 line += '\t\t;%03x: %06x' % (addr, opcode)
-                ptam = pta.get(addr, None)
-                if ptam != None:
-                    line = line + ' <%02X>' % ptam
+                if arch == 'lsi11':
+                    ptam = pta_lsi11.get(addr, None)
+                    if ptam != None:
+                        line = line + ' <%02X>' % ptam
+                    ptam = org_lsi11.get(addr, None)
+                    if ptam != None:
+                        line = line + ' ' + ptam
             print(line, file = disfile)
         if code[addr] is not None:
             next_addr = addr + 1
@@ -525,4 +572,4 @@ if __name__ == '__main__':
     args.objectfile.close()
 
     pass1(code)
-    pass2(code, args.disfile, args.dump)
+    pass2(code, args.disfile, args.arch, args.dump)

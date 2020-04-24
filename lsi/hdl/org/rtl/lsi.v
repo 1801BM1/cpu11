@@ -31,7 +31,7 @@ module lsi
    output         pin_din_n,     // data input strobe
    output         pin_iako_n,    // interrupt vector input
                                  //
-   input [1:0]    pin_bsel       // boot mode selector
+   input [1:0]    pin_bsel_n     // boot mode selector
 );
 
 //______________________________________________________________________________
@@ -164,8 +164,8 @@ assign dmr  = ~pin_dmr_n;
 
 assign m_ad = m_di ? (fdin_st ? {12'o0000, fdin} : ~pin_ad_n) : 16'oZZZZ;
 
-assign fdin[0] = pin_bsel[0];    // fast data input
-assign fdin[1] = pin_bsel[1];    // boot mode
+assign fdin[0] = ~pin_bsel_n[0]; // fast data input
+assign fdin[1] = ~pin_bsel_n[1]; // boot mode
 assign fdin[2] = berr_st;        // bus error
 assign fdin[3] = aclo | aclo_rq; // power failure
 

@@ -14,7 +14,7 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
-`define  SIM_CONFIG_TIME_LIMIT         20000000
+`define  SIM_CONFIG_TIME_LIMIT         80000000
 //
 // External clock frequency
 //
@@ -27,12 +27,12 @@
 //
 // LSI-11 boot mode
 //
-// 00 - start reserved MicROM
-// 01 - start from 173000
-// 10 - break into ODT
-// 11 - load vector 24
+// 11 - start reserved MicROM
+// 10 - start from 173000
+// 01 - break into ODT
+// 00 - load vector 24
 //
-`define  SIM_CONFIG_BOOT_MODE          2'b11
+`define  SIM_CONFIG_BOOT_MODE          2'b00
 
 //______________________________________________________________________________
 //

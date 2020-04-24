@@ -55,10 +55,12 @@ reg      st_f6;      //
 reg      st_f6_c4;   //
                      //
 wire        jm15;    //
-wire        jump;    // indirect condition code
-wire [10:0] dmi;     // decoded microinstruction
-wire [20:0] pl;      // decoded microinstruction
-wire [20:0] pl_c4;   //
+reg         jump;    // indirect condition code
+wire        jbxx;    // for PDP-11 branch opcodes
+reg  [10:0] dmi;     // decoded microinstruction
+wire [10:0] dmi_pl;  //
+reg  [20:0] pl;      // matrix control
+wire [20:0] pl_pld;  //
                      //
 wire [7:0]  md;      // data multiplexer
 reg  [15:0] mu_c4;   //
@@ -688,10 +690,6 @@ end
 //
 mcp_plj plj
 (
-   .c1(c1),             // clock phases
-   .c2(c2),             //
-   .c3(c3),             //
-   .c4(c4),             //
    .inpl(inpl),         // input enable
    .icc(jump),          // indirect condition code
    .psw(psw),           // PSW flags
@@ -706,51 +704,37 @@ mcp_plj plj
 //
 mcp_plb plb
 (
-   .c1(c1),             // clock phases
-   .c2(c2),             //
-   .c3(c3),             //
-   .c4(c4),             //
-   .dal({dal[15],
-         dal[11],
-         dal[10],
-         dal[9],
-         dal[8]}),
+   .dal(dal),           // PDP-11 branch opcode
    .psw(psw),           // processor status word
-   .mo_ad(mo_ad),       // translate AD to MI bus
-   .jump(jump)          // jump taken
+   .jump(jbxx)          // jump taken
 );
 
+always @(*) if (c1 & mo_ad) jump <= jbxx;
 //______________________________________________________________________________
 //
 // Decoding microinstruction array for 1611 (Data Chip)
 //
 mcp_pli pli
 (
-   .c1(c1),             // clock phases
-   .c2(c2),             //
-   .c3(c3),             //
-   .c4(c4),             //
    .inpl(inpl),         // input enable
    .mir(dir[15:8]),     // microinstruction
-   .dmi(dmi[10:0])      // decoded output
+   .dmi(dmi_pl[10:0])   // decoded output
 );
 
+always @(*) if (c3) dmi <= dmi_pl;
 //______________________________________________________________________________
 //
 // Decoding microinstruction array for 1611 (Data Chip)
 //
 mcp_pld pld
 (
-   .c1(c1),             // clock phases
-   .c2(c2),             //
-   .c3(c3),             //
-   .c4(c4),             //
    .inpl(inpl),         // input enable
    .psw(psw),           // processor status word
    .mir(dir[15:0]),     // microinstruction
-   .pl_c3(pl[20:0]),    // matrix output, c3 latch
-   .pl_c4(pl_c4[20:0])  // matrix output, c4 latch
+   .pld(pl_pld[20:0])   // matrix output, C3 latch
 );
+
+always @(*) if (c3) pl <= pl_pld;
 //______________________________________________________________________________
 //
 endmodule
