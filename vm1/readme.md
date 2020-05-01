@@ -2,7 +2,7 @@
 
 ![Die photo](/vm1/img/vm1a.jpg)
 
-Links to raw panoramic photos (CAUTION: files are VERY LARGE, browser might hang):
+Links to raw panoramic photos (CAUTION: files are VERY LARGE, a browser might hang):
 - [1801BM1А Top metal, 19Kx19K, 524M](http://www.1801bm1.com/files/retro/1801/images/vm1a-met.jpg)
 - [1801BM1А Diffusion, 12Kx12K, 202M](http://www.1801bm1.com/files/retro/1801/images/vm1a-dif.jpg)
 - [1801BM1Г Top metal, 19Kx19K, 525M](http://www.1801bm1.com/files/retro/1801/images/vm1g-met.jpg)
@@ -10,19 +10,19 @@ Links to raw panoramic photos (CAUTION: files are VERY LARGE, browser might hang
 
 ## 1801BM1
 
-The 1801BM1 is single chip processor designed in early 1980-th with PDP-11
-compatible architecture. Notable, it is not an exact clone of one of original DEC processors,
-but has its own internal architecture and PLM-based state machine.
+The 1801BM1 is the single-chip processor designed in early 1980th with PDP-11
+compatible architecture. Notable, it is not an exact clone of one of the DEC processors
+but has its own original architecture and PLM-based state machine.
 
 It supports PDP-11 basic instruction set and extra instructions SOB and XOR from Extended
 Instruction Set (EIS). No MMU is implemented. There were designed and produced two versions
 of 1801BM1 - K1801BM1A and K1801BM1Г (Cyrillic letter "Г"), they had the same architecture
 but completely different PLM content, implementing different state machines. The goal of this
-micro program refactoring was to add MUL instruction support into K1801BM1Г.
+microprogram refactoring was to add MUL instruction support into K1801BM1Г.
 
-The processor was produced in 5u NMOS process with depletion mode loads, one metal
-and one polycrystalline silicon layer and self-aligned gates. The 1801BM1A contains 16632 gates,
-1801BM1Г - 16646 gates, operates at 5MHz/5V and provides 625K register-register instructions per
+The processor was produced in the 5-micron NMOS process with depletion-mode loads, one metal
+and one polycrystalline silicon layer, and self-aligned gates. The 1801BM1A contains 16632 gates,
+1801BM1Г - 16646 gates, operates at 5MHz/5V, and provides 625K register-register instructions per
 second. The front-end bus is Qbus compatible, the multicore configuration is supported with
 up to 4 processors one the same bus. Also there is the built-in timer, 1801BM1Г supported
 timer interrupts.
@@ -37,28 +37,28 @@ structure and microcode execution, the built-in timer details unveiled, all actu
 described. The document has been written on the base of reverse engineering
 
 #### \hdl
-- the directory contains HDL-related materials, sources and sample projects for Quartus and ISE.
+- the directory contains HDL-related materials, sources, and sample projects for Quartus and ISE.
 There are three models: original asynchronous, refactored synchronous and Wishbone compatible
 
 #### \hdl\org
-- asynchronous Verilog HDL model, is as close as possible to the original gate-level schematics.
+- asynchronous Verilog HDL model is as close as possible to the original gate-level schematics.
 In practice can be used for modeling purposes only, because processor contains latches (note,
 it differs from flip-flop), those work in non-reliable fashion on synchronous FPGAs. Also model
 does not contain gate and line delays, in some simulating environment it can be very critical. 
-Nonetheless, this model is included in package as demo of closest possible approximation 
-to the original die. May be not synthesizable with some tools, simulation only.
+Nonetheless, this model is included in the package as a demo of the closest possible approximation to the original die. Maybe not synthesizable with some tools, simulation only.
 
 #### \hdl\syn
-- synchronous Verilog HDL model, the frontend bus is Q-Bus, does not contain latches and can be
-synthesized for synchronous FPGAs. All internal and external timings are exactly the same as
-in asynchronous original model with precision to half period of high frequency clock. This model
-can be used to build in-socket replacement of real 1801BM1 chip
+- synchronous Verilog HDL model, the frontend bus is Q-Bus, does not contain latches, and can be
+synthesized for synchronous FPGAs. All internal and external timings are precisely the same as
+in an asynchronous original model with precision to half period of high-frequency clock. This model
+can be used to build the in-socket replacement of real 1801BM1 chip
 
 #### \hdl\wbc
-- synchronous Wishbone compatible version of 1801BM1 synchronous core, uses single clock,
-FPGA-optimized, follows the original command execution timings, is intended for SoC building
+- synchronous Wishbone compatible version of 1801BM1 synchronous core uses a single clock,
+is FPGA-optimized, and follows the original command execution timings, is intended for SoC building
 
-#### \cad\vm1    
+
+#### [\cad\vm1](https://github.com/1801BM1/cad11/tree/master/vm1) (moved to dedicated repo)
 - topology in Sprint Layout format
 - topology in PCD-2004 pcb format
 - schematics in PCD-2004 pcb format
@@ -89,12 +89,12 @@ be run before building FPGA bitstream to include test software image
   long press over 1 second simulates power reset (excluding RAM content)
 
 ## Fmax and FPGA resources
-- Wisnbone compatible 1801BM1A core
+- Wishbone compatible 1801BM1A core
 - register file and constant generator in RAM block
 - balanced area/speed optimization chosen
 - slow model, worst corner
 
-All results are just approximite estimations by synthesis tools (Quartus/XST) on sample
+All results are just approximate estimations by synthesis tools (Quartus/XST/Vivado) on sample
 projects.
 
 | Board   | FPGA            | Family      | Fmax    | LUTs | FFs | MEM   |
