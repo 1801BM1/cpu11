@@ -2,52 +2,52 @@
 
 ![Die photo](/vm2/img/vm2a.jpg)
 
-Links to raw panoramic photos (CAUTION: files are VERY LARGE, browser might hang):
+Links to raw panoramic photos (CAUTION: files are VERY LARGE, a browser might hang):
 - [1801BM2 Top metal, 19Kx20K, 546M](http://www.1801bm1.com/files/retro/1801/images/vm2a-met.jpg)
 - [1801BM2 Diffusion, 18Kx19K, 487M](http://www.1801bm1.com/files/retro/1801/images/vm2a-dif.jpg)
 
 ## 1801BM2
 
-The 1801BM2 is single chip microprocessor, was designed in first half of 1980-th and
-had PDP-11 compatible architecture. Notable, it was not an exact clone of one of original
-DEC processors, but had its own internal architecture and PLM-based state machine. 
+The 1801BM2 is a single-chip microprocessor, was designed in the first half of 1980th, and
+had PDP-11 compatible architecture. Notable, it was not an exact clone of one of 
+DEC processors, but had its own original architecture and PLM-based state machine. 
 
-The 1801BM2 is the futher development of 1801BM1, MUL and DIV instructions added, the
-two-stage pipeline and instruction prefetch were implemented, the microinstructions
+The 1801BM2 is the further development of 1801BM1, MUL and DIV instructions added, the
+two-stage pipeline and instruction prefetch was implemented, the microinstructions
 took only one internal clock to complete (1801BM1 required two clock periods per
 microinstruction). These features improved the processor performance significantly.
 
 ## Original vendor schematics and description
-There are the links to original manufacturer's 1801BM2 gate-level schematics and description (djvu, in Russian).
+There are the links to the original manufacturer's 1801BM2 gate-level schematics and description (DjVu, in Russian).
 - [1801BM2 Schematics](http://www.1801bm1.com/files/retro/1801/vm2/Doc/1801BM2_schematics.djvu)
 - [1801BM2 Techdocs Volume I](http://www.1801bm1.com/files/retro/1801/vm2/Doc/1801BM2_description_vol1.djvu)
 - [1801BM2 Techdocs Volume II](http://www.1801bm1.com/files/retro/1801/vm2/Doc/1801BM2_description_vol2.djvu)
 
 ## Directory structure
 #### \hdl
-- the directory contains HDL-related materials, sources and sample projects for Quartus and ISE.
+- the directory contains HDL-related materials, sources, and sample projects for Quartus and ISE.
 There are three models: original asynchronous, refactored synchronous and Wishbone compatible
 
 #### \hdl\org
-- asynchronous Verilog HDL model, is as close as possible to the original gate-level schematics.
+- asynchronous Verilog HDL model is as close as possible to the original gate-level schematics.
 In practice can be used for modeling purposes only, because processor contains latches (note,
 it differs from flip-flops), ones work in non-reliable fashion on synchronous FPGAs. Also model
 does not contain line delays, in some simulating environment it can be very critical. Nonetheless,
-this model is included in package as demo of closest possible approximation to the original die.
+this model is included in the package as a demo of the closest possible approximation to the original die.
 May not be synthesizable with some tools, presented for simulation purposes only.
 
 #### \hdl\syn
 - synchronous Verilog HDL model, the frontend bus is Q-Bus, removed extra phase clocks, uses only
-direct clock and 180 degree shift one to operate, does not contain latches and can be synthesized
-for synchronous FPGAs. All internal and external timings are exactly the same as in asynchronous
-original model with precision to half period of high frequency clock. This model can be used
-to build in-board replacement of real 1801BM2 chip. Shared access windows feature is cut.
+direct clock and 180-degree shift one to operate, does not contain latches, and can be synthesized
+for synchronous FPGAs. All internal and external timings are precisely the same as in an asynchronous
+original model with precision to half period of high-frequency clock. This model can be used
+to build the in-board replacement of the real 1801BM2 chip. Shared access windows feature is cut.
 
 #### \hdl\wbc
-- synchronous Wishbone compatible version of 1801BM2 synchronous core, uses single clock,
-FPGA-optimized, follows the original command execution timings, is intended for SoC building.
+- synchronous Wishbone compatible version of 1801BM2 synchronous core uses a single clock,
+is FPGA-optimized, follows the original command execution timings, is intended for SoC building.
 
-#### \cad\vm2    
+#### [\cad\vm2](https://github.com/1801BM1/cad11/tree/master/vm2) (moved to dedicated repo)
 - topology in Sprint Layout format
 - topology in PCD-2004 pcb format
 - schematics in PCD-2004 pcb format
@@ -78,12 +78,12 @@ be run before building FPGA bitstream to include test software image
   long press over 1 second simulates power reset (excluding RAM content)
 
 ## Fmax and FPGA resources
-- Wisnbone compatible 1801BM2 core
+- Wishbone compatible 1801BM2 core
 - register file and constant generator in flip-flops, no RAM block
 - speed optimization chosen
 - slow model, worst corner
 
-All results are just approximite estimations by synthesis tools (Quartus/XST) on sample
+All results are just approximate estimations by synthesis tools (Quartus/XST) on sample
 projects.
 
 | Board   | FPGA            | Family      | Fmax    | LUTs | FFs  | MEM   |

@@ -10,12 +10,12 @@ Typically the results include:
 - original asynchronous Verilog-HDL model of processor
 - refactoring original Verilog-HDL model to synchronous one to run on real FPGA
 
-There are few words regarding the reverse engineering process stages:
+There are a few words regarding the reverse engineering process stages:
 - sample decapsulating, milling die from the plastic package with CNC, then etching with 104 percents boiling oleum
-- serialized photographing of die with motorized metallurgical microscope, hundreds of shots
-- shot stitching, getting the resulting high resolution panoramic shot
-- removing the top metal layer with polishing
-- getting the high resolution panoramic shot of diffusion layer
+- serialized photographing of die with a motorized metallurgical microscope, hundreds of shots
+- shot stitching, getting the resulting high-resolution panoramic shot
+- removing the top metal layer with a polishing
+- getting the high-resolution panoramic shot of the diffusion layer
 - manual images vectorization - traces, vias, pads, etc.
 - gate recognition
 - transferring vectorized images to PCB CAD system
@@ -24,13 +24,14 @@ There are few words regarding the reverse engineering process stages:
 - writing the original asynchronous Verilog HDL model, with all schematics specifics
 - simulating and debug the original Verilog HDL model, running PDP-11 factory test software on the model
 - Verilog HDL model refactoring to get synchronous model, running on real FPGA
-- transforming original processor bus to standard Wishbone master interface to integrate into SoC
+- transforming processor-specific bus to standard Wishbone master interface to integrate into SoC
 
 ## Processors
 
 - [1801BM1](/vm1) - USSR microprocessor, no DEC prototype, proprietary die design
 - [1801BM2](/vm2) - USSR microprocessor, no DEC prototype, proprietary die design
 - [1801BM3](/vm3) - USSR microprocessor, no DEC prototype, proprietary die design
+- [LSI-11](/lsi) - Soviet 581-series, DEC LSI-11 clone, Western Digital MCP-1600 chipset
 
 ## Supported FPGA development boards
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:
