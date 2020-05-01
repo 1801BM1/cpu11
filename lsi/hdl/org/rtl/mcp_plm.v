@@ -192,6 +192,7 @@ endmodule
 // 23: 05C
 // 25: 020 029 040 064 07F 0E5 11D
 // 26: 081 184 1C2 31D
+// 29: load lc from return register
 // 2A: 035 037 03D 040 041 042 048 04B 050 058 060 068 070 078 07F 09D 0B6 400 579 601
 // 2C: 113
 // 32: 04A
@@ -212,12 +213,13 @@ endmodule
 //
 // Known translation description
 //
+// 13: DMW - destination translation for EIS M0 (tr[5:3])
 // 19: PSW - PSW translation that regenerates bit 7 and T-bit, 0x568+flags
 // 1C: REF - handle DRAM refresh routine
 // 26: QIR - query interrupt requests
-// 29: DMW - destination translation for EIS M0 (tr[5:3])
+// 29: RET - load location counter from return register
 // 2A: DC1 - decode upper byte of PDP-11 opcode
-// 34: EII - FIS interrupt test (also used for fadd/fsub), 0x5CF on irq
+// 34: EII - EIS interrupt test (also used for fadd/fsub), 0x5CF on irq
 // 4A: RNI - read next instruction
 // 62: FII - FIS interrupt test for fmul and fdiv, 0x592 on irq
 //______________________________________________________________________________

@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#
 # PCAD Netlist converter to Verilog pattern
 # Copyright (c) 2019 1801BM1 <1801bm1@gmail.com>
 #
@@ -211,7 +212,7 @@ def read_netlist(f, verb):
                     state.s = state.STATE_NODE
                     compName = token.strip('"')
                     comp = cmplist.get(compName, None)
-                    if comp == None:
+                    if comp is None:
                         print("Component \"%s\" not found in line %d" % (compName, nline))
                         exit(-1)
                     pins = []
@@ -248,11 +249,11 @@ def comp_by_pin(vnet, npin):
     for key in vnet.nodes:
         node = vnet.nodes[key]
         if len(node) == 1 and node[0] == npin:
-            if rcmp != None:
+            if rcmp is not None:
                 print("Duplicated component in net", vnet.name)
                 exit(-1)
             rcmp = copy.copy(key)
-    if rcmp != None:
+    if rcmp is not None:
         rcmp = cmplist[rcmp]
     return rcmp
 
@@ -263,7 +264,7 @@ def tc12_expand(l, tc, tlist):
         ad = int(l[index+1:index+12], base=2)
         print("   %s: tcr <= 7'h%02X;   // %04o: " % (l, tc, ad))
         tl = tlist.get(tc, None)
-        if tl == None:
+        if tl is None:
             tlist[tc] = [ad]
             return
         tl.append(ad)
@@ -280,13 +281,13 @@ def proc_1621_12(arch, verb):
     for i in range(88):
         vlink = "VLINK_%02d" %  i
         vnet = netlist.get(vlink, None)
-        if vnet == None:
+        if vnet is None:
             print("Net %s not found in netlist" % vlink)
             exit(-1)
         if verb:
             print(vnet.name, vnet.nodes)
         vcmp = comp_by_pin(vnet, 1)
-        if vcmp == None:
+        if vcmp is None:
             print("No tranceiving component found in net %s" % vnet.name)
             exit(-1)
         pnet = netlist[vcmp.pins[3]]
@@ -376,14 +377,14 @@ def proc_1621_34(arch, verb):
     for i in range(100):
         vlink = "TLINK_%02d" %  i
         vnet = netlist.get(vlink, None)
-        if vnet == None: 
+        if vnet is None:
             print("Net %s not found in netlist" % vlink)
             exit(-1)
         if verb:
             print(vnet.name, vnet.nodes)
 
         vcmp = comp_by_pin(vnet, 1)
-        if vcmp == None:
+        if vcmp is None:
             print("No tranceiving component found in net %s" % vnet.name)
             exit(-1)
         pnet = netlist[vcmp.pins[2]]
@@ -510,7 +511,7 @@ def proc_1621_34(arch, verb):
                 print("No C4 found: %s %s" % (vlink, t))
                 exit -1
             lname = vcmp.pins.get(1, None)
-            if lname == None:
+            if lname is None:
                 continue
             if lname == "PLM_LTA":
                lta.append(i)
@@ -581,7 +582,7 @@ def proc_1621_mr(arch, verb):
     for i in range(24):
         vlink = "MLINK_%02d" %  i
         vnet = netlist.get(vlink, None)
-        if vnet == None: 
+        if vnet is None:
             print("Net %s not found in netlist" % vlink)
             exit(-1)
         if verb:
@@ -631,13 +632,13 @@ def proc_1611(arch, verb):
     for i in range(56):
         vlink = "PLINK_%02d" %  i
         vnet = netlist.get(vlink, None)
-        if vnet == None: 
+        if vnet is None:
             print("Net %s not found in netlist" % vlink)
             exit(-1)
         if verb:
             print(vnet.name, vnet.nodes)
         vcmp = comp_by_pin(vnet, 3)
-        if vcmp == None:
+        if vcmp is None:
             print("No tranceiving component found in net %s" % vnet.name)
             exit(-1)
         pnet = netlist[vcmp.pins[2]]
@@ -697,7 +698,7 @@ def proc_1611(arch, verb):
         print("assign p[%d] = cmp({inpl, psw[0], mir[15:8]}, 10'b%s);" % (i, l))
 
         vcmp = comp_by_pin(vnet, 2)
-        if vcmp == None:
+        if vcmp is None:
             print("No tranceiving component found in net %s" % vnet.name)
             exit(-1)
         pnet = netlist[vcmp.pins[3]]
