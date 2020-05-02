@@ -216,9 +216,9 @@ endmodule
 // 13: DMW - destination translation for EIS M0 (tr[5:3])
 // 19: PSW - PSW translation that regenerates bit 7 and T-bit, 0x568+flags
 // 1C: REF - handle DRAM refresh routine
-// 26: QIR - query interrupt requests
+// 26: QBR - query branch on interrupt requests
 // 29: RET - load location counter from return register
-// 2A: DC1 - decode upper byte of PDP-11 opcode
+// 2A: ID1 - decode upper byte of PDP-11 opcode
 // 34: EII - EIS interrupt test (also used for fadd/fsub), 0x5CF on irq
 // 4A: RNI - read next instruction
 // 62: FII - FIS interrupt test for fmul and fdiv, 0x592 on irq
@@ -259,33 +259,33 @@ wire q;
 assign tmx[7:0] = ts[2] ? tr[7:0] : tr[15:8];
 assign q = (tr[14:12] == 3'b000) | (tr[14:12] == 3'b111);
 
-assign p[0]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxxxxxx});  // ** DC1
-assign p[1]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxx1xxx});  // -- DC1
-assign p[2]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxxx1xx});  // -- DC1
-assign p[3]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxxxx1x});  // -- DC1
-assign p[4]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'b10xx000x});  // -- DC1
-assign p[5]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'b1x0x000x});  // -- DC1
-assign p[6]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10xxxxxx});  // -- DC1
-assign p[7]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1x0xxxxx});  // -- DC1
-assign p[8]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10xxxxx1});  // -- DC1
-assign p[13] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001101});  // ** DC1
-assign p[14] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0001xxxx});  // -* DC1
-assign p[27] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1x0xxxx1});  // -- DC1
-assign p[28] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b00000000});  // ** DC1
-assign p[30] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b01110xxx});  // ** DC1
-assign p[32] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b01111010});  // *- DC1
-assign p[33] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'bx0000xxx});  // *- DC1
-assign p[36] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0111111x});  // *- DC1
-assign p[37] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1000101x});  // ** DC1
-assign p[38] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001100});  // ** DC1
-assign p[39] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0000101x});  // ** DC1
-assign p[40] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b00001100});  // ** DC1
-assign p[41] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0111100x});  // ** DC1
-assign p[42] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b00001101});  // ** DC1
-assign p[43] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0000100x});  // ** DC1
-assign p[44] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001000});  // *- DC1
-assign p[45] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001001});  // *- DC1
-assign p[52] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1111xxxx});  // *- DC1
+assign p[0]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxxxxxx});  // ** ID1
+assign p[1]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxx1xxx});  // -- ID1
+assign p[2]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxxx1xx});  // -- ID1
+assign p[3]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'bxxxxxx1x});  // -- ID1
+assign p[4]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'b10xx000x});  // -- ID1
+assign p[5]  = cmp({q, ts[1:0], tc, tmx}, {1'b0, 2'bxx, 7'b0x0x0x0, 8'b1x0x000x});  // -- ID1
+assign p[6]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10xxxxxx});  // -- ID1
+assign p[7]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1x0xxxxx});  // -- ID1
+assign p[8]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10xxxxx1});  // -- ID1
+assign p[13] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001101});  // ** ID1
+assign p[14] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0001xxxx});  // -* ID1
+assign p[27] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1x0xxxx1});  // -- ID1
+assign p[28] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b00000000});  // ** ID1
+assign p[30] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b01110xxx});  // ** ID1
+assign p[32] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b01111010});  // *- ID1
+assign p[33] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'bx0000xxx});  // *- ID1
+assign p[36] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0111111x});  // *- ID1
+assign p[37] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1000101x});  // ** ID1
+assign p[38] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001100});  // ** ID1
+assign p[39] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0000101x});  // ** ID1
+assign p[40] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b00001100});  // ** ID1
+assign p[41] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0111100x});  // ** ID1
+assign p[42] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b00001101});  // ** ID1
+assign p[43] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b0000100x});  // ** ID1
+assign p[44] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001000});  // *- ID1
+assign p[45] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b10001001});  // *- ID1
+assign p[52] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x0x0, 8'b1111xxxx});  // *- ID1
                                                                                     //
 assign p[9]  = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'bx0x00xx, 8'bxxxx1xxx});  // -- 13, 51, 52 (43 not used)
 assign p[10] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'bx0x00xx, 8'bxxx1xxxx});  // -- 13, 51, 52 (43 not used)
@@ -340,16 +340,16 @@ assign p[74] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b0x0x00x, 8'bxxxxxxxx}
                                                                                     //
 assign p[67] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bx1, 7'b00x0x0x, 8'bxxxxxxxx});  // *- 15
 assign p[68] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'b11, 7'b00x0x0x, 8'b11xxxxxx});  // *- 15
-assign p[53] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx00x, 8'b1xxxxxxx});  // -- 19
-assign p[70] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx00x, 8'bxxx1xxxx});  // -- 19
-assign p[75] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx00x, 8'bxxxxxxxx});  // *- 19
+assign p[53] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx00x, 8'b1xxxxxxx});  // -- PSW
+assign p[70] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx00x, 8'bxxx1xxxx});  // -- PSW
+assign p[75] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx00x, 8'bxxxxxxxx});  // *- PSW
                                                                                     //
-assign p[69] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b1000xxxx});  // *- 1A
-assign p[73] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0001xxxx});  // *- 1A
-assign p[80] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0110xxxx});  // *- 1A
-assign p[81] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0100xxxx});  // *- 1A
-assign p[82] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0010xxxx});  // *- 1A
 assign p[83] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0000xxxx});  // *- 1A
+assign p[73] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0001xxxx});  // *- 1A
+assign p[82] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0010xxxx});  // *- 1A
+assign p[81] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0100xxxx});  // *- 1A
+assign p[80] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b0110xxxx});  // *- 1A
+assign p[69] = cmp({q, ts[1:0], tc, tmx}, {1'bx, 2'bxx, 7'b00xx0x0, 8'b1000xxxx});  // *- 1A
 //
 // Interrupt register irq[7:1]
 //  i6   - interrupt handling by microcode at 0x604 (for both event and device)
@@ -365,10 +365,10 @@ assign p[84] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx000x0, 8
 assign p[88] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bxx000x0, 8'bxx1xxx1x}); // FII
 assign p[85] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0xx0x00, 8'bxx1xxx01}); // EII
 assign p[86] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0xx0x00, 8'bxx1xxx1x}); // EII
-assign p[87] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxx100001}); // QIR
-assign p[90] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxx10001x}); // QIR
-assign p[91] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxxx001xx}); // QIR
-assign p[92] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxxxx1xxx}); // QIR
+assign p[87] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxx100001}); // QBR
+assign p[90] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxx10001x}); // QBR
+assign p[91] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxxx001xx}); // QBR
+assign p[92] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'b0x00xx0, 8'bxxxx1xxx}); // QBR
                                                                                               //
 assign p[89] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx00x0x0, 8'bx00000xx}); // RNI
 assign p[99] = cmp({q, ts[1:0], tc, 1'b0, irq[7:1]}, {1'bx, 2'bxx, 7'bx00x0x0, 8'bx0x00000}); // RNI

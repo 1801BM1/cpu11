@@ -56,7 +56,7 @@ org_lsi11 = {
     0x037: "[2A]", 0x03D: "[2A]", 0x040: "[25,2A]", 0x041: "[2A,64]", 0x042: "[2A]",
     0x047: "[4C]", 0x048: "[2A]", 0x04A: "[32]", 0x04B: "[2A]", 0x050: "[2A]",
     0x052: "[16]", 0x058: "[2A]", 0x05C: "[23]",0x060: "[2A]", 0x064: "[25]",
-    0x168: "[2A]", 0x070: "[2A]", 0x078: "[2A]", 0x07F: "[25,2A]", 0x080: "[13]",
+    0x068: "[2A]", 0x070: "[2A]", 0x078: "[2A]", 0x07F: "[25,2A]", 0x080: "[13]",
     0x081: "[26,4A]", 0x088: "[13]", 0x090: "[13]", 0x098: "[13]", 0x09D: "[2A]",
     0x0A0: "[13]", 0x0A8: "[13]", 0x0B0: "[13]", 0x0B6: "[2A]", 0x0B8: "[13]",
     0x0C0: "[52]", 0x0C8: "[52]", 0x0D0: "[52]", 0x0D8: "[52]", 0x0E0: "[52]",
@@ -136,13 +136,13 @@ class FieldDecoder(object):
         for name, value in self.table.items():
             if field_value == value:
                 return name
-        return '0x%x' % field_value;
+        return '0x%x' % field_value
 
 class UnusedDecoder(FieldDecoder):
     def decode(self, addr, field_value, width):
         if field_value == 0:
             return None
-        return '0x%x' % field_value;
+        return '0x%x' % field_value
 
 class TargetDecoder(FieldDecoder):
     def decode(self, addr, field_value, width):
@@ -222,7 +222,6 @@ class InputDecoder(FieldDecoder):
                           'ubc': 0x1,
                           'lb':  0x2,
                           'lbc': 0x3,
-'ub':  0x0,
                           'rmw': 0x4})
 
                    
@@ -456,11 +455,11 @@ def disassemble(addr, opcode):
         if mnem == 'jmp':
             mnem = 'jsr'
         else:
-            extras.append('lrr')
+            extras.append('LRR')
     if opcode & 0x020000:
-        extras.append('rsvc')
+        extras.append('RSVC')
     if opcode & 0x3c0000:
-        extras.append('0x%01x' % (opcode >> 18))
+        extras.append('0x%01x' % ((opcode >> 18) * 4))
     extras = '|'.join(extras)
 
     fields = {}
@@ -505,10 +504,10 @@ def pass2_dis_inst(label, addr, opcode):
     if opcode is not None:
         mnem, fields, extras, target = disassemble(addr, opcode)
         line += '\t' + mnem
-        if extras != '':
-            line += ',' + extras
         if fields != '':
             line += '\t' + fields
+        if extras != '':
+            line += ',' + extras
 
     return line
 
@@ -517,7 +516,7 @@ def pass2(code, disfile, arch, dump=False):
     for addr in range(2048):
         if symtab.has_value(addr) or (code[addr] is not None):
             if addr != next_addr:
-                line = '\torg\t0x%03X' % addr
+                line = '\t.loc\t0x%03X' % addr
                 if addr != 0:
                     line = '\n' + line
                 print(line, file  = disfile)
@@ -525,13 +524,17 @@ def pass2(code, disfile, arch, dump=False):
             opcode = code[addr]
             line = pass2_dis_inst(label, addr, opcode)
             if dump and (code[addr] is not None):
-                line += '\t\t;%03x: %06x' % (addr, opcode)
                 if arch == 'lsi11':
-                    ptam = pta_lsi11.get(addr, None)
-                    if ptam != None:
-                        line = line + ' <%02X>' % ptam
-                    ptam = org_lsi11.get(addr, None)
-                    if ptam != None:
+                    ptam = pta_lsi11.get(addr)
+                    if ptam is not None:
+                        if (opcode & 0x3f0000) == 0:
+                            line += ','
+                        line += ',<%02X>' % ptam
+                align = max(0, (40 + 7 - len(line.expandtabs(8)))) // 8
+                line += '\t' * align + ';%03x: %06x' % (addr, opcode)
+                if arch == 'lsi11':
+                    ptam = org_lsi11.get(addr)
+                    if ptam is not None:
                         line = line + ' ' + ptam
             print(line, file = disfile)
         if code[addr] is not None:
@@ -565,8 +568,8 @@ if __name__ == '__main__':
 
     if False:
         for opcode in range(0, 0x10000, 0x100):
-            mnem, fields, extras = disassemble(opcode)
-            print('%04x' % opcode, mnem, fields)
+            mnem, fields, extras, target = disassemble(0, opcode)
+            print('%04x' % opcode, mnem, fields, target)
 
     code = read_object_file(args.objectfile)
     args.objectfile.close()
