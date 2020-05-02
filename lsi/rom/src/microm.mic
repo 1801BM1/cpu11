@@ -1,0 +1,2879 @@
+;
+; DEC LSI-11 microcode,	MICROMs	CP1631-10, CP1631-07, CP1631-15
+;
+; Copyright (c)	1975
+;
+; Digital Equipment Corporation
+; Maynard, Massachusetts 01754
+;
+; The information in this software is subject to change	without
+; notice and should not	be construed as	a commitment by
+; Digital Equipment Corporation. Title to and ownership	of the
+; software shall at all	times remain in	Digital.
+;
+;
+; Disassembled and analized by <1801BM1@gmail.com>
+; To compile: cp16mic.py microm	--lst microm --obj microm.mem
+;
+;_________________________________________________________________________
+;
+; R3:R2		RBA	bus address register
+; R5:R4		RSRC	source register
+; R7:R6		RDST	destination register
+; R9:R8		RIR	instruction register
+; RB:RA		RPSW	program	status word
+; RE:RE/G7	PC	PDP-11 PC, program counter
+; RD:RC/G6	SP	PDP-11 SP, stack pointer
+; G5-G0		R5-R0	PDP-11 registers
+;
+; PDP-11 PSW
+; PPSWH:	bit 7	- interrupt 0/1	enable/disable,	mapped to I5
+;		bit 6	- not used by LSI-11
+;		bit 5	- not used by LSI-11
+;		bit 4	- T-bit	trace trap, mapped to I4
+; HWPSW;	bit 3	- N - negative
+;		bit 2	- Z - zero
+;		bit 1	- V - overflow
+;		bit 0	- C - carry
+;
+; RPSWL	- internal status
+;		bit 7	-
+;		bit 6	-
+;		bit 5	-
+;		bit 4	-
+;		bit 3	- special return on tr[7:4] from refresh
+;		bit 2	-
+;		bit 1	- memory refresh in progress
+;		bit 0	- interrupt acknowledge	in progress
+;
+; Interrupt register
+;     I6:  handle interrupt if pending by extended microcode
+;     I5:  interrupt enable when 1 (for	both event and device)
+;     I4:  trace trap (T-bit)
+;     I3:  memory refresh request
+;     I2:  power fail, fault (FDIN distinguishes)
+;     I1:  event interrupt (timer line)
+;     I0:  device interrupt
+;
+; Definitions of translations used by this microcode
+;_________________________________________________________________________
+;
+	.tran	PSW,0x19	; PSW translation that regenerates
+				; bit 7	and T-bit, 0x568 + flags
+	.tran	RET,0x29	; return translation for PSW above
+				;
+	.tran	REF,0x1C	; handle DRAM refresh request
+	.tran	QBR,0x26	; query	branch (interrupt) requests
+				;
+	.tran	DMW,0x13	; destination translation for EIS M0 (tr[5:3])
+				; go to	fiiloc (0x592) if any reqs are pending
+				;
+	.tran	EII,0x34	; EIS interrupt	test (also used	for FADD/FSUB)
+				; go to	eiiloc (0x5CF) if any BRs are pending
+				;
+	.tran	RNI,0x4A	; read next instruction
+	.tran	FII,0x62	; FIS interrupt	test for FMUL and FDIV
+				; go to	fiiloc (0x592) if any BRs are pending
+				;
+	.tran	ID1,0x2A	; first	decode upper byte of PDP-11 opcode
+	.tran	D25,0x25	; decodes inst LSB if MSB is 000
+	.tran	D15,0x15	; distinguish jmp/jsr PC/not PC, xxx
+	.tran	D52,0x52	; decodes jsr/jump modes
+	.tran	SP2,0x2C	; increments SP	by 2 as	dst pointer
+	.tran	SP3,0x49	; decrements SP	by 2 as	dst pointer
+	.tran	B32,0x32	; perform source byte read instead of word
+	.tran	RFR,0x1A	; special return from refresh routine
+	.tran	DSW,0x13	; process destination word with	RMW
+	.tran	DSB,0x51	; process destination byte with	RMW
+	.tran	F16,0x16	; fixes	src register increment for byte	ops
+	.tran	F23,0x23	; fixes	src register decrement for byte	ops
+	.tran	R4C,0x4C	; continue from	decrement fix (cancel for SP)
+	.tran	R64,0x64	; cancel increment fix for SP
+	.tran	D4W,0x38	; DE4 word - perform word operation
+	.tran	D4B,0x58	; DE4 byte - perform byte operation
+	.tran	D2W,0x68	; DE2 word - perform word operation, dst mode 0
+	.tran	D2B,0x70	; DE2 byte - perform byte operation, dst mode 0
+	.tran	D0B,0x07	; byte,	single operand instructions, mode 0
+	.tran	D0W,0x0B	; word,	single operand instructions, mode 0
+	.tran	D1B,0x0D	; byte,	single operand instructions, mode !0
+	.tran	D1W,0x0E	; word,	single operand instructions, mode !0
+	.tran	S54,0x54	; just jump to 0x2A0
+;_________________________________________________________________________
+;
+; RFR return address codes - tr[7:4]
+;
+	RA_WA	= 0x00		; 0000 - WAIT instruction cycle
+	RA_BL	= 0x10		; 0001 - refresh in bootloader
+	RA_RD	= 0x20		; 0010 - read boot device
+	RA_WI	= 0x40		; 0100 - wait for tty input
+	RA_WO	= 0x60		; 0110 - wait for tty output
+	RA_PW	= 0x80		; 1000 - wait for power	OK on start
+;_________________________________________________________________________
+;
+; TTL control field:
+;
+	RSV1	= 0x1 *	4	; reserved code, does nothing
+	IFCLR	= 0x9 *	4	; INIT clear
+	SRUN	= 0x9 *	4	; SRUN set/INIT	clear
+	EFCLR	= 0xA *	4	; bus error flag clear
+	RFSET	= 0xB *	4	; refresh flag set
+	IFSET	= 0xC *	4	; INIT set
+	FDIN	= 0xD *	4	; fast input
+	PFCLR	= 0xE *	4	; power	fail clear
+	TFCLR	= 0xF *	4	; timer	flag clear
+;_________________________________________________________________________
+;
+	L_177560 = 0x70		;
+	L_177562 = 0x72		;
+	L_177564 = 0x74		;
+	L_177566 = 0x76		;
+	H_17756X = 0xFF		;
+				;
+	NZVC = N|Z|V|C		;
+	F_IA = 0x01		; in interrupt acknowledge
+	F_RF = 0x02		; in memory refresh
+	F_RT = 0x08		; special return from refresh
+	F_BL = 0x10		; bootloader checks the	memory
+	F_OP = 0x10		; open location	in ODT
+	F_DG = 0x20		; some number is entered
+	F_BE = 0x20		; in bus error 4 vector	fetch
+	F_OS = 0x40		; status word is open
+	F_OR = 0x80		; register is open
+	F_NO = 0x3F		; clear	register/status	is open
+;_________________________________________________________________________
+;
+	.title	"LSI-11 microcode"
+	.loc	0
+
+empty:	jmp	zabt		; zero opcode -	jump empty
+	jmp	reset		; entry	point after SR applied
+				;
+	.loc	0x15E		;
+zabt:	ll	0x4,RPSWL	;
+	jmp	abort		;
+				;
+	.loc	0x192		; trap 010 vector
+abort:	ll	010,RSRCL	; undefined instruction
+	jmp	mtrap		;
+;_________________________________________________________________________
+;
+	.loc	0x002		; [D15]
+	mb	RIRH,RSRCL	; jsr Rx, xxx (Rx is not PC)
+	mb	RIRL,RSRCH	; RBA is target	address
+	slw	RSRCL,RSRCL	; get register index from
+	slw	RSRCL,RSRCL	; instruction word
+	lgl	RSRCH		;
+	al	-2,SPL		;
+	cdb	SPH		;
+	w	SPH,SPL		; store	the register on	stack
+	ow	GH,GL		;
+	mw	PCL,GL,RSVC	; move PC to register
+	mw	RBAL,PCL	; set PC with target address
+;_________________________________________________________________________
+;
+	.loc	0x012		; [D15]
+	al	-2,SPL		; jsr PC, xxx
+	cdb	SPH		; RBA is target	address
+	w	SPH,SPL		; store	PC on stack
+	ow	PCH,PCL		;
+	mb	RBAL,PCL,RSVC	;
+	mb	RBAH,PCH	; set PC with target address
+;_________________________________________________________________________
+;
+; Opcodes 00000x - halt/wait/bpt/iot/reset
+;
+	.loc	0x018		;
+lsb00:	jmp	halt		; 000000 halt
+	jmp	wait		; 000001 wait
+	jmp	abort		; 000002 rti - handled by rtx
+	jmp	bpt		; 000003 bpt
+	jmp	iot		; 000004 iot
+	jmp	resop		; 000005 reset
+	jmp	abort		; 000006 rtt - handled by rtx
+	jmp	abort		; 000007 invalid
+				;
+	.loc	0x020		; [D25]
+	mi	RIRL,RIRH	;
+	jmp	lsb00		;
+;_________________________________________________________________________
+;
+; Generate system nINIT
+;
+	.loc	0x022		;
+sinit:	ll	10.,RDSTL,IFSET	; set INIT flag
+1$:	db1	RDSTL,RDSTL	; wait 10 cycles
+	jzbf	1$		;
+	ll	83.,RDSTL,IFCLR	; clr INIT flag
+2$:	db1	RDSTL,RDSTL	; wait 10 cycles
+	jzbf	2$		;
+	rfs			;
+;_________________________________________________________________________
+;
+; rti/rtt implementation
+;
+	.loc	0x029		; [D25]
+rtx:	riw2	SPH,SPL,RSV1	;
+	iw	0,PCL		; mov (SP)+, PC
+	ri	i5		; disable interrupts
+	riw2	SPH,SPL		;
+	ib	LB,RPSWH	; movb (SP)+, PSW
+	jnbt	1$		; interrupt disabled
+	si	i5		; enable interrupts
+				;
+1$:	tl	0x10,RPSWH	;
+	jzbt	2$		; no T-bit set
+	jmp	3$		;
+2$:	lcf	NZVC,RPSWH,RSVC	; load NZVC flags
+	nop			;
+				;
+	.loc	0x1BC		;
+3$:	si	i4		; set T-bit in ir
+	lcf	NZVC,RPSWH	; load NZVC flags
+	tl	0x4,RIRH	; distinguish rtt/rti
+	jmp	4$		;
+				;
+	.loc	0x00F		;
+4$:	jzbt	rsvc0		; RTI -	start new cycle
+	rtsr			; RTT -	fetch instruction
+	jmp	main		;
+;_________________________________________________________________________
+;
+; PDP-11 conditional branch processing
+;
+	.loc	0x035		; [ID1]
+	slw	RIRH,RSRCL,RSVC	; offset with sign extension
+	cawi	RSRCL,PCL	; on ICC conditionaly add PC
+;_________________________________________________________________________
+;
+; MSB instruction byte is 000
+;
+; 00000x10  0004/2  0x029  rti/rtt
+; 00000xxx  00000x  0x020  halt/wait/bpt/iot/reset
+; 01xxxxxx  0001xx  0x07F  jmp
+; 10000xxx  00020x  0x064  rts
+; 1010xxxx  00024x  0x11D  clx
+; 1011xxxx  00026x  0x0E5  sex
+; 11xxxxxx  0003xx  0x040  swab
+; x0xxxxxx  others  0x000  undefined
+;
+	.loc	0x037		; [ID1]
+msb00:	lgl	RIRH,,D25	;
+				;
+	mb	RIRH,RIRL	; invalid instruction
+	nl	0370,RIRL	; 210-237
+	cl	0210,RIRL	;
+	jzbt	s210		; save internals instuction
+	jmp	1$		;
+				;
+	.loc	0x00D		;
+1$:	cl	0220,RIRL	;
+	jmp	2$		;
+				;
+	.loc	0x06E		;
+2$:	jzbf	3$		;
+	jmp	L600		; 000220 - goto	L600
+;_________________________________________________________________________
+;
+; MSB instruction byte is 10001101 -  1064xx  mtps/mpfs
+;
+	.loc	0x03D		; [ID1]
+	al	0x40,RIRH	; 1064xx, 1067xx + 100 -> no N set
+	jnbf	5$		; mtps/mfps instructions
+3$:	jmp	abort		;
+;_________________________________________________________________________
+;
+; Two operans, source mode 0
+;
+; 0000101x  005xxx  ops	s
+; 00001100  0060xx  shift s
+; 0001000x  010xxx  mov
+; 001x000x  020xxx  cmp/bit
+; 010x000x  040xxx  bis/bic
+; 0110000x  060xxx  add
+; 0111100x  074xxx  xor
+; 1110000x  160xxx  sub
+;
+	.loc	0x040		;
+4$:	mb	GH,RSRCH,,DSW	; [D25],[ID1]
+;_________________________________________________________________________
+;
+	.loc	0x041		; [ID1],[R64]
+5$:	nop	,DSB		; perform byte operation with RMW
+				;
+	.loc	0x042		; [ID1]
+	mb	RIRH,RIRL	; mark instruction
+	al	0x40,RIRL	;
+	jc8t	4$		;
+	jnbt	3$		;
+	jmp	mark		;
+				;
+	.loc	0x0C1		;
+mark:	slb	RIRH,RIRH	;
+	aw	RIRH,PCL	;
+	r	PCH,PCL		;
+	iw	0,RDSTL		;
+	icw2	PCL,SPL		;
+	jmp	1$		;
+	jmp	empty		;
+				;
+	.loc	0x0DC		;
+1$:	ll	0x5,RSRCL	;
+	lgl	RSRCL		;
+	mw	GL,PCL,RSVC	;
+	mw	RDSTL,GL	;
+;_________________________________________________________________________
+;
+; 00021R - specific LSI-11 instruction,	saves five internal registers
+;
+; (R + 0) : RBA
+; (R + 2) : RSRC
+; (R + 4) : RDST
+; (R + 6) : RPSW
+; (R + 8) : RIR
+;
+	.loc	0x0EE		;
+s210:	wiw2	GH,GL		;
+	jmp	1$		;
+				;
+	.loc	0x1CA		;
+1$:	ow	RBAH,RBAL	; mov RBA, (R)+
+	jmp	2$		;
+				;
+	.loc	0x1CE		;
+2$:	wiw2	GH,GL		;
+	jmp	3$		;
+				;
+	.loc	0x1D2		;
+3$:	ow	RSRCH,RSRCL	; mov RSRC, (R)+
+	jmp	4$		;
+				;
+	.loc	0x1D6		;
+4$:	wiw2	GH,GL		;
+	jmp	5$		;
+				;
+	.loc	0x1DA		;
+5$:	ow	RDSTH,RDSTL	; mov RDST, (R)+
+	jmp	6$		;
+				;
+	.loc	0x1DE		;
+6$:	wiw2	GH,GL		;
+	jmp	7$		;
+				;
+	.loc	0x1EA		;
+7$:	ow	RPSWH,RPSWL	; mov PSW, (R)+
+	jmp	8$		;
+				;
+	.loc	0x1EE		;
+8$:	wiw2	GH,GL		;
+	jmp	9$,RSVC		;
+				;
+	.loc	0x206		;
+9$:	ow	RIRL,RIRH	; RSVC (RNI)
+	jmp	empty		; not executed
+;_________________________________________________________________________
+;
+; Two operand instructions, source mode	not 0 processing
+;
+; xxxx001x  xx1000  0x048  opsX	@R,d
+; xxxx010x  xx2000  0x050  opsX	(R)+,d
+; xxxx011x  xx3000  0x058  opsX	@(R)+,d
+; xxxx100x  xx4000  0x060  opsX	-(R),d
+; xxxx101x  xx5000  0x068  opsX	@-(R),d
+; xxxx110x  xx6000  0x070  opsX	E(R),d
+; xxxx111x  xx7000  0x078  opsX	@E(R),d
+;
+	.loc	0x047		; [R4C]
+	db1	GL,GL		; continue after -SP byte fix
+				;
+	.loc	0x048		; [ID1], opsX @R,d
+	r	GH,GL,,B32	; byte operation?
+	iw	0,RSRCL,,DSW	;
+				;
+	.loc	0x50		; [ID1], opsX (R)+,d
+	riw2	GH,GL,,F16	; fix inc for byte ops
+	iw	0,RSRCL,,DSW	;
+				;
+	.loc	0x058		; [ID1]
+	riw2	GH,GL		; opsX @(R)+,d
+	iw	0,RBAL		;
+	r	RBAH,RBAL,,B32	; byte operation?
+	iw	0,RSRCL,,DSW	;
+				;
+	.loc	0x060		; [ID1]
+	al	-2,GL		; opsX -(R),d
+	cdb	GH,,F23		; fix dec for byte ops
+	r	GH,GL		;
+	iw	0,RSRCL,,DSW	;
+				;
+	.loc	0x68		; [ID1]
+	al	-2,GL		; @-(R),d
+	cdb	GH		;
+	r	GH,GL		;
+	iw	0,RBAL		;
+	r	RBAH,RBAL,,B32	; byte operation?
+	iw	0,RSRCL,,DSW	;
+				;
+	.loc	0x070		; [ID1]
+	riw2	PCH,PCL		; E(R),d
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL,,B32	; byte operation?
+	iw	0,RSRCL,,DSW	;
+				;
+	.loc	0x078		; [ID1]
+	riw2	PCH,PCL		; @E(R),d
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	iw	0,RBAL		;
+	r	RBAH,RBAL,,B32	; byte operation?
+	iw	0,RSRCL,,DSW	;
+;_________________________________________________________________________
+;
+	.loc	0x4A		; [B32]
+	ib	UBC,RSRCL,,DSB	; perform source byte instead of word
+;_________________________________________________________________________
+;
+; "sob"	implementation
+;
+	.loc	0x04B		; [ID1]
+	dw1	GL,GL		; substract one
+	jzbf	brsob		; we should branch
+rsvc0:	nop	RSVC		;
+	nop			;
+				;
+	.loc	0x075		;
+brsob:	slb	RIRH,RIRH	; shift	offset from IR
+	nl	0x7F,RIRH,RSVC	; mask 6 bits only
+	sw	RIRH,PCL	; substract offset from	PC
+;_________________________________________________________________________
+;
+; Reads	the source byte	and fix	R+ increment, register must be
+; incremented by 1, but	incremented by 2, so decrement it if not SP
+;
+	.loc	0x052		; [F16]
+	ib	UBC,RSRCL,,R64	; SP - no correcton
+	dw1	GL,GL,,DSB	; perform byte operation ith RMW
+;_________________________________________________________________________
+;
+; Reads	the source byte	and fix	-R decrement, register must be
+; decremented by 1, but	decremented by 2, so increment it if not SP
+;
+	.loc	0x05C		; [F23]
+	icb1	GL,GL,,R4C	; SP - no correction
+	cib	GH		;
+	r	GH,GL		;
+	ib	UBC,RSRCL,,DSB	; perform byte operation with RMW
+;_________________________________________________________________________
+;
+; "rts Rd" implementation
+;
+	.loc	0x064		; [D25]
+	mw	GL,PCL		;
+	riw2	SPH,SPL,RSVC	;
+	iw	0,GL		;
+;_________________________________________________________________________
+;
+; Read destination with	RMW, depending on mode
+; 0000101x  005xxx  ops	s
+; 00001100  0060xx  shift s
+; 001x000x  020xxx  cmp/bit
+; 010x000x  040xxx  bis/bic
+; 0110000x  060xxx  add
+; 0111100x  074xxx  xor
+; 1110000x  160xxx  sub
+;
+	.loc	0x080		; [DSW]
+	lgl	RIRH,,D2W	;
+				;
+	.loc	0x088		; [DSW]
+	lgl	RIRH		; op x,(R)
+	r	GH,GL		;
+	iw	RMW,RDSTL,,D4W	;
+				;
+	.loc	0x090		; [DSW]
+	lgl	RIRH		; op x,(R)+
+	riw2	GH,GL		;
+	iw	RMW,RDSTL,,D4W	;
+				;
+	.loc	0x098		; [DSW]
+	lgl	RIRH		; op x,@(R)+
+	riw2	GH,GL		;
+	iw	0,RBAL		;
+	r	RBAH,RBAL	;
+	iw	RMW,RDSTL,,D4W	;
+				;
+	.loc	0x0A0		; [DSW]
+	lgl	RIRH		; op x,-(R)
+	al	-2,GL		;
+	cdb	GH		;
+	r	GH,GL		;
+	iw	RMW,RDSTL,,D4W	;
+				;
+	.loc	0x0A8		; [DSW]
+	lgl	RIRH		; op x,@-(R)
+	al	-2,GL		;
+	cdb	GH		;
+	r	GH,GL		;
+	iw	0,RBAL		;
+	r	RBAH,RBAL	;
+	iw	RMW,RDSTL,,D4W	;
+	jmp	empty		;
+				;
+	.loc	0x0B0		; [DSW]
+	lgl	RIRH		; op x,E(R)
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	iw	RMW,RDSTL,,D4W	;
+				;
+	.loc	0x0B8		; [DSW]
+	lgl	RIRH		; op x,@E(R)
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	iw	0,RBAL		;
+	r	RBAH,RBAL	;
+	iw	RMW,RDSTL,,D4W	;
+;_________________________________________________________________________
+;
+; Jump instruction handling after D25
+; Jsr instruction handling after ID1
+;
+	.loc	0x07F		;
+	lgl	RIRH,,D52	; [D25],[ID1]
+;
+; xx000xxx  0x0C0  jsr Rx/jmp R	- invalid
+; xx001xxx  0x0C8  jsr Rx/jmp (R)
+; xx010xxx  0x0D0  jsr Rx/jmp (R)+
+; xx011xxx  0x0D8  jsr Rx/jmp @(R)+
+; xx100xxx  0x0E0  jsr Rx/jmp -(R)
+; xx101xxx  0x0E8  jsr Rx/jmp @-(R)
+; xx110xxx  0x0F0  jsr Rx/jmp E(R)
+; xx111xxx  0x0F8  jsr Rx/jmp @E(R)
+;_________________________________________________________________________
+;
+	.loc	0x0C0		;
+	jmp	trap4		; jsr/jmp R - invalid, trap
+				;
+	.loc	0x0C8		; [D52]
+	mw	GL,RBAL,,D15	; goto jsr (R)
+	mb	RBAL,PCL,RSVC	; here jmp (R)
+	mb	RBAH,PCH	;
+				;
+	.loc	0x0D0		; [D52]
+	mw	GL,RBAL		;
+	icw2	GL,GL,,D15	; goto jsr (R)+
+	mb	RBAL,PCL,RSVC	; here jmp (R)+
+	mb	RBAH,PCH	;
+				;
+	.loc	0x0D8		; [D52]
+	riw2	GH,GL		;
+	iw	0,RBAL,,D15	; goto jsr @(R)+
+	mb	RBAL,PCL,RSVC	; here jmp @(R)+
+	mb	RBAH,PCH	;
+				;
+	.loc	0x0E0		; [D52]
+	al	-2,GL		;
+	cdb	GH		;
+	mw	GL,RBAL,,D15	; goto jsr -(R)
+	mb	RBAL,PCL,RSVC	; here jmp -(R)
+	mb	RBAH,PCH	;
+				;
+	.loc	0x0E8		; [D52]
+	al	-2,GL		;
+	cdb	GH		;
+	r	GH,GL		;
+	iw	0,RBAL,,D15	; goto jsr @-(R)
+	mb	RBAL,PCL,RSVC	; here jmp @-(R)
+	mb	RBAH,PCH	;
+				;
+	.loc	0x0F0		; [D52]
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL,,D15	; goto jsr E(R)
+	mb	RBAL,PCL,RSVC	; here jmp E(R)
+	mb	RBAH,PCH	;
+				;
+	.loc	0x0F8		; [D52]
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	iw	0,RBAL,,D15	;
+	mb	RBAL,PCL,RSVC	; goto jsr @E(R)
+	mb	RBAH,PCH	; here jmp @E(R)
+	jmp	empty		;
+;_________________________________________________________________________
+;
+; Device interrupt acknowledgement
+;
+	.loc	0x081		; [QBR],[RNI]
+	ra	RPSWL,RPSWH	; read acknowledge
+	al	F_IA,RPSWL	;
+	iw	0,RSRCL		; input	interrupt vector
+	nl	0x40,RPSWL	;
+	jmp	itrap		;
+;_________________________________________________________________________
+;
+; Timer	interrupt
+;
+	.loc	0x1C2		; [QBR],[RNI]
+	ll	0100,RSRCL,TFCLR;
+	jmp	mtrap		;
+;_________________________________________________________________________
+;
+; T-bit	trap
+;
+	.loc	0x1BA		; [RNI]
+	ll	014,RSRCL	;
+	jmp	mtrap		;
+;_________________________________________________________________________
+;
+	.loc	0x0A5		; iot instruction
+iot:	ll	020,RSRCL	;
+	jmp	mtrap		;
+	jmp	empty		;
+				;
+	.loc	0x0B6		; [ID1]
+	ll	030,RSRCL	; emt instruction
+	jmp	mtrap		;
+				;
+	.loc	0x09D		; [ID1]
+	ll	034,RSRCL	; trap instruction
+	jmp	mtrap		;
+	jmp	empty		;
+				;
+	.loc	0x0F5		;
+bpt:	ll	014,RSRCL	; bpt instruction
+	jmp	mtrap		;
+	jmp	empty		;
+;_________________________________________________________________________
+;
+	.loc	0x0E5		; [D25]
+	ccf	RIRL		; set conditions
+	orb	RIRH,RIRL,RSVC	; sex
+	lcf	NZVC,RIRL	;
+				;
+	.loc	0x11D		; [25]
+	ccf	RIRL		; clear	conditions
+	ncb	RIRH,RIRL,RSVC	; clx
+	lcf	NZVC,RIRL	;
+;_________________________________________________________________________
+;
+	.loc	0x101		;
+halt:	tl	0x40,RPSWL	; Halt instruction processing
+	jzbf	nodt		;
+				;
+godt:	nl	~NZVC,RPSWH	; Enters ODT
+	jmp	1$		;
+				;
+	.loc	0x175		;
+1$:	ll	F_RT,RIRH	; special return
+	orb	RIRH,RPSWL	;
+	jmp	2$		;
+				;
+	.loc	0x105		;
+2$:	jsr	putnl		; show PC on ODT entry
+	mw	PCL,RDSTL	;
+	jmp	3$		;
+				;
+	.loc	0x1C6		;
+3$:	jsr	octal		;
+	jmp	4$		;
+				;
+	.loc	0x352		;
+4$:	nl	~NZVC,RPSWH	;
+	nl	7,RPSWL		;
+	jmp	5$		;
+				;
+	.loc	0x0D4		;
+5$:	al	F_RT,RPSWL	; special return
+	ll	H_17756X,RSRCH	;
+	jsr	inkey		; clear	entry pipe
+	jmp	oent		;
+				;
+	.loc	0x127		;
+nodt:	jmp	rhalt		; restart execution
+;_________________________________________________________________________
+;
+; Main loop: read next instruction and decode upper byte
+;
+	.loc	0x10B		;
+main:	riw2	PCH, PCL	; place	PC on the bus
+	iw	TG8,RIRH,SRUN	; read instruction, assert SRUN
+	mb	GL,RSRCL,,ID1	; opcode first decode phase
+;
+; opcode MSB	    goto   description
+; 00000000  000xxx  0x037  D25
+; 00000001  00x000  0x035  branch
+; 0000001x  00x000  0x035  branch
+; 000001xx  00x000  0x035  branch
+; 0000100x  004xxx  0x07F  jsr
+; 0000101x  005xxx  0x040  ops s
+; 00001100  0060xx  0x040  shift s
+; 00001101  006100  0x042  mark
+; 0000111x  007xxx  pass   undefined
+; 0001000x  010xxx  0x040  mov
+; 001x000x  020xxx  0x040  cmp/bit
+; 010x000x  040xxx  0x040  bis/bic
+; 0110000x  060xxx  0x040  add
+; 0111100x  074xxx  0x040  xor
+; 1110000x  160xxx  0x040  sub sss,ddd
+; xxxx001x  xx1000  0x048  opsX	@R,d
+; xxxx010x  xx2000  0x050  opsX	(R)+,d
+; xxxx011x  xx3000  0x058  opsX	@(R)+,d
+; xxxx100x  xx4000  0x060  opsX	-(R),d
+; xxxx101x  xx5000  0x068  opsX	@-(R),d
+; xxxx110x  xx6000  0x070  opsX	E(R),d
+; xxxx111x  xx7000  0x078  opsX	@E(R),d
+; 01110xxx  07xxxx  0x579  EIS
+; 01111010  0750xx  0x400  FIS
+; 01111011  0754xx  pass   undefined
+; 0111110x  076xxx  pass   undefined
+; 0111111x  077x00  0x04B  sob
+; 10000xxx  10x000  0x035  branch
+; 10001000  1040xx  0x0B6  emt N
+; 10001001  1044xx  0x09D  rap N
+; 1000101x  105xxx  0x041  opsB	s
+; 10001100  1060xx  0x041  opsB	s
+; 10001101  1064xx  0x03D  mtps/mfps
+; 1001000x  110xxx  0x041  movB	R,d
+; 1010000x  120xxx  0x041  cmpB	R,d
+; 1011000x  130xxx  0x041  bitB	R,d
+; 1100000x  140xxx  0x041  bicB	R,d
+; 1101000x  150xxx  0x041  bisB	R,d
+; 1000111x  107xxx  pass   undefined
+; 1111xxxx  17xxxx  0x601  extension
+;_________________________________________________________________________
+;
+; ID1 failed on	MSB of instruction: 007xxx, 0754xx, 076xxx, 107xxx
+;
+	cl	0173,RIRL	; check	instruction MSB	(not LSB)
+	jmp	1$		;
+	.loc	0x056		;
+				;
+1$:	jzbt	2$		; 173? - goto extension	L603
+	jmp	abort		; invalid instruction encountered
+				;
+	.loc	0x067		;
+2$:	jmp	L603		; 0754xx
+;_________________________________________________________________________
+;
+; Fixes	SP increment/decrement as destination pointer in byte
+; operations SP	must be	always incremented/decremented by 2
+;
+	.loc	0x113		; [SP2]
+	icw1	GL,GL		;
+	ib	UBC+RMW,RDSTL,,D4B
+				;
+	.loc	0x124		; [SP3]
+	dw1	GL,GL		;
+	r	GH,GL		;
+	ib	UBC+RMW,RDSTL,,D4B
+;_________________________________________________________________________
+;
+; Byte instructions destination	mode, uses RMW
+; Includes mfps
+;
+; xx000xxx  0x100  ops	[x,] R
+; xx001xxx  0x108  ops	[x,] (R)
+; xx010xxx  0x110  ops	[x,] (R)+
+; xx011xxx  0x118  ops	[x,] @(R)+
+; xx100xxx  0x120  ops	[x,] -(R)
+; xx101xxx  0x128  ops	[x,] @-(R)
+; xx110xxx  0x130  ops	[x,] E(R)
+; xx111xxx  0x138  ops	[x,] @E(R)
+;
+	.loc	0x100		; [DSB]
+	lgl	RIRH,,D2B	; decode instruction
+				;
+	.loc	0x108		; [DSB]
+	lgl	RIRH		; (R)
+	r	GH,GL		;
+	ib	UBC+RMW,RDSTL,,D4B
+				;
+	.loc	0x110		; [DSB]
+	lgl	RIRH		; (R)+
+	riw1	GH,GL,,SP2	; fix SP increment
+	ib	UBC+RMW,RDSTL,,D4B
+				;
+	.loc	0x118		; [DSB]
+	lgl	RIRH		; @(R)+
+	riw2	GH,GL		;
+	iw	0,RBAL		;
+	r	RBAH,RBAL	;
+	ib	UBC+RMW,RDSTL,,D4B
+				;
+	.loc	0x120		; [DSB]
+	lgl	RIRH		; -(R)
+	dw1	GL,GL,,SP3	; fix SP decrement
+	r	GH,GL		;
+	ib	UBC+RMW,RDSTL,,D4B
+				;
+	.loc	0x128		; [DSB]
+	lgl	RIRH		; @-(R)
+	al	-2,GL		;
+	cdb	GH		;
+	r	GH,GL		;
+	iw	0,RBAL		;
+	r	RBAH,RBAL	;
+	ib	UBC+RMW,RDSTL,,D4B
+	jmp	empty		;
+				;
+	.loc	0x130		; [DSB]
+	lgl	RIRH		; E(R)
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	ib	UBC+RMW,RDSTL,,D4B
+				;
+	.loc	0x138		; [DSB]
+	lgl	RIRH		; @E(R)
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	iw	0,RBAL		;
+	r	RBAH,RBAL	;
+	ib	UBC+RMW,RDSTL,,D4B
+;_________________________________________________________________________
+;
+	.loc	0x141		;
+	slbf	GH,RDSTL	; [D2W]
+	mb	GL,GH,RSVC	; swab Rd
+	srbcf	RDSTL,GL	;
+				;
+	.loc	0x148		; [D2W]
+	cwf	GL,RSRCL,,RNI	; cmp src, Rd
+				;
+	.loc	0x14C		; [D2W]
+	twf	RSRCL,GL,,RNI	; bit src, Rd
+				;
+	.loc	0x150		; [D2W]
+	ncwf	RSRCL,GL,,RNI	; bic src, Rd
+				;
+	.loc	0x154		; [D2W]
+	orwf	RSRCL,GL,,RNI	; bis src, Rd
+				;
+	.loc	0x158		; [D2W]
+	awf	RSRCL,GL,,RNI	; add src, Rd
+				;
+	.loc	0x15C		; [D2W]
+	xwf	RSRCL,GL,,RNI	; xor src, Rd
+	jmp	empty		;
+;_________________________________________________________________________
+;
+; Perform fast input (FDIN), uses RIRH:RIRL, returns FDIN in RIRL
+;
+	.loc	0x14D		;
+rfdin:	ll	4,RIRL		; see 000004 as	bus address
+	ll	0,RIRH		;
+	jmp	1$		;
+				;
+	.loc	0x155		;
+1$:	riw2	RIRH,RIRL	;
+	ib	LB,RIRL,FDIN	;
+	rfs	FDIN		;
+;_________________________________________________________________________
+;
+; wait instruction implementation
+;
+	.loc	0x161		;
+wait:	ll	F_RT,RPSWL	; [D2B]	- not happens
+1$:	nop	,QBR		; special return from refresh
+	jmp	1$		; [RFR]
+;_________________________________________________________________________
+;
+	.loc	0x164		; [D2B]
+	mb	RSRCL,RSRCH,RSVC; movb src,Rd
+	mwf	RSRCH,GL	;
+				;
+	.loc	0x168		; [D2B]
+	cbf	GL,RSRCL,,RNI	; cmpb src, Rd
+				;
+	.loc	0x16C		; [D2B]
+	tbf	RSRCL,GL,,RNI	; bitb src, Rd
+				;
+	.loc	0x170		; [D2B]
+	ncbf	RSRCL,GL,,RNI	; bicb src, Rd
+				;
+	.loc	0x174		; [D2B]
+	orbf	RSRCL,GL,,RNI	; bisb src, Rd
+				;
+	.loc	0x178		; [D2W],[D2B]
+	swf	RSRCL,GL,,RNI	; sub src, Rd
+	jmp	empty		;
+;_________________________________________________________________________
+;
+	.loc	0x180		; [D4W]
+	ccf	RIRL,,D1W	; word single operand, dest mode not 0
+;_________________________________________________________________________
+;
+; Word operations for two operand instructions,	RMW transaction
+; is open for destination, result may be written back
+;
+	.loc	0x181		; [D4W]
+	slbf	RDSTH,RDSTH	; swab dst
+	srbcf	RDSTH,RDSTH,RSVC;
+	ow	RDSTL,RDSTH	; complete RMW
+				;
+	.loc	0x188		; [D4W]
+	cwf	RDSTL,RSRCL,,RNI; cmp src, dst
+				;
+	.loc	0x18C		; [D4W]
+	twf	RSRCL,RDSTL,,RNI; bit src, dst
+				;
+	.loc	0x190		; [D4W]
+	ncwf	RSRCL,RDSTL,RSVC; bic src, dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x194		; [DWW]
+	orwf	RSRCL,RDSTL,RSVC; bis src, dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x198		; [D4W]
+	awf	RSRCL,RDSTL,RSVC; add src, dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x19C		; [D4W]
+	xwf	RSRCL,RDSTL,RSVC; xor R, dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x1B8		; [D4W],[D4B]
+	swf	RSRCL,RDSTL,RSVC; sub src, dst
+	ow	RDSTH,RDSTL	;
+;_________________________________________________________________________
+;
+; Power	fail interrupt
+; [D4W]	- not happens, "movx" is filtered out
+;
+	.loc	0x184		;
+pfail:	jsr	rfdin		; [QBR],[D4W*],[RNI]
+	tl	0x8,RIRL	;
+	jzbf	1$		;
+	jmp	halt		; spurrious interrupt
+				;
+	.loc	0x115		;
+1$:	ll	0x40,RPSWL	;
+	ll	024,RSRCL,PFCLR	; trap to vector 024
+	jmp	mtrap		;
+;_________________________________________________________________________
+;
+	.loc	0x1A0		; [D4B]
+d4b$:	ccf	RIRL,,D1B	; byte single operand, dest mode not 0
+;_________________________________________________________________________
+;
+; Byte operations for two operand instructions,	RMW transaction
+; is open for destination, result may be written back
+;
+	.loc	0x1A4		; [D4B]
+	mbf	RSRCL,RSRCL,RSVC; movb src, dst
+	ob	RSRCL,RSRCL	;
+				;
+	.loc	0x1A8		; [D4B]
+	cbf	RDSTL,RSRCL,,RNI; cmpb src, dst
+				;
+	.loc	0x1AC		; [D4B]
+	tbf	RSRCL,RDSTL,,RNI; bitb src, dst
+				;
+	.loc	0x1B0		;
+	ncbf	RSRCL,RDSTL,RSVC; [D4B]
+	ob	RDSTL,RDSTL	; bicb src, dst
+				;
+	.loc	0x1B4		; [D4B]
+	orbf	RSRCL,RDSTL,RSVC;
+	ob	RDSTL,RDSTL	; bisb src, dst
+;_________________________________________________________________________
+;
+; Single operand byte instructions, mode 0
+;
+	.loc	0x160		;
+	ccf	RIRL,,D0B	; [D2B]
+				;
+	.loc	0x1C0		; [D0B]
+	sbf	GL,GL,RSVC	; clrb Rd
+	nop			;
+				;
+	.loc	0x1C4		; [D0B]
+	icb1f	GL,GL,RSVC	; incb Rd
+	lcf	C,RIRL		; restore C
+				;
+	.loc	0x1C8		; [D0B]
+	ocbf	GL,GL,RSVC	; notb Rd
+	nop			;
+				;
+	.loc	0x1CC		; [D0B]
+	db1f	GL,GL,RSVC	; decb Rd
+	lcf	C,RIRL		; restore C
+				;
+	.loc	0x1D0		; [D0B]
+	tcbf	GL,GL,RSVC	; negb Rd
+	nop			;
+				;
+	.loc	0x1D4		; [D0B]
+	ll	0x0,RSRCL,RSVC	; sbcb Rd
+	sbcf	RSRCL,GL	;
+				;
+	.loc	0x1D8		; [D0B]
+	ll	0x0,RSRCL,RSVC	; adcb Rd
+	abcf	RSRCL,GL	;
+				;
+	.loc	0x1DC		; [D0B]
+	slbf	GL,GL,RSVC	; tstb Rd
+	srbcf	GL,GL		; C = 0
+				;
+	.loc	0x1E0		; [D0B]
+	srbcf	GL,GL		; rorb Rd
+	srbcf	GL,GL,RSVC	;
+	slbcf	GL,GL		;
+	jmp	empty		;
+				;
+	.loc	0x1E4		; [D0B]
+	slbcf	GL,RSRCL	; asrb
+	srbcf	GL,GL		;
+	srbcf	GL,GL,RSVC	;
+	slbcf	GL,GL		;
+				;
+	.loc	0x1E8		; [D0B]
+	slbcf	GL,GL,,RNI	; rolb
+	jmp	empty		;
+				;
+	.loc	0x1EC		; [D0B]
+	slbf	GL,GL,,RNI	; aslb Rd
+	jmp	empty		;
+;_________________________________________________________________________
+;
+	.loc	0x1F0		; [D0B]
+	mb	GL,RDSTL	; mtps Rd
+	ri	i5		;
+	nl	0x10,RPSWH	;
+	nl	0xef,RDSTL	;
+	orb	RDSTL,RPSWH	; [D0B]
+	jnbt	1$		;
+	si	i5		;
+1$:	lcf	NZVC,RDSTL,RSVC	;
+	nop			; [D0B]
+				;
+	.loc	0x1FC		; [D0B]
+	ccf	RDSTL		; mfps Rd
+	nl	~NZVC,RPSWH	;
+	nl	NZVC,RDSTL	;
+	jmp	2$		;
+				;
+	.loc	0x1B2		;
+2$:	orb	RDSTL,RPSWH,RSVC;
+	mwf	RPSWH,GL	;
+;_________________________________________________________________________
+;
+; Single operand word instructions, mode 0
+;
+	.loc	0x140		;
+	ccf	RIRL,,D0W	; [D2W]
+				;
+	.loc	0x200		; [D0W]
+	swf	GL,GL,,RNI	; clr Rd
+	jmp	empty		;
+				;
+	.loc	0x204		; [D0W]
+	icw1f	GL,GL,RSVC	; inc Rd
+	lcf	C,RIRL		;
+				;
+	.loc	0x0208		; [D0W]
+	ocwf	GL,GL,RSVC	; not Rd
+	nop			;
+				;
+	.loc	0x20C		; [D0W]
+	dw1f	GL,GL,RSVC	; dec Rd
+	lcf	C,RIRL		;
+	jmp	empty		;
+	jmp	empty		;
+				;
+	.loc	0x210		; [D0W]
+	tcwf	GL,GL,RSVC	; neg Rd
+	nop			;
+				;
+	.loc	0x214		; [D0W]
+	ll	0,RSRCH,RSVC	; sbc Rd
+	swcf	RSRCH,GL	;
+				;
+	.loc	0x218		; [D0W]
+	ll	0x0,RSRCH,RSVC	; adc Rd
+	awcf	RSRCH,GL	;
+				;
+	.loc	0x21C		; [D0W]
+	sbf	RIRL,RIRL,RSVC	; tst Rd
+	mwf	GL,GL		;
+				;
+	.loc	0x220		; [D0W]
+	srwcf	GH,GH		; ror Rd
+	srwcf	GH,GH,RSVC	;
+	slwcf	GL,GL		;
+	jmp	empty		;
+				;
+	.loc	0x224		; [D0W]
+	slbcf	GH,RSRCL	; asr Rd
+	srwcf	GH,GH		;
+	srwcf	GH,GH,RSVC	;
+	slwcf	GL,GL		;
+				;
+	.loc	0x228		; [D0W]
+	slwcf	GL,GL,,RNI	; rol Rd
+				;
+	.loc	0x22C		; [D0W]
+	slwf	GL,GL,,RNI	; asl Rd
+				;
+	.loc	0x23C		; [D0W]
+sxt$:	jnt	1$		; sxt
+	ll	0,GL,RSVC	;
+	mbf	GL,GH		;
+	jmp	empty		;
+				;
+	.loc	0x202		;
+1$:	ll	-1,GL,RSVC	;
+	mbf	GL,GH		;
+;_________________________________________________________________________
+;
+; Single operand byte instruction, destination mode is not 0
+;
+	.loc	0x240		;
+d1b$:	sbf	RDSTL,RDSTL,RSVC; [D1B]
+	ob	RDSTL,RDSTL	; clrb dst
+				;
+	.loc	0x244		; [D1B]
+	icb1f	RDSTL,RDSTL	; incb dst
+	lcf	C,RIRL,RSVC	;
+	ob	RDSTL,RDSTL	;
+	jmp	empty		;
+				;
+	.loc	0x248		; [D1B]
+	ocbf	RDSTL,RDSTL,RSVC; not dst
+	ob	RDSTL,RDSTL	;
+				;
+	.loc	0x24C		; [D1B]
+	db1f	RDSTL,RDSTL	; decb dst
+	lcf	C,RIRL,RSVC	;
+	ob	RDSTL,RDSTL	;
+	jmp	empty		;
+				;
+	.loc	0x250		; [D1B]
+	tcbf	RDSTL,RDSTL,RSVC; neg dst
+	ob	RDSTL,RDSTL	;
+				;
+	.loc	0x254		;
+	ll	0,RSRCL		; [D1B]
+	sbcf	RSRCL,RDSTL,RSVC; sbc dst
+	ob	RDSTL,RDSTL	;
+				;
+	.loc	0x258		; [D1B]
+	ll	0,RSRCL		; adcb dst
+	abcf	RSRCL,RDSTL,RSVC;
+	ob	RDSTL,RDSTL	;
+				;
+	.loc	0x25C		; [D1B]
+	sbf	RIRL,RIRL,RSVC	; tstb dst
+	mbf	RDSTL,RDSTL	;
+;_________________________________________________________________________
+;
+	.loc	0x260		; [D1B]
+1$:	srbcf	RDSTL,RDSTL	; rorb dst
+	srbcf	RDSTL,RDSTL	;
+	slbcf	RDSTL,RDSTL,RSVC;
+	ob	RDSTL,RDSTL	;
+				;
+	.loc	0x264		; [D1B]
+	slbcf	RDSTL,RSRCL	; asrb
+	jmp	1$		;
+				;
+	.loc	0x268		;  [D1B]
+	slbcf	RDSTL,RDSTL,RSVC; rolb dst
+	ob	RDSTL,RDSTL	;
+				;
+	.loc	0x26C		; [D1B]
+	slbf	RDSTL,RDSTL,RSVC; aslb
+	ob	RDSTL,RDSTL	;
+;_________________________________________________________________________
+;
+	.loc	0x270		; [D1B]
+mxps:	ob	RDSTL,RDSTL	; mtps dst
+	ri	i5		;
+	nl	T,RPSWH		;
+	nl	~T,RDSTL	;
+				;
+	orb	RDSTL,RPSWH	; [D1B]
+	jnbt	1$		;
+	si	i5		;
+1$:	lcf	NZVC,RDSTL,RSVC	;
+	nop			; [D1B]
+				;
+	.loc	0x27C		; [D1B]
+	ccf	RDSTL		; mfps src
+	nl	~NZVC,RPSWH	;
+	nl	NZVC,RDSTL	;
+	jmp	2$		;
+				;
+	.loc	0x166		;
+2$:	orbf	RPSWH,RDSTL,RSVC;
+	ob	RDSTL,RDSTL	;
+;_________________________________________________________________________
+;
+; One operand word instruction witn dest mode in memory
+; RMW transaction is open and waiting for the result writing
+;
+	.loc	0x280		; [D1W]
+ld1w$:	sbf	RDSTL,RDSTL,RSVC; clr dst
+	ow	RDSTL,RDSTL	;
+				;
+	.loc	0x284		; [D1W]
+	icw1f	RDSTL,RDSTL	; inc dst
+	lcf	C,RIRL,RSVC	; restore C
+	ow	RDSTH,RDSTL	;
+	jmp	empty		;
+				;
+	.loc	0x288		; [D1W]
+	ocwf	RDSTL,RDSTL,RSVC; not dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x28C		; [D1W]
+	dw1f	RDSTL,RDSTL	; dec dst
+	lcf	C,RIRL,RSVC	; restore C
+	ow	RDSTH,RDSTL	;
+	jmp	empty		;
+				;
+	.loc	0x290		; [D1W]
+	tcwf	RDSTL,RDSTL,RSVC; neg dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x294		; [D1W]
+	ll	0,RSRCH		;
+	swcf	RSRCH,RDSTL,RSVC; sbc dst
+	ow	RDSTH,RDSTL	;
+	jmp	empty		;
+				;
+	.loc	0x298		; [D1W]
+	ll	0,RSRCH		; adc dst
+	awcf	RSRCH,RDSTL,RSVC;
+	ow	RDSTH,RDSTL	;
+	jmp	empty		;
+				;
+	.loc	0x29C		; [D1W]
+	sbf	RIRL,RIRL,RSVC	;
+	mwf	RDSTL,RDSTL	; tst dst
+;_________________________________________________________________________
+;
+	.loc	0x2A4		; [D1W]
+	slbcf	RDSTH,RSRCL,,S54; asr
+	jmp	empty		;
+				;
+	.loc	0x2A0		; [D1W],[S54]
+	srwcf	RDSTH,RDSTH	; ror/asr dst
+	srwcf	RDSTH,RDSTH	;
+	slwcf	RDSTL,RDSTL,RSVC;
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x2A8		; [D1W]
+	slwcf	RDSTL,RDSTL,RSVC; rol dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x2AC		; [D1W]
+	slwf	RDSTL,RDSTL,RSVC; asl dst
+	ow	RDSTH,RDSTL	;
+				;
+	.loc	0x2BC		; [D1W]
+	jnt	1$		; sxt dst
+	ll	0,RDSTL		;
+	mbf	RDSTL,RDSTL,RSVC;
+	ow	RDSTL,RDSTL	;
+				;
+	.loc	0x2B9		;
+1$:	ll	-1,RDSTL	;
+	mbf	RDSTL,RDSTL,RSVC;
+	ow	RDSTL,RDSTL	;
+;_________________________________________________________________________
+;
+; "mov x, dst" - depending on destination mode
+;
+	.loc	0x2C0		; [DSW]
+	lgl	RIRH,RSVC	; mov x, R
+	mwf	RSRCL,GL	;
+				;
+	.loc	0x2C8		; [DSW]
+	lgl	RIRH		; mov x, (R)
+	w	GH,GL		;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+				;
+	.loc	0x2D0		; [DSW]
+	lgl	RIRH		; mov x, (R)+
+	wiw2	GH,GL		;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+				;
+	.loc	0x2D8		; [DSW]
+	lgl	RIRH		; mov x, @(R)+
+	riw2	GH,GL		;
+	iw	0,RBAL		;
+	w	RBAH,RBAL	;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+				;
+	.loc	0x2E0		; [DSW]
+	lgl	RIRH		; mov x, -(R)
+	al	-2,GL		;
+	cdb	GH		;
+	w	GH,GL		;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+				;
+	.loc	0x2E8		; [DSW]
+	lgl	RIRH		; mov x, @-(R)
+	al	-2,GL		;
+	cdb	GH		;
+	r	GH,GL		;
+	iw	0,RBAL		;
+	w	RBAH,RBAL	;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+				;
+	.loc	0x2F0		; [DSW]
+	lgl	RIRH		; mov x, E(R)
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	w	RBAH,RBAL	;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+	jmp	empty		;
+				;
+	.loc	0x2F8		; [DSW]
+	lgl	RIRH		; mov x, @E(R)
+	riw2	PCH,PCL		;
+	iw	0,RBAL		;
+	aw	GL,RBAL		;
+	r	RBAH,RBAL	;
+	iw	0,RBAL		;
+	w	RBAH,RBAL	;
+	ow	RSRCH,RSRCL,RSVC;
+	mwf	RSRCL,RSRCL	;
+;_________________________________________________________________________
+;
+	.loc	0x2CC		; 'P' -	proceed	command
+cmd_p:	ll	0,RPSWL		; start	instruction
+	rtsr			; flow execution
+	jmp	main		;
+	jmp	empty		;
+;_________________________________________________________________________
+;
+	.loc	0x2DE		;
+putnl:	al	0x2,RPSWH	; print	digits from RDST
+	jmp	1$		; with preceeding CR/LF
+
+	.loc	0x1F9
+1$:	ll	13.,RIRL	; output CR
+	al	0x8,RPSWH	; output LF
+	jmp	putty		;
+;_________________________________________________________________________
+;
+	.loc	0x2E6		;
+putch:	al	0x1,RPSWH	; print	one char
+	jmp	putty		; from RIRL
+;_________________________________________________________________________
+;
+; Place	to go to cause an internal CPU trap
+; RSRCL	contains the vector address
+;
+	.loc	0x301		;
+mtrap:	ll	0,RSRCH		;
+itrap:	ri	i4		; disable T-bit	processing
+	al	-2,SPL		; decrement stack pointer
+	cdb	SPH		;
+	ccf	RIRL		;
+	nl	NZVC,RIRL	; transfer I and T-bit
+	nl	~NZVC,RPSWH	;
+	orb	RPSWH,RIRL	; construct PSW	to save
+	ll	0,RIRH,RSV1	; upper	byte is	always zero
+	w	SPH,SPL		; push 16-bit word to stack
+	ow	RIRH,RIRL	;
+	al	-2,SPL		;
+	cdb	SPH		; decrement stack pointer
+	w	SPH,SPL		; push PC word to stack
+	ow	PCH,PCL		;
+	nl	~F_BE,RPSWL	;
+				;
+vread:	riw2	RSRCH,RSRCL	; read PC from vector +	0
+	iw	0,PCL		;
+	ri	i5		; disable interrupt
+	r	RSRCH,RSRCL	; read PSW byte
+	ib	LB,RPSWH	; from vector +	2
+	jnbt	1$		; no enabled interrupts
+	si	i5		; enable interrupts
+1$:	tl	0x10,RPSWH	; check	T-bit
+	jzbt	2$		; no T-bit set
+	si	i4		; set T-bit handle
+2$:	lcf	NZVC,RPSWH,RSVC	; load flags
+	nl	0x47,RPSWL	;
+;_________________________________________________________________________
+;
+; DRAM refresh routine,	enters after translations REF,QBR,RNI
+;
+	.loc	0x31D		; [REF],[QBR],[RNI]
+refrsh:	tl	F_RT,RPSWL	;
+	jzbf	1$		;
+	ll	0,RSRCL		;
+	al	F_RF,RPSWL	; set in-refresh flag
+1$:	ll	128.,RSRCH	; 128 cycles of	byte read
+	jmp	3$,RFSET	; to refresh the memory
+2$:	ib	LB,RIRH		;
+3$:	rib2	RSRCL,RSRCH	;
+	jzbf	2$		;
+	ib	LB,RIRH		;
+	tl	F_RT,RPSWL,EFCLR;
+	jzbt	4$		;
+	ll	0xFF,RSRCH,,RFR	; special return
+;
+; return address on tr[7:4] via	RFR (from refrhesh)
+;  tr7:4      go to
+;   0000 xxxx 0x163 - WAIT instruction cycle
+;   1000 xxxx 0x343 - wait for power OK	on start
+;   0001 xxxx 0x3B4
+;   0010 xxxx 0x3C8
+;   0100 xxxx 0x3D2 - wait for tty input
+;   0110 xxxx 0x3E9 - wait for tty output
+;   xxxx xxxx pass
+;
+4$:	nl	~F_RF,RPSWL	; clr in-refresh flag
+	jmp	rsvc0		; goto next instruction
+;_________________________________________________________________________
+;
+; Bus timeout handler
+;
+	.loc	0x32C		;
+btout:	tl	F_BL,RPSWL,EFCLR;
+	jzbf	lresum		; resume boot loader
+	tl	F_RT,RPSWL	; special return
+	jzbf	cmder		;
+	tl	F_IA,RPSWL	; bus timeout while
+	jzbf	godt0		; acknowledging	interrupt
+	tl	F_RF,RPSWL	; bus timeout while
+	jzbf	godt0		; refreshing memory
+				;
+	tl	F_BE,RPSWL	; in trapping already?
+	jzbf	dberr		;
+	al	F_BE,RPSWL	; attempt to
+trap4:	ll	4,RSRCL		; trap on vector 4
+	jmp	mtrap		;
+				;
+dberr:	ll	F_IA+F_RF,RPSWL	; double bus error
+godt0:	jmp	godt		;
+;_________________________________________________________________________
+;
+; Entry	point after Control Chip reset - system	reset or bus timeout
+;
+	.loc	0x33B		;
+reset:	jsr	rfdin,SRUN	; read fast input register
+	tl	0x4,RIRL	; test the bus error flag
+	jzbf	btout		; handler bus timeout
+	ri	I4+I5+I6	; disable interrupts
+				;
+rhalt:	jsr	sinit		; assert system	nINIT
+	mw	PCL,SPL		;
+	ll	RA_PW|F_RT,RPSWL; return into the loop
+				;
+1$:	ltr	RPSWL,RPSWL,,REF; return here from refresh
+	jsr	rfdin		; [RFR]
+	tl	0x8,RIRL	; waiting for power OK
+	jzbf	1$		;
+	ll	0,RPSWL,PFCLR	; set initial status
+	nl	3,RIRL,TFCLR	; mask the boot	mode
+	ll	0,PCL		;
+	mi	PCL,RIRL	; case on the mode bits
+	jmp	2$		;
+				;
+	.loc	0x34C		;
+2$:	jmp	L602		; boot mode 3 -	extension ROM
+	jmp	3$		; boot mode 2 -	start 173000
+	jmp	godt		; boot mode 1 -	start ODT
+	ll	024,RSRCL	; boot mode 0 -	load vector 24
+	ll	0,RSRCH		;
+	jmp	vread		;
+				;
+	.loc	0x054		;
+3$:	ll	0xF6,PCH	; PCH =	high(173000)
+	jmp	4$		;
+				;
+	.loc	0x086		;
+4$:	ll	0x80,RPSWH	; disable interupts
+	jmp	rsvc0		; start	instruction cycle
+;_________________________________________________________________________
+;
+; ODT entry point on halt - shows 000000 / @
+; Usually happens on undefined instruction
+;
+	.loc	0x355		;
+oent:	sw	RDSTL,RDSTL	; print	CR/LF 000000
+	jsr	putnl		;
+	ll	'@',RIRL	; print
+	jsr	putch		;
+iloop:	nl	~F_DG,RPSWL	;
+				;
+iwait:	jsr	getch		; input	char
+	jsr	putch		; do echo
+	al	-'0',RIRL	;
+	tl	~7,RIRL		;
+	jzbf	2$		;
+	jmp	1$		;
+				;
+	.loc	0x22D		; digit	0-7 pressed
+1$:	slw	RDSTL,RDSTL	; shift	the number
+	slw	RDSTL,RDSTL	; and add the new digit
+	slw	RDSTL,RDSTL	;
+	ab	RIRL,RDSTL	; [D0W*]
+	ll	F_DG,RIRL	; set flag that	some
+	orb	RIRL,RPSWL	; number is entered
+	jmp	iwait		;
+				;
+	.loc	0x360		; not digit pressed
+2$:	cl	'M'-'0',RIRL	; 'M' -	maintainance
+	jzbt	cmd_m		;
+	cl	'L'-'0',RIRL	; 'L' -	boot loader
+	jzbt	cmd_l		;
+	cl	'/'-'0',RIRL	;
+	jzbt	cmd_sl		; '/' -	open location
+	cl	13.-'0',RIRL	;
+	jzbt	cmd_cr		; CR - close location
+	cl	10.-'0',RIRL	;
+	jzbt	cmd_lf		; LF - next location
+	cl	'^'-'0',RIRL	;
+	jzbt	cmd_up		; '^' -	prev location
+	cl	'$'-'0',RIRL	;
+	jzbt	cmd_$		; '$' -	register operation
+	cl	'G'-'0',RIRL	;
+	jzbt	cmd_g		; 'G' -	go
+	cl	19.-'0',RIRL	;
+	jzbt	cmd_sv		; service command
+	jmp	3$		; dumps	ten bytes
+				;
+	.loc	0x2AE		;
+3$:	cl	'P'-'0',RIRL	; 'P' -	proceed
+	jzbt	cmd_p		;
+	cl	';'-'0',RIRL	; [D1W*]
+	jzbt	cmd_no		; does nothing
+	cl	'R'-'0',RIRL	;
+	jzbt	cmd_r		;
+	cl	'@'-'0',RIRL	; [D1W*]
+	jzbt	cmd_at		;
+	cl	'_'-'0',RIRL	;
+	jzbt	cmd__		;
+	jmp	cmder		; [D1W*]
+				;
+	.loc	0x373		;
+cmder:	ll	'?',RIRL	; invalid ODT command
+	jmp	1$		;
+				;
+	.loc	0x282		;
+1$:	jsr	putch		;
+	jmp	oent		;
+;_________________________________________________________________________
+;
+	.loc	0x257		;
+cmd_no:	jmp	iloop		; does nothing
+				;
+	.loc	0x34B		;
+cmd_cr:	jmp	1$		;
+				;
+	.loc	0x136		;
+1$:	jsr	close		;
+	jmp	oent		;
+;_________________________________________________________________________
+;
+	.loc	0x2D4		;
+cmd_at:	jsr	putnl		; '@' -	oppen location
+	jsr	close		; by pointer
+	tl	F_OR,RPSWL	;
+	jmp	1$		;
+				;
+	.loc	0x2C2		;
+1$:	jzbt	2$		; not register open
+	mw	GL,RBAL		; show register	by index
+	nl	F_NO,RPSWL	;
+	jmp	show1		;
+				;
+2$:	r	RBAH,RBAL	;
+	jmp	3$		;
+				;
+	.loc	0x2A6		;
+3$:	iw	0,RBAL		;
+	jmp	show1		;
+;_________________________________________________________________________
+;
+	.loc	0x375		;
+cmd_sl:	nl	~F_OP,RPSWL	;
+	tl	F_DG,RPSWL	;
+	jzbf	opend		;
+	slb	RPSWL,RSRCL	;
+	jc8t	openg		;
+openl:	r	RBAH,RBAL	;
+	iw	0,RDSTL		;
+L37c:	jsr	octal		;
+	jmp	1$		;
+				;
+	.loc	0x093		;
+1$:	ll	0x20,RIRL	;
+	jsr	putch		;
+	ll	F_OP,RIRL	;
+	orb	RIRL,RPSWL	;
+	jmp	iloop		;
+				;
+	.loc	0x37E		;
+opend:	mw	RDSTL,RBAL	;
+	nl	F_NO,RPSWL	;
+	jmp	openl		;
+				;
+openg:	jnbt	L384		;
+L382:	mw	GL,RDSTL	;
+	jmp	L37c		;
+L384:	ccf	RDSTL		;
+	nl	NZVC,RDSTL	;
+	nl	~NZVC,RPSWH	;
+	jmp	1$		;
+				;
+	.loc	0x28A		;
+1$:	orb	RPSWH,RDSTL	;
+	jmp	L37c		;
+;_________________________________________________________________________
+;
+	.loc	0x388		; LF - open next location
+cmd_lf:	jsr	close		;
+	ll	13.,RIRL	;
+	jsr	putch		;
+	slb	RPSWL,RSRCL	;
+	jc8t	L392		;
+show0:	icw2	RBAL,RBAL	;
+show1:	mw	RBAL,RDSTL	;
+	jsr	octal		;
+	ll	'/',RIRL	;
+	jmp	1$		;
+				;
+	.loc	0x1B6		;
+1$:	jsr	putch		;
+	jmp	openl		;
+				;
+	.loc	0x29E		;
+openr:	db1	RBAL,RBAL	; decrement register index
+	jmp	L394		;
+				;
+	.loc	0x392		;
+L392:	jnbt	oent		;
+	icb1	RBAL,RBAL	;
+L394:	jmp	1$		;
+				;
+	.loc	0x17A		;
+1$:	lgl	RBAL		;
+	ll	'R',RIRL	;
+	jsr	putch		; [D2B]
+	mb	RBAL,RIRL	;
+	jmp	2$		;
+	jmp	empty		;
+				;
+	.loc	0x1A9		;
+2$:	jsr	putch		;
+	ll	'/',RIRL	;
+	jmp	3$		;
+				;
+	.loc	0x292		;
+3$:	jsr	putch		;
+	jmp	L382		;
+				;
+	.loc	0x395		;
+cmd_up:	jsr	close		; close	current	location
+	jsr	putnl		; start	new line
+	slb	RPSWL,RSRCL	;
+	jc8t	2$		; register is open
+	jmp	1$		;
+				;
+	.loc	0x159		;
+1$:	dw1	RBAL,RBAL	; decrement location address
+	dw1	RBAL,RBAL	; and open the new one
+	jmp	show1		;
+				;
+	.loc	0x39A		;
+2$:	jnbt	oent		; open statu word
+	jmp	openr		; no previous
+				;
+	.loc	0x25B		;
+cmd_r:	jmp	cmd_$		;
+				;
+	.loc	0x39C		;
+cmd_$:	nl	F_NO,RPSWL	;
+	jsr	getch		;
+	jsr	putch		;
+	cl	'S',RIRL	;
+	jzbt	1$		; open status word
+	mb	RIRL,RBAL	;
+	al	-'0',RIRL	; set register index
+	tl	~7,RIRL		;
+	jmp	2$		;
+1$:	ll	F_OR|F_OS,RSRCL	;
+	jmp	3$		;
+				;
+	.loc	0x08B		;
+2$:	jzbf	4$		;
+	lgl	RIRL		;
+	ll	F_OR,RSRCL	;
+3$:	orb	RSRCL,RPSWL	; store	the flags
+	jmp	iloop		;
+				;
+	.loc	0x04F		;
+4$:	jmp	cmder		;
+;_________________________________________________________________________
+;
+	.loc	0x3A7		;
+cmd_g:	mw	RDSTL,PCL	;
+	ll	0,RIRL		;
+	jsr	putch		;
+	jsr	putch		;
+	sw	RPSWL,RPSWL	;
+	lcf	NZVC,RPSWL	;
+	jmp	1$		;
+				;
+	.loc	0x196		;
+1$:	ri	i4		; reset	T-bit interrupt
+	jmp	2$		;
+				;
+	.loc	0x19A		;
+2$:	si	i5		; disable interrupts
+	jmp	resop		;
+				;
+	.loc	0x19E		;
+resop:	jsr	sinit		; performs RESET
+	jmp	rsvc0		; instruction
+;_________________________________________________________________________
+;
+; Read the data	in Bootstrap Lodare format from	device
+;
+	.loc	0x3AE		; 'L' command -	boot Loader
+cmd_l:	icw2	RDSTL,SPL	;
+	ll	F_BL+F_RT,RPSWL	; set return from bus
+	ltr	RPSWL,RPSWL	; timeout handler to lresum
+	jmp	1$		;
+				;
+	.loc	0x151		;
+1$:	ll	0x0,PCL		; mov #160000, PC
+	ll	0xE0,PCH	;
+	jmp	lresum		;
+				;
+	.loc	0x3B2		;
+lresum:	al	-2,PCL		; decrement pointer
+	cdb	PCH,,REF	; do memory refresh
+	w	PCH,PCL		; [RFR]	return to this
+				;
+	ow	RDSTH,RDSTL	;
+	al	RA_BL,RPSWL	;
+	ltr	RPSWL,RPSWL	;
+1$:	jsr	lread		; read byte from device
+	cl	0351,RIRL	;
+	jzbt	1$		;
+				;
+2$:	icb1	RIRL,PCL	; get the offset to load
+3$:	jsr	lread		; read data byte from device
+	wib1	PCH,PCL		; wrire	byte to	memory
+	ob	RIRL,RIRL	;
+	cl	0353,PCL	; new offset?
+	jzbt	2$		;
+	cl	0375,PCL	; end address?
+	jzbf	3$		;
+	jmp	4$		;
+				;
+	.loc	0x0CB		; run bootloader
+4$:	ll	1,RIRL		;
+	w	PCH,PCL		;
+	ob	RIRL,RIRL	;
+	nl	~1,PCL		;
+	jmp	cmd_p		;
+				;
+	.loc	0x3C4		;
+lread:	ll	1,RIRL		; read the byte	from
+	w	RDSTH,RDSTL	; the booting device
+	ob	RIRL,RIRL	; RDST - status	address
+1$:	nop	,REF		;
+	r	RDSTH,RDSTL	; [RFR]	return to this
+	ib	LB,RIRL		; input	the status
+	jnbf	1$		; not ready yet
+	jmp	2$		;
+				;
+	.loc	0x149		;
+2$:	r	SPH,SPL		; read the data	byte
+	ib	LB,RIRL		;
+	rfs			;
+;_________________________________________________________________________
+;
+	.loc	0x3CC		;
+cmd_m:	mb	RPSWL,RDSTL	; 'M' -	maintaince command
+	jmp	1$		; prints internal CPU register
+				;
+	.loc	0x2AA		;
+1$:	jsr	octal		;
+	jmp	oent		;
+;_________________________________________________________________________
+;
+	.loc	0x3CE
+getch:	ll	RA_WI,RSRCH	; return into the loop
+	ltr	RSRCH,RSRCH	; from refresh routine
+	ll	H_17756X,RSRCH	; RSRC = 177560
+1$:	ll	L_177560,RSRCL,,REF
+	r	RSRCH,RSRCL	; [RFR]	return to this
+	ib	LB,RSRCL	; wait for the input
+	jnbf	1$		;
+				;
+inkey:	ll	L_177562,RSRCL	; RSRC = 177562
+	r	RSRCH,RSRCL	; read the char
+	ib	LB,RIRL		;
+	nl	0x7F,RIRL	;
+	cl	0x7F,RIRL	; rubout?
+	jzbf	rfs0		;
+	jmp	1$		;
+				;
+	.loc	0x229		;
+1$:	srw	RDSTH,RDSTH	; shift	the number
+	srw	RDSTH,RDSTH	; accumulator back
+	jmp	2$		;
+				;
+	.loc	0x279		;
+2$:	srw	RDSTH,RDSTH	;
+	ll	0x5C,RIRL	; print	backslash
+	jmp	3$		;
+				;
+	.loc	0x242		;
+3$:	jsr	putch		;
+	jmp	iwait		;
+;_________________________________________________________________________
+;
+	.loc	0x3DC
+octal:	al	6,RPSWH		; RDST - to print in octal
+	ll	0,RSRCH		;
+				;
+pnext:	ll	0,RIRL		;
+1$:	slb	RIRL,RIRL	; prepare the next digit
+	slw	RDSTL,RDSTL	;
+	cib	RIRL		;
+	db1	RSRCH,RSRCH	;
+	jnbf	1$		;
+	al	'0',RIRL	;
+;
+; RIRL - symbol	to output first
+; RPSWH	- bits 2:0 - number of digits from RDST	to follow
+;	  bit 3	- output LF after the first character
+;
+putty:	ll	RA_WO,RSRCH	; return into the loop
+	ltr	RSRCH,RSRCH	; from refresh routine
+	ll	H_17756X,RSRCH	; RSRC = 177564
+wtrdy:	ll	L_177564,RSRCL,,REF
+	r	RSRCH,RSRCL	; [RFR]	return to this
+	ib	LB,RSRCL	; wait output ready
+	jnbf	wtrdy		;
+	ll	L_177566,RSRCL	;
+	w	RSRCH,RSRCL	; send the symbol
+	ob	RIRL,RIRL	;
+	db1	RPSWH,RPSWH	; decrement counter
+	tl	7,RPSWH		;
+	jzbt	rfs0		; all digits sent
+	tl	0x8,RPSWH	;
+	jzbf	outlf		; should output	LF
+	ll	2,RSRCH		; 3 bits to shift in
+	jmp	pnext		;
+rfs0:	rfs			;
+				;
+outlf:	nl	~0x8,RPSWH	; clear	LF output flag
+	ll	10.,RIRL	; output LF
+	jmp	wtrdy		;
+				;
+	.loc	0x3FA		;
+close:	tl	F_OP,RPSWL	; closes an open location
+	jzbt	cmder		; if digits are	entered
+	jmp	1$		; the new value	is written
+	jmp	empty		; befor	close
+	jmp	empty		;
+				;
+	.loc	0x26E		;
+1$:	nl	~F_OP,RPSWL	;
+	jmp	2$		;
+				;
+	.loc	0x26A		;
+2$:	tl	F_DG,RPSWL	; no number entered
+	jmp	3$		;
+				;
+	.loc	0x266		;
+3$:	jzbt	8$		; do nothing if	no number
+	jmp	4$		;
+				;
+	.loc	0x25E		;
+4$:	slb	RPSWL,RSRCL	;
+	jmp	5$		;
+				;
+	.loc	0x21E		;
+5$:	jc8t	9$		; F_OR - register/status
+	jmp	6$		;
+				;
+	.loc	0x20A		;
+6$:	w	RBAH,RBAL	;
+	jmp	7$		;
+				;
+	.loc	0x21a		;
+7$:	ow	RDSTH,RDSTL	; write	new location
+8$:	rfs			; value	from RDST
+				;
+	.loc	0x252		;
+9$:	jnbt	setps		; F_OS - status
+	jmp	10$		;
+				;
+	.loc	0x216		;
+10$:	mw	RDSTL,GL	; set open register
+	rfs			;
+				;
+	.loc	0x24A		;
+setps:	lcf	NZVC,RDSTL	;
+	jmp	1$		;
+				;
+	.loc	0x212		;
+1$:	nl	0xE0,RDSTL	;
+	jmp	2$		;
+				;
+	.loc	0x189		;
+2$:	ri	i5		;
+	nl	T,RPSWH		;
+	jmp	3$		;
+				;
+	.loc	0x144		;
+3$:	orb	RDSTL,RPSWH	; [D2W*] - not happens
+	jnbt	4$		;
+	si	i5		;
+4$:	rfs			;
+;_________________________________________________________________________
+;
+	.loc	0x3FF		;
+cmd_sv:	jmp	1$		; gets two bytes as address
+				; sends	ten bytes in binary
+	.loc	0x169		;
+1$:	ll	0xA0+F_RT,RPSWL	;
+	jsr	getch		;
+	jmp	2$		;
+				;
+	.loc	0x16D		;
+2$:	mb	RIRL,RBAH	; store	address	upper byte
+	jsr	getch		;
+	jmp	3$		;
+				;
+	.loc	0x171		;
+3$:	mb	RIRL,RBAL	; store	address	lower byte
+				;
+4$:	riw1	RBAH,RBAL	;
+	jmp	5$		;
+				;
+	.loc	0x18D		;
+5$:	ib	UBC,RIRL	; input	data byte
+	jsr	putch		; send in binary
+	jmp	6$		;
+				;
+	.loc	0x1A1		;
+6$:	al	0xF0,RPSWL	; [D4B*]
+	tl	0xF0,RPSWL	; counter is [7:4] RPSWL
+	jmp	7$		;
+				;
+	.loc	0x1A6		;
+7$:	jzbf	4$		;
+	jmp	oent		;
+;_________________________________________________________________________
+;
+	.loc	0x234		;
+cmd__:	jsr	putnl		; [D0W*]
+	jsr	close		; close	location
+	tl	F_OR,RPSWL	; open register/status?
+	jzbt	1$		;
+	nl	F_NO,RPSWL
+	jmp	oent		;
+1$:	r	RBAH,RBAL	; read the location
+	jmp	2$		;
+				;
+	.loc	0x1AD		;
+2$:	iw	0,RDSTL		;
+	aw	RDSTL,RBAL	; add to address
+	jmp	show0		; open and show	new location
+;_________________________________________________________________________
+;
+; FIS and EIS microcode	for the	THE LSI-11, revision 10
+; R. Lary, Sept	15,1974
+;
+; copyright (c)	1975		Digital	Equipment Corporation
+;				Maynard, Massachusetts 01754
+;
+; The information in this software is subject to change	without	notice
+; and should not be construed as a commitment by Digital Equipment
+; Corporation. Title to	and ownership of the software shall at all
+; times	remain in Digital.
+;
+; Revision history
+;  Rev		Reason
+;  10	9-15-75	FMUL traps when	result is equal	to 2exp-128 but	should
+;		only trap when result is less than 2exp-128,test for
+;		under flow was corrected-lines 342-407-408-409
+;  9	8-25-75	if arg2=0, FADD	and FSUB gave wrong resultant sign if arg1
+;		was negative. Swapped the two SLB's around at noadd.
+;  8	6-20-75	fix bizarre bug	in EIS with a SM of 0 and a dest. reg of
+;		2, 3, 6, or 7 that caused T bit	to come	on with
+;		an interrupt abort or PS bit 7 got set when the	instruction
+;		completed. Problem solved by inserting missing LTR at
+;		mpyas0 and dvasc0
+;  7	5-5-75	clear RPSWL at all EIS & and FIS exit points to	eliminate
+;		register conflict with refresh and ODT "M" command
+;  6	4-9-75	add user opcode	breakout
+;  5	3-1-75	update for LSI-11 CPU. Revise ROM codes	and remove OS inst.
+;  4		missing	EII translation	at location 2073
+;  3		added ROM codes	to fix bg problem with FMUL/FDIV
+;  2		changed	EII and	FII locations because of translations
+;		occurring on conditional jumps
+;_________________________________________________________________________
+;
+; Register definitions for FIS
+;
+	.reg	M1,RBA		; low word of ARG 1
+	.reg	E1,RSRC		; high word of ARG 1
+	.reg	M1M,RBAH	; medium byte of ARG 1 mantisa
+	.reg	M1L,RBAL	; low byte of ARG 1 mantissa
+	.reg	M1H,RSRCL	; high byte of ARG 1 mantissa
+	.reg	EXP1,RSRCH	; ARG 1	exponent - also	result exponent
+	.reg	M2,RDST		; low word of ARG 2
+	.reg	E2,RPSW		; high word of ARG 2
+	.reg	M2M,RDSTH	; medium byte of ARG 2 mantissa
+	.reg	M2L,RDSTL	; low byte of ARG 2 mantissa
+	.reg	EXP2,RPSWH	; ARG 2	exponent
+	.reg	M2H,RPSWL	; high byte of ARG 2 mantissa
+	.reg	SIGNS,RIRL	; sign bits of ARG 1 and ARG 2
+;_________________________________________________________________________
+;
+	.loc	0x400		; FIS and EIS go in ROM	chip 3
+				;
+fis:	lgl	RIRH		; load G register with floating	stack
+	r	GH,GL		;
+	ltr	RPSWH,RPSWH	; save PS in TR
+	iw	0,E1		; get high word	of first argument
+	icw2	G,M2		; G may	not be changed until end!
+	riw2	M2M,M2L		; read second word of first argument
+	iw	0,M1		;
+	slbf	M1H,M1H		; get the exponent of arg1 into	exp1
+	slbcf	EXP1,EXP1	; and the sign into the	carry
+				; Z now	indicates if first arg is zero
+	tl	0xF0,RIRH	; test for multiply or divide
+fmdjmp:	jzbf	fmldiv		; or illegal instruction
+				;
+	riw2	M2M,M2L		; Floating add or subtract
+	iw	0,E2		; get first word of second argument
+	r	M2M,M2L		;
+	iw	0,M2		; and second word of second argument
+	jzt	fstzro		; Z still set from arg1	- jump if zero
+	ll	3,SIGNS		; initialize signs word	to set
+				; carry	as we shift into it
+	srbcf	SIGNS,SIGNS	; save arg1 sign and set carry
+	srbc	M1H,M1H		; set normalize	bit in mantissa
+	tl	0x08,RIRH	; low byte of fis inst is 00r for fadd,
+	jzbt	1$		; 01r for fsub - negate	arg1 sign if
+	al	0x80,SIGNS	; instruction was fsub
+1$:	slbf	M2H,M2H		; now separate second argument,	placing
+	slbcf	EXP2,EXP2	; its exponent in exp2 and its sign in C
+	jzt	noadd		; exp2=0 means second argument is zero
+	srbcf	SIGNS,SIGNS	; put arg2 sign	next to	arg1 sign in "signs"
+	srbc	M2H,M2H		; and shift the	normalise bit into arg2
+;
+; Sign of arg2 in high bit of "signs", sign of arg1 next to it.
+; Swap arguments if arg2>arg1
+;
+	cwf	E2,E1,,EII;	; compare exp and high mantissas
+	jzf	2$		; if high words	are equal,
+	cwf	M2,M1		; use low word as tiebreaker
+2$:	jcf	3$		; don't	swap if	arg2<=arg1 in magnitude
+	mw	E1,M1		; destroy m1 while swapping (lack of regs)
+	mw	E2,E1		;
+	mw	M1,E2		; swap high orders
+	ll	0x40,M1L	;
+	slbf	SIGNS,SIGNS	; swap high order bits of "signs"
+	cabf	M1L,SIGNS	; leaving the carry clear
+	mw	M2,M1		; now swap low order words using the
+	icw2	G,M2		; in-core copy of the arg1 low-order
+	r	M2M,M2L		; to replace the one we	destroyed
+	iw	0,M2		;
+3$:	al	0x40,SIGNS	; sign bit of "signs" is 1 if signs unequal
+	jnbf	4$		; jump if like signs
+	ocbf	M2H,M2H		; signs	unlike - negate	the smaller mantissa
+	tcw	M2,M2		; and set carry
+	cib	M2H		;
+;
+; Now its time to align	the smaller mantissa
+;
+4$:	sb	EXP1,EXP2	; exp2 now contains exp	difference
+	jzbt	8$		; if diff is 0,	mantissas are aligned
+5$:	cl	0xF8,EXP2	; can we shift a byte?
+	jc8t	7$		; (we must have	one shift left after)
+	mb	M2M,M2L		; evidently we can - move 'em down
+	mb	M2H,M2M		;
+	sbc	M2H,M2H		; extend sign from carry into hi byte
+	al	8.,EXP2		; bump align count
+	cl	0xF0,EXP2	; is it	impossibly large?
+	jc8t	5$		; no - keep aligning
+	jmp	addone		; yes -	result is arg1
+				;
+6$:	slbf	SIGNS,RIRH	; put sign of arg2 in carry
+;
+; Note that low	6 bits of rirh stay 00 for EII!
+;
+7$:	srbcf	M2H,M2H		; shift	arg2 mantissa right one
+	srwcf	M2M,M2M,,EII	; with overflow	bit going into carry
+	icb1	EXP2,EXP2	; count	down align counter
+	jzbf	6$		; shifting as we go
+	sbc	EXP2,EXP2	; put rounding bit in exp2, extended
+8$:	awf	M2,M1		; add arg2 mantissa to arg1 mantissa
+	abcf	M2H,M1H		;
+	tb	SIGNS,SIGNS	; were signs unlike?
+	jnbt	normts		; yes -	may need to normalize result
+	jcf	adrond		; operation was	add - jump if no carry
+	srbcf	M1H,M1H		; add carried -	divide result mantissa
+	srwcf	M1M,M1M		; by 2,	creating new round bit
+	icb1	EXP1,EXP1	; bump result exponent
+	sbc	EXP2,EXP2	; and save new round bit
+adrond:	swf	EXP2,M1		; round	result
+	sbcf	EXP2,M1H	;
+	sbcf	EXP2,EXP1	;
+	jzbt	OVFLO		; if exp1 goes to 0, its an ovflo
+addone:	al	0xC0,SIGNS	; restore arg1 sign in next-to-hi bit
+	slb	SIGNS,SIGNS	; put sign of result in	carry
+noadd:	slb	M1H,M1H		; shift	off result normalize bit
+	slbf	SIGNS,SIGNS	;
+;_________________________________________________________________________
+;
+; Enter	here from FMUL and FDIV	to store result
+;
+fissto:	srwcf	EXP1,EXP1	; insert result	sign and clear C bit
+fisst1:	al	4,GL		;
+	cib	GH		; bump stack register to result
+	w	GH,GL,LRR,PSW	; get the PS back via a	translation
+	ow	EXP1,M1H	; write	first result word
+	srb	M1H,M1H		; get low exponent bit out of sign
+	jmp	fisst2		;
+;_________________________________________________________________________
+;
+	.loc	fisst1+6	;
+fisst3:	w	M2M,M2L		;
+	ow	M1M,M1L,RSVC	; write	second result word
+	orbf	M1H,EXP1	; set Z	and N from result
+;
+; Come here if first argument zero - result is second argument
+;
+fstzro:	mw	M2,M1		; move the second argument
+	slbf	M2H,M1H		; into the result registers
+	slbcf	EXP2,EXP1	; test the result exponent
+	jzf	fissto		; and if it is zero,
+fstor0:	swf	E1,E1		; generate a "clean" doubleword	zero.
+	sw	M1,M1		;
+	jmp	fisst1		;
+;_________________________________________________________________________
+;
+; Come here if add causes floating point overflow
+;
+ovflo:	ll	V,SIGNS		; condition codes for overflow
+	jmp	fistrp		; cause	floating point trap
+normts:	jnt	adrond		; if result normalized,	we're done.
+	ll	2,M2L		; else initialize shift	counter
+	srbf	EXP2,EXP2	; shift	result left one	place,
+	slwcf	M1,M1		;
+	slbc	M1H,M1H		; shift	round flag into	low-order bit
+	jnbt	3$		; check	for normalized now
+	jzbf	2$		; nope - more than a byte off?
+	jzt	fstor0		; yup -	check for zero fraction
+1$:	mbf	M1M,M1H		; fraction is not zero - shift it a byte
+	mb	M1L,M1M		; to the left.
+	ll	0,M1L		;
+	al	8.,M2L		; bump the shift counter by 8
+	jzt	1$		; repeat once more, if we have to
+	jnt	3$		; otherwise shift by bits if necessary
+				;
+2$:	icb1	M2L,M2L		; normalize loop - bump	shift counter
+	slwf	M1,M1		;
+	slbcf	M1H,M1H		; shift	mantissa left one bit
+	jnf	2$		; N bit	on if normalized
+3$:	sbf	M2L,EXP1	; decrement exponent by	shift counter
+	icb1	EXP1,EXP1	; counter was 1	too big	on purpose
+	jcf	addone		; so that C bit	would show underflow
+				;
+undflo:	ll	N+V,SIGNS	; condition codes for underflow
+fistrp:	lcf	N+V+C+Z,SIGNS	; set condition	codes
+	ll	0xA4,RSRCL,LRR,PSW
+				; load fis trap	address
+	jmp	fistp1		; and get the PS back via a translation
+;_________________________________________________________________________
+;
+; Floating multiply routine
+;
+; Because of a paucity of file registers, floating multiply & divide
+; store	the PDP-11 PC on the stack and use the PC as a
+; general file register. This means that floating multiply
+; needs	rather special interrupt handling.
+;
+; There	are actually two complete multiply loops in this routine -
+; the "fast" one is used if one	of the arguments has
+; fewer	than 8 fraction	bits, otherwise	the "slow" one is used.
+;
+	.reg	FP0,PC		;
+	.reg	FP0H,PCH	; high order product
+	.reg	FP0L,PCL	; ** destroys PC! **
+	.reg	FP1,RIR		;
+	.reg	FP1H,RIRH	; low order product - note that
+	.reg	FP1L,RIRL	; RIRH must be preserved until fdvjmp
+	.reg	M2O,EXP2	;
+				; fmldiv must be in same page as fmdjmp
+	.loc	(fmdjmp	& 0xF80) + 0x7C
+				;
+fmldiv:	tl	0xE0,RIRH	; common code for FMUL and FDIV
+	jzbf	userop		; break	out user opcodes
+	al	-2,SPL		;
+	cdb	SPH		; decrement the	stack pointer
+	w	SPH,SPL		; store	PC on stack
+	ow	PCH,PCL		;
+	ll	0x80,M2H	; initialize sign collector
+	jzt	marg1z		; check	for argument 1 zero
+	mw	M2,FP0		; move arg2 address to safe place
+	riw2	FP0H,FP0L	; as we	will now destroy M2
+	iw	0,M2		; get high word	of arg2
+;_________________________________________________________________________
+;
+; Preparatory operations common	to multiply and	divide -
+; process signs	and insert normalize bits
+; carry	bit still contains arg1	sign from fis common code
+;
+	slbcf	M2H,M2H		; save arg1 sign and set carry
+	srbc	M1H,M1H		; so we	can put	a normalize bit	in
+	slbf	M2L,M2L		; get arg2 exp into M2M	and
+	slbc	M2M,M2M		; arg2 sign into C8
+	jzbt	MRSLT0		; quick	exit if	arg2 is	zero
+	cib	SPL		; set arg2 sign	into low bit of	SP
+	xb	M2H,SPL		; and exclusive	or in the arg1 sign
+	srb	M2L,M2H		; move high mantissa byte and insert
+	al	0x80,M2H	; normalize bit	into arg2 mantissa
+	tl	0x08,RIRH,,FII	; time to separate multiply and	divide
+fdvjmp:	jzbf	fdiv		; divide - go to division microcode
+;_________________________________________________________________________
+;
+; Multiply-specific operations - add exponents to get trial
+; result exponent and see if either argument has only seven bits
+; of precision.
+;
+; We also check	for the	result exponent	being out of the
+; range	[-177,+200], and give underflow	or overflow traps.
+; actually, an exponent	of +200	is an overflow but it may
+; be reduced by	the post-normalization step so we check
+; that case (and the underflow-on-normalization	case) later.
+;
+	al	0x80,EXP1	; conovert biased exponents to signed #s
+	al	0x7F,M2M	; decrement exp2 by one	to fudge range
+	abf	M2M,EXP1	; add exponents	to get signed result exp
+	jvt	undofl		; if under/overflow, n bit says	which onE
+	al	0x81,EXP1	; re-bias result exponent
+	r	FP0H,FP0L	; finally, read	arg2 low word
+	iwf	0,M2		; read word and	check to see
+	jzf	1$		; if we	should swap args
+	mwf	M1,M2		; if arg2 has a	zero low word and
+	jzt	mfast		; arg1 does not, we should swap.
+	mb	M1H,FP0H	;
+	mb	M2H,M1H		; swap argument	fractions
+	mb	FP0H,M2H	;
+	sw	M1,M1		;
+1$:	tw	M1,M1		; slow or fast loop?
+	jzbf	mslow		; alas,	slow loop
+;_________________________________________________________________________
+;
+; Fast multiply	loop - this is a loop in which a right-shifting
+; multiplier is	added into the stationary product under	control	of the
+; left-shifting	multiplicand. Since we add in the bigger multiples
+; of the multiplier first, there is a chance of	fraction overflow and
+; so we	must shift the multiplier right	one initially. As an
+; optimization,	we handle the multiplicand normalize bit as
+; a special case while we shift	the multiplier right.
+;
+mfast:	srbf	M2H,FP0H	; initialize product to	multiplier
+	srbcf	M2M,FP0L	; shifted right	one to avoid ovflo
+	srbcf	M2L,FP1H	;
+	srbcf	M1L,FP1L	; (careful with	that 24th bit!)
+	srwf	FP0H,M1M	; now reduce the multiplier again
+	srwc	FP1H,M2M	; to start the loop at bit 2
+	slb	M1H,M1H		; eliminate normalize bit
+	jmp	3$		; jump into loop
+1$:	awf	M2,FP1		; shifted out bit was 1	-
+	awc	M1,FP0		; add multiplier to product
+2$:	srwf	M1M,M1M,,FII;	; shift	multiplier right
+	srwc	M2M,M2M		; one place
+3$:	slb	M1H,M1H		; shift	a bit out of the multiplicand
+	jc8t	1$		; if its a one-bit, add	to product
+	jzbf	2$		; otherwise loop until mpcand=0
+	tb	FP0H,FP0H	; test for normalized result
+	jnbt	fmldun		; jump if normalized
+mlnorm:	slwf	FP1,FP1		; can't	be unnormalized	more than
+	slwc	FP0,FP0		; one bit - make it good
+	db1	EXP1,EXP1	; decrement exponent
+	jzbt	patch		; a potential underflow	exists
+fmldun:	slbf	FP1L,FP1L	; put rounding bit into	C
+	ll	0x80,FP1L	; set flag saying we came from multiply
+;_________________________________________________________________________
+;
+; Round	the result if the carry	is 1
+;
+fmlrnd:	sw	M1,M1		; result is in FP0H,FP0L,FP1H -
+	abcf	FP1H,M1L	; transfer it to FP0H,M1M,M1L
+	abc	FP0L,M1M	; as we	round it
+	cib	FP0H,,FII;	; propagate possible rounding carries
+	cib	EXP1		; if fraction overflows, bump exponent -
+				; normalize bit	will be	destroyed anyway
+	jc8t	movflo		; check	for result overflow
+	srbf	SPL,M1H		; get sign bit from (ugh!) R6
+	slb	FP0H,M1H	; eliminate normalize bit
+	tb	EXP1,EXP1	; see if postnormalize/round made
+	jzbt	oflund		; exponent over/underflow.
+				; if so, FP1L says which way
+	nl	0xFE,SPL	; make stack pointer even again
+	riw2	SPH,SPL		; read pc and bump SP back up again
+	iw	0,PC		; load PC word back
+	jmp	fissto		; store	E1 and M1 in G+4 and G+6
+;_________________________________________________________________________
+;
+userop:	jmp	L603		; go to	user entry point
+;_________________________________________________________________________
+;
+; Slow multiply	loop - in this loop a left-shifting multiplier
+; is added into	a stationary product under the control of
+; a right-shifting multiplicand. As an optimization, the
+; multiplicand is not treated as a single 24-bit quantity
+; but as 3 separate bytes - one	bits shifted out of any	par-
+; ticular byte cause the multiplier to be added	with an	offset
+; depending on the byte's significance.
+;
+mslow:	sw	FP0,FP0		; clear	the product initially
+	sw	FP1,FP1		;
+	ll	0,M2O		; initialize the multiplier overflow byte
+	jmp	1$		; enter	the loop
+				;
+3$:	awf	M2,FP1		; add multiplier into high product
+	awc	E2,FP0		; can't	overflow since M2O lt 200
+4$:	slwf	M2,M2		; shift	multiplier left
+	slwc	E2,E2		;
+1$:	srbf	M1L,M1L,,FII	; shift	out low	bit of low byte
+	caw	E2,FP1		; add multiplier 2 bytes over if a 1
+	cib	FP0L		; C8 can only be set if	C was set
+	cib	FP0H		; propagate carries
+	srb	M1M,M1M		; now shift middle byte
+	jc8f	2$		;
+	abf	M2M,FP1L	; if shifted out bit was a one,	add
+	abcf	M2H,FP1H	; the multiplier to the	product	offset
+	abc	M2O,FP0L	; by one byte
+	cib	FP0H		; propagate carry into high product word
+2$:	srb	M1H,M1H		; lastly, shift	high multiplicand byte
+	jc8f	4$		; jump if bit is 0
+	jzbf	3$		; check	for normalize bit gone,	else add
+	awf	M2,FP1		; done - do the	add for	the normalize bit
+	awc	E2,FP0		; result is possibly unnormalized one bit
+	jnbt	fmldun		; if its normalized, just round	and store
+	jmp	mlnorm		; otherwise shift it left a place
+;_________________________________________________________________________
+;
+; Come here on FMUL/FDIV common	code if	the first argument is zero
+;
+	.loc	0x4E1		;
+marg1z:	ll	C+V+N,SIGNS	; set up conditions for	divide by 0 trap
+	tl	0x08,RIRH	; was this a multiply or divide?
+	jzbf	fmltrp		; divide - take	the trap
+				;
+mrslt0:	riw2	SPH,SPL		; come here if result will be 0
+	iw	0,PC		; restore program counter from stack
+	jmp	fstor0		; and go store a zero as the result
+				;
+oflund:	tbf	FP1L,FP1L	; if we	get here from FMUL it's	overflow,
+				; from FDIV its	underflow
+undofl:	jnt	movflo		; test which error occurred
+mundfl:	ll	N+V,SIGNS	; load underflow code
+fmltrp:	nl	0xFE,SPL	; clear	result sign bit	from sp
+	riw2	SPH,SPL		; read from and	restore	stack
+	iw	0,PC		; restore PC
+	jmp	fistrp		; join common trap code
+				;
+movflo:	ll	V,SIGNS		; load overflow	code
+	jmp	fmltrp		; go to	common muldiv trap code
+;_________________________________________________________________________
+;
+; Floating divide routine - short but very slow
+; uses multiply	register names and shares some multiply	code.
+; Divisor is in	M1(H,M,L) , dividend in	M2 (H,M,L),
+; quotient is accumulated in FP0H,FP0Ll,FP1H while exp1	holds result exp
+;
+;when we get to	"fdiv" the exponents have already been split
+;off from the mantissas	and the	normalize bit has been inserted
+;into the mantissas.
+;
+	.loc	(fdvjmp	& 0xF80)+0x70
+				; FDIV must be in same page as fdvjmp
+fdiv:	sbf	EXP1,M2M	; subtract divisor exp from dividend exp
+	srbcf	M2M,EXP1	; shift	right and then left again to
+	slbcf	EXP1,EXP1	; set V	bit on overflow	or underflow
+	jvt	undofl		; if V set, N indicates	which occurred
+	al	0x80,EXP1	; adjust result	exp
+	ll	1,FP1L		; set guard bit	for divide loop
+	cbf	M1H,M2H		; set C	if divisor high	byte gt	dividend
+	r	FP0H,FP0L	; finally, read	in word	2 of arg 2
+	iw	0,M2		;
+;
+; We are now ready to start dividing, but we must enter	the
+; divide loop differently if the dividend is larger than the divisor.
+;
+	sw	FP0,FP0		; initialize high quotient to zero
+	jmp	fdiv1		;
+;_________________________________________________________________________
+;
+	.loc	0x4FB		;
+divst1:	mwf	RBA,G,RSVC	; store	quotient and set conditions
+	ll	0,RPSWL		; must be cleared for refresh
+;_________________________________________________________________________
+;
+; Patch	to fix underflow problem
+;
+	.loc	0x4FD
+patch:	slbf	FP1L,FP1L	; put rounding bit into	C
+	ll	0,FP1L		; exp1=0 at end	means underflow
+	jmp	fmlrnd		; resume
+;_________________________________________________________________________
+;
+; Divide loop proper - a simple	shift and subtract, with just a
+; little hanky-panky with the carry.
+; Quotient is kept in one's complement form - saves 300	ns in loop
+;
+	.loc	0x500		; keep this in 2nd page
+dsubt:	swf	M1,M2		; come here if dividend	ge divisor
+	sbc	M1H,M2H		; subtract divisor from	dividend
+	slbf	FP1L,FP1L	; shift	a zero into the	quotient
+	slwcf	FP0,FP0		;
+	jct	divovr		; jump if guard	bit shifted out
+				;
+fdivlp:	slwf	M2,M2		; shift	dividend left one place
+	slbcf	M2H,M2H,,FII	;
+	jct	dsubt		; carry	means its gt divisor for sure
+	cbf	M1H,M2H		; compare high bytes
+	jct	1$		; divisor definitely bigger
+	jzf	dsubt		; dividend bigger if not equal
+	cwf	M1,M2		; high bytes equal - compare low bytes
+	jcf	dsubt		; dividend ge divisor -	go subtract
+1$:	slbcf	FP1L,FP1L	; carry	is always on here -
+	slwcf	FP0,FP0		; shift	a one into the quotient
+	jcf	fdivlp		; loop if guard	bit didn't shift out
+				;
+divovr:	ocb	FP1L,FP1H	; divide over -	complement quotient
+	ocw	FP0,FP0		;
+	srbf	M1H,FP1L	; halve	the divisor and	set fp1l positive
+				; for the final	und/ovflo check	at fmlrnd
+	srw	M1M,M1M		; and compare the halved divisor
+	cbf	M2H,FP1L	; to the remainder
+	jzf	2$		; to get the rounding bit in
+	cwf	M2,M1		; the carry
+2$:	jmp	fmlrnd		; rounding bit in C - round and	store
+;_________________________________________________________________________
+;
+; EIS starts from here on
+; enter	here from "mult" when sign of multiplier has been determined:
+; - enter at mntneg if multiplier is positive
+; - enter at mntngx with multiplier negated if multiplier was negative
+;   but	not equal to 100000
+;- enter at noswit with	RPSWH=0	if multiplier was 100000
+;
+; in any case multiplier winds up "positive" and byte-reversed in RSRC
+;
+mntneg:	mb	GL,RSRCH	; complete the reversal	of the mplier
+mntngx:	mbf	RDSTH,RPSWH	; set product sign from	mpcand
+	jnf	1$		; jump if prod will be positive
+	tcw	RDST,RDST	; no - negate mpcand
+1$:	tbf	RDSTH,RDSTH	; switch mplier	and mpcand if
+	jzf	noswit		; mpcand has only 8 significant	bits
+	mb	RDSTL,RPSWL	;
+	mb	RSRCL,RDSTH	; move high mplier to high mpcand
+	jzbt	byteml		; jump if both args are	bytes
+	mb	RSRCH,RDSTL	; no - move low	mplier to low mpcand
+	mb	RPSWL,RSRCH	;
+	ll	0,RSRCL		; move mpcand byte reversed to mplier
+noswit:	ll	16.,RPSWL	; init "counter" for first loop
+;
+; Slow multiply	loop - multiply	word in	RDST by	byte in	RSRCH,
+; result in RBA	and RSRCH then continue	by multiplying RDST by
+; byte in RSRCL	if RSRCL ne 0, with result in RBA and RSRC
+;
+mltpl1:	srbcf	RSRCH,RSRCH	; prime	the loop
+mltplp:	caw	RDST,RBA	;
+	srwf	RBAH,RBAH,,EII	; shift	product	right
+	srbcf	RSRCH,RSRCH	; including extension byte which
+	caw	RDST,RBA	; holds	mpcand byte
+	srwf	RBAH,RBAH	; repeat code twice in loop
+	srbcf	RSRCH,RSRCH	; to save on overhead
+	slb	RPSWL,RPSWL	; done with a byte?
+	jc8f	mltplp		; jump if no
+	jnbt	1$		; jump if this was the high byte
+	mb	RSRCH,RPSWL	; no - save low	product	byte
+	mbf	RSRCL,RSRCH	; move in next mpcand byte (the	high one)
+	mb	RPSWL,RSRCL	; put low product byte in safe place
+	ll	24.,RPSWL	; init counter for second byte loop
+	jzf	mltpl1		; second loop is not necessary if
+	mb	RBAL,RSRCH	; high multiplicand byte is zero; we
+	mb	RBAH,RBAL	; simply scale product down
+	ll	0,RBAH		; and we're done.
+1$:	tb	RPSWH,RPSWH	; test result sign
+	jnbf	store		; if positive, nothing to be done
+	ocw	RBA,RBA		;
+	tcw	RSRC,RSRC	;
+	cib	RBAL		; negate doubleword product
+	cib	RBAH		;
+	jmp	store		; now go store result
+;_________________________________________________________________________
+;
+; Special fast multiply	loop in	case both inputs
+; are less than	256 in absolute	value.
+;
+bytemx:	caw	RDST,RBA	; logic	of loop	very similiar to
+	slw	RDST,RDST	; larger loop for full multiply
+byteml:	srbf	RSRCH,RSRCH,,EII;
+	caw	RDST,RBA	;
+	slw	RDST,RDST	;
+	srbf	RSRCH,RSRCH	;
+	jzf	BYTEMX		;
+	caw	RDST,RBA	; do possible final add
+	slbf	RPSWH,RPSWH	; put sign of result in	carry
+	mw	RBA,RSRC	; assume result	positive - set low order
+	jcf	1$		; jump if assumption correct
+	tcwf	RSRC,RSRC	; wrong	- negate low order, setting C
+1$:	swc	RBA,RBA		; zero prod unless result lt 0
+;_________________________________________________________________________
+;
+; Come here to store result from RBA & RSRC and	set conditions
+;
+store:	mw	RBA,G		; store	high-order product
+	nl	6,RIRL		; set RIRL to point to
+	al	1,RIRL		; the odd register
+	lgl	RIRL,LRR,PSW	; and load G from it
+				; get PS back via a translation
+	ll	0,RPSWL		; must be cleared for refresh
+	mw	RSRC,G		; store	low-order product
+	jnbt	1$		; jump if low-order negtive
+	tcwf	RBA,RDST,RSVC	; set C	if high-order ne 0
+	orwf	RSRC,RBA	; set Z	and n from "or"	of words
+				;
+1$:	ocw	RBA,RDST	; if low order negative, set C if
+	tcwf	RDST,RDST,RSVC	; high order ne	-1
+	orbf	RIRL,RBAH	; set N	from high word,	force Z	0
+;_________________________________________________________________________
+;
+; Come here on all multiply or ASH operations
+;
+mpyasx:	slbf	RIRH,RBAH	; isolate destination register
+	slbc	RIRL,RIRL	; by shifting instruction around
+	slbf	RBAH,RBAH	;
+	slbc	RIRL,RIRL	;
+	lgl	RIRL		; put destination register in G
+	tl	0x10,RIRL	; separate out ASH from	multiply
+	jzbf	ash		;
+				;
+mult:	sw	RBA,RBA		; initialize prod low word
+	mb	GH,RSRCL	; multiplier will go to	RSRC reversed
+	jnbf	mntneg,,EII;	; if both occur, jump overrides	translation
+	tcw	G,RSRCH		; negate multiplier to RSRC reversed
+	tcwf	RDST,RDST	; negate multiplicand as well
+	jvf	mntngx		; mpcand=100000	is special case
+	ll	0,RPSWH		; it came up - product will be positive
+	jmp	noswit		; skip over code which can't hack it
+;_________________________________________________________________________
+;
+	.loc	0x566		;
+mpyas1:	ltr	RPSWH,RPSWH	; save the PS
+	jmp	mpyasx		; jump to common code
+;_________________________________________________________________________
+;
+; PSW translation code that recreates the 2 bits in the	PSW
+; The translation looks	at the T-bit and bit 7 and sends the code to
+; one of the four below	locations. Tran	RET does a simple return via
+; the PLA (LC gets RR)
+;
+	.loc	0x568		; 4 x [PSW]
+restps:	ll	0,RPSWH,,RET	; [PSW]	both bits are zero
+	ll	0x10,RPSWH,,RET	; [PSW]	just T-bit is on
+	ll	0x80,RPSWH,,RET	; [PSW]	just bit 7 is on
+	ll	0x90,RPSWH,,RET	; [PSW]	both bits arte on
+;_________________________________________________________________________
+;
+	.loc	0x56C		; patch	for rev. 7
+fisst2:	icw2f	G,M2		; get pointer to 2D result WD, clear C
+	ll	0,RPSWL		; must be cleared for refresh
+	jmp	fisst3		;
+				;
+	.loc	0x56F		; patch	for rev. 7
+fistp1:	ll	0,RPSWL		; must be cleared for refresh
+	jmp	mtrap		; go to	common trap routine
+				;
+	.loc	0x571		; patch	for rev. 7
+fiilc1:	iw	0,PC		;
+	ll	0,RPSWL		; must be cleared for refresh
+	jmp	fiilc2		;
+				;
+	.loc	0x574		; patch	for rev. 7
+eiilc1:	ll	2,RBAH		;
+	ll	0,RPSWL		; must be cleared for refresh
+	jmp	eiilc2		;
+				;
+	.loc	0x577		;
+dvasc1:	ltr	RPSWH,RPSWH	; save the ps
+	jmp	dvascx		; jump to common divide/ashc code
+;_________________________________________________________________________
+;
+; Get here from	tran ID1 if it's an EIS	instruction
+; come here to do tran DMW so that we dont do a	dest. mode calculation
+; when this ROM	is not in the system.
+	.loc	0x579		; [ID1]
+eism0:	mb	GH,RSRCH,,DMW	; duplicate of "SM0" in	main microcode
+				;
+	.loc	0x57A		;
+dvasca:	mw	G,RDST		; put dest in RDST
+	jmp	dvasc1		;
+;_________________________________________________________________________
+;
+; Enter	here from tran DE2 if DIV or ASHC with mode 0
+;
+	.loc	0x57C		; [D2W],[D2B] DE2
+dvasc0:	JMP	dvasca		;
+;_________________________________________________________________________
+;
+; Enter	here from tran DE2 if MUL or ASH with mode 0
+;
+	.loc	0x57D		; [D2W],[D2B] DE2
+				; entry	points for mode	0 EIS
+				; they must "wire-or" with base	address	of
+				; where	dop mode 0 code	is (0x15C).
+				; EIS mode 0 and not mode 0 have same last
+mpyas0:	mw	G,RDST		; address digit	to save	PLA gates
+	jmp	mpyas1		; put dest in RDST
+;_________________________________________________________________________
+;
+; SIngle register arithmetic shift
+;
+	.loc	0x57F		; must be in same page as mpyas0
+ash:	slb	RDSTL,RDSTL	; shift	count is only 6	bits wide
+	slb	RDSTL,RDSTL	; check	sign of	shift
+	jnbf	ashl		; positive means left shift
+	slbf	RSRCH,RDSTH	; right	shift -	put sign in carry
+	jmp	2$		; enter	into right-shift loop
+1$:	srwc	RSRCH,RSRCH,,EII; shift	register right
+2$:	al	4,RDSTL		; one less than	number of places
+	jzbf	1$		; specified
+	srwcf	RSRCH,RSRCH,RSVC; set carry on last shift
+	mwf	RSRC,G		; store	result and exit
+				; must do this in a separate step,
+				; as srw sets N	wrongly
+				;
+ashl:	sbf	RDSTH,RDSTH	; clear	internal overflow flag and C
+1$:	al	0xFC,RDSTL	; decrement shift count
+	jnbt	2$		; jump if done
+	slwf	RSRC,RSRC,,EII;	; shift	register left one place
+	jvf	1$		; and loop
+	ll	V,RDSTH		; set internal V flag if ovflo
+	jmp	1$		; and continue shifting
+2$:	mwf	RSRC,G,RSVC	; store	result
+	lcf	V,RDSTH		; set V	bit from internal flag
+;_________________________________________________________________________
+;
+; FIS interrupt	routine	- aborts FMUL/FDIV to service BR's
+;
+	.loc	0x592		; [FII]
+				; make sure this is never changed unless
+				; control chip PLA changes also
+fiiloc:	nl	0xFE,SPL,LRR,PSW; clear	low bit	of SP as FMUL/FDIV
+				; uses it to store the result sign
+	riw2	SPH,SPL		; get PS back via translation
+	jmp	fiilc1		; pop the saved	PC off the stack
+;_________________________________________________________________________
+;
+	.loc	fiiloc + 3
+fiilc2:	al	-2,PCL,RSVC	; bump the PC back
+	cdb	PCH		; over the FIS instruction and go away
+;
+; Divide error code - two entry	points
+; enter	at diverr if divisor too small or 0, diverx if quo>32767
+;
+diverr:	dw1f	RDST,RDST	; set carry if divisor was 0
+diverx:	ll	V,RSRCH,LRR,PSW	; restore ps via translation
+	lcf	Z+N+V,RSRCH,RSVC; set divide error condition codes
+	ll	0,RPSWL		; must be cleared for refresh
+;
+; Enter	here for divide	or ASHC	with source in memory
+;
+dvasrd:	r	RBAH,RBAL	; address of source in RBA
+	iw	0,RDST		; put source word in RDST
+;
+; Enter	here for divide	or ASHC	in all modes
+;
+dvascx:	slbf	RIRH,RPSWH	; isolate destination register
+	slbc	RIRL,RIRL	; from instruction by shifting
+	slbf	RPSWH,RPSWH	; get low bit of reg # into carry
+	slb	RIRL,RPSWH	;
+	al	1,RPSWH		; odd register number in RPSWH
+	lgl	RPSWH		; and in G register
+	slbc	RIRL,RIRL	; complete dest	reg # now in RIRL
+	mw	G,RBA,,EII	; move odd register to a work register
+	tl	0x10,RIRL	;
+	jzbf	ashc		; separate arith shift from divide
+;
+; Integer divide routine - enter with high order numerator
+; in RSRC, low order numerator in RBA and denominator in RDST
+;
+divide:	nl	0x3F,RIRH	; high 2 bits of RIRH used as flags
+	tb	RSRCH,RSRCH	; test numerator sign
+	jnbf	1$		; jump if numerator positive
+	ocw	RSRC,RSRC	; negate numerator as 32-bit
+	tcw	RBA,RBA		; quantity
+	cib	RSRCL,,EII	;
+	cib	RSRCH		;
+	al	0xC0,RIRH	; set "result negative"	flag
+				; and "numerator negative" flag
+1$:	tb	RDSTH,RDSTH	;
+	jnbf	2$		; jump if denominator positive
+	tcw	RDST,RDST	; force	denominator positive
+	al	0x80,RIRH	; invert "result negative" flag
+2$:	cwf	RDST,RSRC	; denom	.le. high num is divide	error
+	jcf	diverr		;
+	tcw	RDST,RPSW	; form negative	of denominator
+	dw1	RDST,RDST	; decrement denom to set carries in loop
+	nl	0x06,RIRL	; use hi bits of RIRL as loop ctr
+	slwf	RBA,RBA		; prime	the divide loop
+;
+; Divide loop -	simple shift and subtract
+;
+divlp:	slwc	RSRC,RSRC	; shift	num erator left	one
+	cwf	RSRC,RDST	; compare num to denom,	setting	carry
+	caw	RPSW,RSRC	; if denom .le.	num, subtract it off
+	slwcf	RBA,RBA		; shift	in quotient bit, also
+	slwc	RSRC,RSRC	; shifting numerator left again
+	cwf	RSRC,RDST	; we repeat loop body twice to
+	caw	RPSW,RSRC	; reduce loop overhead
+	slwcf	RBA,RBA,,EII	; shift	second quotient	bit in
+	al	0x20,RIRL	; loop 8 times,	leave with C=0
+	jc8f	divlp		;
+	tl	0x40,RIRH	;
+	jzbt	1$		; meanwhile remainder must be
+	tcw	RSRC,RSRC	; same sign as original	numerator
+1$:	mb	RIRH,RPSWH	; this sets nb bit if signs differred
+	jnbf	2$		; if signs the same, quotient is gt 0
+	tcw	RBA,RBA,,EII	; otherwise it must be negated
+	jzbt	3$		; 0 is positive	and negative (-0=0)
+2$:	xb	RBAH,RPSWH	; is result sign what it should	be?
+	jnbt	diverx		; if not, overflow on division - error
+3$:	mw	RSRC,G,LRR,PSW	; store	remainder
+				; get PS back via translation
+	lgl	RIRL		;
+	jmp	divst1		;
+;_________________________________________________________________________
+;
+; EIS interrupt	routine	- aborts current EIS instruction to service BRs
+; Also used by FADD and	FSUB, as their low byte	makes them look
+; like a mode 0	or mode	1 EIS instruction
+	.loc	0x5CF		; [EII]
+				; this doesnt change unless PLA	does also
+eiiloc:	lgl	RIRH,LRR,PSW	; register RIRH	contains low byte
+				; get PS back via translation
+	slb	RIRH,RIRH	; of instruction, shift	this byte so
+	slb	RIRH,RIRH	; that the high	mode bit goes into C
+	slbf	RIRH,RIRH	; and the middle mode bit into N
+	jmp	eiilc1		;
+;_________________________________________________________________________
+;
+	.loc	EIILOC + 5
+eiilc2:	jnf	2$		; jump if mode was 0/1 or 4/5
+	jct	1$		; jump if mode 6/7
+	sw	RBAH,G		; undo mode 2/3	by bumping G back
+1$:	cabf	RBAH,RBAH	; set RBAH=4 if	mode 6/7, clear	C
+2$:	caw	RBAH,G,RSVC	; bump G forward to undo mode 4/5
+	sw	RBAH,PC		; bump PC back 2, 4 if mode was	6/7
+;
+; Combined arithmetic shift - high shiftee in RSRC, low	in RBA,
+; shift	count in low 6 bits of RDSTL
+;
+ashc:	slb	RDSTL,RDSTL	; shift	count is only six bits wide
+	sbf	RPSWL,RPSWL	; clear	overflow flag and carry
+	slb	RDSTL,RDSTL	; test sign of shift count
+	jnbt	2$		; jump if negative (right)
+				;
+1$:	al	0xFC,RDSTL	; decrement shift count
+	jnbt	3$		; if lt	0, we are done
+	slwf	RBA,RBA,,EII	; shift	doubleword quantity left
+	slwcf	RSRC,RSRC	;
+	jvf	1$		; loop if no overflow
+	ll	V,RPSWL		; set internal overflow	flag
+	jmp	1$		; and loop anyway
+				;
+2$:	slbf	RSRCH,RDSTH	; put sign in carry
+	srwcf	RSRCH,RSRCH	; shift	doubleword quantity
+	srwcf	RBAH,RBAH	; right	one place
+	al	4,RDSTL,,EII;	; the number of	times specified
+	jzbf	2$		; by the shift count
+				;
+3$:	lgl	RIRL		; set G	to high-order register
+	mwf	RSRC,G		; store	high order and set flags from it
+	lgl	RPSWH,LRR,PSW	; now set G to low order register
+				; get PSW back via translation
+	mw	RBA,G		; and store low	order
+	jzbt	4$		; if low order was non-zero,
+	lcf	Z+V,RPSWL	; clear	Z and set V from internal flag
+				; fall thru to clear RPSWL for rev. 7
+4$:	lcf	V,RPSWL,RSVC	; else just set	V from internal	flag
+	ll	0,RPSWL		; must be cleared for refresh
+;_________________________________________________________________________
+;
+	.loc	0x5F2		; get the following jumps in the next page
+fdiv1:	jzf	1$		; if divisor lt	dividend we must subtract
+	cwf	M1,M2		; it off before	we start shifting the
+1$:	jct	fdivlp		; dividend left
+	icb1	EXP1,EXP1	; also,	we must	bump the result	exponent
+	jzbf	dsubt		; this may cause the exponent to
+	jmp	movflo		; overflow, in which case we trap
+;_________________________________________________________________________
+;
+	.loc	0x5F8		;
+	jmp	empty		; no valid micro instruction read
+;_________________________________________________________________________
+;
+	.loc	0x5F9		;
+dvasha:	ltr	RPSWH,RPSWH	; save PSW in TR
+	ow	RDSTH,RDSTL	; finish DATIP started in mode flow
+	jmp	dvascx		; jump to common code
+;_________________________________________________________________________
+;
+; Enter	here from tran DE4 if DIV or ASHC, not mode 0
+;
+	.loc	0x5FC		; [D4W],[D4B]
+dvashc:	jmp	dvasha		;
+;_________________________________________________________________________
+;
+; Enter	here from tran DE4 if MUL or ASH, not mode 0
+;
+	.loc	0x5FD		; [D4W],[D4B]
+				; entry	points are determined by where
+				; dop code not mode 0 winds up,	they must
+				; "wire-or" with base address of 0x19C
+mpyash:	ltr	RPSWH,RPSWH	; save PSW in TR
+	ow	RDSTH,RDSTL	; finish the DATIP started in mode flow
+	jmp	mpyasx		; jump to common code
+;_________________________________________________________________________
+;
+	L600	= 0x600		; 00022x opcode	goes here
+	L601	= 0x601		; 1774xx extension
+	L602	= 0x602		; boot mode 3 entry point
+	L603	= 0x603		; User entry point 0754xx
+;_________________________________________________________________________
+;
+	.end

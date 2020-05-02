@@ -60,6 +60,39 @@ class Wd16(object):
     EXP_UNA = '+-~'
     EXP_OPS = '+-~*/+-&^|'
     EXP_ALL = '+-~*/+-&^|()'
+    #
+    # CP-1621 PLA locations and translation codes  (LSI-11)
+    #
+    PLA_LSI11 = {
+        0x037: 0x25, 0x040: 0x13, 0x041: 0x51, 0x048: 0x32, 0x049: 0x13,
+        0x04A: 0x51, 0x050: 0x16, 0x051: 0x13, 0x052: 0x64, 0x053: 0x51,
+        0x05A: 0x32, 0x05B: 0x13, 0x05C: 0x4C, 0x05F: 0x51, 0x061: 0x23,
+        0x063: 0x13, 0x06C: 0x32, 0x06D: 0x13, 0x073: 0x32, 0x074: 0x13,
+        0x07D: 0x32, 0x07E: 0x13, 0x07F: 0x52, 0x080: 0x68, 0x08A: 0x38,
+        0x092: 0x38, 0x09C: 0x38, 0x0A4: 0x38, 0x0AE: 0x38, 0x0B5: 0x38,
+        0x0BF: 0x38, 0x0C8: 0x15, 0x0D1: 0x15, 0x0D9: 0x15, 0x0E2: 0x15,
+        0x0EB: 0x15, 0x0F2: 0x15, 0x0FC: 0x15, 0x100: 0x70, 0x10A: 0x58,
+        0x10D: 0x2A, 0x111: 0x2C, 0x112: 0x58, 0x114: 0x58, 0x11C: 0x58,
+        0x121: 0x49, 0x123: 0x58, 0x126: 0x58, 0x12E: 0x58, 0x135: 0x58,
+        0x13F: 0x58, 0x140: 0x0B, 0x150: 0x4A, 0x154: 0x4A, 0x158: 0x4A,
+        0x15C: 0x4A, 0x160: 0x07, 0x162: 0x26, 0x170: 0x4A, 0x174: 0x4A,
+        0x178: 0x4A, 0x148: 0x4A, 0x14C: 0x4A, 0x168: 0x4A, 0x16C: 0x4A,
+        0x180: 0x0E, 0x1A0: 0x0D, 0x188: 0x4A, 0x18C: 0x4A, 0x1A8: 0x4A,
+        0x1AC: 0x4A, 0x1E8: 0x4A, 0x1EC: 0x4A, 0x200: 0x4A, 0x228: 0x4A,
+        0x22C: 0x4A, 0x2A4: 0x54, 0x329: 0x1A, 0x342: 0x1C, 0x3B3: 0x1C,
+        0x3C7: 0x1C, 0x3D1: 0x1C, 0x3E8: 0x1C, 0x41B: 0x34, 0x43B: 0x34,
+        0x453: 0x19, 0x47A: 0x19, 0x4AC: 0x62, 0x4BC: 0x62, 0x490: 0x62,
+        0x4D0: 0x62, 0x506: 0x62, 0x527: 0x34, 0x54E: 0x19, 0x568: 0x29,
+        0x569: 0x29, 0x56A: 0x29, 0x56B: 0x29, 0x579: 0x13, 0x540: 0x34,
+        0x560: 0x34, 0x592: 0x19, 0x598: 0x19, 0x584: 0x34, 0x58C: 0x34,
+        0x5A4: 0x34, 0x5AC: 0x34, 0x5CC: 0x19, 0x5CF: 0x19, 0x5EC: 0x19,
+        0x5C0: 0x34, 0x5C8: 0x34, 0x5E0: 0x34, 0x5E8: 0x34
+    }
+    TTL_LSI11 = {
+        0x022: 0x30, 0x025: 0x24, 0x029: 0x04, 0x10C: 0x24, 0x116: 0x38,
+        0x156: 0x34, 0x157: 0x34, 0x1C2: 0x3C, 0x309: 0x04, 0x322: 0x2C,
+        0x327: 0x28, 0x32C: 0x28, 0x33B: 0x25, 0x346: 0x38, 0x347: 0x3C
+    }
 
     def __init__(self):
         self.ps = 0             # pass number
@@ -109,6 +142,7 @@ class Wd16(object):
             'V':     (2, T_SYM),
             'Z':     (4, T_SYM),
             'N':     (8, T_SYM),
+            'T':     (16, T_SYM),
             'C8':    (16, T_SYM),
             'C4':    (32, T_SYM),
             'ZB':    (64, T_SYM),
@@ -239,10 +273,10 @@ class Wd16(object):
 
     def op_lit(self, opcode, word):
         lit = self.eval_exp(opcode[1])
-        if not 0 <= lit < 0x100:
+        if not -128 <= lit < 0x100:
             raise SyntaxError("literal is out of range 0x%08X" % lit)
         reg = self.get_reg(opcode[2])
-        return word | reg | lit << 4
+        return word | reg | (lit & 0xFF) << 4
 
     def op_xi(self, opcode, word):
         mask = self.eval_exp(opcode[1])
@@ -572,6 +606,7 @@ class Wd16(object):
     # Source token generator parses the original line
     #
     def parse_exp(self, string):
+        quota = False
         start = -1
         pos = -1
         for s in string:
@@ -580,12 +615,17 @@ class Wd16(object):
                 if s in ' \t':
                     continue
                 start = pos
+            if s == "'":
+                quota = not quota
+                continue
+            if quota:
+                continue
             if s == ';':
                 if start >= 0 and start != pos:
                     yield string[start:pos]
                 start = -1
                 break
-            if s.isalnum() or s in '"$_.\'':
+            if s.isalnum() or s in '"$_.':
                 continue
             if start >= 0 and start != pos:
                 yield string[start:pos]
@@ -723,7 +763,9 @@ class Wd16(object):
             #
             if self.ps == 1:
                 if label in self.cloc:
-                    raise SyntaxError("label duplication '%s'" % label)
+                    msg = "label duplication '%s'" % label
+                    self.log_error(msg, 0)
+                    raise SyntaxError(msg)
                 self.cloc[label] = self.lc
             else:
                 if self.cloc.get(label, -1) != self.lc:
@@ -738,7 +780,9 @@ class Wd16(object):
             lc = self.symb.get(label)
             if self.ps == 1:
                 if lc is not None:
-                    raise SyntaxError("label duplication '%s'" % label)
+                    msg = "label duplication '%s'" % label
+                    self.log_error(msg, 0)
+                    raise SyntaxError(msg)
                 self.symb[label] = (self.lc, T_SYM)
             else:
                 if lc is None or lc[0] != self.lc or lc[1] != T_SYM:
@@ -758,7 +802,9 @@ class Wd16(object):
         qs = self.symb.get(symbol)
         if self.ps == 1:
             if qs is not None:
-                raise SyntaxError("symbol duplication '%s'" % symbol)
+                msg = "symbol duplication '%s'" % symbol
+                self.log_error(msg, 0)
+                raise SyntaxError(msg)
             self.symb[symbol] = (value, T_SYM)
         else:
             if qs is None:
@@ -953,14 +999,14 @@ class Wd16(object):
                 self.insert_data(word, addr)
         return
 
-    def do_list(self, line, flst):
+    def do_list(self, line, lc, flst):
         if flst is not None:
             if self.gval is None:
                 val = ' ' * 8
             else:
                 val = '%08X' % self.gval
             print("%5d  %03X  %s\t\t%s" %
-                  (self.lnum, self.lc, val, line), file=flst)
+                  (self.lnum, lc, val, line), file=flst)
             for emsg in self.elst:
                 print("%s" % emsg, file=flst)
         return
@@ -989,6 +1035,7 @@ class Wd16(object):
         for line in fsrc:
             self.lnum += 1
             line = line.strip('\r\n')
+            lc = self.lc
 
             try:
                 self.do_line(line)
@@ -996,7 +1043,7 @@ class Wd16(object):
                 self.log_error(err)
 
             if self.ps == 2 and flst is not None:
-                self.do_list(line, flst)
+                self.do_list(line, lc, flst)
             if self.fend:
                 break
         self.local_block()
@@ -1005,6 +1052,39 @@ class Wd16(object):
             self.log_warning("missing '.end' directive")
             if flst is not None:
                 print('%s' % self.elst[0], file=flst)
+        return
+
+    def verify_locs(self):
+        for i in range(MAX_LC):
+            pla = Wd16.PLA_LSI11.get(i)
+            if pla is not None:
+                if self.data[i] < 0:
+                    self.log_error("missed translation address 0x%03X" % i)
+                    continue
+                if ((self.data[i] >> 24) & 0xFF) != pla:
+                    self.log_error("translation mismatch 0x%03X: %02X,%02X" %
+                                   (i, self.data[i] >> 24, pla))
+                continue
+            if self.data[i] >= 0:
+                if (self.data[i] >> 24) & 0xFF:
+                    self.log_error("unexpected translation 0x%03X: %02X" %
+                                   (i, self.data[i] >>24))
+        for i in range(MAX_LC):
+            ttl = Wd16.TTL_LSI11.get(i)
+            if ttl is not None:
+                ttl >>= 2
+                if self.data[i] < 0:
+                    self.log_error("missed TTL address 0x%03X" % i)
+                    continue
+                dat = (self.data[i] >> 18) & 0x0F
+                if dat != ttl:
+                    self.log_error("TTL mismatch 0x%03X: %02X,%02X" %
+                                   (i, dat, ttl))
+                continue
+            if self.data[i] >= 0:
+                dat = (self.data[i] >> 18) & 0x0F
+                if dat:
+                    self.log_error("unexpected TTL 0x%03X: %02X" % (i, ttl))
         return
 
     def write_obj(self, fobj, width):
@@ -1061,6 +1141,8 @@ def createParser():
     p.add_argument('-l', '--lst', help='output listing file', metavar='file')
     p.add_argument('-o', '--obj', help='output object file', metavar='file')
     p.add_argument('-t', '--ttl', help='output TTL-logic file', metavar='file')
+    p.add_argument('-v', '--verify', action='store_const', const=True,
+                   help='verify TRA/TTL for LSI-11')
     return p
 
 
@@ -1096,6 +1178,11 @@ def main():
             fsrc = asm.open_file(src, 'mic', 'r')
             asm.do_assembly(fsrc, flst)
             asm.close_file(fsrc)
+        #
+        # Verify the translation and TTL locations
+        #
+        if params.verify:
+            asm.verify_locs()
         asm.final_stat(flst)
         asm.close_file(flst)
         #
