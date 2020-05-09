@@ -78,7 +78,9 @@ does not contain gate and line delays, in some simulating environment it can be 
 Nonetheless, this model is included in the package as a demo of the closest possible approximation to the original die. Maybe not synthesizable with some tools, simulation only.
 
 #### \hdl\syn
-- synchronous Verilog HDL model, Work-In-Progress
+- synchronous Verilog HDL model, the frontend bus is Q-Bus, does not contain latches, and can be
+synthesized for synchronous FPGAs. All internal and external timings are precisely the same as
+in an asynchronous original model with precision to half period of high-frequency clock.
 
 #### \hdl\wbc
 - synchronous Wishbone compatible version, Work-In-Progress
