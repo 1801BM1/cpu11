@@ -2,7 +2,7 @@
 -- Combined content of all MCP-1631 MicROMs on the M2 processor board
 -- (Soviet replica of LSI-11)
 --
-DEPTH = 2048;
+DEPTH = 1536;
 WIDTH = 22;
 ADDRESS_RADIX = HEX;
 DATA_RADIX = HEX;
@@ -1543,5 +1543,4 @@ CONTENT BEGIN
 5FD: 00EEBB;
 5FE: 00FD76;
 5FF: 000557;
-[600..7FF]: 000000;
 END;
