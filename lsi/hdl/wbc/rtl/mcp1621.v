@@ -6,33 +6,32 @@
 //
 module mcp1621
 (
-   input          pin_clk,       // main clock
-   input          pin_c1,        // clock phase 1
-   input          pin_c4,        // clock phase 4
+   input          pin_clk_p,     // main clock
+   input          pin_clk_n,     //
    input          pin_cond,      // condition taken
    input [17:0]   pin_mi,        // microinstruction bus
    input [4:1]    pin_inrrq,     // interrupt requests
    input          pin_bbusy,     // bus busy
-   input          pin_sr_n,      // system reset
+   input          pin_sr,        // system reset
    input          pin_ra,        // ready
                                  //
    output [10:0]  pin_lc,        // location counter
    output         pin_nop,       // put NOP on bus
    output         pin_inp,       // input data/ROM
                                  //
-   output         pin_syn,       // cycle sync
    output         pin_di,        // data input
    output         pin_do,        // data output
    output         pin_inrak,     // interrupt ack
    output         pin_wrby,      // write byte
+   output         pin_breq,      // bus request
+   output         pin_syns,      // start cycle
+   output         pin_synr,      // stop cycle
+   output         pin_dclr,      // read completed
    output         pin_wi         // wait
 );
 
 //______________________________________________________________________________
 //
-wire  c1;            // internal clocks
-wire  c4;            //
-                     //
 reg   sr;            // system reset latches
 wire  wi;            //
 wire  sr_wi;         //
@@ -66,16 +65,12 @@ wire  ctsr;          // clear translation status register
 wire  lrr;           // load return register
                      //
 reg   di;            // Q-bus output latches
-reg   dout;          //
 reg   syn;           //
-reg   iak;           //
-reg   wrby;          //
                      //
 wire  di_clr;        //
 reg   di_set;        //
 wire  syn_clr;       //
 wire  syn_set;       //
-wire  iak_set;       //
 wire  syn_q1;        //
                      // translation array outputs
 wire  ldtsra;        // load translation status
@@ -92,20 +87,7 @@ wire  [10:0] pta;    // translation address
 assign pin_lc[10:0]  = lci[10:0];
 assign pin_nop       = sr;
 assign pin_inp       = m16_out;
-
-assign pin_wi     = wi;
-assign pin_syn    = syn;
-assign pin_di     = di;
-assign pin_do     = dout & syn;
-assign pin_inrak  = iak;
-assign pin_wrby   = wrby;
-
-//______________________________________________________________________________
-//
-// Internals clocks
-//
-assign c1 = pin_c1;
-assign c4 = pin_c4;
+assign pin_wi        = wi;
 
 //______________________________________________________________________________
 //
@@ -114,16 +96,16 @@ assign c4 = pin_c4;
 assign sr_wi = sr | wi;
 assign wi = ~sr & ((pin_bbusy | pin_ra) & (plm[15] | plm[16])
                  | (plm[4] | plm[5]) & (~pin_ra | (plm[4] & ~di)));
-always @(posedge pin_clk) if (c1) sr <= ~pin_sr_n;
+always @(posedge pin_clk_p) sr <= pin_sr;
 
 //______________________________________________________________________________
 //
 // Microinstruction decoder
 //
-always @(posedge pin_clk) if (c1) plmq <= ~sr_wi & m16_out;
+always @(posedge pin_clk_p) plmq <= ~sr_wi & m16_out;
+assign inc = lc + 10'h001;
 assign m16_out = plm[0];
 assign lrr = pin_mi[16] & ldmir;
-assign inc = lc + 10'h001;
 
 mcp_plc plc
 (
@@ -154,8 +136,7 @@ assign lci[10:8] = (ldjb ? mir[10:8] : 3'b000)
                  | (lra   ? rr[10:8] : 3'b000)
                  | ((lra | lta | ldinc | ldjb) ? 3'b000 : lc[10:8]);
 
-always @(posedge pin_clk)
-if (c1)
+always @(posedge pin_clk_p)
 begin
    if (sr)
       lc[10:0] <= 11'h001;
@@ -218,8 +199,7 @@ assign irq_clr[6] = ~sr_wi & mir[5] & plm[12];
 assign irq_set[7] = ~sr_wi & mir[6] & plm[13];
 assign irq_clr[7] = ~sr_wi & mir[6] & plm[12];
 
-always @(posedge pin_clk)
-if (c1)
+always @(posedge pin_clk_p)
 begin
    irq[4:1] <= pin_inrrq[4:1];
    irq[5] = irq_set[5] | (~irq_clr[5] & irq[5]);
@@ -231,29 +211,32 @@ end
 //
 // Q-bus controls
 //
-always @(posedge pin_clk)
-begin
-   if (c4) wrby <= plm[11] | (~sr_wi & (plm[9] | plm[10]));
-end
-
-assign di_clr  = ~sr_wi & ~m16_out & (plm[4] | plm[5]);
+assign di_clr  = ~sr_wi & ~m16_out & (plm[5] | plm[4]);
 assign syn_clr = ~sr_wi & ~m16_out & (plm[5] | plm[4] & (~mir[6] | syn_q1));
 assign syn_set = syn | ~sr_wi & (plm[15] | plm[16]);
-assign iak_set = iak | ~sr_wi & plm[19];
 
-always @(posedge pin_clk)
-if (c1)
+always @(posedge pin_clk_p)
 begin
-   dout <= plm[5];
    di_set  <= ~sr_wi & ~syn & (plm[17] | plm[18]);
    di  <= ~sr & (di | syn & di_set) & ~di_clr;
    syn <= ~sr & syn_set & ~syn_clr;
-   iak <= ~sr & iak_set & ~syn_clr;
 end
+
+assign pin_wrby   = plm[11];
+assign pin_di     = ~sr & ~pin_bbusy & (plm[17] | plm[18]) & ~plm[19];
+assign pin_do     = ~sr & plm[5];
+assign pin_breq   = plm[15] | plm[16];
+assign pin_syns   = ~sr & ~pin_bbusy & ~pin_ra & pin_breq & ~plm[19];
+assign pin_synr   = ~sr & ~m16_out & (plm[5] | plm[4] & (~mir[6] | syn_q1));
+assign pin_inrak  = ~sr & ~pin_bbusy & ~pin_ra & plm[19];
+assign pin_dclr   = ~sr_wi & ~m16_out & (plm[5] | plm[4]);
+
 
 //
 // Q1 flag of IW microinstruction, controls Read-Modify-Write Cycle
 //
+// x 01x xxx xxx xxx xxx   - cmp/bit
+// x 0x0 101 111 xxx xxx   - tst
+//
 assign syn_q1 = ~mtr[14] & (mtr[13] | (mtr[12:6] == 7'b0101111));
-
 endmodule

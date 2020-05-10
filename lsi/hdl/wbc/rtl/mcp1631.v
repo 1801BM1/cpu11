@@ -9,7 +9,6 @@ module mcp1631
 (
    input          pin_clk,       // main clock
    input  [10:0]  pin_lc,        // location counter
-   input          pin_lcen,      // location counter valid
    output [21:0]  pin_mo         // microinstruction bus
 );
 //______________________________________________________________________________
@@ -24,11 +23,7 @@ begin
    $readmemb("..\\..\\..\\..\\rom\\all_22b.rom", rom);
 end
 
-always @ (posedge pin_clk)
-begin
-   if (pin_lcen)
-      q <= rom[pin_lc];
-end
+always @ (posedge pin_clk) q <= rom[pin_lc];
 
 assign pin_mo = q;
 endmodule

@@ -6,104 +6,90 @@
 //
 module mcp1611
 (
-   input          pin_clk,       // main clock
-   input          pin_c1,        // clock phase 1
-   input          pin_c4,        // clock phase 4
+   input          pin_clk_p,     // main clock
+   input          pin_clk_n,     //
    input          pin_wi,        // wait for ready
    input  [15:0]  pin_mi,        // microbus input
    output [15:0]  pin_mo,        // microbus output
    output         pin_cond,      // condition taken
-   inout  [15:0]  pin_ad         // address/data bus
+   input  [15:0]  pin_adi,       // data input bus
+   output [15:0]  pin_ado,       // data/address output
+   output         pin_astb,      // address strobe
+   output         pin_dstb       // data strobe
 );
 
 //______________________________________________________________________________
 //
-wire  c1;            // internal clocks
-wire  c4;            //
-                     //
+genvar   i;             //
+                        //
+reg  [15:0] dir;        // microinstriction
+reg         inpl;       //
+wire        m04rs;      // mir 0&4 reset
+wire        mo_fa;      //
+wire        mo_ad;      //
+wire        m_in;       //
+reg         addr0;      //
+                        //
+reg  [7:0]  psw;        // processor status word
+wire        wr_f0;      //
+wire        wr_f1;      //
+wire        wr_f2;      //
+wire        wr_f3;      //
+wire        wr_f4;      //
+                        //
+wire        st_fx;      //
+wire        st_f0;      //
+wire        st_f1;      //
+wire        st_f4;      //
+wire        st_f6;      //
+                        //
+reg         jump;       // indirect condition code
+wire        jbxx;       // for PDP-11 branch opcodes
+wire [10:0] dmi;        // decoded microinstruction
+wire [20:0] pl;         // matrix control
+                        //
+reg  [2:0]  g;          // G register
+wire        wr_g0;      // write ALU to G
+wire        wr_g1;      // write ad[6:4] to G
+wire        wr_g2;      // write ad[8:6] to G
+                        //
+                        //
+reg  [7:0]  r[0:25];    // general register file
+wire [7:0]  ra;         // register file port A
+wire [7:0]  rb;         // register file port B
+wire [25:0] rsela;      // register select A
+wire [25:0] rselb;      // register select B
+                        //
+wire [7:0]  md;         // data multiplexer
+wire        mdl_rd;     //
+wire        mdh_rd;     //
+wire        psw_rd;     //
+wire        alu_rd;     //
+wire        alu_sh;     //
+                        //
+wire        f03_wr;     //
+wire        f47_wr;     //
+reg         fb7z;       //
+reg         sb_ext;     // port B sign extension
+                        //
+wire [7:0]  fa;         // ALU input port A
+wire [7:0]  fb;         // ALU input port B
+                        //
+wire [7:0]  c;          // carry chain
+wire [7:0]  ax;         // OR subfunction
+wire [7:0]  ay;         // AND subfunction
+wire [7:0]  alu;        //
+wire        alu_sh8;    // ALU shift-in flag
+wire        alu_c;      // ALU flags
+wire        alu_v;      //
+wire        alu_z;      //
+wire        alu_z_c4;   //
+wire        alu_n;      //
+wire        alu_c8;     //
+wire        alu_c4;     //
+                        //
 //______________________________________________________________________________
 //
-genvar   i;          //
-                     //
-reg  [15:0] dir;     // microinstriction
-reg         inpl;    //
-wire        m04rs;   // mir 0&4 reset
-wire        mo_fa;   //
-wire        mo_ad;   //
-wire        m_in;    //
-                     //
-reg  [7:0]  psw;     // processor status word
-wire        wr_f0;   //
-wire        wr_f1;   //
-wire        wr_f2;   //
-wire        wr_f3;   //
-wire        wr_f4;   //
-                     //
-wire        st_fx;   //
-wire        st_f0;   //
-wire        st_f1;   //
-wire        st_f4;   //
-wire        st_f6;   //
-                     //
-reg         jump;    // indirect condition code
-wire        jbxx;    // for PDP-11 branch opcodes
-wire [10:0] dmi;     // decoded microinstruction
-wire [20:0] pl;      // matrix control
-                     //
-reg  [2:0]  g;       // G register
-wire        wr_g0;   // write ALU to G
-wire        wr_g1;   // write ad[6:4] to G
-wire        wr_g2;   // write ad[8:6] to G
-                     //
-                     //
-reg  [7:0]  r[0:25]; // general register file
-wire [7:0]  ra;      // register file port A
-wire [7:0]  rb;      // register file port B
-wire [25:0] rsela;   // register select A
-wire [25:0] rselb;   // register select B
-                     //
-wire [7:0]  md;      // data multiplexer
-reg  [15:0] dal;     // latched AD input
-reg  [15:0] ad_out;  // Q-bus output latch
-wire        ad_stb;  //
-reg         ad_oe;   //
-wire        mdl_rd;  //
-wire        mdh_rd;  //
-wire        psw_rd;  //
-wire        alu_rd;  //
-wire        alu_sh;  //
-                     //
-wire        f03_wr;  //
-wire        f47_wr;  //
-reg         fb7z;    //
-reg         sb_ext;  // port B sign extension
-                     //
-wire [7:0]  fa;      // ALU input port A
-wire [7:0]  fb;      // ALU input port B
-                     //
-wire [7:0]  c;       // carry chain
-wire [7:0]  ax;      // OR subfunction
-wire [7:0]  ay;      // AND subfunction
-wire [7:0]  alu;     //
-wire        alu_sh8; // ALU shift-in flag
-wire        alu_c;   // ALU flags
-wire        alu_v;   //
-wire        alu_z;   //
-wire        alu_z_c4;//
-wire        alu_n;   //
-wire        alu_c8;  //
-wire        alu_c4;  //
-                     //
-//______________________________________________________________________________
-//
-// Internals clocks
-//
-assign c1 = pin_c1;
-assign c4 = pin_c4;
-
-//______________________________________________________________________________
-//
-always @(posedge pin_clk) if (c4) dal[15:0] = pin_ad[15:0];
 assign m_in = pl[12] & ~pin_wi;
 assign mo_fa = dmi[8] & ~pin_wi;
 assign mo_ad = (dir[4] | dir[5]) & dmi[7] & ~pin_wi;
@@ -112,8 +98,7 @@ assign mo_ad = (dir[4] | dir[5]) & dmi[7] & ~pin_wi;
 //
 // Processor status word (PSW)
 //
-always @(posedge pin_clk)
-if (c1)
+always @(posedge pin_clk_p)
 begin
    if (wr_f4)
    begin
@@ -152,15 +137,14 @@ assign wr_f4 = pl[15];
 //
 // Register G
 //
-always @(posedge pin_clk)
-if (c1)
+always @(posedge pin_clk_p)
 begin
    if (wr_g0)
       g[2:0] <= fa[2:0];
    if (wr_g1)
-      g[2:0] <= dal[6:4];
+      g[2:0] <= pin_adi[6:4];
    if (wr_g2)
-      g[2:0] <= dal[8:6];
+      g[2:0] <= pin_adi[8:6];
 end
 
 assign wr_g0 = ~pin_wi & dmi[9];
@@ -299,13 +283,10 @@ assign fb[7:0] = (~dir[15] ? dir[11:4] : 8'h00)
                | ((dir[15] & ~sb_ext) ? rb[7:0] : 8'h00)
                | ((dir[15] &  sb_ext) ? (fb7z ? 8'h00 : 8'hff) : 8'h00);
 
-always @(posedge pin_clk)
+always @(posedge pin_clk_p)
 begin
-   if (c1)
-   begin
-      sb_ext <= ~pin_wi & ~pl[12] & dmi[10] & dir[4];
-      fb7z <= ~fb[7];
-   end
+   sb_ext <= ~pin_wi & ~pl[12] & dmi[10] & dir[4];
+   fb7z <= ~fb[7];
 end
 
 //
@@ -338,8 +319,7 @@ assign f47_wr = st_fx & ~pl[10] & (~dmi[3] | ~psw[4]);
 generate
 for (i=0; i<26; i=i+1)
 begin : gen_wreg
-   always @(posedge pin_clk)
-   if (c1)
+   always @(posedge pin_clk_p)
    begin
       if (f03_wr & rsela[i]) r[i][3:0] <= md[3:0];
       if (f47_wr & rsela[i]) r[i][7:4] <= md[7:4];
@@ -349,35 +329,30 @@ endgenerate
 
 //______________________________________________________________________________
 //
-// Output data register
+// Output address and data register
 //
-always @(posedge pin_clk)
-if (c4)
-begin
-   ad_oe <= ad_stb;
-   if (ad_stb)
-      ad_out[15:0] <= {fb[7:0], fa[7:0]};
-end
+assign pin_astb = ~dmi[4] & ~pin_wi & dmi[5];
+assign pin_dstb = ~dmi[4] & dmi[6];
+assign pin_ado[15:0] = {fb[7:0], fa[7:0]};
+always @(posedge pin_clk_p) if (pin_astb) addr0 <= fa[0];
 
-assign pin_ad[15:0] = ad_oe ? ad_out[15:0] : 16'hzzzz;
-assign ad_stb = ~dmi[4] & (dmi[6] | ~pin_wi & dmi[5]);
 
 //______________________________________________________________________________
 //
 // Data multiplexer
 //
 assign md[7:0] = (psw_rd ? psw[7:0] : 8'h00)
-               | (mdl_rd ? dal[7:0] : 8'h00)
-               | (mdh_rd ? dal[15:8] : 8'h00)
+               | (mdl_rd ? pin_adi[7:0] : 8'h00)
+               | (mdh_rd ? pin_adi[15:8] : 8'h00)
                | (alu_rd ? alu[7:0] : 8'h00)
                | (alu_sh ? {alu_sh8, alu[7:1]} : 8'h00);
 
 assign mdl_rd = ~(pl[19] & ~dir[4] & ~dir[5])
-              & ~(pl[19] & dir[5] & (ad_out[0] ^ dir[4]))
+              & ~(pl[19] & dir[5] & (addr0 ^ dir[4]))
               & ~(pl[20] & inpl)
               & (pl[20] | pl[19]);
 assign mdh_rd = (pl[19] & ~dir[4] & ~dir[5])
-              | (pl[19] & dir[5] & (ad_out[0] ^ dir[4]))
+              | (pl[19] & dir[5] & (addr0 ^ dir[4]))
               | (pl[20] & inpl);
 
 assign psw_rd = pl[17];
@@ -442,13 +417,12 @@ assign alu_v  = c[6] ^ c[7];
 //
 // Microinstruction bus and register
 //
-assign pin_mo[15:0] = (mo_ad ? pin_ad[15:0] : 16'h0000)
+assign pin_mo[15:0] = (mo_ad ? pin_adi[15:0] : 16'h0000)
                     | (mo_fa ? {fb[7:0],fa[7:0]} : 16'h0000);
 
 assign m04rs = ~pl[12] & ~pin_wi;
 
-always @(posedge pin_clk)
-if (c1)
+always @(posedge pin_clk_p)
 begin
    inpl <= ~pl[12] & ~pin_wi;
 
@@ -481,12 +455,12 @@ mcp_plj plj
 //
 mcp_plb plb
 (
-   .dal(dal),           // PDP-11 branch opcode
+   .dal(pin_adi),       // PDP-11 branch opcode
    .psw(psw),           // processor status word
    .jump(jbxx)          // jump taken
 );
 
-always @(posedge pin_clk) if (c1 & mo_ad) jump <= jbxx;
+always @(posedge pin_clk_p) if (mo_ad) jump <= jbxx;
 //______________________________________________________________________________
 //
 // Decoding microinstruction array for 1611 (Data Chip)

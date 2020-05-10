@@ -257,8 +257,8 @@ outhex:		mov	R1, -(SP)		;
 						;
 ;_____________________________________________________________________________
 ;
-entry:		mov	#037406, @#177714	;
-		mov	#003177, @#177715	;
+entry:		mov	#030066, @#177714	; 0011 1000 0110 1101  034155
+		mov	#034155, @#177715	; 0110 0000 0011 0110  060066
 		mov	#$stack, SP		;
 						;
 		mov	#$rxbuf, $rxend		;
@@ -266,9 +266,8 @@ entry:		mov	#037406, @#177714	;
 		mov	#$txbuf, $txend		;
 		mov	#$txbuf, $txbeg		;
 						;
-		mov	R0, @#140000		; ##$ 
-godt:
-
+		mov	R0, @#140000		; bus timeout test
+godt:						;
 		mov	#100, @#RXCSR		;
 		mov     #000, @#TXCSR		;
 		clr	R0			;

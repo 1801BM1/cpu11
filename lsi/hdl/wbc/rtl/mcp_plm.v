@@ -498,31 +498,31 @@ begin
 end
 endfunction
 
-assign pl[0]  = cmp({q, mir[15:8]}, 9'b0000xxxxx);
-assign pl[20] = cmp({q, mir[15:8]}, 9'b011110x1x);
-assign pl[21] = cmp({q, mir[15:8]}, 9'b01110xx1x);
-assign pl[22] = cmp({q, mir[15:8]}, 9'b0110xxx1x);
-assign pl[23] = cmp({q, mir[15:8]}, 9'b010xxxx1x);
+assign pl[0]  = cmp({q, mir[15:8]}, 9'b0000xxxxx); // jmp/jxx/rfs
+assign pl[20] = cmp({q, mir[15:8]}, 9'b011110x1x); // riw/wiw
+assign pl[21] = cmp({q, mir[15:8]}, 9'b01110xx1x); // isw/ltr
+assign pl[22] = cmp({q, mir[15:8]}, 9'b0110xxx1x); // word ops
+assign pl[23] = cmp({q, mir[15:8]}, 9'b010xxxx1x); // word ops
 
-assign pl[1]  = cmp({q, mir[15:8]}, 9'b000000xxx);
-assign pl[2]  = cmp({q, mir[15:8]}, 9'b00001xxxx);
-assign pl[3]  = cmp({q, mir[15:8]}, 9'b000001xxx);
-assign pl[4]  = cmp({q, mir[15:8]}, 9'bx111000xx);
-assign pl[5]  = cmp({q, mir[15:8]}, 9'bx1111110x);
-assign pl[6]  = cmp({q, mir[15:8]}, 9'b011101110);
-assign pl[7]  = cmp({q, mir[15:8]}, 9'bx11111110);
-assign pl[8]  = cmp({q, mir[15:8]}, 9'b01110001x);
-assign pl[9]  = cmp({q, mir[15:8]}, 9'b011110xx1);
-assign pl[10] = cmp({q, mir[15:8]}, 9'bx111110x1);
+assign pl[1]  = cmp({q, mir[15:8]}, 9'b000000xxx); // jmp
+assign pl[2]  = cmp({q, mir[15:8]}, 9'b00001xxxx); // jxx
+assign pl[3]  = cmp({q, mir[15:8]}, 9'b000001xxx); // rfs
+assign pl[4]  = cmp({q, mir[15:8]}, 9'bx111000xx); // ib/iw
+assign pl[5]  = cmp({q, mir[15:8]}, 9'bx1111110x); // ob/ow/os
+assign pl[6]  = cmp({q, mir[15:8]}, 9'b011101110); // ltr
+assign pl[7]  = cmp({q, mir[15:8]}, 9'bx11111110); // os
+assign pl[8]  = cmp({q, mir[15:8]}, 9'b01110001x); // iw
+assign pl[9]  = cmp({q, mir[15:8]}, 9'b011110xx1); // wixx
+assign pl[10] = cmp({q, mir[15:8]}, 9'bx111110x1); // ob
 assign pl[11] = cmp({q, mir[15:8]}, 9'bx11111100);
 assign pl[12] = cmp({q, mir[15:8]}, 9'bx01110000);
 assign pl[13] = cmp({q, mir[15:8]}, 9'bx01110001);
 assign pl[14] = cmp({q, mir[15:8]}, 9'bx01110100);
-assign pl[15] = cmp({q, mir[15:8]}, 9'b0111110xx);
-assign pl[16] = cmp({q, mir[15:8]}, 9'b011110xxx);
-assign pl[17] = cmp({q, mir[15:8]}, 9'b011110xx0);
-assign pl[18] = cmp({q, mir[15:8]}, 9'bx111110x0);
-assign pl[19] = cmp({q, mir[15:8]}, 9'bx1111101x);
+assign pl[15] = cmp({q, mir[15:8]}, 9'b0111110xx); // r/w/o
+assign pl[16] = cmp({q, mir[15:8]}, 9'b011110xxx); // rixx/wixx
+assign pl[17] = cmp({q, mir[15:8]}, 9'b011110xx0); // rixx
+assign pl[18] = cmp({q, mir[15:8]}, 9'bx111110x0); // r/ra
+assign pl[19] = cmp({q, mir[15:8]}, 9'bx1111101x); // ra/wa
 
 assign plm[19:1] = pl[19:1];
 assign plm[0] = pl[0] | pl[20] | pl[21] | pl[22] | pl[23];
