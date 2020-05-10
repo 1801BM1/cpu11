@@ -33,9 +33,23 @@ There are a few words regarding the reverse engineering process stages:
 - [1801BM3](/vm3) - USSR microprocessor, no DEC prototype, proprietary die design
 - [LSI-11](/lsi) - Soviet 581-series, DEC LSI-11 clone, Western Digital MCP-1600 chipset
 
+## PI-test perfromance
+
+The 1000 signs of Pi calculation test is based on spigot algorithm. The digits are the times in 50Hz ticks.
+All models were Wishbone-compatible and run on the DE0 board with the same system configurations, software was
+placed into static memory with zero wait states. LSI-11 was running at 80MHz and results are multiplied by 0.8
+to match with other ones. Three versions of test with various supported EIS instructions were engaged.
+
+| Model    | Frequency     | no EIS | MUL only | MUL/DIV |
+|----------|---------------|--------|----------|---------|
+| LSI-11   | 100MHz(80MHz) | 746    | 422      | 284     |
+| 1801BM1A | 100MHz        | 586    | ---      | ---     |
+| 1801BM1Г | 100MHz        | 588    | 458      | ---     |
+| 1801BM2  | 100MHz        | 340    | 190      | 123     |
+
 ## Supported FPGA development boards
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:
-- [Altera DE0](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=364)
-- [Altera DE1](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=53&No=83)
-- [Altera DE2-115](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=139&No=502)
-- [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c)
+- [Altera DE0](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=364) - Cyclone-III
+- [Altera DE1](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=53&No=83) - Cyclone-II
+- [Altera DE2-115](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=139&No=502) - Cyclone-IV
+- [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c) - Spartan-6
