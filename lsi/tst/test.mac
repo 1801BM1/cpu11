@@ -47,7 +47,7 @@
 		. = 0				;
 						;
 		vect	0			;
-		vect	4			;
+		vect	4, godt			;
 		vect	10			;
 		vect	14			;
 		vect	20			;
@@ -266,11 +266,15 @@ entry:		mov	#037406, @#177714	;
 		mov	#$txbuf, $txend		;
 		mov	#$txbuf, $txbeg		;
 						;
+		mov	R0, @#140000		; ##$ 
+godt:
+
 		mov	#100, @#RXCSR		;
 		mov     #000, @#TXCSR		;
 		clr	R0			;
 		mtps	R0			;
 						;
+
 ;_____________________________________________________________________________
 ;
 start:		.print	#mes1			;
@@ -279,7 +283,7 @@ start:		.print	#mes1			;
 		jsr	PC, putch		;
 		br	1$			;
 
-mes1:	.asciz	<15><12><15><12>"LSI-11 started, echo test...."<12><15>
+mes1:	.asciz	<15><12><15><12>"LSI-11 started, echo test....@"<12><15>
 ;_____________________________________________________________________________
 ;
 		.end

@@ -3,7 +3,7 @@
 //
 // Vectored interrupt controller
 //
-// - Wishbon ecompatible
+// - Wishbone compatible
 // - Parametrized with vectors and number of interrupts
 //______________________________________________________________________________
 //
