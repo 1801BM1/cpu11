@@ -25,7 +25,7 @@
 # Notes:
 #
 # 1) The default values for assignments are stored in the file:
-#		lsi_assignment_defaults.qdf
+#		de0_assignment_defaults.qdf
 #    If this file doesn't exist, see file:
 #		assignment_defaults.qdf
 #
@@ -502,7 +502,8 @@ set_global_assignment -name EDA_TEST_BENCH_NAME tbl -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tbl
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tbl -section_id tbl
 set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tbl.v -section_id tbl
-set_global_assignment -name VERILOG_FILE ../../rtl/lsi.v
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
+set_global_assignment -name VERILOG_FILE ../../rtl/lsi_wb.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1611.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1621.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1631.v

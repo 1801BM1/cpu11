@@ -502,14 +502,14 @@ set_global_assignment -name EDA_TEST_BENCH_NAME tbl -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tbl
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tbl -section_id tbl
 set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tbl.v -section_id tbl
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_global_assignment -name VERILOG_FILE ../../rtl/lsi.v
-set_global_assignment -name VERILOG_FILE ../../rtl/mcp_plm.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1611.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1621.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1631.v
+set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/mcp_plm.v
 set_global_assignment -name SOURCE_FILE ../../tbe/config.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_tbl.v
 set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
