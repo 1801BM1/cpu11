@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2019 by 1801BM1@gmail.com
+// Copyright (c) 2014-2020 by 1801BM1@gmail.com
 //
 // Project configuration parameters
 //______________________________________________________________________________
