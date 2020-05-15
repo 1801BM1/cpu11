@@ -5,6 +5,15 @@
 //______________________________________________________________________________
 //
 module lsi_wb
+#(parameter
+//______________________________________________________________________________
+//
+// LSI11_ORIGINAL_MICROM nonzero value means the original DEC Microm
+// 1631-10/07/15 conten is used, we can optimize 4 MSBs with ordinal logic
+// and save memory blocks
+//
+   LSI11_ORIGINAL_MICROM = 1
+)
 (
    //
    // Processor core clock section:
@@ -393,6 +402,7 @@ mcp1621 control
    .pin_breq(m_breq)
 );
 
+defparam microm.LSI11_ORIGINAL_MICROM = LSI11_ORIGINAL_MICROM;
 mcp1631 microm
 (
    .pin_clk(vm_clk_p),
