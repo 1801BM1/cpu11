@@ -202,9 +202,9 @@ assign irq_clr[7] = ~sr_wi & mir[6] & plm[12];
 always @(posedge pin_clk_p)
 begin
    irq[4:1] <= pin_inrrq[4:1];
-   irq[5] = irq_set[5] | (~irq_clr[5] & irq[5]);
-   irq[6] = irq_set[6] | (~irq_clr[6] & irq[6]);
-   irq[7] = irq_set[7] | (~irq_clr[7] & irq[7]);
+   irq[5] <= irq_set[5] | (~irq_clr[5] & irq[5]);
+   irq[6] <= irq_set[6] | (~irq_clr[6] & irq[6]);
+   irq[7] <= irq_set[7] | (~irq_clr[7] & irq[7]);
 end
 
 //______________________________________________________________________________
