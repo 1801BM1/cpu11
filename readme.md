@@ -38,7 +38,8 @@ There are a few words regarding the reverse engineering process stages:
 The 1000 signs of Pi calculation test is based on spigot algorithm. The digits are the times in 50Hz ticks.
 All models were Wishbone-compatible and run on the DE0 board with the same system configurations, software was
 placed into static memory with zero wait states. LSI-11 was running at 80MHz and results are multiplied by 0.8
-to match with other ones. Three versions of test with various supported EIS instructions were engaged.
+to match with other ones. There are three variants of the test with various combinations of supported
+EIS instructions.
 
 | Model    | Frequency     | no EIS | MUL only | MUL/DIV |
 |----------|---------------|--------|----------|---------|

@@ -355,7 +355,7 @@ begin
 end
 
 assign qtim_to = qtim == 6'b111111;
-assign qtim_en = wbm_stb_o | wbi_stb_o;
+assign qtim_en = wbm_gnt_i & (wbm_stb_o | wbi_stb_o);
 
 //_____________________________________________________________________________
 //

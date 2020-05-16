@@ -149,7 +149,6 @@ wire [1:0]  wb_sel;                    // master wishbone byte election
 wire        wb_stb;                    // master wishbone strobe
 wire        wb_ack;                    // master wishbone acknowledgement
                                        //
-wire        vm_una;                    //
 wire        vm_istb;                   //
 wire        vm_iack;                   //
 wire [15:0] vm_ivec;                   //

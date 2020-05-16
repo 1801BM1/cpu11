@@ -83,15 +83,57 @@ synthesized for synchronous FPGAs. All internal and external timings are precise
 in an asynchronous original model with precision to half period of high-frequency clock.
 
 #### \hdl\wbc
-- synchronous Wishbone compatible version, Work-In-Progress
-
+- synchronous Wishbone compatible version of LSI-11 synchronous core uses a single clock,
+is FPGA-optimized, and follows the original command execution timings, is intended for SoC building
 
 #### [\cad\lsi](https://github.com/1801BM1/cad11/tree/master/lsi) (moved to dedicated repo)
 - topology in Sprint Layout format
 - schematics 581ИК1 in [pdf](https://github.com/1801BM1/cad11/tree/master/lsi/mcp1611a.pdf) (gate level)
 - schematics 581ИК2 in [pdf](https://github.com/1801BM1/cad11/tree/master/lsi/mcp1621a.pdf) (gate level)
 
+#### \rom
+- MicROM binary images
+- MicROM disassemled sources
+- tools (Assembler and Disassemler)
+- microinstructions cheetsheet
+
 #### \tst
 - test software, including restored factory test sources and ROM images. Build batch should
 be run before building FPGA bitstream to include test software image
 
+## How to simulate
+- run "tst\build.bat t401" to prebuild desired test software image (t401 is a sample)
+- run ModelSim simulator
+- set "vm1/hdl/org/sim/de0" as working directory in ModelSim (File->Change Directory)
+- execute "do run.do" console command
+- wait, simulation may take some time till complete
+- see the results in waveform and console output
+
+## Implemented resources
+- RAM 8Kx16bit at 000000<sub>8</sub> with initialized content from test.mif file
+- TTY at 177560<sub>8</sub>, 60<sub>8</sub>/64<sub>8</sub> vector interrupts,
+  tx/rx with cts/rts handshake, 115200/8/N/1, RS-232 levels (board dependent).
+- 50Hz system timer interrupt (IRQ2, edge sensitive, vector 100<sub>8</sub>),
+  enabled by board switch[0], if timer is enabled the board led[0] lights
+- 4x7-segment display, segments attached to output registers at 177714<sub>8</sub>/177715<sub>8</sub>,
+  see the test software source for the details
+- switches and buttons can be read from input register at 177714<sub>8</sub>
+- board button[0] is reset, short press less than 1 sec causes system reset,
+  long press over 1 second simulates power reset (excluding RAM content)
+
+## Fmax and FPGA resources
+- Wishbone compatible LSI-11 core
+- register file over flip-flops, MicROM in RAM blocks
+- 4 MSB of MicROM are optimized with combinatorial logic
+- balanced area/speed optimization chosen
+- slow model, worst corner
+
+All results are just approximate estimations by synthesis tools (Quartus/XST/Vivado) on sample
+projects.
+
+| Board   | FPGA            | Family      | Fmax    | LUTs | FFs | MEM   |
+|---------|-----------------|-------------|---------|------|-----|-------|
+| DE0     | EP3C16F484C6N   | Cyclone III | 84 MHz  | 1543 | 401 | 5 M9K |
+| DE1     | EP2C20F484C7N   | Cyclone II  | 63 MHz  | 1567 | 408 | 9 M4K |
+| DE2-115 | EP4CE115F29C7N  | Cyclone IV  | 75 MHz  | 1531 | 393 | 5 M9K |
+| AX309   | XC6SLX9FTG256-2 | Spartan 6   | 69 MHz  | 1330 | 616 | 2 B16 |
