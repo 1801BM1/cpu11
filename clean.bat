@@ -23,6 +23,7 @@ call :aclean %1 syn de0
 call :aclean %1 wbc de0
 call :aclean %1 wbc de1
 call :aclean %1 wbc de2-115
+call :aclean %1 wbc de10-lite
 call :xclean %1 wbc ax309
 
 del *.qws *.sdo *.vo *.qip *.sft *.wlf *.jdi *.ver *.mem *.xrf *.bak msim_transcript. vm1_run_msim*.do modelsim.ini *.rpt /q /s

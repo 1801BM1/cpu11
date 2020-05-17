@@ -137,3 +137,4 @@ projects.
 | DE1     | EP2C20F484C7N   | Cyclone II  | 63 MHz  | 1567 | 408 | 9 M4K |
 | DE2-115 | EP4CE115F29C7N  | Cyclone IV  | 75 MHz  | 1531 | 393 | 5 M9K |
 | AX309   | XC6SLX9FTG256-2 | Spartan 6   | 69 MHz  | 1330 | 616 | 2 B16 |
+| DE10-LT | 10M50DAF484C7G  | Max 10      | 68 MHz  | 1435 | 406 | 5 M9K |
