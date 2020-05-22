@@ -1,1 +1,10 @@
 cad/**
+**/qmcy10sk/db/*
+**/qmcy10sk/incremental_db/*
+**/qmcy10sk/output_files/*
+**/qmcy10sk/*.qws
+**/qmcy10sk/*.qdf
+**/qmcy10sk/bak/*
+*.bak
+**/out/qmcy10sk/*
+**/tst/out/*
