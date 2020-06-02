@@ -55,3 +55,4 @@ The synchronous models are planned to be run (and appropriate sample projects to
 - [Altera DE2-115](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=139&No=502) - Cyclone-IV
 - [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c) - Spartan-6
 - [Altera DE10-lite](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=218&No=1021) - Max-10
+- [QMTech Cycle10 Starter kit](http://www.chinaqmtech.com/download_fpga) - Cyclone-10
