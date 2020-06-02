@@ -23,7 +23,7 @@ set_global_assignment -name DEVICE 10CL016YU484C8G
 set_global_assignment -name TOP_LEVEL_ENTITY cy10_top
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.0.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "22:13:10  MAY 20, 2020"
-set_global_assignment -name LAST_QUARTUS_VERSION "18.0.0 Lite Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "18.0.0 Standard Edition"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY ../../out/qmcy10sk
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
@@ -33,6 +33,12 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
+set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
+#set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS On -family "Cyclone 10 LP"
+set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+
 #set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_rst_n
@@ -40,13 +46,29 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_rst_n
 #set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_led[1]
 set_location_assignment PIN_G1 -to c10sk_clk
 set_location_assignment PIN_P3 -to c10sk_rst_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_uart_rxd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_uart_txd
 set_location_assignment PIN_AA22 -to c10sk_uart_rxd
 set_location_assignment PIN_AA21 -to c10sk_uart_txd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_led[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_led[0]
 set_location_assignment PIN_W17 -to c10sk_led[1]
 set_location_assignment PIN_Y17 -to c10sk_led[0]
 # FIXME
 set_location_assignment PIN_P4 -to c10sk_sw1
 #set_location_assignment PIN_P3 -to c10sk_sw4
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_seg[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_dig[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_dig[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to c10sk_hex_dig[2]
 
 set_location_assignment PIN_W19 -to c10sk_hex_seg[7]
 set_location_assignment PIN_R20 -to c10sk_hex_seg[6]
@@ -74,9 +96,14 @@ set_instance_assignment -name IO_STANDARD LVDS_E_3R -to c10sk_hdmi_tmds[0]
 set_location_assignment PIN_AA15 -to c10sk_hdmi_tmds[0]
 set_instance_assignment -name IO_STANDARD LVDS_E_3R -to c10sk_hdmi_tmds_clk
 set_location_assignment PIN_AA14 -to c10sk_hdmi_tmds_clk
-set_global_assignment -name CDF_FILE qmcy10sk.cdf
 set_global_assignment -name DEVICE_FILTER_PACKAGE UFBGA
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 484
+
+
+set_global_assignment -name SYNCHRONIZER_IDENTIFICATION OFF
+set_global_assignment -name SYNTH_PROTECT_SDC_CONSTRAINT ON
+set_global_assignment -name SDC_FILE qmcy10sk.sdc
+set_global_assignment -name CDF_FILE qmcy10sk.cdf
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1631.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1621.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mcp1611.v
@@ -90,6 +117,4 @@ set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
 set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
 set_global_assignment -name HEX_FILE ../../../../tst/out/test.hex
-set_global_assignment -name SDC_FILE qmcy10sk.sdc
-
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

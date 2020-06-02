@@ -65,14 +65,14 @@ module cy10_top
 
    output   [1:0] c10sk_led,             // led1=Y17, 0 -> turn ON
    input          c10sk_sw4,             // 1=P3
-   input          c10sk_sw1,             // 0=P4
+   input          c10sk_sw1              // 0=P4
    // HDMI
-   output         c10sk_hdmi_scl_a,
-   output         c10sk_hdmi_sda_a,
-   output         c10sk_hdmi_hpd_a,
-   output         c10sk_hdmi_cec_a,
-   output   [2:0] c10sk_hdmi_tmds,
-   output         c10sk_hdmi_tmds_clk     // 
+   //output         c10sk_hdmi_scl_a,
+   //output         c10sk_hdmi_sda_a,
+   //output         c10sk_hdmi_hpd_a,
+   //output         c10sk_hdmi_cec_a,
+   //output   [2:0] c10sk_hdmi_tmds,
+   //output         c10sk_hdmi_tmds_clk
 );
 
 //______________________________________________________________________________
@@ -133,7 +133,7 @@ assign wb_clk  = sys_clk_p;
 assign clk50   = c10sk_clk;
 assign bsel    = `SIM_CONFIG_BOOT_MODE;
 
-cy10_pll50 corepll
+cy10_pll66 corepll
 (
    .inclk0(clk50),
    .c0(sys_clk_p),
