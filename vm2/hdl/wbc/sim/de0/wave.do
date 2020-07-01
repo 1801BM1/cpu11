@@ -215,6 +215,7 @@ add wave -noupdate -group Registers -group ireg /tb2/de0_top/cpu/bir_stb
 add wave -noupdate -group Registers -radix octal -childformat {{{/tb2/de0_top/cpu/r[6]} -radix octal} {{/tb2/de0_top/cpu/r[5]} -radix octal} {{/tb2/de0_top/cpu/r[4]} -radix octal} {{/tb2/de0_top/cpu/r[3]} -radix octal} {{/tb2/de0_top/cpu/r[2]} -radix octal} {{/tb2/de0_top/cpu/r[1]} -radix octal} {{/tb2/de0_top/cpu/r[0]} -radix octal}} -subitemconfig {{/tb2/de0_top/cpu/r[6]} {-height 15 -radix octal} {/tb2/de0_top/cpu/r[5]} {-height 15 -radix octal} {/tb2/de0_top/cpu/r[4]} {-height 15 -radix octal} {/tb2/de0_top/cpu/r[3]} {-height 15 -radix octal} {/tb2/de0_top/cpu/r[2]} {-height 15 -radix octal} {/tb2/de0_top/cpu/r[1]} {-height 15 -radix octal} {/tb2/de0_top/cpu/r[0]} {-height 15 -radix octal}} /tb2/de0_top/cpu/r
 add wave -noupdate -group Registers -group pc /tb2/de0_top/cpu/pc_wax
 add wave -noupdate -group Registers -group pc /tb2/de0_top/cpu/pc_wr
+add wave -noupdate -group Registers -group pc -radix octal /tb2/de0_top/cpu/cpc
 add wave -noupdate -group Registers -group pc1 -radix octal /tb2/de0_top/cpu/pc1
 add wave -noupdate -group Registers -group pc1 /tb2/de0_top/cpu/pc1_wr
 add wave -noupdate -group Registers -group pc1 /tb2/de0_top/cpu/wr2

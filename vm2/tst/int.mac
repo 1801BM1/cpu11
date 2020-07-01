@@ -1,0 +1,106 @@
+                .TITLE  trap test
+                .ASECT
+;
+; Вектор запуска
+;
+                .WORD   START
+                .WORD   0
+                
+                .=      10
+START:                
+                MOV     #410,SP        
+                MOV     #740,-(SP)
+                MOV     #170004,-(SP)
+                RTI
+
+                MOV     #410,SP         ; рабочий стек
+                MOV     #trap4, @#4     ; устанавливаем новый обработчик trap4
+                CLR     @#6
+                CLR     @#177776        ; обращемся к отсутствующему адресу
+RADR:
+                JMP     ERR0            ; сюда приходим, если не произошло прерывание
+;----------------------------------------------------------------------
+trap4:
+                CMP     #RADR, (SP)
+                BNE     ERR1        
+; Тест успешно завершен
+                MOV     #MSGOK,R3
+                CALL    printstr
+                BR      STOP
+; Адреса не совпали                
+ERR1:
+                MOV     (SP), R3     ; это адрес из стека
+                CALL    PNUM          
+                MOV     #RADR,R3     ; а вот такой он должен быть
+                CALL    PNUM          
+                MOV     #MSGER1,R3
+                CALL    printstr
+                BR      STOP
+
+ERR0:                
+                MOV     #MSGER0,R3
+                CALL    printstr
+
+STOP:           HALT     
+                BR      STOP
+                
+; =============== S U B R O U T I N E =======================================
+printstr:                                                   
+                                                            
+                TSTB    @R3
+                BEQ     l152212                             ; конец строки
+                MOVB    (R3)+, R0                           ; очередной байт из строки
+                CALL    putchar
+                BR      printstr
+; ---------------------------------------------------------------------------
+
+l152212:               
+                RETURN
+
+; =============== S U B R O U T I N E =======================================
+putchar:                                                 
+                BIC     #200, R0
+                CMPB    #177, R0
+                BNE     l152320
+                MOV     #134, R0 ; '\'
+
+l152320:            
+                BIT     #200, @#177564
+                BEQ     l152320
+                MOVB    R0, @#177566
+                RETURN
+
+; =============== S U B R O U T I N E =======================================                
+
+; печать восьмеричного слова из R3
+
+pnum:        
+                       
+                MOV     #6, R1
+                CLR     R0
+
+l152344:                                              
+                ROL     R3
+                ROL     R0
+                ADD     #60, R0 ; '0'
+                CALL    putchar
+                DEC     R1
+                BEQ     space
+                CLR     R0
+                ROL     R3
+                ROL     R0
+                ROL     R3
+                ROL     R0
+                BR      l152344
+
+space:                                                   
+                MOV     #40, R0 ; ' '
+                CALL    putchar
+                RETURN
+
+MSGOK:          .ASCIZ  " COMPARE SUCCESS "<15><12>
+MSGER1:         .ASCIZ  " COMPARE ERROR "<15><12>
+MSGER0:         .ASCIZ  <15><12>" NO INT "<15><12>
+                .EVEN
+                .WORD	0
+                .END

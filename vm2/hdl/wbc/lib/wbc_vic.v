@@ -46,7 +46,7 @@ begin
       for (i=N-1; i>=0; i=i-1)
          iack[i] <= (nvec == i) & ireq[i] & wb_stb_i & ~wb_una_i & wb_irq_o & ~iack[i];
 
-      if (wb_stb_i & ~wb_ack_o & wb_irq_o)
+      if (wb_stb_i & ~wb_ack_o)
          if (wb_una_i)
             wb_dat_o <= rsel;
          else

@@ -573,7 +573,7 @@ begin
          if ({cpu.core.plm[9], cpu.core.plm[10],
                cpu.core.plm[11], cpu.core.plm[12]} == 4'b1100)
          begin
-         case(cpu.core.vec[3:0])
+         case(cpu.core.vsel[3:0])
             4'b0000: vec = "000030";
             4'b0001: vec = "000020";
             4'b0010: vec = "000010";
@@ -624,7 +624,7 @@ begin
    end
    $display("plm[%02O->%02O] %s %s %s %s %s %s %s %s %s %s %06O %06O %06O ir:%06O %1O %1O %02O",
             pa, cpu.core.na, type, word, wdir, sta, xr, yr, vec, op, sh, qbus,
-            cpu.core.pc, cpu.core.pc1, cpu.core.pc2,
+            cpu.core.cpc, cpu.core.pc1, cpu.core.pc2,
             cpu.core.ireg, pix, pri, pia);
    pa = cpu.core.na;
 end

@@ -591,7 +591,7 @@ always @(posedge vm_clk_n) if (alu_wr) io_rcdr <= io_rcd;
 always @(posedge vm_clk_n) if (alu_wr) io_cmdr <= io_cmd;
 always @(posedge vm_clk_p)
 begin
-   if (reset | wb_wdone)
+   if (mc_res | wb_wdone)
       io_pswr <= 1'b0;
    else
       if (wra & io_wr & ~na[0])
@@ -1081,7 +1081,7 @@ begin
    br[4] <= bir_stb ? wb_dat[13] : breg[13];
    br[5] <= bir_stb ? wb_dat[14] : breg[14];
    br[6] <= bir_stb ? wb_dat[15] : breg[15];
-   br[7] <= ~dc_b7;
+   br[7] <= ~(wr2 ? (ax[15:13] == 3'b111) : dc_b7);
    if (ws_cend)
    begin
       br[8]  <= psw_rc[0];

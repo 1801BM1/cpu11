@@ -279,6 +279,7 @@ add wave -noupdate -group Registers -radix octal -childformat {{{/tb2/cpu/core/r
 add wave -noupdate -group Registers -group pc /tb2/cpu/core/pc_wax
 add wave -noupdate -group Registers -group pc /tb2/cpu/core/pc_wr
 add wave -noupdate -group Registers -group pc /tb2/cpu/core/pc_ry
+add wave -noupdate -group Registers -group pc /tb2/cpu/core/cpc
 add wave -noupdate -group Registers -group pc1 -radix octal /tb2/cpu/core/pc1
 add wave -noupdate -group Registers -group pc1 /tb2/cpu/core/pc1_rx
 add wave -noupdate -group Registers -group pc1 /tb2/cpu/core/pc1_ry

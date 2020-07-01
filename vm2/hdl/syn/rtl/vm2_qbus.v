@@ -1367,7 +1367,7 @@ begin
    br[4] <= bir_stb ? pin_ad_in[13] : breg[13];
    br[5] <= bir_stb ? pin_ad_in[14] : breg[14];
    br[6] <= bir_stb ? pin_ad_in[15] : breg[15];
-   br[7] <= ~dc_b7;
+   br[7] <= ~(wr2 ? (ax[15:13] == 3'b111) : dc_b7);
    if (ws_cend)
    begin
       br[8]  <= psw_rc[0];
