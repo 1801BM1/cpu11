@@ -10,6 +10,7 @@ if exist .\vm1 call :proj vm1
 if exist .\vm2 call :proj vm2
 if exist .\vm3 call :proj vm3
 if exist .\lsi call :proj lsi
+if exist .\am4 call :proj am4
 if exist .\xen call :proj xen
 exit
 

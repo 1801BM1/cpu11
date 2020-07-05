@@ -50,7 +50,6 @@ EIS instructions.
 
 ## Supported FPGA development boards
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:
-<<<<<<< HEAD
 - [Altera DE0](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=364) - Altera Cyclone-III
 - [Altera DE1](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=53&No=83) - Altera Cyclone-II
 - [Altera DE2-115](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=139&No=502) - Altera Cyclone-IV

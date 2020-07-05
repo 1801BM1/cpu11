@@ -1,0 +1,183 @@
+;
+; Am2900 related definitions for the M4 PDP-11 processor.
+; Reverse engineered by 1801bm1@gmail.com
+; 
+; This file was created to serve as a master cpu file. The user must
+; edit it as required for his/her particular application.
+;
+;
+; Anyone finding errors in this file is requested to send a marked
+; listing or portion thereof to:  AMD CUSTOMER EDUCATION CENTER
+;			  490-A LAKESIDE DRIVE
+;		          PO BOX 453  MS#71
+;		          SUNNYVALE, CA  94086
+;
+; Advanced Micro Devices reserves the right to make changes in its
+; product without notice in order to improve design and performance
+; characteristics. The company assumes no responsibility for the use
+; of any circuits or programs described herein.
+
+		.title	"M4 procesor architecture definitions"
+;_________________________________________________________________________
+;
+; Specify the microcode word length for M4 processor
+;
+		.word	56
+;_________________________________________________________________________
+;
+; Am2901 source operands (R and S)
+;
+	AQ	.equ	Q#0	; port A, register Q
+	AB	.equ	Q#1	; port A, port B
+	ZQ	.equ	Q#2	; zeroes, register Q
+	ZB	.equ	Q#3	; zeroes, port B
+	ZA	.equ	Q#4	; zeroes, port A
+	DA	.equ	Q#5	; D data, port A
+	DQ	.equ	Q#6	; D data, register Q
+	DZ	.equ	Q#7	; D data, zeroes
+
+;_________________________________________________________________________
+;
+; Am2901 destination control
+;
+	QREG	.equ	Q#0	; Q <= F
+	NOP	.equ	Q#1	; no operations
+	RAMA	.equ	Q#2	; R[B] <= F, Y <= A
+	RAMF	.equ	Q#3	; R[B] <= F
+	RAMQD	.equ	Q#4	; R[B] <= F>>1, Q <= F>>1
+	RAMD	.equ	Q#5	; R[B] <= F>>1
+	RAMQU	.equ	Q#6	; R[B] <= F<<1, Q <= F<<1
+	RAMU	.equ	Q#7  	; R[B] <= F<<1
+
+;_________________________________________________________________________
+;
+; Am2901 port A and port B register selection
+;
+	A0	.equ	4X, H#0, 1X, B#0	; R0 selected on port A
+	A1	.equ	4X, H#1, 1X, B#0	; R1 selected on port A
+	A2	.equ	4X, H#2, 1X, B#0	; R2 selected on port A
+	A3	.equ	4X, H#3, 1X, B#0	; R3 selected on port A
+	A4	.equ	4X, H#4, 1X, B#0	; R4 selected on port A
+	A5	.equ	4X, H#5, 1X, B#0	; R5 selected on port A
+	A6	.equ	4X, H#6, 1X, B#0	; R6 selected on port A
+	A7	.equ	4X, H#7, 1X, B#0	; R7 selected on port A
+	A8	.equ	4X, H#8, 1X, B#0	; R8 selected on port A
+	A9	.equ	4X, H#9, 1X, B#0	; R9 selected on port A
+	A10	.equ	4X, H#A, 1X, B#0	; R10 selected on port A
+	A11	.equ	4X, H#B, 1X, B#0	; R11 selected on port A
+	A12	.equ	4X, H#C, 1X, B#0	; R12 selected on port A
+	A13	.equ	4X, H#D, 1X, B#0	; R13 selected on port A
+	A14	.equ	4X, H#E, 1X, B#0	; R14 selected on port A
+	A15	.equ	4X, H#F, 1X, B#0	; R15 selected on port A
+						;
+	Ad0	.equ	6X, B#00, 1X, B#1	; Rd selected on port A
+	As0	.equ	6X, B#10, 1X, B#1	; Rs selected on port A
+	Ad1	.equ	6X, B#01, 1X, B#1	; Rd+1 selected on port A
+	As1	.equ	6X, B#11, 1X, B#1	; Rs+1 selected on port A
+						;
+	B0	.equ	H#0, 4X, B#0, 1X	; R0 selected on port B
+	B1	.equ	H#1, 4X, B#0, 1X	; R1 selected on port B
+	B2	.equ	H#2, 4X, B#0, 1X	; R2 selected on port B
+	B3	.equ	H#3, 4X, B#0, 1X	; R3 selected on port B
+	B4	.equ	H#4, 4X, B#0, 1X	; R4 selected on port B
+	B5	.equ	H#5, 4X, B#0, 1X	; R5 selected on port B
+	B6	.equ	H#6, 4X, B#0, 1X	; R6 selected on port B
+	B7	.equ	H#7, 4X, B#0, 1X	; R7 selected on port B
+	B8	.equ	H#8, 4X, B#0, 1X	; R8 selected on port B
+	B9	.equ	H#9, 4X, B#0, 1X	; R9 selected on port B
+	B10	.equ	H#A, 4X, B#0, 1X	; R10 selected on port B
+	B11	.equ	H#B, 4X, B#0, 1X	; R11 selected on port B
+	B12	.equ	H#C, 4X, B#0, 1X	; R12 selected on port B
+	B13	.equ	H#D, 4X, B#0, 1X	; R13 selected on port B
+	B14	.equ	H#E, 4X, B#0, 1X	; R14 selected on port B
+	B15	.equ	H#F, 4X, B#0, 1X	; R15 selected on port B
+						;
+	Bs0	.equ	2X, B#00, 4X, B#1, 1X	; Rs selected on port B
+	Bd0	.equ	2X, B#10, 4X, B#1, 1X	; Rd selected on port B
+	Bs1	.equ	2X, B#01, 4X, B#1, 1X	; Rs+1 selected on port B
+	Bd1	.equ	2X, B#11, 4X, B#1, 1X	; Rd+1 selected on port B
+	                                        ;
+	C0	.equ	B#0			; ALU CF in lsb = 0
+	C1	.equ	B#1			; ALU CF in lsb = 1
+;_________________________________________________________________________
+;
+; Am2901 ALU function selection
+;
+	add	.def	36X, 10VH#000, 1VB#0, 3V, Q#0, 3V	; R + S
+	subr	.def	36X, 10VH#000, 1VB#0, 3V, Q#1, 3V	; S - R
+	subs	.def	36X, 10VH#000, 1VB#0, 3V, Q#2, 3V	; R - S
+	or	.def	36X, 10VH#000, 1VB#0, 3V, Q#3, 3V	; R | S
+	and	.def	36X, 10VH#000, 1VB#0, 3V, Q#4, 3V	; R & S
+	nand	.def	36X, 10VH#000, 1VB#0, 3V, Q#5, 3V	; ~R & S
+	xor	.def	36X, 10VH#000, 1VB#0, 3V, Q#6, 3V	; R ^ S
+	xnor	.def	36X, 10VH#000, 1VB#0, 3V, Q#7, 3V	; ~R ^ S
+
+	tst	.def	21X, B#11, 23X, 10VH#000, B#0, Q#134		; Z | A
+	tstd	.def	36X, B#0000000000, B#0, Q#137			; D | Z
+	nopa	.def	21X, B#11, 23X, B#0000000000, B#0, Q#147	; D & Z
+;_________________________________________________________________________
+;
+; Am29811 T-condition code mux and OR modification
+;
+	CCC	.equ	15X, H#0, 1X		; PSW C flag
+	CCCN	.equ	15X, H#8, 1X		; PSW ~C flag
+	CCV	.equ	15X, H#1, 1X		; PSW V flag
+	CCVN	.equ	15X, H#9, 1X		; PSW ~V flag
+	CCZ	.equ	15X, H#2, 1X		; PSW Z flag
+	CCZN	.equ	15X, H#A, 1X		; PSW ~Z flag
+	CCN	.equ	15X, H#3, 1X		; PSW N flag
+	CCNN	.equ	15X, H#B, 1X		; PSW ~N flag
+						;
+	CCT	.equ	15X, H#4, 1X		; Counter == 255
+	CCTN	.equ	15X, H#C, 1X		; Counter != 255
+	CCI	.equ	15X, H#5, 1X		; no interrupt request
+	CCIN	.equ	15X, H#D, 1X		; interrupt request
+	CCE	.equ	15X, H#5, 1X		; bus error
+	CCEN	.equ	15X, H#D, 1X		; no bus error
+	CCA	.equ	15X, H#7, 1X		; ACLO
+	CCAN	.equ	15X, H#F, 1X		; nACLO
+	                                	;
+	OR_MD	.equ	Q#0, 16X, B#0		; destination mode from PDP-11 opcode
+	OR_MS	.equ	Q#1, 16X, B#0		; source mode from PDP-11 opcode
+	OR_RR	.equ	Q#2, 16X, B#0		; direct register mode selector
+	OR_IV	.equ	Q#3, 16X, B#0		; interrupt vector selector
+	OR_ONE	.equ	Q#4, 16X, B#0		; just one
+	OR_BT  	.equ	Q#5, 16X, B#0		; byte operation selector (LA0, byte flag)
+	OR_TC	.equ	Q#6, 16X, B#0		; check timer T5 and psw_xc
+	OR_R67	.equ	Q#7, 16X, B#0		; port A register is not 0b*11*
+						;
+;_________________________________________________________________________
+;
+	dpsw	.equ	16V%X, 5X, B#00, 33X	; D-mux, read psw and counter
+	dbus	.equ	16V%X, 5X, B#01, 33X	; data from the Q-bus
+	dimm	.def	16V%,  5X, B#10, 33X	; immediate data for ALU_D
+	dswp	.equ	16V%X, 5X, B#11, 33X	; swap byte from ALU function
+	dmux	.equ	16V%X, 5X, B#11, 33X	; default value
+						;
+;_________________________________________________________________________
+;
+; Am29811 instruction set
+;
+	naf	.sub	12V%H#000         		; next address field
+	onc	.sub	20VB#XXXXXXXXXXXXXXX00001	; Am2911 OR multiplexer & CC
+
+	jz	.def	56H#0000000	  	; reset stack, micro PC, address
+	cjs	.def	naf, onc, H#1, 20X	; conditional jump subroutine, push stack
+	jmap	.def	12X, onc, H#2, 20X	; unconditional jump to memory map (DI)
+	cjp	.def	naf, onc, H#3, 20X	; conditional jump pipeline 
+	push	.def	12X, onc, H#4, 20X	; push stack, load reg maybe, continue
+	jsrp	.def	naf, onc, H#5, 20X	; jump subroutine from reg (F) or pipe(T)
+	cjv	.def	naf, onc, H#6, 20X	; cond jump to vector inter (DI)
+	jrp	.def	naf, onc, H#7, 20X	; jump to register (F) or pipe (T)
+	rfct	.def	12X, onc, H#8, 20X	; do loop repeat until CTR=0 - stack
+	rpct	.def	naf, onc, H#9, 20X	; do loop until CTR=0 - pipe
+	crtn	.def	12X, onc, H#A, 20X	; conditional return, pop stack (T)
+	cjpp	.def	naf, onc, H#B, 20X	; conditional jump pipeline, pop stack
+	ldct	.def	12X, onc, H#C, 20X	; load register, continue
+	loop	.def	12X, onc, H#D, 20X	; do loop until test=T - stack
+	cont	.def	12X, onc, H#E, 20X	; continue
+	jp	.def	naf, onc, H#F, 20X	; unconditional jump pipeline
+
+;_________________________________________________________________________
+;
+		.end
