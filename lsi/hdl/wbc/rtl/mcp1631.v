@@ -20,10 +20,23 @@ module mcp1631
    input  [10:0]  pin_lc,        // location counter
    output [21:0]  pin_mo         // microinstruction bus
 );
+
 //______________________________________________________________________________
 //
 // Memory array and its inititialization with 1631-10/07/15 content
+// Special embedded memory depth control attribute:
 //
+`ifdef LSI11_DEPTH_MICROM
+//
+// Special embedded memory depth control attribute:
+//
+// `define LSI11_DEPTH_MICROM  (* max_depth = 1024 *)
+//
+// It should be globally defined as Verilog macro in synthesis
+// tool settings (Quartus/ISE) if supported by FPGA family/tool
+//
+`LSI11_DEPTH_MICROM
+`endif
 reg [21:0] rom [0:2047];
 reg [21:0] q;
 reg [10:0] lcr;
@@ -31,7 +44,15 @@ reg [3:0] ttl;
 
 initial
 begin
+//
+// The filename for MicROM content might be explicitly
+// specified in synthesys/simulating tool settings
+//
+`ifdef LSI11_FILE_MICROM
+   $readmemb(`LSI11_FILE_MICROM, rom);
+`else
    $readmemb("..\\..\\..\\..\\rom\\all_22b.rom", rom);
+`endif
 end
 
 assign pin_mo[17:0] = q[17:0];

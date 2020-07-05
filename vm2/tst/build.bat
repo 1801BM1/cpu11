@@ -20,6 +20,7 @@ if not exist .\out mkdir out
 srec_cat %cpu11_tmp%\%1.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o .\out\test.mem --VMem 16
 srec_cat %cpu11_tmp%\%1.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o .\out\test.hex -Intel
 srec_cat %cpu11_tmp%\%1.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o .\out\test.mif -Memory_Initialization_File 16 -obs=2
+copy .\out\test.mif ..\..\xen\tst\vm2.mif >> NUL
 
 @echo on
 exit

@@ -213,11 +213,11 @@ assign m_ra = wb_ra[0] | wb_ra[1];
 //
 always @(posedge vm_clk_p or posedge m_sr)
 begin
-   if (m_sr | ~vm_clk_slow)
+   if (m_sr)
       m_bbusy <= 1'b0;
    else
       if (wb_wset)
-         m_bbusy <= 1'b1;
+         m_bbusy <= vm_clk_slow;
       else
          if (wb_wclr)
             m_bbusy <= 1'b0;
@@ -228,19 +228,22 @@ assign wb_wclr = ~vm_clk_slow | (vm_clk_ena & (wb_wcnt == 8'h01));
 
 always @(posedge vm_clk_p or posedge m_sr)
 begin
-   if (m_sr | ~vm_clk_slow)
+   if (m_sr)
       wb_wcnt <= 8'h00;
    else
    begin
-      if (m_bbusy & m_breq)
-      begin
-         if (vm_clk_ena)
-            wb_wcnt <= wb_wcnt - 8'h01;
-      end
+      if (~vm_clk_slow)
+         wb_wcnt <= 8'h00;
       else
-         if (~vm_clk_ena & vm_clk_slow & (wb_wcnt != 8'hFF))
-            wb_wcnt <= wb_wcnt + 8'h01;
-      end
+         if (m_bbusy & m_breq)
+         begin
+            if (vm_clk_ena)
+               wb_wcnt <= wb_wcnt - 8'h01;
+         end
+         else
+            if (~vm_clk_ena & vm_clk_slow & (wb_wcnt != 8'hFF))
+               wb_wcnt <= wb_wcnt + 8'h01;
+         end
 end
 
 //_____________________________________________________________________________
