@@ -1832,7 +1832,7 @@ end
 //
 // Wishbone master and interrupt interfaces
 //
-assign wb_start   = (wb_wclr & iop_stb)
+assign wb_start   = (~wb_wset & iop_stb)
                   | (wb_wclr & wb_swait);
 assign wb_wdone   = wb_stb & wbm_ack_i &  wb_we;
 assign wb_rdone   = wb_stb & (wbm_ack_i | to_rply) & ~wb_we;
@@ -1899,7 +1899,7 @@ begin
    else
       if (wb_swait)
       begin
-         if (vm_clk_ena)
+         if (vm_clk_ena | ~vm_clk_slow)
             wb_wcnt <= wb_wcnt - 6'o01;
       end
       else

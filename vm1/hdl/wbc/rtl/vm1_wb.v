@@ -1330,7 +1330,7 @@ begin
    end
 end
 
-assign wb_start   = (wb_wclr & wb_uplr)
+assign wb_start   = (~wb_wset & wb_uplr)
                   | (wb_wclr & wb_swait);
 assign wb_wdone   = wb_stb & wbm_ack_i &  wb_we;
 assign wb_rdone   = wb_stb & wbm_ack_i & ~wb_we;
@@ -1361,7 +1361,7 @@ begin
    else
       if (wb_swait)
       begin
-         if (vm_clk_ena)
+         if (vm_clk_ena | ~vm_clk_slow)
             wb_wcnt <= wb_wcnt - 10'o0001;
       end
       else

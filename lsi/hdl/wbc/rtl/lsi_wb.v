@@ -213,7 +213,7 @@ assign m_ra = wb_ra[0] | wb_ra[1];
 //
 always @(posedge vm_clk_p or posedge m_sr)
 begin
-   if (m_sr)
+   if (m_sr | ~vm_clk_slow)
       m_bbusy <= 1'b0;
    else
       if (wb_wset)
@@ -228,7 +228,7 @@ assign wb_wclr = ~vm_clk_slow | (vm_clk_ena & (wb_wcnt == 8'h01));
 
 always @(posedge vm_clk_p or posedge m_sr)
 begin
-   if (m_sr)
+   if (m_sr | ~vm_clk_slow)
       wb_wcnt <= 8'h00;
    else
    begin
