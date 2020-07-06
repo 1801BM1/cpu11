@@ -1215,19 +1215,18 @@ set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
 set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name VERILOG_FILE ../../lib/config.v
 set_global_assignment -name VERILOG_FILE ../rtl/de2_top.v
 set_global_assignment -name VERILOG_FILE ../rtl/de2_alib.v
 set_global_assignment -name VERILOG_FILE ../rtl/vm1_alib.v
-set_global_assignment -name MIF_FILE ../rtl/vm1_reg.mif
-set_global_assignment -name MIF_FILE ../../tst/test.mif
+set_global_assignment -name MIF_FILE ../../lib/vm1_reg.mif
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm1.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm2.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_lsi.v
+set_global_assignment -name MIF_FILE ../../tst/test.mif
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_wb.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_plm.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_tve.v
@@ -1238,3 +1237,7 @@ set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp_plm.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1611.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1621.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1631.v
+set_global_assignment -name MIF_FILE ../../tst/lsi.mif
+set_global_assignment -name MIF_FILE ../../tst/vm1.mif
+set_global_assignment -name MIF_FILE ../../tst/vm2.mif
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -111,9 +111,9 @@ set_clock_uncertainty -fall_from [get_clocks {clk}] -fall_to [get_clocks {clk}] 
 # Set False Path
 #**************************************************************
 
-set_false_path -from [get_keepers {reset|key_long}] -to [get_keepers {reset|key_syn*}]
-set_false_path -from [get_keepers {reset|key_down}] -to [get_keepers {reset|key_syn*}]
-set_false_path -from [get_cells {reset|pwr_event}] 
+set_false_path -from [get_keepers {*:cpu|wbc_rst:reset|key_long}] -to [get_keepers {*:cpu|wbc_rst:reset|key_syn*}]
+set_false_path -from [get_keepers {*:cpu|wbc_rst:reset|key_down}] -to [get_keepers {*:cpu|wbc_rst:reset|key_syn*}]
+set_false_path -from [get_cells {*:cpu|wbc_rst:reset|pwr_event}] 
 
 #**************************************************************
 # Set Multicycle Path
