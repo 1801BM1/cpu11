@@ -499,40 +499,55 @@ set_global_assignment -name USE_CONFIGURATION_DEVICE ON
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED WITH WEAK PULL-UP"
 set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY ../../out/de1
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY ./out
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
-set_global_assignment -name EDA_NETLIST_WRITER_OUTPUT_DIR ../../sim/de1 -section_id eda_simulation
+set_global_assignment -name EDA_NETLIST_WRITER_OUTPUT_DIR ../sim -section_id eda_simulation
 set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
 set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
 set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb1 -section_id eda_simulation
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
 set_global_assignment -name EDA_TEST_BENCH_NAME tb1 -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb1
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb1 -section_id tb1
-set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de1_tb1.v -section_id tb1
+set_global_assignment -name EDA_TEST_BENCH_FILE ../rtl/de1_tb.v -section_id tb1
 set_global_assignment -name ALLOW_POWER_UP_DONT_CARE OFF
 set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
+set_global_assignment -name VERILOG_MACRO "LSI11_DEPTH_MICROM=(* max_depth = 1024 *)"
+set_global_assignment -name VERILOG_MACRO "LSI11_FILE_MICROM=\"..\\\\..\\\\..\\\\lsi\\\\rom\\\\all_22b.rom\""
 set_global_assignment -name SAVE_DISK_SPACE OFF
-set_global_assignment -name VERILOG_FILE ../../rtl/mcp1631.v
-set_global_assignment -name VERILOG_FILE ../../rtl/mcp1621.v
-set_global_assignment -name VERILOG_FILE ../../rtl/mcp1611.v
-set_global_assignment -name VERILOG_FILE ../../rtl/mcp_plm.v
-set_global_assignment -name VERILOG_FILE ../../rtl/lsi_wb.v
-set_global_assignment -name SOURCE_FILE ../../lib/de1/config.v
-set_global_assignment -name VERILOG_FILE ../../lib/de1/de1_top.v
-set_global_assignment -name VERILOG_FILE ../../lib/de1/de1_alib.v
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
+set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
+set_global_assignment -name VERILOG_FILE ../../lib/config.v
+set_global_assignment -name VERILOG_FILE ../rtl/de1_tb.v
+set_global_assignment -name VERILOG_FILE ../rtl/de1_top.v
+set_global_assignment -name VERILOG_FILE ../rtl/de1_alib.v
+set_global_assignment -name VERILOG_FILE ../rtl/vm1_alib.v
+set_global_assignment -name MIF_FILE ../../lib/vm1_reg.mif
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
-set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
-set_global_assignment -name HEX_FILE ../../../../tst/out/test.hex
-set_global_assignment -name OPTIMIZE_HOLD_TIMING "IO PATHS AND MINIMUM TPD PATHS"
-set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
-set_global_assignment -name FITTER_EFFORT "AUTO FIT"
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm1.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm2.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_lsi.v
+set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_wb.v
+set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_plm.v
+set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_tve.v
+set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_wb.v
+set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_plm.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/lsi_wb.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp_plm.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1611.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1621.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1631.v
+set_global_assignment -name MIF_FILE ../../tst/lsi.mif
+set_global_assignment -name MIF_FILE ../../tst/vm1.mif
+set_global_assignment -name MIF_FILE ../../tst/vm2.mif
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -19,7 +19,7 @@
 ## PROGRAM "Quartus II"
 ## VERSION "Version 12.1 Build 243 01/31/2013 Service Pack 1 SJ Full Version"
 
-## DATE    "Sat May 16 01:05:29 2020"
+## DATE    "Mon Jul 06 21:54:07 2020"
 
 ##
 ## DEVICE  "EP2C20F484C7"
@@ -45,7 +45,8 @@ create_clock -name {de1_clock_50} -period 20.000 -waveform { 0.000 10.000 } [get
 # Create Generated Clock
 #**************************************************************
 
-create_generated_clock -name {corepll|altpll_component|pll|clk[0]} -source [get_pins {corepll|altpll_component|pll|inclk[0]}] -duty_cycle 50.000 -multiply_by 6 -divide_by 5 -master_clock {de1_clock_50} [get_pins {corepll|altpll_component|pll|clk[0]}] 
+create_generated_clock -name {corepll|altpll_component|pll|clk[0]} -source [get_pins {corepll|altpll_component|pll|inclk[0]}] -duty_cycle 50.000 -multiply_by 1 -master_clock {de1_clock_50} [get_pins {corepll|altpll_component|pll|clk[0]}] 
+create_generated_clock -name {corepll|altpll_component|pll|clk[1]} -source [get_pins {corepll|altpll_component|pll|inclk[0]}] -duty_cycle 50.000 -multiply_by 1 -phase 180.000 -master_clock {de1_clock_50} [get_pins {corepll|altpll_component|pll|clk[1]}] 
 
 
 #**************************************************************
@@ -82,9 +83,9 @@ create_generated_clock -name {corepll|altpll_component|pll|clk[0]} -source [get_
 # Set False Path
 #**************************************************************
 
-set_false_path -from [get_keepers {reset|key_long}] -to [get_keepers {reset|key_syn*}]
-set_false_path -from [get_keepers {reset|key_down}] -to [get_keepers {reset|key_syn*}]
-set_false_path -from [get_cells {reset|pwr_event}] 
+set_false_path -from [get_keepers {*:cpu|wbc_rst:reset|key_long}] -to [get_keepers {*:cpu|wbc_rst:reset|key_syn*}]
+set_false_path -from [get_keepers {*:cpu|wbc_rst:reset|key_down}] -to [get_keepers {*:cpu|wbc_rst:reset|key_syn*}]
+set_false_path -from [get_cells {*:cpu|wbc_rst:reset|pwr_event}] 
 
 
 #**************************************************************
