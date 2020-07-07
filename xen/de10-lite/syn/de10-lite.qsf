@@ -430,8 +430,8 @@ set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
 set_global_assignment -name CYCLONEIII_CONFIGURATION_DEVICE AUTO
 
 
-set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
-set_global_assignment -name TIMEQUEST_DO_CCPP_REMOVAL ON
+set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
+set_global_assignment -name TIMING_ANALYZER_DO_CCPP_REMOVAL ON
 set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION OFF
 
 set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
@@ -442,7 +442,7 @@ set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY "../../out/de10-lite"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY "./out"
 set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name MISC_FILE "de10-lite.dpf"
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 7
@@ -454,16 +454,8 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
-set_global_assignment -name VERILOG_FILE "../../lib/de10-lite/config.v"
-set_global_assignment -name VERILOG_FILE "../../lib/de10-lite/de10_top.v"
-set_global_assignment -name VERILOG_FILE "../../lib/de10-lite/de10_alib.v"
-set_global_assignment -name VERILOG_FILE ../../rtl/vm2_wb.v
-set_global_assignment -name VERILOG_FILE ../../rtl/vm2_plm.v
-set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
-set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
-set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
-set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
-set_global_assignment -name HEX_FILE ../../../../tst/out/test.hex
+
+
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
@@ -478,6 +470,42 @@ set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de10_vga_vs
+set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name VERILOG_MACRO "LSI11_DEPTH_MICROM=(* max_depth = 1024 *)"
+set_global_assignment -name VERILOG_MACRO "LSI11_FILE_MICROM=\"..\\\\..\\\\..\\\\lsi\\\\rom\\\\all_22b.rom\""
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb1 -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_NAME tb1 -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb1
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb1 -section_id tb1
+set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de10_tb1.v -section_id tb1
+set_global_assignment -name EDA_NETLIST_WRITER_OUTPUT_DIR ../sim -section_id eda_simulation
+set_global_assignment -name VERILOG_FILE ../../lib/config.v
+set_global_assignment -name VERILOG_FILE ../rtl/de10_top.v
+set_global_assignment -name VERILOG_FILE ../rtl/de10_alib.v
+set_global_assignment -name VERILOG_FILE ../rtl/vm1_alib.v
+set_global_assignment -name MIF_FILE ../../lib/vm1_reg.mif
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm1.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm2.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_lsi.v
+set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_wb.v
+set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_plm.v
+set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_tve.v
+set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_wb.v
+set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_plm.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/lsi_wb.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp_plm.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1611.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1621.v
+set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1631.v
+set_global_assignment -name MIF_FILE ../../tst/lsi.mif
+set_global_assignment -name MIF_FILE ../../tst/vm1.mif
+set_global_assignment -name MIF_FILE ../../tst/vm2.mif
 set_global_assignment -name CDF_FILE "de10-lite.cdf"
-set_global_assignment -name OPTIMIZATION_MODE BALANCED
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

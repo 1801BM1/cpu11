@@ -4,7 +4,7 @@ JedecChain;
 	DefaultMfr(6E);
 
 	P ActionCode(Cfg)
-		Device PartName(10M50DAF484) Path("E:/GIT/cpu11/vm1/hdl/wbc/out/de10-lite/") File("de10-lite.sof") MfrSpec(OpMask(1));
+		Device PartName(10M50DAF484) Path("E:/GIT/cpu11/xen/de10-lite/syn/out/") File("de10-lite.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

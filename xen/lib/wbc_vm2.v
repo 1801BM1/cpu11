@@ -87,7 +87,7 @@ assign   wb_clk = sys_clk_p;
 assign   sys_init = vm_init_out;
 assign   baud = 921600/`CONFIG_BAUD_RATE-1;
 
-assign   vm_halt = 1'b0; // ext_halt;
+assign   vm_halt = ext_halt;
 assign   vm_evnt = i50Hz & ena_timer;
 
 assign   sys_us = ena_us;

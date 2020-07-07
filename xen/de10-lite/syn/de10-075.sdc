@@ -1,4 +1,4 @@
-## Generated SDC file "de10-lite.sdc"
+## Generated SDC file "de10-lite.out.sdc"
 
 ## Copyright (C) 2018  Intel Corporation. All rights reserved.
 ## Your use of Intel Corporation's design tools, logic functions 
@@ -19,7 +19,7 @@
 ## PROGRAM "Quartus Prime"
 ## VERSION "Version 18.0.0 Build 614 04/24/2018 SJ Standard Edition"
 
-## DATE    "Mon May 18 22:50:29 2020"
+## DATE    "Tue Jul 07 23:22:00 2020"
 
 ##
 ## DEVICE  "10M50DAF484C7G"
@@ -38,15 +38,15 @@ set_time_format -unit ns -decimal_places 3
 # Create Clock
 #**************************************************************
 
-create_clock -name {clk} -period 20.000 -waveform { 0.000 10.000 } [get_ports {de10_clock_50}]
+create_clock -name {de10_clock_50} -period 20.000 -waveform { 0.000 10.000 } [get_ports {de10_clock_50}]
 
 
 #**************************************************************
 # Create Generated Clock
 #**************************************************************
 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50/1 -multiply_by 4 -divide_by 3 -master_clock {clk} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50/1 -multiply_by 4 -divide_by 3 -phase 180/1 -master_clock {clk} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
+create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 3 -divide_by 2 -master_clock {de10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
+create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 3 -divide_by 2 -phase 180.000 -master_clock {de10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
 
 
 #**************************************************************
@@ -59,24 +59,24 @@ create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1
 # Set Clock Uncertainty
 #**************************************************************
 
-set_clock_uncertainty -rise_from [get_clocks {clk}] -rise_to [get_clocks {clk}]  0.040  
-set_clock_uncertainty -rise_from [get_clocks {clk}] -fall_to [get_clocks {clk}]  0.040  
-set_clock_uncertainty -rise_from [get_clocks {clk}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.140  
-set_clock_uncertainty -rise_from [get_clocks {clk}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.200  
-set_clock_uncertainty -rise_from [get_clocks {clk}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.140  
-set_clock_uncertainty -rise_from [get_clocks {clk}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.200  
-set_clock_uncertainty -fall_from [get_clocks {clk}] -rise_to [get_clocks {clk}]  0.040  
-set_clock_uncertainty -fall_from [get_clocks {clk}] -fall_to [get_clocks {clk}]  0.040  
-set_clock_uncertainty -fall_from [get_clocks {clk}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.140  
-set_clock_uncertainty -fall_from [get_clocks {clk}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.200  
-set_clock_uncertainty -fall_from [get_clocks {clk}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.140  
-set_clock_uncertainty -fall_from [get_clocks {clk}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.200  
-set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.040  
-set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.040  
-set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.040  
-set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.040  
+set_clock_uncertainty -rise_from [get_clocks {de10_clock_50}] -rise_to [get_clocks {de10_clock_50}]  0.020  
+set_clock_uncertainty -rise_from [get_clocks {de10_clock_50}] -fall_to [get_clocks {de10_clock_50}]  0.020  
+set_clock_uncertainty -rise_from [get_clocks {de10_clock_50}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.070  
+set_clock_uncertainty -rise_from [get_clocks {de10_clock_50}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.100  
+set_clock_uncertainty -rise_from [get_clocks {de10_clock_50}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.070  
+set_clock_uncertainty -rise_from [get_clocks {de10_clock_50}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.100  
+set_clock_uncertainty -fall_from [get_clocks {de10_clock_50}] -rise_to [get_clocks {de10_clock_50}]  0.020  
+set_clock_uncertainty -fall_from [get_clocks {de10_clock_50}] -fall_to [get_clocks {de10_clock_50}]  0.020  
+set_clock_uncertainty -fall_from [get_clocks {de10_clock_50}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.070  
+set_clock_uncertainty -fall_from [get_clocks {de10_clock_50}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.100  
+set_clock_uncertainty -fall_from [get_clocks {de10_clock_50}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -setup 0.070  
+set_clock_uncertainty -fall_from [get_clocks {de10_clock_50}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -hold 0.100  
+set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.020  
+set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.020  
 set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
 set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
+set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.020  
+set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.020  
 set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
 set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}] -fall_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
 set_clock_uncertainty -rise_from [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[1]}] -rise_to [get_clocks {corepll|altpll_component|auto_generated|pll1|clk[0]}]  0.020  
@@ -111,6 +111,9 @@ set_clock_uncertainty -fall_from [get_clocks {corepll|altpll_component|auto_gene
 # Set False Path
 #**************************************************************
 
+set_false_path -from [get_keepers {*:cpu|wbc_rst:reset|key_long}] -to [get_keepers {*:cpu|wbc_rst:reset|key_syn*}]
+set_false_path -from [get_keepers {*:cpu|wbc_rst:reset|key_down}] -to [get_keepers {*:cpu|wbc_rst:reset|key_syn*}]
+set_false_path -from [get_cells {*:cpu|wbc_rst:reset|pwr_event}] 
 
 
 #**************************************************************
