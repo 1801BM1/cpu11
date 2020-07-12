@@ -1,3 +1,5 @@
+`include "../../lib/config.v"
+
 module ax309_mem
 (
    input [12:0]   addra,
@@ -32,7 +34,7 @@ assign douta = mem[areg];
 //
 initial
 begin
-   $readmemh("\\..\\..\\..\\..\\tst\\out\\test.mem", mem, 0, 8191);
+   $readmemh(`CPU_TEST_MEMF, mem, 0, 8191);
 end
 endmodule
 
