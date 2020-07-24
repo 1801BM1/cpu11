@@ -27,6 +27,7 @@ call :aclean %1 wbc de0
 call :aclean %1 wbc de1
 call :aclean %1 wbc de2-115
 call :aclean %1 wbc de10-lite
+call :aclean %1 wbc qc5
 call :xclean %1 wbc ax309
 
 del *.qws *.sdo *.vo *.qip *.sft *.wlf *.jdi *.ver *.mem *.xrf *.bak msim_transcript. vm1_run_msim*.do modelsim.ini *.rpt /q /s
@@ -62,6 +63,7 @@ call :xen_aclean de0
 call :xen_aclean de1
 call :xen_aclean de2-115
 call :xen_aclean de10-lite
+call :xen_aclean qc5
 exit /b
 
 :xen_aclean

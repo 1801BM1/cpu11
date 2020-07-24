@@ -97,10 +97,11 @@ be run before building FPGA bitstream to include test software image
 All results are just approximate estimations by synthesis tools (Quartus/XST/Vivado) on sample
 projects.
 
-| Board   | FPGA            | Family      | Fmax    | LUTs | FFs | MEM   |
-|---------|-----------------|-------------|---------|------|-----|-------|
-| DE0     | EP3C16F484C7N   | Cyclone III | 111 MHz | 1420 | 427 | 1 M9K |
-| DE1     | EP2C20F484C7N   | Cyclone II  | 94 MHz  | 1410 | 464 | 1 M4K |
-| DE2-115 | EP4CE115F29C7N  | Cyclone IV  | 111 MHz | 1370 | 425 | 1 M9K |
-| AX309   | XC6SLX9FTG256-2 | Spartan 6   | 72 MHz  | n/a  | 387 | 1 BR8 |
-| DE10-LT | 10M50DAF484C7G  | Max 10      | 82 MHz  | 1373 | 469 | 1 M9K |
+| Board   | FPGA            | Family      | Fmax    | LUTs | FFs | MEM    |
+|---------|-----------------|-------------|---------|------|-----|--------|
+| DE0     | EP3C16F484C7N   | Cyclone III | 111 MHz | 1420 | 427 | 1 M9K  |
+| DE1     | EP2C20F484C7N   | Cyclone II  | 94 MHz  | 1410 | 464 | 1 M4K  |
+| DE2-115 | EP4CE115F29C7N  | Cyclone IV  | 111 MHz | 1370 | 425 | 1 M9K  |
+| AX309   | XC6SLX9FTG256-2 | Spartan 6   | 72 MHz  | n/a  | 387 | 1 BR8  |
+| DE10-LT | 10M50DAF484C7G  | Max 10      | 82 MHz  | 1373 | 469 | 1 M9K  |
+| QC5     | 5CEFA2F23I7N    | Cyclone V   | 131 MHz | 693  | 384 | 1 M10K |
