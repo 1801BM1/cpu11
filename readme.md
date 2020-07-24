@@ -56,3 +56,4 @@ The synchronous models are planned to be run (and appropriate sample projects to
 - [Altera DE10-lite](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=218&No=1021) - Max-10
 - [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c) - Spartan-6
 - [QMTech QC5-core](https://github.com/ChinaQMTECH/QM_CYCLONE_V) - Cyclone-V
+- [QMTech QC10-core](https://github.com/ChinaQMTECH/QM_Cyclone10_10CL006) - Cyclone-10LP

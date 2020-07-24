@@ -105,3 +105,5 @@ projects.
 | AX309   | XC6SLX9FTG256-2 | Spartan 6   | 72 MHz  | n/a  | 387 | 1 BR8  |
 | DE10-LT | 10M50DAF484C7G  | Max 10      | 82 MHz  | 1373 | 469 | 1 M9K  |
 | QC5     | 5CEFA2F23I7N    | Cyclone V   | 131 MHz | 693  | 384 | 1 M10K |
+| QC10    | 10CL006U256CN8  | Cyclone 10  | 108 MHz | 1349 | 694 | 1 M9K  |
+
