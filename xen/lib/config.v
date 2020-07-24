@@ -38,7 +38,9 @@
 //
 // External oscillator clock, feeds the PLLs
 //
+`ifndef  CONFIG_OSC_CLOCK
 `define  CONFIG_OSC_CLOCK     50000000
+`endif
 //
 // Global system clock
 //

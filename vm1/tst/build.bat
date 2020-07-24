@@ -25,7 +25,7 @@ copy .\out\test.mif ..\..\xen\tst\vm1.mif >> NUL
 copy .\out\test.mem ..\..\xen\tst\vm1.mem >> NUL
 
 @echo on
-exit
+exit /b
 
 :blank
 echo.

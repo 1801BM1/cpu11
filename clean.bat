@@ -60,6 +60,7 @@ call :xen_aclean de2-115
 call :xen_aclean de10-lite
 call :xen_aclean qc5
 call :xen_aclean qc10
+call :xen_tclean eg4
 exit /b
 
 :xen_aclean
@@ -77,12 +78,18 @@ if exist .\xen\%1\sim\*rtl_verilog.do		del .\xen\%1\sim\*rtl_verilog.do /s /q
 exit /b
 
 :xen_xclean
+for /r "./xen/%~1/rtl" %%9 in (*.v) do atxt32 %%9 %%9 -s3 -f
 if exist .\xen\%1\syn\work			rd  .\xen\%1\syn\work /s /q
 if exist .\xen\%1\syn\iseconfig			rd  .\xen\%1\syn\iseconfig /s /q
 if exist .\xen\%1\syn\ipcore_dir		rd  .\xen\%1\syn\ipcore_dir /s /q
 if exist .\xen\%1\syn\%1_xdb			rd  .\xen\%1\syn\%1_xdb /s /q
 exit /b
 
+:xen_tclean
+for /r "./xen/%~1/rtl" %%9 in (*.v) do atxt32 %%9 %%9 -s3 -f
+if exist .\xen\%1\syn\*.log 			del .\xen\%1\syn\*.log /s /q
+if exist .\xen\%1\syn\*.bit 			del .\xen\%1\syn\*.bit /s /q
+exit /b
 
 :blank
 echo.

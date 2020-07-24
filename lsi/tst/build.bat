@@ -25,7 +25,7 @@ copy .\out\test.mif ..\..\xen\tst\lsi.mif >> NUL
 copy .\out\test.mem ..\..\xen\tst\lsi.mem >> NUL
 
 @echo on
-exit
+exit /b
 
 :blank
 echo.

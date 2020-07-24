@@ -1,0 +1,8 @@
+set_pin_assignment	{ eg4_button[0] }	{ LOCATION = K16; IOSTANDARD = LVTTL33; }
+set_pin_assignment	{ eg4_clock_24 }	{ LOCATION = K14; IOSTANDARD = LVTTL33; }
+set_pin_assignment	{ eg4_led[0] }	{ LOCATION = R3; IOSTANDARD = LVTTL33; }
+set_pin_assignment	{ eg4_led[1] }	{ LOCATION = J14; IOSTANDARD = LVTTL33; }
+set_pin_assignment	{ eg4_led[2] }	{ LOCATION = P13; IOSTANDARD = LVTTL33; }
+set_pin_assignment	{ eg4_uart_txd }	{ LOCATION = J13; IOSTANDARD = LVTTL33; }
+set_pin_assignment	{ eg4_uart_rxd }	{ LOCATION = H13; IOSTANDARD = LVTTL33; }
+

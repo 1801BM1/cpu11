@@ -50,10 +50,12 @@ EIS instructions.
 
 ## Supported FPGA development boards
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:
-- [Altera DE0](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=364) - Cyclone-III
-- [Altera DE1](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=53&No=83) - Cyclone-II
-- [Altera DE2-115](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=139&No=502) - Cyclone-IV
-- [Altera DE10-lite](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=218&No=1021) - Max-10
-- [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c) - Spartan-6
-- [QMTech QC5-core](https://github.com/ChinaQMTECH/QM_CYCLONE_V) - Cyclone-V
-- [QMTech QC10-core](https://github.com/ChinaQMTECH/QM_Cyclone10_10CL006) - Cyclone-10LP
+<<<<<<< HEAD
+- [Altera DE0](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=364) - Altera Cyclone-III
+- [Altera DE1](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=53&No=83) - Altera Cyclone-II
+- [Altera DE2-115](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=139&No=502) - Altera Cyclone-IV
+- [Altera DE10-lite](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=218&No=1021) - Altera Max-10
+- [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c) - Xilinx Spartan-6
+- [QMTech QC5-core](https://github.com/ChinaQMTECH/QM_CYCLONE_V) - Altera Cyclone-V
+- [QMTech QC10-core](https://github.com/ChinaQMTECH/QM_Cyclone10_10CL006) - Altera Cyclone-10LP
+- [Lichee Tang Primer](https://tang.sipeed.com/en/) - Anlogic Eagle EG4S20
