@@ -30,10 +30,11 @@ assign me_n  = mx[0];
 //
 // Unconditional commands
 //
-// 0000  jz    di, ctl, cte
-// 0010  jmap  di, me
-// 1110  cont  pc
-// 1111  jp    di
+// 0000:  jz    di, ctl, cte
+// 0010:  jmap  di, me
+// 1100:  ldct  pc, ctl
+// 1110:  cont  pc
+// 1111:  jp    di
 //
 // Conditional commands
 //             miss        taken
@@ -47,7 +48,6 @@ assign me_n  = mx[0];
 // 1001:  rpct di, cte     pc
 // 1010:  crtn pc          sp, pop
 // 1011:  cjpp pc          di, pop
-// 1100:  ldct pc, ctl     pc, ctl
 // 1101:  loop sp          pc, pop
 //
 always @(*)
@@ -64,7 +64,7 @@ case(i[3:0])
    4'b1001: mx = ~tst ? 7'b1111101 : 7'b0011111;   // rpct - repeat pl, ctr != 0
    4'b1010: mx = ~tst ? 7'b0010111 : 7'b1000111;   // crtn - cond return
    4'b1011: mx = ~tst ? 7'b0010111 : 7'b1100111;   // cjpp - cond jump pl & pop
-   4'b1100: mx = ~tst ? 7'b0011011 : 7'b0011011;   // ldct - ld cntr & continue
+   4'b1100: mx = 7'b0011011;                       // ldct - ld cntr & continue
    4'b1101: mx = ~tst ? 7'b1010111 : 7'b0000111;   // loop - test end loop
    4'b1110: mx = 7'b0011111;                       // cont - continue
    4'b1111: mx = 7'b1111111;                       // jp   - jump pl

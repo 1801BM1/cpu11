@@ -66,6 +66,7 @@ reg         rfrq;       // dynamic RAM refresh request
 tri1        init;       // peripheral reset
 wire [1:0]  bsel;       //
                         //
+reg  [15:0] rad;        // latched data
 wire [15:0] ad_mux;     //
 tri1 [15:0] ad;         // inverted address/data bus
 reg  [15:0] ad_reg;     //
@@ -84,6 +85,7 @@ wire        iako;       // interrupt vector strobe
 wire        dref;       //
 reg         din_iako;   //
 reg         din_sync;   //
+reg         in_iako;    //
                         //
 reg [15:0]  addr;       //
 reg         wflg;       //
@@ -128,18 +130,8 @@ begin
       sel_all = 1'b1;
    if (~ad == 16'o177715)
       sel_all = 1'b1;
-   if (~ad == 16'o177560)
+   if ((~ad >= 16'o177560) & (~ad <= 16'o177567))
       sel_all = 1'b1;
-   if (~ad == 16'o177564)
-      sel_all = 1'b1;
-   if (~ad == 16'o177566)
-      sel_all = 1'b1;
-
-   if (~ad == 16'o000172)
-   begin
-      $display("Access to halt vector");
-      $stop;
-   end
 end
 
 always @(posedge sync)
@@ -147,6 +139,8 @@ begin
    sel_all  = 1'b0;
    sel_ram  = 1'b0;
 end
+
+always @ (posedge clk) rad <= ad;
 
 always @(negedge din)
 begin
@@ -158,10 +152,11 @@ begin
    if (~din_sync)
       $display("Read  @ %06O (%06O)", addr, ~ad);
    else
-      if (~din_iako)
+      if (~din_iako | in_iako)
          $display("Read  @ Vector");
       else
          $display("Read  @ Invalid");
+   in_iako = 0;
 `endif
 end
 
@@ -188,7 +183,13 @@ begin
       if (addr == 16'o177560)
       begin
          ad_oe    = 1'b1;
-         ad_reg   = 16'o000200 | (tty_rx_ie << 6);
+         ad_reg   = 16'o000000 | (tty_rx_ie << 6);
+      end
+
+      if (addr == 16'o177562)
+      begin
+         ad_oe    = 1'b1;
+         ad_reg   = 16'o000000;
       end
 
       if (addr == 16'o177564)
@@ -214,6 +215,7 @@ end
 
 always @(negedge iako)
 begin
+   in_iako = 1;
    if (~din)
    begin
       if (~virq)
@@ -258,14 +260,15 @@ begin
       tty_tx_rdy = 0;
       virq       = 1;
 `ifdef  SIM_CONFIG_DEBUG_TTY
-      $display("tty: %06O (%c))", ~ad, (~ad > 16'o000037) ? (~ad & 8'o377) : 8'o52);
-`endif
-   end
+      $display("tty: %06O (%c)", ~ad & 8'o377,
+                ((~ad & 8'o377) > 16'o000037) ? (~ad & 8'o377) : 8'o52);
 
-   if (addr == 16'o177676)
-   begin
-      $display("Access to shadow register");
-      $stop;
+      if ((~ad & 8'o377) == 16'o000100)
+      begin
+         $display("ODT invoked, stop");
+         $stop;
+      end
+`endif
    end
 end
 
@@ -283,7 +286,7 @@ end
 
 always @(negedge tty_tx_rdy)
 begin
-   for (i=0; i<256; i = i + 1)
+   for (i=0; i<4000; i = i + 1)
    begin
 @ (negedge clk);
 @ (posedge clk);
@@ -300,9 +303,9 @@ initial
 begin
    forever
       begin
-         clk = 0;
-         #(`SIM_CONFIG_CLOCK_HPERIOD);
          clk = 1;
+         #(`SIM_CONFIG_CLOCK_HPERIOD);
+         clk = 0;
          #(`SIM_CONFIG_CLOCK_HPERIOD);
       end
 end
@@ -324,11 +327,12 @@ begin
    tty_rx_ie   = 0;
    tty_tx_rdy  = 1;
 
+   in_iako  = 0;
+   rfrq     = 1;
    dclo     = 0;
    aclo     = 0;
    evnt     = 1;
    virq     = 1;
-   rfrq     = 1;
    halt     = 1;
    ad_reg   = ~16'h0000;
    ad_oe    = 0;
@@ -339,19 +343,15 @@ begin
 //
 // CPU start
 //
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
+   for (i=0; i<24; i = i + 1)
+   begin
+@ (posedge clk);
+   end
    dclo     = 1;
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
-@ (negedge clk);
+   for (i=0; i<90; i = i + 1)
+   begin
+@ (posedge clk);
+   end
 #1
    aclo     = 1;
    $display("Processor ACLO and DCLO deasserted");
@@ -383,7 +383,8 @@ am4 cpu
    .pin_din_n(din),           // data input strobe
    .pin_iako_n(iako),         // interrupt vector input
                               //
-   .pin_bsel_n(bsel)          // boot mode
+   .pin_bsel_n(bsel)          // boot mode 3 - reserved micROM
+                              // boot mode 0 - 24/26 vector
 );
 
 //_____________________________________________________________________________

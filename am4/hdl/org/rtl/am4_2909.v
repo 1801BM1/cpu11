@@ -42,6 +42,8 @@ begin
    if (~re_n)
       ar <= r;
 
+   if (~za_n)
+      sp <= 2'b11;
    //
    // Stack file operations
    //
@@ -80,17 +82,17 @@ begin
    //
    // Program counter
    //
-   pc <= out + 4'b0001;
+   pc <= out + {3'b000, cin};
 end
 
 assign y = oe_n ? 4'bzzzz : out;
-assign mux = ((s == 2'b00) ? pc     : 4'b0000)
-           | ((s == 2'b01) ? ar     : 4'b0000)
-           | ((s == 2'b10) ? stk[0] : 4'b0000)
-           | ((s == 2'b11) ? d      : 4'b0000)
+assign mux = ((s == 2'b00) ? pc      : 4'b0000)
+           | ((s == 2'b01) ? ar      : 4'b0000)
+           | ((s == 2'b10) ? stk[sp] : 4'b0000)
+           | ((s == 2'b11) ? d       : 4'b0000)
            | ora;
 assign out = za_n ? mux : 4'b0000;
-assign cout = out == 4'b1111;
+assign cout = (out == 4'b1111) & cin;
 
 //______________________________________________________________________________
 //

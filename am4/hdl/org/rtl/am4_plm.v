@@ -11,6 +11,9 @@ module plm_dec
    output reg [6:0] ad     // address of microcode
 );
 
+wire rs = ins[11:9] == 3'b000;
+wire rd = ins[5:3] == 3'b000;
+
 always @(*)
 casex(ins)                 // clrb/comb/incb/decb
    16'o105xxx: bf = 1'b1;  // negb/adcb/sbcb/tstb
@@ -43,8 +46,8 @@ casex(ins)
    16'o00025x: ad = 7'h40; // clx
    16'o00026x: ad = 7'h43; // sex
    16'o00027x: ad = 7'h43; // sex
-   16'o0003xx: ad = &ins[5:3] ? 7'h41  // swab
-/* 16'o00030x: */             : 7'h44; // swab Rd
+   16'o0003xx: ad = ~rd ? 7'h41  // swab
+/* 16'o00030x: */       : 7'h44; // swab Rd
    16'o0004xx: ad = 7'h1F; // br
    16'o0005xx: ad = 7'h1F; //
    16'o0006xx: ad = 7'h1F; //
@@ -54,45 +57,45 @@ casex(ins)
    16'o003xxx: ad = 7'h1F; // bgt/ble
    16'o004xxx: ad = 7'h37; // jsr
                            //
-   16'o0050xx: ad = &ins[5:3] ? 7'h12  // clr
-/* 16'o00500x: */             : 7'h22; // clr Rd
-   16'o0051xx: ad = &ins[5:3] ? 7'h14  // com
-/* 16'o00510x: */             : 7'h24; // com Rd
-   16'o0052xx: ad = &ins[5:3] ? 7'h16  // inc
-/* 16'o00520x: */             : 7'h26; // inc Rd
-   16'o0053xx: ad = &ins[5:3] ? 7'h18  // dec
-/* 16'o00530x: */             : 7'h28; // dec Rd
-   16'o0054xx: ad = &ins[5:3] ? 7'h1A  // neg
-/* 16'o00540x: */             : 7'h2A; // neg Rd
-   16'o0055xx: ad = &ins[5:3] ? 7'h0D  // adc
-/* 16'o00550x: */             : 7'h4D; // adc Rd
-   16'o0056xx: ad = &ins[5:3] ? 7'h53  // sbc
-/* 16'o00560x: */             : 7'h4A; // sbc Rd
-   16'o0057xx: ad = &ins[5:3] ? 7'h2C  // tst
-/* 16'o00570x: */             : 7'h6C; // tst Rd
-   16'o0060xx: ad = &ins[5:3] ? 7'h15  // ror
-/* 16'o00600x: */             : 7'h55; // ror Rd
-   16'o0061xx: ad = &ins[5:3] ? 7'h17  // rol
-/* 16'o00610x: */             : 7'h56; // rol Rd
-   16'o0062xx: ad = &ins[5:3] ? 7'h1B  // asr
-/* 16'o00620x: */             : 7'h5B; // asr Rd
-   16'o0063xx: ad = &ins[5:3] ? 7'h1D  // asl
-/* 16'o00630x: */             : 7'h5C; // asl Rd
+   16'o0050xx: ad = ~rd ? 7'h12  // clr
+/* 16'o00500x: */       : 7'h22; // clr Rd
+   16'o0051xx: ad = ~rd ? 7'h14  // com
+/* 16'o00510x: */       : 7'h24; // com Rd
+   16'o0052xx: ad = ~rd ? 7'h16  // inc
+/* 16'o00520x: */       : 7'h26; // inc Rd
+   16'o0053xx: ad = ~rd ? 7'h18  // dec
+/* 16'o00530x: */       : 7'h28; // dec Rd
+   16'o0054xx: ad = ~rd ? 7'h1A  // neg
+/* 16'o00540x: */       : 7'h2A; // neg Rd
+   16'o0055xx: ad = ~rd ? 7'h0D  // adc
+/* 16'o00550x: */       : 7'h4D; // adc Rd
+   16'o0056xx: ad = ~rd ? 7'h53  // sbc
+/* 16'o00560x: */       : 7'h4A; // sbc Rd
+   16'o0057xx: ad = ~rd ? 7'h2C  // tst
+/* 16'o00570x: */       : 7'h6C; // tst Rd
+   16'o0060xx: ad = ~rd ? 7'h15  // ror
+/* 16'o00600x: */       : 7'h55; // ror Rd
+   16'o0061xx: ad = ~rd ? 7'h17  // rol
+/* 16'o00610x: */       : 7'h56; // rol Rd
+   16'o0062xx: ad = ~rd ? 7'h1B  // asr
+/* 16'o00620x: */       : 7'h5B; // asr Rd
+   16'o0063xx: ad = ~rd ? 7'h1D  // asl
+/* 16'o00630x: */       : 7'h5C; // asl Rd
    16'o0064xx: ad = 7'h09; // mark
    16'o0067xx: ad = 7'h08; // sxt
                            //
-   16'o01xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h31  // mov
-/* 16'o010x0x: */                            : 7'h30; // mov Rs, Rd
-   16'o02xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h13  // cmp
-/* 16'o020x0x: */                            : 7'h3A; // cmp Rs, Rd
-   16'o03xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h1C  // bit
-/* 16'o030x0x: */                            : 7'h3C; // bit Rs, Rd
-   16'o04xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h1E  // bic
-/* 16'o040x0x: */                            : 7'h3E; // bic Rs, Rd
-   16'o05xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h10  // bis
-/* 16'o050x0x: */                            : 7'h20; // bis Rs, Rd
-   16'o06xxxx: ad = &ins[11:8] ? 7'h35 // add
-/* 16'o060xxx: */ : &ins[5:3] ?  7'h34 // add Rs, xx
+   16'o01xxxx: ad = (~rs | ~rd) ? 7'h31  // mov
+/* 16'o010x0x: */               : 7'h30; // mov Rs, Rd
+   16'o02xxxx: ad = (~rs | ~rd) ? 7'h13  // cmp
+/* 16'o020x0x: */               : 7'h3A; // cmp Rs, Rd
+   16'o03xxxx: ad = (~rs | ~rd) ? 7'h1C  // bit
+/* 16'o030x0x: */               : 7'h3C; // bit Rs, Rd
+   16'o04xxxx: ad = (~rs | ~rd) ? 7'h1E  // bic
+/* 16'o040x0x: */               : 7'h3E; // bic Rs, Rd
+   16'o05xxxx: ad = (~rs | ~rd) ? 7'h10  // bis
+/* 16'o050x0x: */               : 7'h20; // bis Rs, Rd
+   16'o06xxxx: ad = ~rs ? 7'h35 // add
+/* 16'o060xxx: */ : ~rd ? 7'h34 // add Rs, xx
 /* 16'o060x0x: */ : 7'h74; // add Rs, Rd
    16'o070xxx: ad = 7'h47; // mul
    16'o071xxx: ad = 7'h48; // div
@@ -131,14 +134,14 @@ casex(ins)
    16'o1063xx: ad = 7'h5F; // aslb
    16'o1064xx: ad = 7'h2E; // mtps
    16'o1067xx: ad = 7'h0C; // mfps
-   16'o11xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h33  // movb
-/* 16'o110x0x: */                            : 7'h32; // movb Rd, Rs
+   16'o11xxxx: ad = (~rs | ~rd) ? 7'h33  // movb
+/* 16'o110x0x: */               : 7'h32; // movb Rd, Rs
    16'o12xxxx: ad = 7'h3D; // cmpb
    16'o13xxxx: ad = 7'h3F; // bitb
    16'o14xxxx: ad = 7'h21; // bicb
    16'o15xxxx: ad = 7'h23; // bisb
-   16'o16xxxx: ad = (&ins[11:8] | &ins[5:3]) ? 7'h19  // sub
-/* 16'o160x0x: */                            : 7'h3B; // sub Rd, Rs
+   16'o16xxxx: ad = (~rs | ~rd) ? 7'h19  // sub
+/* 16'o160x0x: */               : 7'h3B; // sub Rd, Rs
    default:    ad = 7'h01; // undefined
 endcase
 

@@ -208,7 +208,7 @@ end
 //
 assign io_iako = ~mcr[36] & mcr[40];
 assign io_din  = ~mcr[36] & mcr[41];
-assign io_rdin = ~mcr[36] & mcr[42] | mcr[36];
+assign io_rdin = ~mcr[36] & ~mcr[42];
 assign io_wtbt = ~mcr[36] & mcr[43];
 
 //______________________________________________________________________________
@@ -262,7 +262,7 @@ assign ir_stb = ~mcr[29] & mcr[31];
 //
 // Control strobes decoder
 //
-assign reg_ena  = ~(mcr[32] & ~mcr[29]) & ~dclo & ~mclk;
+assign reg_ena  = (mcr[32] & ~mcr[29]) & ~dclo & ~mclk;
 assign clr_init = reg_ena & na[8:6] == 3'b001;
 assign clr_ref  = reg_ena & na[8:6] == 3'b010;
 assign set_ref  = reg_ena & na[8:6] == 3'b011;
@@ -327,8 +327,8 @@ begin
    begin
       irq[0] <= cc6;
       irq[1] <= ~irq[0];
-      irq[2] <=~pin_virq_n & psw[7];
-      irq[3] <= evnt & psw[7];
+      irq[2] <=~pin_virq_n & ~psw[7];
+      irq[3] <= evnt & ~psw[7];
       irq[4] <= ~pin_halt_n;
       irq[5] <= aclo;
       irq[6] <= psw[4];
@@ -336,7 +336,7 @@ begin
    end
 end
 
-assign cc[5] =~(|irq[7:2]);
+assign cc[5] = ~(|irq[7:2]);
 assign iv[2:0] =  irq[7] ? 3'b000 :
                   irq[6] ? 3'b001 :
                   irq[5] ? 3'b010 :
@@ -379,17 +379,17 @@ end
 // Bus timeout, 18 is multiplication factor between pin_clk and tclk
 //
 localparam TCLK_CLK = 18;
-defparam qbus_to0.AM4_PULSE_WIDTH_CLK = 2 * TCLK_CLK;
+defparam qbus_to0.AM4_PULSE_WIDTH_CLK = 64 * TCLK_CLK;
 am4_pulse qbus_to0
 (
    .clk(pin_clk),
-   .reset_n(~gclk_en),
+   .reset_n(~gclk_en & ~dclo),
    .a_n(1'b0),
    .b(mcr[35]),
    .q(qt_req0)
 );
 
-defparam qbus_to1.AM4_PULSE_WIDTH_CLK = 64 * TCLK_CLK;
+defparam qbus_to1.AM4_PULSE_WIDTH_CLK = 1 * TCLK_CLK;
 am4_pulse qbus_to1
 (
    .clk(pin_clk),
@@ -443,7 +443,7 @@ begin
       if (astb_clr)
          astb <= 1'b0;
       else
-         astb <= sync_210;
+         astb <= sync0;
 end
 
 always @(posedge astb) la0 <= alu_y[0];
@@ -459,14 +459,22 @@ begin
       dref <= ~clr_ref & (set_ref | dref);
 end
 
-always @(posedge pin_clk)
+always @(posedge pin_clk or posedge dclo)
 begin
-   rfrq0 <= ~pin_rfrq_n;
-   if (~pin_rfrq_n & ~rfrq0)
-      rfrq <= 1'b1;
+   if (dclo)
+   begin
+      rfrq <= 1'b0;
+      rfrq0 <= 1'b0;
+   end
    else
-      if (set_ref)
-         rfrq <= 1'b0;
+   begin
+      rfrq0 <= ~pin_rfrq_n;
+      if (~pin_rfrq_n & ~rfrq0)
+         rfrq <= 1'b1;
+      else
+         if (set_ref)
+            rfrq <= 1'b0;
+   end
 end
 
 //______________________________________________________________________________
@@ -487,7 +495,7 @@ assign pin_wtbt_n = ct_oe ? ~io_wtbt  : 1'bZ;
 assign pin_sync_n = ct_oe ? ~sync : 1'bZ;
 assign pin_din_n  = ct_oe ? ~din : 1'bZ;
 
-assign ad_oe = ~din & ~io_iako;
+assign ad_oe = ~din & ~io_iako & ct_oe;
 assign pin_ad_n = ad_oe   ? ~alu_y : 16'oZZZZZZ;
 assign ad = ~pin_ad_n;
 
@@ -562,7 +570,7 @@ am29811 ma_seq
 assign na = mcr[55:44];
 assign mcu_i = mcr[23:20];
 assign mcu_re_n = ~(~mcr[29] & mcr[30]);
-assign na_op = mcu_me_n ? na : {na[11:10],ins_ma[6:0],na[2:0]};
+assign na_op = mcu_me_n ? na : {na[11:10], ins_ma[6:0] ^ 7'h11, na[2:0]};
 
 //
 // Microaddress OR modificators
@@ -570,22 +578,22 @@ assign na_op = mcu_me_n ? na : {na[11:10],ins_ma[6:0],na[2:0]};
 always @(*)
 begin
    case({mcr[24],mcr[43:41]})
-      4'b0000: mcu_ora = ireg[5:3];
-      4'b0001: mcu_ora = ireg[11:9];
-      4'b0010: mcu_ora = {1'b0, mcbr_f[1], mcbr_f[2]};
-      4'b0011: mcu_ora = iv;
-      4'b0100: mcu_ora = 3'b001;
-      4'b0101: mcu_ora = {1'b0, la0, mcbr_f[3]};
-      4'b0110: mcu_ora = {psw_xc, 1'b0, ctr[5]};
-      4'b0111: mcu_ora = {2'b00, mcbr_f[3]};
+      4'b0000: mcu_ora = ireg[5:3];                      // destination mode
+      4'b0001: mcu_ora = ireg[11:9];                     // source mode
+      4'b0010: mcu_ora = {1'b0, mcbr_f[1], mcbr_f[2]};   // dst/src reg mode
+      4'b0011: mcu_ora = iv;                             // interrupt vector
+      4'b0100: mcu_ora = {1'b0, ~pin_bsel_n};            // boot mode
+      4'b0101: mcu_ora = {1'b0, la0, mcbr_f[3]};         // byte exchange
+      4'b0110: mcu_ora = {psw_xc, 1'b0, ctr[5]};         // shift CF result
+      4'b0111: mcu_ora = {2'b00, mcbr_f[4]};             // not SP/PC
       default: mcu_ora = 3'b000;
    endcase
 
    case (mcr[27:25])
       3'b000: mcu_tst = psw[0] ^ mcr[28];
       3'b001: mcu_tst = psw[1] ^ mcr[28];
-      3'b010: mcu_tst = psw[2] ^ mcr[28];
-      3'b011: mcu_tst = psw[3] ^ mcr[28];
+      3'b010: mcu_tst = psw[3] ^ mcr[28];
+      3'b011: mcu_tst = psw[2] ^ mcr[28];
       3'b100: mcu_tst = cc[4] ^ mcr[28];
       3'b101: mcu_tst = cc[5] ^ mcr[28];
       3'b110: mcu_tst = cc[6] ^ mcr[28];
@@ -596,8 +604,8 @@ end
 
 always @(posedge tclk) if (~mcu_me_n) mcu_bf = ins_bf;
 
-assign mcbr_f[1] = ireg[5:3] != 3'b000;
-assign mcbr_f[2] = ireg[11:9] != 3'b000;
+assign mcbr_f[1] = ireg[5:3] == 3'b000;   // dst mode is not register
+assign mcbr_f[2] = ireg[11:9] == 3'b000;  // src mode is not register
 assign mcbr_f[3] = mcu_bf;
 assign mcbr_f[4] = ~(alu_a[2] & alu_a[1]);
 
@@ -815,7 +823,7 @@ assign alu_dh = ~(alu_i[5] & mcr[9] & sext_n);
 //
 always @(*)
 begin
-   case({ireg[15:14],ireg[9:8]})
+   case({ireg[15],ireg[10:8]})
       4'b0000: bra_n = 1'b1;
       4'b0001: bra_n = 1'b0;
       4'b0010: bra_n =  psw[2];
@@ -860,8 +868,8 @@ assign alu_a[2] =  mcr[10] ? (mcr[13] ? ireg[8] : ireg[2]) : mcr[14];
 assign alu_a[3] =  mcr[10] ? 1'b0 : mcr[15];
 
 assign alu_b[0] = (mcr[11] ? (mcr[17] ? ireg[0] : ireg[6]) : mcr[16]) | mcr[16];
-assign alu_b[1] =  mcr[11] ? (mcr[17] ? ireg[1] : ireg[7]) : mcr[18];
-assign alu_b[2] =  mcr[11] ? (mcr[17] ? ireg[2] : ireg[8]) : mcr[19];
+assign alu_b[1] =  mcr[11] ? (mcr[17] ? ireg[1] : ireg[7]) : mcr[17];
+assign alu_b[2] =  mcr[11] ? (mcr[17] ? ireg[2] : ireg[8]) : mcr[18];
 assign alu_b[3] =  mcr[11] ? 1'b0 : mcr[19];
 
 //
@@ -893,22 +901,22 @@ begin
 end
 
 //
-// Shift operaions chain mux
+// Shift operations chain mux
 //
-assign sh_bit0 = na[2] ? 1'bZ : (na[1:0] == 2'b00)
-                              | (na[1:0] == 2'b10) & pq_bit15
-                              | (na[1:0] == 2'b11) & psw_c0;
-assign sh_bit7 = na[5] ? 1'bZ :  sh_bit8;
-assign sh_bit8 = na[4] ? 1'bZ :  sh_bit7;
-assign sh_bit8 = na[8] ? 1'bZ :  sh_bit0;
-assign sh_bit15 = na[3] ? 1'bZ : (na[1:0] == 2'b00)
-                               | (na[1:0] == 2'b01) & (alu_v16 ^ alu_f15)
-                               | (na[1:0] == 2'b10) & alu_f15
-                               | (na[1:0] == 2'b11);
-assign sh_bit15 = na[9] ? 1'bZ : psw_c0;
+assign sh_bit0  = mcr[46] ? 1'bZ : (mcr[45:44] == 2'b00)
+                                 | (mcr[45:44] == 2'b10) & pq_bit15
+                                 | (mcr[45:44] == 2'b11) & psw_c0;
+assign sh_bit15 = mcr[47] ? 1'bZ : (mcr[45:44] == 2'b00)
+                                 | (mcr[45:44] == 2'b01) & (alu_v16 ^ alu_f15)
+                                 | (mcr[45:44] == 2'b10) & alu_f15
+                                 | (mcr[45:44] == 2'b11);
+assign sh_bit8  = mcr[48] ? 1'bZ : sh_bit7;
+assign sh_bit7  = mcr[49] ? 1'bZ : sh_bit8;
+assign pq_bit0  = mcr[50] ? 1'bZ : 1'b0;
+assign pq_bit15 = mcr[51] ? 1'bZ : sh_bit0;
+assign sh_bit8  = mcr[52] ? 1'bZ : sh_bit0;
+assign sh_bit15 = mcr[53] ? 1'bZ : psw_c0;
 
-assign pq_bit0 = na[6] ? 1'bZ : 1'b0;
-assign pq_bit15 = na[7] ? 1'bZ : sh_bit0;
 
 //______________________________________________________________________________
 //

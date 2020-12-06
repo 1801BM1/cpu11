@@ -5,6 +5,8 @@
 //
 // M4 microcode ROM, for debug and simulating only
 //
+`timescale 1ns / 100ps
+
 module mcrom
 (
    input       clk,     // input clock
@@ -17,6 +19,7 @@ module mcrom
 // Memory array and its inititialization with K1656RE1-001/007 content
 //
 reg [55:0] rom [0:1023];
+reg [55:0] q;
 integer i;
 
 initial
@@ -26,12 +29,11 @@ begin
       rom[i] = 56'h00000000000000;
    end
    $readmemh("..\\..\\..\\..\\rom\\mc.rom", rom);
+#1 q = 56'h00000000000000;
 end
 
 //______________________________________________________________________________
 //
-reg [55:0] q;
-
 assign data = q;
 always @ (posedge clk) q <= rom[addr];
 
