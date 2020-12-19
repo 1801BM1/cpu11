@@ -510,9 +510,8 @@ set_global_assignment -name VERILOG_FILE ../../tbe/config.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_tb4.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/am4.v
+set_global_assignment -name VERILOG_FILE ../../rtl/am4_alu.v
 set_global_assignment -name VERILOG_FILE ../../rtl/am4_plm.v
-set_global_assignment -name VERILOG_FILE ../../rtl/am4_2901.v
-set_global_assignment -name VERILOG_FILE ../../rtl/am4_2902.v
 set_global_assignment -name VERILOG_FILE ../../rtl/am4_seq.v
 set_global_assignment -name VERILOG_FILE ../../rtl/am4_mcrom.v
 set_global_assignment -name VERILOG_FILE ../../rtl/am4_delay.v

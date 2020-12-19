@@ -67,8 +67,8 @@ end
 //
 assign i_ram = (i[8:7] == 2'b00) ? 4'b0000 :                      // QREG, NOP
                (i[8:7] == 2'b01) ? f_alu[3:0] :                   // RAMA, RAMF - load
-               (i[8:7] == 2'b10) ? {ram3, f_alu[3:1]} :           // RAMQD, RAMD - shift down/left
-               (i[8:7] == 2'b11) ? {f_alu[2:0], ram0} : 4'b0000;  // RAMQU, RAMU - shift up/right
+               (i[8:7] == 2'b10) ? {ram3, f_alu[3:1]} :           // RAMQD, RAMD - shift down/right
+               (i[8:7] == 2'b11) ? {f_alu[2:0], ram0} : 4'b0000;  // RAMQU, RAMU - shift up/left
 
 always @(posedge cp) if (i[8:7] != 2'b00) q_ram[b] <= i_ram;
 
@@ -80,8 +80,8 @@ assign ram3 = (i[8:7] == 2'b11) ? f_alu[3] : 1'bz;
 // Q-register input mux and latches
 //
 assign q_mux = (i[8:6] == 3'b000) ? f_alu[3:0] :                     // QREG
-               (i[8:6] == 3'b100) ? {q3, q_reg[3:1]} :               // RAMQD - shift down/left
-               (i[8:6] == 3'b110) ? {q_reg[2:0], q0} : q_reg[3:0];   // RAMQU - shift up/right
+               (i[8:6] == 3'b100) ? {q3, q_reg[3:1]} :               // RAMQD - shift down/right
+               (i[8:6] == 3'b110) ? {q_reg[2:0], q0} : q_reg[3:0];   // RAMQU - shift up/left
 
 assign q0 = (i[8:7] == 2'b10) ? q_reg[0] : 1'bz;
 assign q3 = (i[8:7] == 2'b11) ? q_reg[3] : 1'bz;

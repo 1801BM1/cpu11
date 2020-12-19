@@ -1,24 +1,4 @@
 onerror {resume}
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu1 { &{/tb4/cpu/alu0/q_reg, /tb4/cpu/alu1/q_reg }} qreg
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_reg, /tb4/cpu/alu2/q_reg, /tb4/cpu/alu1/q_reg, /tb4/cpu/alu0/q_reg }} q_reg
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[15], /tb4/cpu/alu2/q_ram[15], /tb4/cpu/alu1/q_ram[15], /tb4/cpu/alu0/q_ram[15] }} R15
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[14], /tb4/cpu/alu2/q_ram[14], /tb4/cpu/alu1/q_ram[14], /tb4/cpu/alu0/q_ram[14] }} R14
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[13], /tb4/cpu/alu2/q_ram[13], /tb4/cpu/alu1/q_ram[13], /tb4/cpu/alu0/q_ram[13] }} R13
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[12], /tb4/cpu/alu2/q_ram[12], /tb4/cpu/alu1/q_ram[12], /tb4/cpu/alu0/q_ram[12] }} R12
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[11], /tb4/cpu/alu2/q_ram[11], /tb4/cpu/alu1/q_ram[11], /tb4/cpu/alu0/q_ram[11] }} R11
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[10], /tb4/cpu/alu2/q_ram[10], /tb4/cpu/alu1/q_ram[10], /tb4/cpu/alu0/q_ram[10] }} R10
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[9], /tb4/cpu/alu2/q_ram[9], /tb4/cpu/alu1/q_ram[9], /tb4/cpu/alu0/q_ram[9] }} R9
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[8], /tb4/cpu/alu2/q_ram[8], /tb4/cpu/alu1/q_ram[8], /tb4/cpu/alu0/q_ram[8] }} R8
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[7], /tb4/cpu/alu2/q_ram[7], /tb4/cpu/alu1/q_ram[7], /tb4/cpu/alu0/q_ram[7] }} R7
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[6], /tb4/cpu/alu2/q_ram[6], /tb4/cpu/alu1/q_ram[6], /tb4/cpu/alu0/q_ram[6] }} R6
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[5], /tb4/cpu/alu2/q_ram[5], /tb4/cpu/alu1/q_ram[5], /tb4/cpu/alu0/q_ram[5] }} R5
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[4], /tb4/cpu/alu2/q_ram[4], /tb4/cpu/alu1/q_ram[4], /tb4/cpu/alu0/q_ram[4] }} R4
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[3], /tb4/cpu/alu2/q_ram[3], /tb4/cpu/alu1/q_ram[3], /tb4/cpu/alu0/q_ram[3] }} R3
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[2], /tb4/cpu/alu2/q_ram[2], /tb4/cpu/alu1/q_ram[2], /tb4/cpu/alu0/q_ram[2] }} R2
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[1], /tb4/cpu/alu2/q_ram[1], /tb4/cpu/alu1/q_ram[1], /tb4/cpu/alu0/q_ram[1] }} R1
-quietly virtual function -install /tb4/cpu -env /tb4/cpu/alu0 { &{/tb4/cpu/alu3/q_ram[0], /tb4/cpu/alu2/q_ram[0], /tb4/cpu/alu1/q_ram[0], /tb4/cpu/alu0/q_ram[0] }} R0
-quietly virtual signal -install /tb4/cpu { (context /tb4/cpu )&{alu3/r_alu ,alu2/r_alu ,alu1/r_alu ,alu0/r_alu }} r_alu
-quietly virtual signal -install /tb4/cpu { (context /tb4/cpu )&{alu3/s_alu ,alu2/s_alu ,alu1/s_alu ,alu0/s_alu }} s_alu
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -group Clock /tb4/cpu/pin_clk
 add wave -noupdate -group Clock /tb4/cpu/mclk
@@ -117,25 +97,35 @@ add wave -noupdate -group ALU /tb4/cpu/alu_dl
 add wave -noupdate -group ALU -radix octal -childformat {{{/tb4/cpu/alu_i[8]} -radix octal} {{/tb4/cpu/alu_i[7]} -radix octal} {{/tb4/cpu/alu_i[6]} -radix octal} {{/tb4/cpu/alu_i[5]} -radix octal} {{/tb4/cpu/alu_i[4]} -radix octal} {{/tb4/cpu/alu_i[3]} -radix octal} {{/tb4/cpu/alu_i[2]} -radix octal} {{/tb4/cpu/alu_i[1]} -radix octal} {{/tb4/cpu/alu_i[0]} -radix octal}} -subitemconfig {{/tb4/cpu/alu_i[8]} {-height 15 -radix octal} {/tb4/cpu/alu_i[7]} {-height 15 -radix octal} {/tb4/cpu/alu_i[6]} {-height 15 -radix octal} {/tb4/cpu/alu_i[5]} {-height 15 -radix octal} {/tb4/cpu/alu_i[4]} {-height 15 -radix octal} {/tb4/cpu/alu_i[3]} {-height 15 -radix octal} {/tb4/cpu/alu_i[2]} {-height 15 -radix octal} {/tb4/cpu/alu_i[1]} {-height 15 -radix octal} {/tb4/cpu/alu_i[0]} {-height 15 -radix octal}} /tb4/cpu/alu_i
 add wave -noupdate -group ALU -radix octal /tb4/cpu/alu_y
 add wave -noupdate -group ALU -radix octal /tb4/cpu/ireg
-add wave -noupdate -group ALU -radix octal /tb4/cpu/r_alu
-add wave -noupdate -group ALU -radix octal /tb4/cpu/s_alu
-add wave -noupdate -group ALU -group AluReg -radix octal -childformat {{(15) -radix octal} {(14) -radix octal} {(13) -radix octal} {(12) -radix octal} {(11) -radix octal} {(10) -radix octal} {(9) -radix octal} {(8) -radix octal} {(7) -radix octal} {(6) -radix octal} {(5) -radix octal} {(4) -radix octal} {(3) -radix octal} {(2) -radix octal} {(1) -radix octal} {(0) -radix octal}} -subitemconfig {{/tb4/cpu/alu3/q_reg[3]} {-radix octal} {/tb4/cpu/alu3/q_reg[2]} {-radix octal} {/tb4/cpu/alu3/q_reg[1]} {-radix octal} {/tb4/cpu/alu3/q_reg[0]} {-radix octal} {/tb4/cpu/alu2/q_reg[3]} {-radix octal} {/tb4/cpu/alu2/q_reg[2]} {-radix octal} {/tb4/cpu/alu2/q_reg[1]} {-radix octal} {/tb4/cpu/alu2/q_reg[0]} {-radix octal} {/tb4/cpu/alu1/q_reg[3]} {-radix octal} {/tb4/cpu/alu1/q_reg[2]} {-radix octal} {/tb4/cpu/alu1/q_reg[1]} {-radix octal} {/tb4/cpu/alu1/q_reg[0]} {-radix octal} {/tb4/cpu/alu0/q_reg[3]} {-radix octal} {/tb4/cpu/alu0/q_reg[2]} {-radix octal} {/tb4/cpu/alu0/q_reg[1]} {-radix octal} {/tb4/cpu/alu0/q_reg[0]} {-radix octal}} /tb4/cpu/q_reg
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R15
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R14
-add wave -noupdate -group ALU -group AluReg -radix octal -childformat {{(15) -radix octal} {(14) -radix octal} {(13) -radix octal} {(12) -radix octal} {(11) -radix octal} {(10) -radix octal} {(9) -radix octal} {(8) -radix octal} {(7) -radix octal} {(6) -radix octal} {(5) -radix octal} {(4) -radix octal} {(3) -radix octal} {(2) -radix octal} {(1) -radix octal} {(0) -radix octal}} -subitemconfig {{/tb4/cpu/alu3/q_ram[13][3]} {-radix octal} {/tb4/cpu/alu3/q_ram[13][2]} {-radix octal} {/tb4/cpu/alu3/q_ram[13][1]} {-radix octal} {/tb4/cpu/alu3/q_ram[13][0]} {-radix octal} {/tb4/cpu/alu2/q_ram[13][3]} {-radix octal} {/tb4/cpu/alu2/q_ram[13][2]} {-radix octal} {/tb4/cpu/alu2/q_ram[13][1]} {-radix octal} {/tb4/cpu/alu2/q_ram[13][0]} {-radix octal} {/tb4/cpu/alu1/q_ram[13][3]} {-radix octal} {/tb4/cpu/alu1/q_ram[13][2]} {-radix octal} {/tb4/cpu/alu1/q_ram[13][1]} {-radix octal} {/tb4/cpu/alu1/q_ram[13][0]} {-radix octal} {/tb4/cpu/alu0/q_ram[13][3]} {-radix octal} {/tb4/cpu/alu0/q_ram[13][2]} {-radix octal} {/tb4/cpu/alu0/q_ram[13][1]} {-radix octal} {/tb4/cpu/alu0/q_ram[13][0]} {-radix octal}} /tb4/cpu/R13
-add wave -noupdate -group ALU -group AluReg -radix octal -childformat {{(15) -radix octal} {(14) -radix octal} {(13) -radix octal} {(12) -radix octal} {(11) -radix octal} {(10) -radix octal} {(9) -radix octal} {(8) -radix octal} {(7) -radix octal} {(6) -radix octal} {(5) -radix octal} {(4) -radix octal} {(3) -radix octal} {(2) -radix octal} {(1) -radix octal} {(0) -radix octal}} -subitemconfig {{/tb4/cpu/alu3/q_ram[12][3]} {-radix octal} {/tb4/cpu/alu3/q_ram[12][2]} {-radix octal} {/tb4/cpu/alu3/q_ram[12][1]} {-radix octal} {/tb4/cpu/alu3/q_ram[12][0]} {-radix octal} {/tb4/cpu/alu2/q_ram[12][3]} {-radix octal} {/tb4/cpu/alu2/q_ram[12][2]} {-radix octal} {/tb4/cpu/alu2/q_ram[12][1]} {-radix octal} {/tb4/cpu/alu2/q_ram[12][0]} {-radix octal} {/tb4/cpu/alu1/q_ram[12][3]} {-radix octal} {/tb4/cpu/alu1/q_ram[12][2]} {-radix octal} {/tb4/cpu/alu1/q_ram[12][1]} {-radix octal} {/tb4/cpu/alu1/q_ram[12][0]} {-radix octal} {/tb4/cpu/alu0/q_ram[12][3]} {-radix octal} {/tb4/cpu/alu0/q_ram[12][2]} {-radix octal} {/tb4/cpu/alu0/q_ram[12][1]} {-radix octal} {/tb4/cpu/alu0/q_ram[12][0]} {-radix octal}} /tb4/cpu/R12
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R11
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R10
-add wave -noupdate -group ALU -group AluReg -radix octal -childformat {{(15) -radix octal} {(14) -radix octal} {(13) -radix octal} {(12) -radix octal} {(11) -radix octal} {(10) -radix octal} {(9) -radix octal} {(8) -radix octal} {(7) -radix octal} {(6) -radix octal} {(5) -radix octal} {(4) -radix octal} {(3) -radix octal} {(2) -radix octal} {(1) -radix octal} {(0) -radix octal}} -subitemconfig {{/tb4/cpu/alu3/q_ram[9][3]} {-radix octal} {/tb4/cpu/alu3/q_ram[9][2]} {-radix octal} {/tb4/cpu/alu3/q_ram[9][1]} {-radix octal} {/tb4/cpu/alu3/q_ram[9][0]} {-radix octal} {/tb4/cpu/alu2/q_ram[9][3]} {-radix octal} {/tb4/cpu/alu2/q_ram[9][2]} {-radix octal} {/tb4/cpu/alu2/q_ram[9][1]} {-radix octal} {/tb4/cpu/alu2/q_ram[9][0]} {-radix octal} {/tb4/cpu/alu1/q_ram[9][3]} {-radix octal} {/tb4/cpu/alu1/q_ram[9][2]} {-radix octal} {/tb4/cpu/alu1/q_ram[9][1]} {-radix octal} {/tb4/cpu/alu1/q_ram[9][0]} {-radix octal} {/tb4/cpu/alu0/q_ram[9][3]} {-radix octal} {/tb4/cpu/alu0/q_ram[9][2]} {-radix octal} {/tb4/cpu/alu0/q_ram[9][1]} {-radix octal} {/tb4/cpu/alu0/q_ram[9][0]} {-radix octal}} /tb4/cpu/R9
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R8
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R7
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R6
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R5
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R4
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R3
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R2
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R1
-add wave -noupdate -group ALU -group AluReg -radix octal /tb4/cpu/R0
+add wave -noupdate -group ALU -label Q -radix octal /tb4/cpu/alu/q_reg
+add wave -noupdate -group ALU -label R -radix octal /tb4/cpu/alu/s_ext
+add wave -noupdate -group ALU -label S -radix octal /tb4/cpu/alu/r_ext
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/v8
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/v16
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/zh
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/zl
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/c6
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/c7
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/c8
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/c14
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/c15
+add wave -noupdate -group ALU -group AluFlag /tb4/cpu/alu/c16
+add wave -noupdate -group ALU -group AluReg -label R15 -radix octal {/tb4/cpu/alu/q_ram[15]}
+add wave -noupdate -group ALU -group AluReg -label R14 -radix octal {/tb4/cpu/alu/q_ram[14]}
+add wave -noupdate -group ALU -group AluReg -label {R13} -radix octal {/tb4/cpu/alu/q_ram[13]}
+add wave -noupdate -group ALU -group AluReg -label R12 -radix octal {/tb4/cpu/alu/q_ram[12]}
+add wave -noupdate -group ALU -group AluReg -label R11 -radix octal {/tb4/cpu/alu/q_ram[11]}
+add wave -noupdate -group ALU -group AluReg -label R10 -radix octal {/tb4/cpu/alu/q_ram[10]}
+add wave -noupdate -group ALU -group AluReg -label R9 -radix octal {/tb4/cpu/alu/q_ram[9]}
+add wave -noupdate -group ALU -group AluReg -label R8 -radix octal {/tb4/cpu/alu/q_ram[8]}
+add wave -noupdate -group ALU -group AluReg -label R7 -radix octal {/tb4/cpu/alu/q_ram[7]}
+add wave -noupdate -group ALU -group AluReg -label R6 -radix octal {/tb4/cpu/alu/q_ram[6]}
+add wave -noupdate -group ALU -group AluReg -label R5 -radix octal {/tb4/cpu/alu/q_ram[5]}
+add wave -noupdate -group ALU -group AluReg -label R4 -radix octal {/tb4/cpu/alu/q_ram[4]}
+add wave -noupdate -group ALU -group AluReg -label R3 -radix octal {/tb4/cpu/alu/q_ram[3]}
+add wave -noupdate -group ALU -group AluReg -label R2 -radix octal {/tb4/cpu/alu/q_ram[2]}
+add wave -noupdate -group ALU -group AluReg -label R1 -radix octal {/tb4/cpu/alu/q_ram[1]}
+add wave -noupdate -group ALU -group AluReg -label R0 -radix octal {/tb4/cpu/alu/q_ram[0]}
 add wave -noupdate -group Qtimer /tb4/cpu/qt_req
 add wave -noupdate -group Qtimer /tb4/cpu/gclk_en
 add wave -noupdate -group Qtimer /tb4/cpu/qt_req0
@@ -155,7 +145,7 @@ add wave -noupdate -group Qtimer -group qbus_t1 -radix decimal /tb4/cpu/qbus_to1
 add wave -noupdate -group Qtimer -group qbus_t1 /tb4/cpu/qbus_to1/qout
 add wave -noupdate -group Qtimer -group qbus_t1 /tb4/cpu/qbus_to1/start
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {2290786931 ps} 1} {{Cursor 2} {2292478862 ps} 0}
+WaveRestoreCursors {{Cursor 1} {2290786931 ps} 1} {{Cursor 2} {615885221 ps} 0}
 quietly wave cursor active 2
 configure wave -namecolwidth 140
 configure wave -valuecolwidth 41
@@ -171,4 +161,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {2290931919 ps} {2299030824 ps}
+WaveRestoreZoom {613491969 ps} {621590873 ps}

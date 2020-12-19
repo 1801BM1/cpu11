@@ -101,28 +101,22 @@ reg         sext_n;              // sign extension
 wire        alu_dl, alu_dh;      //
 reg  [15:0] alu_d;               // ALU data input mux
 wire [15:0] alu_y;               // ALU data output
+wire [15:0] alu_r;               // ALU ram[a] output
 wire [3:0]  alu_a;               // ALU A port selector
 wire [3:0]  alu_b;               // ALU B port selector
 wire [8:0]  alu_i;               // ALU instruction
                                  //
-wire [3:0]  alu_fc;              // carry output
-wire [3:0]  alu_fv;              // arithmetic overflow
-wire [3:0]  alu_fn;              // MSB of ALU output
-wire [3:0]  alu_fz;              // (F[3:0] == 0) flag output (OC)
-wire [4:0]  g_n;                 // carry generate output
-wire [4:0]  p_n;                 // carry propagate output
-                                 //
 wire        alu_f7, alu_f15;     //
 wire        alu_c8, alu_c16;     //
 wire        alu_v8, alu_v16;     //
-tri1        alu_zl, alu_zh;      //
-wire [2:0]  alu_cxyz;            //
+wire        alu_zl, alu_zh;      //
                                  //
-tri1        pq_bit0, pq_bit15;   //
-tri1        sh_bit0, sh_bit7;    //
-tri1        sh_bit8, sh_bit15;   //
-tri1 [2:0]  sh_pr;               //
-tri1 [2:0]  sh_pq;               //
+wire        sh_bit0, sh_bit7;    //
+wire        sh_bit8, sh_bit15;   //
+                                 //
+wire        qs_out0, qs_out15;   //
+wire        sh_out0, sh_out7;    //
+wire        sh_out8, sh_out15;   //
                                  //
 reg  [7:0]  psw;                 // processor status word
 reg         psw_xc;              //
@@ -135,7 +129,7 @@ wire        psw_wl, psw_wh;      // PSW write strobes
                                  //
 reg  [15:0] ireg;                // instruction register
 wire        ir_stb;              //
-wire [6:0]  ins_ma;              // instruction micriaddress
+wire [6:0]  ins_ma;              // instruction micro address
 wire        ins_bf;              // instruction byte flag
                                  //
 wire        mcu_za;              // sequencer reset
@@ -624,21 +618,36 @@ end
 
 assign psw_c1 = mcr[32] ? psw[0] : alu_c16;
 assign psw_c2 = mcr[32] ? psw[0] : alu_c8;
-
 assign psw_z0 = alu_zh & (alu_zl | ireg[15]);
 assign psw_z1 = alu_zh & alu_zl;
-
 assign psw_v0 = alu_f15 ^ psw_c0;
+//
+// Microcode uses predefined patters to shift,
+// psw_xc always takes the bit being shifted out
+//
+//             mcr[55:44]
+// ASLB  .equ  B#00.10101110.01, 35X, RAMU
+// ROLB  .equ  B#00.10101110.11, 35X, RAMU
+// ASL   .equ  B#00.11101010.01, 35X, RAMU
+// ASHCL .equ  B#00.11101010.10, 35X, RAMQU
+// ROL   .equ  B#00.11101010.11, 35X, RAMU
+// RORB  .equ  B#01.01010111.00, 35X, RAMD
+// ASRB  .equ  B#01.11010101.10, 35X, RAMD
+// ROR   .equ  B#10.01010111.00, 35X, RAMD
+// ASR   .equ  B#10.11010101.10, 35X, RAMD
+// ASHXR .equ  B#11.11010101.01, 35X, RAMQD
+// ASHCR .equ  B#11.11010101.10, 35X, RAMQD
+//
 always @(*)
 begin
    if (~alu_i[8])
       psw_xc <= psw[0];
    else
       case (mcr[55:54])
-         2'b00: psw_xc <= sh_bit15;
-         2'b01: psw_xc <= sh_bit8;
-         2'b10: psw_xc <= sh_bit0;
-         2'b11: psw_xc <= pq_bit0;
+         2'b00: psw_xc <= sh_out15;
+         2'b01: psw_xc <= sh_out8;
+         2'b10: psw_xc <= sh_out0;
+         2'b11: psw_xc <= qs_out0;
          default: psw_xc <= 1'b0;
       endcase
 end
@@ -651,119 +660,60 @@ begin
       psw_c0 <= psw_xc;
 end
 
+//
+// Shift operations chain mux
+//
+assign sh_bit0  = (mcr[45:44] == 2'b00)
+                | (mcr[45:44] == 2'b10) & qs_out15
+                | (mcr[45:44] == 2'b11) & psw_c0;
+assign sh_bit15 = ~mcr[47] & ((mcr[45:44] == 2'b00)
+                           |  (mcr[45:44] == 2'b01) & (alu_v16 ^ alu_f15)
+                           |  (mcr[45:44] == 2'b10) & alu_f15
+                           |  (mcr[45:44] == 2'b11))
+                | ~mcr[53] & psw_c0;
+
+assign sh_bit7  = sh_out8;
+assign sh_bit8  = ~mcr[48] & sh_out7
+                | ~mcr[52] & sh_bit0;
+
 //______________________________________________________________________________
 //
 // Bit-slice ALU instantiation
 //
-am2901 alu0
+am4_alu alu
 (
-   .cp(tclk),        // ALU clock
-   .i(alu_i),        // ALU instruction
-   .a(alu_a),        // ALU port A selection
-   .b(alu_b),        // ALU port B selection
-   .d(alu_d[3:0]),   // ALU data input
-   .y(alu_y[3:0]),   // ALU data output
-   .oe_n(1'b0),      // output enable
-   .cin(mcr[9]),     // carry input
-   .ram0(sh_bit0),   // shift line register stack LSB
-   .q0(pq_bit0),     // shift line Q-register LSB
-   .ram3(sh_pr[0]),  // shift line register stack MSB
-   .q3(sh_pq[0]),    // shift line Q-register MSB
-   .cout(alu_fc[0]), // carry output
-   .ovr(alu_fv[0]),  // arithmetic overflow
-   .f3(alu_fn[0]),   // MSB of ALU output
-   .zf(alu_fz[0]),   // (F[3:0] == 0) flag output (OC)
-   .g_n(g_n[0]),     // carry generate output
-   .p_n(p_n[0])      // carry propagate output
+   .clk(tclk),          // ALU clock
+   .ena(1'b1),          // clock enable
+   .i(alu_i),           // ALU instruction
+   .a(alu_a),           // ALU port A selection
+   .b(alu_b),           // ALU port B selection
+   .d(alu_d[15:0]),     // ALU data input
+   .y(alu_y[15:0]),     // ALU data output
+   .r(alu_r[15:0]),     // ALU ram[a] output
+   .cin(mcr[9]),        // carry input
+   .c8(alu_c8),         // carry output, LSB
+   .c16(alu_c16),       // carry output, MSB
+   .v8(alu_v8),         // arithmetic overflow, LSB
+   .v16(alu_v16),       // arithmetic overflow, MSB
+   .zl(alu_zl),         // zero flag, LSB
+   .zh(alu_zh),         // zero flag, MSB
+   .f7(alu_f7),         // msb of LSB
+   .f15(alu_f15),       // msb of MSB
+                        //
+   .ram0_i(sh_bit0),    // shift register stack lsb LSB
+   .ram0_o(sh_out0),    //
+   .ram7_i(sh_bit7),    // shift register stack msb LSB
+   .ram7_o(sh_out7),    //
+   .ram8_i(sh_bit8),    // shift register stack lsb MSB
+   .ram8_o(sh_out8),    //
+   .ram15_i(sh_bit15),  // shift register stack msb MSB
+   .ram15_o(sh_out15),  //
+                        //
+   .q0_i(1'b0),         // shift Q-register lsb LSB
+   .q0_o(qs_out0),      //
+   .q15_i(sh_out0),     // shift Q-register msb MSB
+   .q15_o(qs_out15)     //
 );
-
-am2901 alu1
-(
-   .cp(tclk),        // ALU clock
-   .i(alu_i),        // ALU instruction
-   .a(alu_a),        // ALU port A selection
-   .b(alu_b),        // ALU port B selection
-   .d(alu_d[7:4]),   // ALU data input
-   .y(alu_y[7:4]),   // ALU data output
-   .oe_n(1'b0),      // output enable
-   .cin(alu_cxyz[0]),// carry input
-   .ram0(sh_pr[0]),  // shift line register stack LSB
-   .q0(sh_pq[0]),    // shift line Q-register LSB
-   .ram3(sh_bit7),   // shift line register stack MSB
-   .q3(sh_pq[1]),    // shift line Q-register MSB
-   .cout(alu_fc[1]), // carry output
-   .ovr(alu_fv[1]),  // arithmetic overflow
-   .f3(alu_fn[1]),   // MSB of ALU output
-   .zf(alu_fz[1]),   // (F[3:0] == 0) flag output (OC)
-   .g_n(g_n[1]),     // carry generate output
-   .p_n(p_n[1])      // carry propagate output
-);
-
-am2901 alu2
-(
-   .cp(tclk),        // ALU clock
-   .i(alu_i),        // ALU instruction
-   .a(alu_a),        // ALU port A selection
-   .b(alu_b),        // ALU port B selection
-   .d(alu_d[11:8]),  // ALU data input
-   .y(alu_y[11:8]),  // ALU data output
-   .oe_n(1'b0),      // output enable
-   .cin(alu_cxyz[1]),// carry input
-   .ram0(sh_bit8),   // shift line register stack LSB
-   .q0(sh_pq[1]),    // shift line Q-register LSB
-   .ram3(sh_pr[2]),  // shift line register stack MSB
-   .q3(sh_pq[2]),    // shift line Q-register MSB
-   .cout(alu_fc[2]), // carry output
-   .ovr(alu_fv[2]),  // arithmetic overflow
-   .f3(alu_fn[2]),   // MSB of ALU output
-   .zf(alu_fz[2]),   // (F[3:0] == 0) flag output (OC)
-   .g_n(g_n[2]),     // carry generate output
-   .p_n(p_n[2])      // carry propagate output
-);
-
-am2901 alu3
-(
-   .cp(tclk),        // ALU clock
-   .i(alu_i),        // ALU instruction
-   .a(alu_a),        // ALU port A selection
-   .b(alu_b),        // ALU port B selection
-   .d(alu_d[15:12]), // ALU data input
-   .y(alu_y[15:12]), // ALU data output
-   .oe_n(1'b0),      // output enable
-   .cin(alu_cxyz[2]),// carry input
-   .ram0(sh_pr[2]),  // shift line register stack LSB
-   .q0(sh_pq[2]),    // shift line Q-register LSB
-   .ram3(sh_bit15),  // shift line register stack MSB
-   .q3(pq_bit15),    // shift line Q-register MSB
-   .cout(alu_fc[3]), // carry output
-   .ovr(alu_fv[3]),  // arithmetic overflow
-   .f3(alu_fn[3]),   // MSB of ALU output
-   .zf(alu_fz[3]),   // (F[3:0] == 0) flag output (OC)
-   .g_n(g_n[3]),     // carry generate output
-   .p_n(p_n[3])      // carry propagate output
-);
-
-am2902 aluc
-(                    // carry look-ahead
-   .cin(mcr[9]),     // carry input
-   .g_n({1'b1,g_n[2:0]}),
-   .p_n({1'b1,p_n[2:0]}),
-   .cout(alu_cxyz),  // carry output
-   .gout_n(g_n[4]),  // carry generate output
-   .pout_n(p_n[4])   // carry propagate output
-);
-
-assign alu_zl = alu_fz[0] & alu_fz[1];
-assign alu_zh = alu_fz[2] & alu_fz[3];
-
-assign alu_f7 = alu_fn[1];
-assign alu_f15 = alu_fn[3];
-
-assign alu_v8 = alu_fv[1];
-assign alu_v16 = alu_fv[3];
-
-assign alu_c8 = alu_fc[1];
-assign alu_c16 = alu_fc[3];
 
 assign alu_dl = ~(alu_i[5] & mcr[9] & bra_n);
 assign alu_dh = ~(alu_i[5] & mcr[9] & sext_n);
@@ -832,7 +782,7 @@ begin
          2'b00: alu_d[7:0] = psw[7:0];
          2'b01: alu_d[7:0] = ad[7:0];
          2'b10: alu_d[7:0] = mcr[47:40];
-         2'b11: alu_d[7:0] = alu_y[15:8];
+         2'b11: alu_d[7:0] = alu_r[15:8];
          default: alu_d[7:0] = 8'h00;
       endcase
    else
@@ -843,32 +793,13 @@ begin
          2'b00: alu_d[15:8] = ctr[7:0];
          2'b01: alu_d[15:8] = ad[15:8];
          2'b10: alu_d[15:8] = mcr[55:48];
-         2'b11: alu_d[15:8] = alu_y[7:0];
+         2'b11: alu_d[15:8] = alu_r[7:0];
          default: alu_d[15:8] = 8'h00;
       endcase
    else
       alu_d[15:8] = 8'h00;
 end
 
-//
-// Shift operations chain mux
-//
-assign sh_bit0  = mcr[46] ? 1'bZ : (mcr[45:44] == 2'b00)
-                                 | (mcr[45:44] == 2'b10) & pq_bit15
-                                 | (mcr[45:44] == 2'b11) & psw_c0;
-assign sh_bit15 = mcr[47] ? 1'bZ : (mcr[45:44] == 2'b00)
-                                 | (mcr[45:44] == 2'b01) & (alu_v16 ^ alu_f15)
-                                 | (mcr[45:44] == 2'b10) & alu_f15
-                                 | (mcr[45:44] == 2'b11);
-assign sh_bit8  = mcr[48] ? 1'bZ : sh_bit7;
-assign sh_bit7  = mcr[49] ? 1'bZ : sh_bit8;
-assign pq_bit0  = mcr[50] ? 1'bZ : 1'b0;
-assign pq_bit15 = mcr[51] ? 1'bZ : sh_bit0;
-assign sh_bit8  = mcr[52] ? 1'bZ : sh_bit0;
-assign sh_bit15 = mcr[53] ? 1'bZ : psw_c0;
-
-
 //______________________________________________________________________________
 //
 endmodule
-

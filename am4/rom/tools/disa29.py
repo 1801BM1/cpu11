@@ -221,18 +221,18 @@ qio_t = (
 # ASL       0011 1X10 1001 -> *3A9, RAMU
 # ASHL  	0011 1X10 1001 -> *3A9, RAMU - dup
 #
-ash_t = {           # actually used in microcode
-    0x2B9: 'ASLB',  # 0010 1X11 1001    RAMU
-    0x2BB: 'ROLB',  # 0010 1X11 1011    RAMU
-    0x3A9: 'ASL',   # 0011 1X10 1001    RAMU
-    0x3AA: 'ASHCL', # 0011 1010 1010    RAMQU
-    0x3AB: 'ROL',   # 0011 1X10 1011    RAMU
-    0x55C: 'RORB',  # 0101 X1X1 11XX    RAMD
-    0x756: 'ASRB',  # 0111 X1X1 0X?0    RAMD
-    0x95C: 'ROR',   # 1001 X101 11XX    RAMD
-    0xB56: 'ASR',   # 1011 X101 0110    RAMD
-    0xF55: 'ASHXR', # 1111 0101 0101    RAMQD
-    0xF56: 'ASHCR', # 1111 0101 0110    RAMQD
+ash_t = {                   # actually used in microcode
+    0x2B9: ('ASLB', 'U'),   # 0010 1X11 1001    RAMU
+    0x2BB: ('ROLB', 'U'),   # 0010 1X11 1011    RAMU
+    0x3A9: ('ASL', 'U'),    # 0011 1X10 1001    RAMU
+    0x3AA: ('ASHCL', 'U'),  # 0011 1010 1010    RAMQU
+    0x3AB: ('ROL', 'U'),    # 0011 1X10 1011    RAMU
+    0x55C: ('RORB', 'D'),   # 0101 X1X1 11XX    RAMD
+    0x756: ('ASRB', 'D'),   # 0111 X1X1 0X?0    RAMD
+    0x95C: ('ROR', 'D'),    # 1001 X101 11XX    RAMD
+    0xB56: ('ASR', 'D'),    # 1011 X101 0110    RAMD
+    0xF55: ('ASHXR', 'D'),  # 1111 0101 0101    RAMQD
+    0xF56: ('ASHCR', 'D'),  # 1111 0101 0110    RAMQD
 }
 
 def zhex(value, width):
@@ -512,11 +512,20 @@ class Bf(object):
             return line
         line = CONT + 'shift\t'
         sh = ash_t.get(s)
-        if sh is not None:
-            return line + sh
-        line += 'B#' + bin(s)[2:]
-        line += '\n; Warning: unrecognized shift configuration'
-        self.wcnt += 1
+        if sh is None:
+            line += 'B#' + bin(s)[2:]
+            line += '\n; Warning: unrecognized shift configuration'
+            self.wcnt += 1
+            return line
+        line += sh[0]
+        if sh[1] == 'U' and q & 2 != 2:
+            line += '\n; Warning: shift configuration requires RAMU/RAMQU'
+            self.wcnt += 1
+            return line
+        if sh[1] == 'D' and q & 2 != 0:
+            line += '\n; Warning: shift configuration requires RAMD/RAMQD'
+            self.wcnt += 1
+            return line
         return line
 
     def get_rc(self):
