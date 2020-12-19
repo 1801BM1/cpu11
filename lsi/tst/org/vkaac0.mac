@@ -91,7 +91,7 @@
 ;
 ;	1) Place LTC switch in off position.
 ;	2) Load	program	into memory using abs loader.
-;	3) Tvpe	200G (there are	no switch settings and this diagnostic
+;	3) Type	200G (there are	no switch settings and this diagnostic
 ;	   does	not use	software switch	location $SWREG)
 ;	4) The program will loop and "END PASS"	will be	typed after
 ;	   the first pass and then every 377 passes. However type out
@@ -102,7 +102,7 @@
 ; 5.1	Operating mode
 ;
 ;	An 8-bit byte $ENVM (i.e. location 117)	has been used to define
-;	the oprating mode. All typeouts	can be suppressed by making
+;	the operating mode. All typeouts can be suppressed by making
 ;	bit 5 of byte $ENVM high. In other words by placing a 20000 in
 ;	location 116.
 ;
@@ -125,7 +125,7 @@
 ;
 ;	When a halt does occur it is recommended that the test sequence
 ;	location (i.e. location	102) be	checked	to verify that it matches
-;	the present test number. If it doesn't,	then the halt occured
+;	the present test number. If it doesn't,	then the halt occurred
 ;	because	the test sequence was not correct otherwise the	halt is
 ;	due to an error	in the test.
 ;
@@ -141,7 +141,7 @@
 ; 8.1	Execution time
 ;
 ;	Execution time of the diagnostic is less than a	second,	first
-;	"END PASS" will	be typed out within a second and every cosecutive
+;	"END PASS" will	be typed out within a second and every consecutive
 ;	"END PASS" will	be typed out within 20 seconds (see sec	4.2)
 ;
 ;	When running under apt in a script, the	first pass run time
@@ -179,6 +179,9 @@
 ;	This diagnostic	does not make a	pass with T-bit	set.
 ;_____________________________________________________________________________
 ;
+		HOEP	= 0			; halt on end-of-pass
+;_____________________________________________________________________________
+;
 ; LSI-11 macro instruction exerciser
 ;
 		.asect
@@ -198,7 +201,7 @@
 		$tn	= 1			;
 		$swr	= 160000		; halt on error,
 		.	= 0			; loop on test
-						; inhibit error	typout
+						; inhibit error	typeout
 ;_____________________________________________________________________________
 ;
 ; Trap catchers	of .+2 and halt	in locations 0 thru 776	(it is nlisted)
@@ -324,17 +327,17 @@ $etend:						; bit 8	- memory management
 ;		$apthd				; point	to apt header block
 ;		.	= .$x			; reset	location counter
 ;
-; Setup	apt parameter block as detined in the apt-pdp11	diagnostic
+; Setup	apt parameter block as defined in the apt-pdp11	diagnostic
 ; interface spec.
 ;
 $apthd:
-$hibts:		.word	0			; two high bits	of 18 bit milbox
+$hibts:		.word	0			; two high bits	of 18 bit mailbox
 $mbadr:		.word	$mail			; address of apt mailbox (0-15)
 $tstm:		.word	1			; run time of longest test
 $pastm:		.word	1			; run time in secs of 1st pass
 $unitm:		.word	0			; additional run time (secs)
-						; of a pass for	each add unit		.word	$etend-$mail/2		;
-		.word	$etend-$mail/2		; length of mailbix-etable
+						; of a pass for	each add unit
+		.word	$etend-$mail/2		; length of mailbox-etable
 						;
 		. = $apthd			;
 adr:						;
@@ -472,7 +475,7 @@ cc1:		mov	#2, -(R5)		; one of the above branches
 endcc1:		bne	vbit			;
 ;_____________________________________________________________________________
 ;
-; TEST 2 - check branch insructions with N&V bits set
+; TEST 2 - check branch instructions with N&V bits set
 ;
 vbit:		cmp	(R5), #2		;
 		bne	cc2			; if in	wrong sequence go to
@@ -490,12 +493,12 @@ vbit:		cmp	(R5), #2		;
 		bgt	endcc2			;
 						;
 cc2:		mov	#3, -(R5)		; one of the above branches
-		inc	-(R5)			; failed or wrong setuence
+		inc	-(R5)			; failed or wrong sequence
 		halt				;
 endcc2:		bge	cbit			;
 ;_____________________________________________________________________________
 ;
-; TEST 3 - check branch insructions with N, V&C bits set
+; TEST 3 - check branch instructions with N, V&C bits set
 ;
 cbit:		cmp	(R5), #3		;
 		bne	cc3			; if in	wrong sequence go to
@@ -512,11 +515,11 @@ cbit:		cmp	(R5), #3		;
 		bge	zbit			;
 						;
 cc3:		mov	#4, -(R5)		; one of the above branches
-		inc	-(R5)			; failed or wrong setuence
+		inc	-(R5)			; failed or wrong sequence
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 4 - check branch insructions with N, Z, V&C bits set
+; TEST 4 - check branch instructions with N, Z, V&C bits set
 ;
 zbit:		cmp	(R5), #4		;
 		bne	cc4			; if in	wrong sequence go to
@@ -535,11 +538,11 @@ zbit:		cmp	(R5), #4		;
 		beq	yescc			;
 						;
 cc4:		mov	#5, -(R5)		; one of the above branches
-		inc	-(R5)			; failed or wrong setuence
+		inc	-(R5)			; failed or wrong sequence
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 5 - check branch instuctions with all the condition codes set
+; TEST 5 - check branch instructions with all the condition codes set
 ;
 yescc:		cmp	(R5), #5		;
 		bne	cc6			; if in	wrong sequence go to
@@ -557,7 +560,7 @@ yescc:		cmp	(R5), #5		;
 		blos	notcc			;
 						;
 cc6:		mov	#6, -(R5)		; one of the above branches
-		inc	-(R5)			; failed or wrong setuence
+		inc	-(R5)			; failed or wrong sequence
 		halt				;
 ;_____________________________________________________________________________
 ;
@@ -577,7 +580,7 @@ notcc:		cmp	(R5), #6		;
 		bmi	cc5			;
 		bhi	endcc5			;
 cc5:		mov	#7, -(R5)		; one of the above branches
-		inc	-(R5)			; failed or wrong setuence
+		inc	-(R5)			; failed or wrong sequence
 		halt				;
 endcc5:		bpl	branch			;
 ;_____________________________________________________________________________
@@ -713,7 +716,7 @@ jmp4:		cmp	(R5), #12		;
 						;
 3$:		mov	#31, -(R5)		;
 		inc	-(R5)			;
-		halt				; no auto decremen1 from jmp4
+		halt				; no auto decrement from jmp4
 						;
 4$:		cmp	#3$-2, R0		; check	R0
 		beq	5$			;
@@ -878,7 +881,7 @@ jsrm:		mov	R5,-(SP)		; mov R5 to stack
 		beq	6$			;
 		mov	#60, -(R5)		;
 		inc	-(R5)			;
-		halt				; mark insruction failed
+		halt				; mark instruction failed
 						;
 6$:		mov	#12$, R1		; place	the address of 12$
 		jsr	R0, (R1)		; in R1	go to tag 12$
@@ -948,7 +951,7 @@ regs:		cmp	(R5), #15		;
 		br	tstb0			; continue
 1$:		mov	temp, SP		; restore stack	pointer
 eregs:		mov	#70, -(R5)		;
-		inc	-(R5)			; register seiection failure
+		inc	-(R5)			; register selection failure
 		halt				; or sequence error
 ;
 ; check	byte instructions, destination mode 0 only
@@ -1140,7 +1143,7 @@ negb0:		cmp	(R5), #23		;
 		negb	R0			; 2's complement
 		jsr	PC, @#$cc13		; check	for cc = 13
 		cmpb	#200, R0		; check	it
-		beq	rolb0			; cointinue if OK
+		beq	rolb0			; continue if OK
 enegb0:		mov	#110, -(R5)		;
 		inc	-(R5)			; wrong	result in R0
 		halt				; or wrong sequence
@@ -1185,7 +1188,7 @@ rorb0:		cmp	(R5), #25		;
 		beq	1$			; continue if OK
 		mov	#113, -(R5)		;
 		inc	-(R5)			;
-		halt				; rorb instructiin failed
+		halt				; rorb instruction failed
 						;
 1$:		rorb	R2			; shift
 		jsr	PC, @#$cc7		; check	for cc = 7
@@ -1279,7 +1282,7 @@ adcb0:		cmp	(R5), #30		;
 		inc	-(R5)			;
 		halt				; adcb instruction failed
 						;
-4$:		movb	#177, R0		; load largest positve number
+4$:		movb	#177, R0		; load largest positive number
 		sec				; C = 1
 		adcb	R0			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -1393,7 +1396,7 @@ cmp0:		cmp	(R5), #33		;
 		bpl	3$			; continue if OK
 		mov	#133, -(R5)		;
 		inc	-(R5)			; cmp instruction failed
-		halt				; (ewrong cc)
+		halt				; (wrong cc)
 						;
 3$:		cmp	R2, #77			; once more
 		bmi	bic0			; continue if OK
@@ -1427,7 +1430,7 @@ bic0:		cmp	(R5), #34		;
 		inc	-(R5)			;
 		halt				; bit or bis instruction failed
 						;
-2$:		bic	#77777,	R3		; clear	all exept for sign
+2$:		bic	#77777,	R3		; clear	all except for sign
 		jsr	PC, @#$cc11		; check	for cc = 11
 		mov	#177777, R0		;
 		bit	R0, R3			; check	it
@@ -1488,7 +1491,7 @@ com0:		cmp	(R5), #36		;
 		halt				; test is in wrong sequence
 						;
 1$:		inc	(R5)			;
-		mov	#125252, R3		; load every otner bit
+		mov	#125252, R3		; load every other bit
 		scc				;
 		com	R3			; 1's complement
 		jsr	PC, @#$cc1		; check	for cc =  1
@@ -1531,7 +1534,7 @@ neg0:		cmp	(R5), #37		;
 		neg	R0			; 2's complement
 		jsr	PC, @#$cc13		; check	for cc = 13
 		cmp	#100000, R0		; check	it
-		beq	rol0			; con1inue if OK
+		beq	rol0			; continue if OK
 						;
 eneg0:		mov	#146, -(R5)		;
 		inc	-(R5)			; wrong	result in R0
@@ -1667,7 +1670,7 @@ adc0:		cmp	(R5), #44		;
 		inc	-(R5)			;
 		halt				; adc instruction failed
 						;
-4$:		mov	#77777,	R0		; load largest positve number
+4$:		mov	#77777,	R0		; load largest positive number
 		sec				; C = 1
 		adc	R0			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -1910,7 +1913,7 @@ psw:		cmp	(R5), #53		;
 		beq	2$			; continue if bit 8 of PSW
 		mov	#203, -(R5)		; was extended in R1
 		inc	-(R5)			; mtps or mfps
-		halt				; instruction failfd
+		halt				; instruction failed
 						;
 2$:		jsr	PC, @#$cc4		; check	for cc = 4
 		mov	#377, R0		; set psw to 357 since mtps
@@ -2004,7 +2007,7 @@ mode2:		cmp	(R5), #55		;
 		mov	(R1)+, (R1)+		; 125252 ---> temp2
 		cmp	-(R2), #125252		; check	it
 		bne	emode2			; failed
-		tst	temp			; chelk	it
+		tst	temp			; check	it
 		beq	mode3			; OK, continue
 						;
 emode2:		mov	#212, -(R5)		; instructions
@@ -2422,7 +2425,7 @@ comb1:		cmp	(R5), #67		;
 		mov	#temp, R3		; load address
 		mov	#temp1,	R4		;
 		mov	#252, (R4)		;
-		movb	(R4)+, (R3)		; load every 0ther bit
+		movb	(R4)+, (R3)		; load every other bit
 		scc				;
 		comb	(R3)			; 1's complement
 		jsr	PC, @#$cc1		; check	for c =	1
@@ -2616,7 +2619,7 @@ adcb1:		cmp	(R5), #75		;
 		inc	-(R5)			;
 		halt				; adcb instruction failed
 						;
-4$:		movb	#177, (R0)		; load largest positve byte
+4$:		movb	#177, (R0)		; load largest positive byte
 		sec				; C = 1
 		adcb	(R0)			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -2747,7 +2750,8 @@ cmp1:		cmp	(R5), #100		;
 		beq	4$			;
 		mov	#274, -(R5)		;
 		inc	-(R5)			;
-		halt				; cmp or bis instuctions failed	in modes 0ther than 0
+		halt				; cmp or bis instructions failed
+						; in modes other than 0
 						;
 4$:		cmp	R2, #temp1+2		; R2 should contain the	address
 		beq	5$			; for temp2 i,e, temp1+2
@@ -2764,7 +2768,7 @@ cmp1:		cmp	(R5), #100		;
 						;
 ecmp1:		mov	#276, -(R5)		;
 		inc	-(R5)			; cmp or bis instructions failed
-		halt				; or wrong sequence cgunter
+		halt				; or wrong sequence counter
 ;_____________________________________________________________________________
 ;
 ; TEST 101 - new instructions used in this section are bic, bit
@@ -2798,7 +2802,7 @@ bic1:		cmp	(R5), #101		;
 						;
 2$:		mov	#77777,	(R0)+		; set all the bits at location
 		mov	R0, R2			; temp1	except sign bit
-		bic	-2(R2),	(R3)		; try clearing the otner bits
+		bic	-2(R2),	(R3)		; try clearing the other bits
 		jsr	PC, @#$cc11		; check	for cc = 11
 		cmp	R0, #temp1+2		;
 		beq	3$			;
@@ -2806,15 +2810,15 @@ bic1:		cmp	(R5), #101		;
 		inc	-(R5)			;
 		halt				;
 						; mov R0, (R0)+
-3$:		movR0p 				; place	addres of temp2	in temp2
+3$:		movR0p 				; place	address of temp2 in temp2
 		sevc				; set V	& C bits
 		bic	@-(R0),	R0		; clear	R0
 		jsr	PC, @#$cc5		; check	for cc = 5
 		bit	@-2(R4), (R3)		; check	it
 		jsr	PC, @#$cc11		; check	for cc = 11
-		mov	#125252, -(SP)		; set every otner bit on the stack
+		mov	#125252, -(SP)		; set every other bit on the stack
 		mov	@-2(R4), (R3)+		; set all the bits in temp
-		bic	0(SP), -(R3)		; clear	every otner bit	in temp
+		bic	0(SP), -(R3)		; clear	every other bit	in temp
 		cmp	(R3)+, #52525		; temp should contain 52525
 		beq	4$			;
 		mov	#302, -(R5)		;
@@ -2931,7 +2935,7 @@ neg1:		cmp	(R5), #104		;
 		halt				; neg instruction failed
 						;
 2$:		mov	0(R4), -(R4)		; temp1	contains the largest
-		neg	(R4)			; negative numberr
+		neg	(R4)			; negative number
 		jsr	PC, @#$cc13		; check	for cc = 13
 		cmp	0(R2), (R4)		; check	it
 		beq	rol1			; continue if OK
@@ -3079,7 +3083,7 @@ adc1:		cmp	(R5), #111		;
 		inc	-(R5)			;
 		halt				; adc instruction failed
 						;
-4$:		mov	#77777,	(R0)		; load largest positve number
+4$:		mov	#77777,	(R0)		; load largest positive number
 		sec				; C = 1
 		adc	(R0)			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -3186,7 +3190,7 @@ swab1:		cmp	(R5), #114		;
 		beq	1$			; continue if OK
 		mov	#334, -(R5)		;
 		inc	-(R5)			;
-		halt				; swab instrultion faiced
+		halt				; swab instruction failed
 						;
 1$:		mov	#377, (R3)		;
 		scc				;
@@ -3196,7 +3200,7 @@ swab1:		cmp	(R5), #114		;
 		cmp	#177400, (R3)		;
 		beq	xor1			;
 eswab1:		mov	#335 ,-(R5)		;
-		inc	-(R5)			; wrong	resuct in temp2
+		inc	-(R5)			; wrong	result in temp2
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
@@ -3371,7 +3375,7 @@ sob0:		cmp	(R5), #120		;
 		halt				; sob instruction failed
 						;
 4$:		mov	#10, R4			; place	10 in R4
-5$:		sob	R4, 5$			; stay here untill R4 =	0
+5$:		sob	R4, 5$			; stay here until R4 =	0
 		tst	R4			;
 		beq	pswn0			; continue if OK
 esob0:		mov	#353, -(R5)		;
@@ -3414,7 +3418,7 @@ epswn0:		mov	#355, -(R5)		;
 ; TEST 122 - byte instructions requiring word inst, to check
 ;
 btwrd:		cmp	(R5), #122		;
-		bne	ebtwrd			; if in	wrong sequnce go to
+		bne	ebtwrd			; if in	wrong sequence go to
 		inc	(R5)			; halt at the end of the test
 		clr	R0			;
 		scc				;
@@ -3431,7 +3435,7 @@ btwrd:		cmp	(R5), #122		;
 		mov	#177777, R0		;
 		movb	#0, R0			; clear	the lower byte of R0
 		jsr	PC, @#$cc5		; check	for cc = 5
-		tst	R0			; check	R0 for sign extention
+		tst	R0			; check	R0 for sign extension
 		beq	2$			;
 		mov	#357, -(R5)		;
 		inc	-(R5)			;
@@ -3494,6 +3498,10 @@ next:		cmp	(R5), #123		;
 		bne	doagn			; of pass every	377 passes
 						;
 		.type	, endpas		; type end of pass message
+.if ne HOEP                     		;
+		halt				; halt on end-of-pass
+.endc						;
+						;
 get42:		mov	@#42, R0		;
 		beq	doagn			;
 $endad:		jsr	PC, (R0)		;

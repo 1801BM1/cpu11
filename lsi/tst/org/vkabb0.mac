@@ -64,7 +64,7 @@
 ;	designed to run	under APT and ACT systems. When	running
 ;	under APT with bit 5 of	$envm low it will be required to
 ;	have a SLU with	TTY registers having addresses of 176560-66
-;	and interupt vectors of	70 for receiver	and 74 for trans-
+;	and interrupt vectors of 70 for receiver and 74 for trans-
 ;	mitter.
 ;
 ; 2.	Requirements
@@ -100,13 +100,13 @@
 ; 4.3.1	Stand alone
 ;
 ;	1) place LTC switch in off position (if	applicable).
-;	2) load	program	into memory using ABS loader or	XXDP+ (.R VKABb??).
+;	2) load	program	into memory using ABS loader or	XXDP+ (.R VKABB0).
 ;	3) set switches	(see sec 5.1) all low for worst	case.
 ;	4) type	200g if	using ABS loader.
 ;	5) the program will loop and "END PASS"	will be	typed after
 ;	   completion of first pass and	every 4th pass.	However	type
 ;	   out will be suppressed if bit 5 of location $envm is	high
-;	6) a minimum of	two passes should aluays be run.
+;	6) a minimum of	two passes should always be run.
 ;
 ; 4.3.2	Under APT
 ;
@@ -140,7 +140,7 @@
 ;
 ;	This routine called via	jsr instruction	is used	each time
 ;	an error is seen and an	error message of the format given
-;	in sec.	6.1 is typed out unless	supressed by the switches
+;	in sec.	6.1 is typed out unless	suppressed by the switches
 ;	defined	in sec.	5.1
 ;
 ; 5.2.2	Trap catcher
@@ -213,6 +213,11 @@
 ;	pass with T bit	set
 ;_____________________________________________________________________________
 ;
+		HOEP	= 0			; halt on end-of-pass
+		NOEISI  = 0			; no EIS-iterruptible tests
+;_____________________________________________________________________________
+;
+;
 		.asect
 		.nlist	mc, md,	cnd
 		.list	me
@@ -228,7 +233,8 @@
 ; Package (maindec-11-DZQAC-C5), Jan. 1981.
 ;
 		$tn	= 1			;
-		$swr	= 160000		; halt on error, loop	on test. inhibit error typ0u1
+		$swr	= 160000		; halt on error, loop on test
+						; inhibit error typout
 		. = 0				; trap catcher 0 - 776
 ;_____________________________________________________________________________
 ;
@@ -1801,7 +1807,7 @@ tst222:		scope				;
 		mfps	@#psword		; save ps
 		cmpb	#0, @#psword		; is ps	= 0
 		beq	.+10			;
-		jsr	PC, $hlt		; seen an errorv go to the halt	routine
+		jsr	PC, $hlt		; seen an error go to the halt routine
 		.word	154			; ps is	wrong
 						;
 		cmp	#0, R2			; is high order	= 0
@@ -1833,7 +1839,7 @@ tst223:		scope				;
 						;
 		cmp	#1, R4			; is high order	= 1
 		beq	.+10			;
-		jsr	PC, $hlt		; seen an error, go to the halc	routine
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
 		.word	160			; high order is	wrong
 						;
 		cmp	#0, R5			; is low order = 0
@@ -1908,7 +1914,7 @@ tst226:		scope				;
 		mfps	@#psword		; save ps
 		cmpb	#1, @#psword		; is ps	= 1
 		beq	.+10			;
-		jsr	PC, $hlt		; seen an error, go to the halt	poutiwe
+		jsr	PC, $hlt		; seen an error, go to the halt	routine
 		.word	170			; ps is	wrong
 						;
 		cmp	#37777,	R4		; is high order	= 37777
@@ -2704,7 +2710,7 @@ tst263:		scope				;
 		cmp	#0, R0			; is quotient =	0
 		beq	.+10			;
 		jsr	PC, $hlt		; seen an error, go to the halt	routine
-		.word	327			; quqtient is wrong
+		.word	327			; quotient is wrong
 						;
 		cmp	#0, R1			; is remainder = 0
 		beq	.+10			;
@@ -3264,7 +3270,11 @@ tst306:		scope				;
 ;
 ; TEST 307 - test that EIS aborts properly when	interrupted
 ;
-tst307:		bitb	#40, @#$envm		; if type outs has been	suppressed
+tst307:						;
+.if ne NOEISI					;
+		jmp	$eop			;
+.endc						;
+		bitb	#40, @#$envm		; if type outs has been	suppressed
 		bne	eash+2			; then skip this test
 		mov	@#ttyout, R2		;
 		mov	#rta307, (R2)+		; set interrupt	vector to rta307
@@ -3275,7 +3285,7 @@ tst307:		bitb	#40, @#$envm		; if type outs has been	suppressed
 		movb	#15, @$tpb		; out put a "CR"
 		movb	#100, @$tps		; enable TTY interrupt
 rtash:		bis	#1, R4			; place	a 1 in R4
-asha:		ash	#16., R4		; shiet	R4 for 16 times
+asha:		ash	#16., R4		; shift	R4 for 16 times
 		br	rtash			; stay in the loop until interrupted
 						;
 rta307:		clrb	@$tps			; clear	TTY interrupt
@@ -3317,7 +3327,7 @@ eash:		cmp	(SP)+, (SP)+		; restore the stack pointer
 tst310:		bitb	#40, @#$envm		; if type outs has been	suppressed
 		bne	emul+2			; then skip this test
 		mov	@#ttyout, R2		;
-		mov	#rta310, (R2)+		; set interupt vector to rta310
+		mov	#rta310, (R2)+		; set interrupt vector to rta310
 		mov	#340, (R2)		; and the interrupt PSW	as 340
 		mtps	#10			;
 		mov	#30, @#temp1		; prepare to execute this sub test 30 times
@@ -3392,6 +3402,9 @@ $eopct:		.word	1			;
 $endct:		.word	4			;
 		.word	$eopct			;
 		type	,$endmg			; type "END PASS"
+.if ne HOEP                     		;
+		halt				; halt on end-of-pass
+.endc						;
 		type	,$enull			; type a NULL character
 $get42:		mov	@#42, R0		; get monitor address
 		beq	$doagn			; branch if no monitor
@@ -3422,7 +3435,7 @@ $pwrup:		mov	#begin,	SP		; restore the SP
 ; Program comes	here on	encountering any error
 ;
 $hlt:		mov	@(SP), @#$fatal		; place	the error number at location $fatal
-		bit	#20000,	@#$swreg	; has the operator asked to supress error type outs
+		bit	#20000,	@#$swreg	; has the operator asked to suppress error type outs
 		bne	6$			;
 		type	,$crlf			; go and type a	CR, LF,	followed by 3 spaces
 		mov	R0, -(SP)		; save R0
@@ -3466,7 +3479,7 @@ $hlt:		mov	@(SP), @#$fatal		; place	the error number at location $fatal
 ; This routine is used to type asciz messages
 ;
 $type:		mov	R0, -(SP)		; save R0
-		mov	@2(SP),	R0		; get the address of the assciz	string
+		mov	@2(SP),	R0		; get the address of the asciz string
 2$:		movb	(R0)+, -(SP)		; push the character to	be typed onto stack
 		bne	4$			; branch if it is not the terminator
 		tst	(SP)+			;

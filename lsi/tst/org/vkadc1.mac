@@ -56,14 +56,14 @@
 ;
 ; 4.1	Switch register	bits
 ;
-;	The operator has the follouing options by setting
+;	The operator has the following options by setting
 ;	the software switch register (location 422)
 ;
 ;	bit 6=1	(100 octal) to suppress	testing	EIS and	FIS opcodes
 ;		(70000-75037) for reserved instruction trapping
 ;		in the last test of this diagnostic.
 ;
-;	bit 5=1	(40 octal) if we want to supress "end of pass" typeout
+;	bit 5=1	(40 octal) if we want to suppress "end of pass" typeout
 ;
 ;	bit 4=1	(20 octal) to suppress testing opcodes 75400-76777 for
 ;		reserved instructions traps in the last	test of	this
@@ -71,7 +71,7 @@
 ;
 ;	bit 3=1	(10 octal) to suppress testing opcodes 170000-177777
 ;		for reserved instructions traps	in the last test
-;		of this	diagn0stic.
+;		of this	diagnostic.
 ;
 ;	bit 2=1	(4 octal) to suppress testing opcodes 76030-76057
 ;		(DIS reserved opcode space) nor	EIS opcodes for
@@ -111,7 +111,7 @@
 ;	i.e. $env,$envm=100000)
 ;
 ;	The program will print end of pass after the 1st iteration and
-;	then print it every 15 times: aproximately 2 minutes.
+;	then print it every 15 times: approximately 2 minutes.
 ;
 ; 5.	Operation procedure
 ; 5.2	Subroutine abstracts
@@ -193,8 +193,8 @@
 ;
 ; 8.1	Execution time
 ;
-;	for one	pass aproximately 8 seconds: then it types
-;	"END OF PASS" aproximately every 2 minutes.
+;	for one	pass approximately 8 seconds: then it types
+;	"END OF PASS" approximately every 2 minutes.
 ;
 ; 9.	Program	description
 ;
@@ -212,6 +212,10 @@
 ;	Also, the trace	bit is checked to see if it causes a trap.
 ;	special	checks are made	to see if bus error traps occur	on
 ;	non-existent memory.
+;_____________________________________________________________________________
+;
+		HOEP	= 0			; halt on end-of-pass
+		MEMLIM	= 0			; 40000 to cut the loop
 ;_____________________________________________________________________________
 ;
 		.asect
@@ -466,7 +470,7 @@ here:		0				;
 ;
 tst1:		inc	@#$testn		; update test number
 		cmp	#1, @#$testn		; sequence error?
-		bne	tst2-12			; br to	error halt on seq erro
+		bne	tst2-12			; br to	error halt on seq error
 r6tst:		clr	SP			;
 		movb	(SP)+, here		; SP should increment by two
 		cmp	SP, #2			;
@@ -486,7 +490,7 @@ r6tst:		clr	SP			;
 						; to scope replace halt	w/ 240
 						; and replace next inst	w/ 750
 2$:		clr	SP			;
-		movb	(SP)+, (SP)+		; dùubles auto increment of SP
+		movb	(SP)+, (SP)+		; doubles auto increment of SP
 		cmp	SP, #4			;
 		beq	3$			;
 		mov	#3, @#$fatal		; move to mailbox *** 3	****
@@ -741,11 +745,11 @@ tst4:		inc	@#$testn		; update test number
 						; and replace next inst	w/ 702
 ;_____________________________________________________________________________
 ;
-; TEST 5 - that	a trap occures on a reserved instruction
+; TEST 5 - that	a trap occurs on a reserved instruction
 ;
 tst5:		inc	@#$testn		; update test number
 		cmp	#5, @#$testn		; sequence error?
-		bne	tst6-12			; br to	errcr halt on seq error
+		bne	tst6-12			; br to	error halt on seq error
 		mov	#buff, SP		; stack	pointer	setup
 		mov	#reta, rtrap		; return location
 		trapa				; reserved instruction,	should trap
@@ -1671,7 +1675,7 @@ retb5:		cmp	SP, #buff-4		; test decrement of SP
 ;
 ; TEST 42  - that proper PC is saved
 ;
-tst42:		inc	@#$testn		; update test nlmber
+tst42:		inc	@#$testn		; update test number
 		cmp	#42, @#$testn		; sequence error?
 		bne	tst43-12		; br to	error halt on seq error
 		mov	#buff, SP		; stack	pointer	setup
@@ -1805,7 +1809,7 @@ retg5:		bmi	1$			;
 						; and replace next inst	w/ 647
 ;_____________________________________________________________________________
 ;
-; TEST 45 - that a trap	occures	on all illegal instrucion
+; TEST 45 - that a trap	occurs on all illegal instruction
 ;
 tst45:		inc	@#$testn		; update test number
 		cmp	#45, @#$testn		; sequence error?
@@ -1846,7 +1850,7 @@ tst47:		inc	@#$testn		; update test number
 		mov	#buff, SP		; stack	pointer	setup
 		mov	#retk, rtrap5		; return from trap pointer
 instk:		jsr	R0, R0			; trap on this instruction
-retk:		cmp	#instk+2, buff-4	; check	for incremened PC
+retk:		cmp	#instk+2, buff-4	; check	for incremented PC
 		beq	tst50			;
 		mov	#174, @#$fatal		; move to mailbox *** 174 ***
 		inc	(R2)			; set msgtyp to	fatal error
@@ -1988,7 +1992,7 @@ tst52:		inc	@#$testn		; update test number
 		nop				; trap here
 		mov	#211, @#$fatal		; move to mailbox *** 211 ***
 		inc	(R2)			; set msgtyp to	fatal error
-		halt				; trace	bit did	not trapi
+		halt				; trace	bit did	not trap
 						; or wrong $testn
 						; to scope replace halt	w/ 240
 retat:						; and replace next inst	w/ 757
@@ -2412,14 +2416,24 @@ tst70:		inc	@#$testn		; update test number
 		bic	#10000,	@#hicore	; set high core	limit to 160000
 		bit	#2, @#$swreg		; check	if bit 1 is set
 		beq	1$			; branch if it is, leave limit=160000
-		bis	#10000,	@#hicore	; et upper core	limit to 30K (170000)
-1$:		clr	R0			;
+		bis	#10000,	@#hicore	; set upper core limit to 30K (170000)
+1$:						;
+.if ne memlim					;
+		mov	#memlim-10, R0		; to reduce simulation time
+.iff						; let's set pointer close to the 
+		clr	R0			; real memory limit
+.endc						;
 		clr	6			;
 		mov	#atrap,	4		; set up address trap entrance
 		mov	#buff, SP		;
 nor:		tstb	(R0)+			; if outside of	core, trap to 4
 		cmp	R0, (PC)+		; is pointer inside 28K	(30K) core
-hicore:		.word	160000			; may be changed to 170000 if 30K
+hicore:						;
+.if ne memlim					;
+		.word	memlim			;
+.iff						;
+		.word	160000			; may be changed to 170000 if 30K
+.endc						;
 		blo	nor			; test the rest	of core
 						;
 		mov	@#hicore, @#corh	; for use by end of pass checker if on tim
@@ -2428,7 +2442,7 @@ hicore:		.word	160000			; may be changed to 170000 if 30K
 						; - should trap	on LSI
 trpadr:		mov	#240, @#$fatal		; move to mailbox *** 240 ***
 		inc	(R2)			; set msgtyp to	fatal error
-		halt				; should have traped
+		halt				; should have trapped
 						; to scope replace halt	w/ 240
 						; and replace next inst	w/ 734
 						;
@@ -2453,7 +2467,7 @@ atrap:		dec	R0			; from	memory below 28K (or 30K)
 		mov	R0, corh		; move the first NXM location in corh
 						;
 						; This routine does NXM	traps
-						; until	it finds an existant
+						; until	it finds an existent
 						; memory location
 		mov	@#hicore ,R0		; set up the highest mem location
 		dec	R0			; make 1 less than the highest core boundary
@@ -2488,7 +2502,7 @@ btrap:		mfps	status			;
 						; and replace next inst	w/ 646
 1$:		cmp	buff-4,#dtrap1		;
 		beq	ctrap			; branch if trap PC is 0k
-		cmp	buff-4,	#dtrap2		; check	if it trapped on the (ilr instr
+		cmp	buff-4,	#dtrap2		; check	if it trapped on the clr instr
 		beq	ctrap			;
 auto1:		mov	#245, @#$fatal		; move to mailbox *** 245 ***
 		inc	(R2)			; set msgtyp to	fatal error
@@ -2658,7 +2672,7 @@ table:		6				;
 		107777				;
 eisfis:		67777				; if we	have the EIS FIS option
 		73777				; then the eisfis group
-fis:		74777				; will be skiped
+fis:		74777				; will be skipped
 		75037				;
 stop:		75377				;
 		76027				;
@@ -2667,7 +2681,11 @@ dis:		76027				;
 		76057				;
 		76777				;
 stop1:		167777				;
+.if ne memlim					;
+		170007				; reduce simulation time
+.iff						;
 		177777				;
+.endc						;
 finish:		.				; end flag
 inst:		halt				; will continue	reserved inst
 		br	terr			;
@@ -2689,6 +2707,9 @@ gin3:		inc	@#$pass			;
 		bne	1$			; branch if not
 		jsr	R5, type		;
 		eopmsg				;
+.if ne HOEP                     		;
+		halt				; halt on end-of-pass
+.endc						;
 		reset				;
 1$:		mov	#177761, passpt		; do it	15 decimal times
 act:		mov	@#42, R0		; check	act
