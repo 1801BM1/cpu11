@@ -49,43 +49,29 @@ wire        io_rdin;             //
 wire        io_din;              //
 wire        ct_oe;               //
 wire        ad_oe;               //
-reg         astb;                //
 reg         la0;                 //
-wire        astb_clr;            //
-                                 //
-wire        sync;                //
-wire        sync_135;            //
-wire        sync_150;            //
-wire        sync_210;            //
-wire        sync_300;            //
-wire [19:0] sync_ph;             //
-reg         sync0;               //
+wire        wadr;                //
                                  //
 wire        rply;                //
 wire        sack;                //
 wire        din;                 //
+wire        sync;                //
+reg         sync0, din0;         //
+                                 //
 reg         dmgo, dmgo0;         //
 reg         dreq;                //
                                  //
-reg         gclk_wait;           // clock generator stop synchronized
-wire [9:0]  gclk_ph;             // generator clock phases
-wire        gclk;                // generator clock phase 0 ns
-wire        gclk_60;             // generator clock phase 60 ns
-wire        gclk_105;            // generator clock phase 105 ns
-wire        gclk_135;            // generator clock phase 135 ns
-                                 //
-wire        mclk;                // menory clock
 wire        tclk;                // primary transition clock
+wire        tena;                // primary clock enable
                                  //
-reg         tclk_en, tclk_en0;   //
-wire        gclk_en, gclk_en0;   // global clock enable
-wire        qt_req, qt_req0;     // Q-bus timer request
+reg         qt_req;              // Q-bus timer request
+reg [5:0]   qt_cnt;              // Q-bus timer counter
                                  //
 wire [55:0] mcr;                 // micro instruction register
 wire [9:0]  ma;                  // micro instruction ROM address
 wire [9:0]  na;                  // next address/map operation
 wire [7:4]  cc;                  // condition codes
-reg         cc6, cc7;            //
+reg         cc6, cc7, cc8;       //
                                  //
 wire        reg_ena;             //
 wire        clr_init;            //
@@ -155,45 +141,14 @@ reg [7:0]   ctr;                 // counter
 
 //______________________________________________________________________________
 //
-// Clock generator around digital delay loop
+// Transition clock and clock enable
 //
-am4_delay glkc_dll(
-   .clk(pin_clk),
-   .inp(gclk),
-   .phase(gclk_ph)
-);
-
-assign gclk = ~(gclk_135 & ~(gclk & gclk_wait));
-assign gclk_60  = gclk_ph[3];
-assign gclk_105 = gclk_ph[6];
-assign gclk_135 = gclk_ph[8];
-
-assign mclk = ~(gclk & gclk_60);
-always @(posedge pin_clk) gclk_wait = ~gclk_en;
-
-assign tclk = mclk | tclk_en | (mcr[38] & mcr[39] & dreq);
-
-assign gclk_en = gclk_en0 & (qt_req | ~astb);
-assign gclk_en0 = ~mcr[35] | cc[6] | rply;
-always @(posedge mclk) tclk_en0 <= cc[6] ? ~tclk_en0 : 1'b1;
-always @(negedge gclk_105 or negedge tclk_en0 or negedge gclk_en0)
-begin
-   if (~gclk_en0)
-      tclk_en <= 1'b1;
-   else
-      if (~tclk_en0)
-         tclk_en <= 1'b0;
-      else
-         if (~rply)
-            tclk_en <= 1'b0;
-         else
-            case({mcr[39],~mcr[35]})
-               2'b00: tclk_en <= 1'b0;
-               2'b01: tclk_en <= tclk_en;
-               2'b10: tclk_en <= ~tclk_en;
-               2'b11: tclk_en <= 1'b1;
-            endcase
-end
+assign tclk = pin_clk;
+assign tena =  cc8 |                            // initial start
+              ~wadr                             // wait write address
+            & ~(mcr[39] & rply)                 // wait rply done
+            &  (~mcr[35] | cc[6] | rply)        // enabled | bus error | ready
+            & ~(mcr[38] & mcr[39] & dreq);      // clock stop from bus arbiter
 
 //______________________________________________________________________________
 //
@@ -218,7 +173,7 @@ begin
       init <= ~clr_init & (set_init | init);
 end
 
-assign mcu_za = irq[0] & irq[1];
+assign mcu_za = cc8 | irq[0] & irq[1];
 //______________________________________________________________________________
 //
 // Microcode ROM instantiation
@@ -226,6 +181,7 @@ assign mcu_za = irq[0] & irq[1];
 mcrom rom
 (
    .clk(tclk),       // output register clock
+   .ena(tena),       // clock enable
    .addr(ma),        // next address to fetch
    .data(mcr)        // micro instruction opcode
 );
@@ -239,7 +195,7 @@ begin
    if (init)
       ireg <= 16'h0000;
    else
-      if (ir_stb)
+      if (tena & ir_stb)
          ireg <= alu_d;
 end
 
@@ -255,7 +211,7 @@ assign ir_stb = ~mcr[29] & mcr[31];
 //
 // Control strobes decoder
 //
-assign reg_ena  = (mcr[32] & ~mcr[29]) & ~dclo & ~mclk;
+assign reg_ena  = (mcr[32] & ~mcr[29]) & ~dclo;
 assign clr_init = reg_ena & mcr[52:50] == 3'b001;
 assign clr_ref  = reg_ena & mcr[52:50] == 3'b010;
 assign set_ref  = reg_ena & mcr[52:50] == 3'b011;
@@ -275,18 +231,20 @@ assign clr_evnt = reg_ena & mcr[52:50] == 3'b111;
 assign cc[6] = cc6;
 assign cc[7] = cc7;
 
-always @(negedge qt_req or posedge clr_ref or posedge dclo)
+always @(posedge pin_clk or posedge dclo)
 begin
    if (dclo)
-      cc6 <= 1'b1;
+      cc6 <= 1'b0;
    else
       if (clr_ref)
          cc6 <= 1'b0;
       else
-         cc6 <= ~gclk_en;
+         if (qt_req)
+            cc6 <= 1'b1;
 end
 
 always @(posedge tclk) cc7 = aclo0;
+always @(posedge tclk) cc8 = dclo;
 
 //______________________________________________________________________________
 //
@@ -317,16 +275,17 @@ begin
    if (dclo)
       irq <= 8'h00;
    else
-   begin
-      irq[0] <= cc6;
-      irq[1] <= ~irq[0];
-      irq[2] <=~pin_virq_n & ~psw[7];
-      irq[3] <= evnt & ~psw[7];
-      irq[4] <= ~pin_halt_n;
-      irq[5] <= aclo;
-      irq[6] <= psw[4];
-      irq[7] <= rfrq;
-   end
+      if (tena)
+      begin
+         irq[0] <= cc6;
+         irq[1] <= ~irq[0];
+         irq[2] <=~pin_virq_n & ~psw[7];
+         irq[3] <= evnt & ~psw[7];
+         irq[4] <= ~pin_halt_n;
+         irq[5] <= aclo;
+         irq[6] <= psw[4];
+         irq[7] <= rfrq;
+      end
 end
 
 assign cc[5] = ~(|irq[7:2]);
@@ -340,7 +299,7 @@ assign iv[2:0] =  irq[7] ? 3'b000 :
 //
 // Bus arbiter
 //
-always @(negedge gclk_105 or posedge io_rdin or posedge sack)
+always @(posedge pin_clk)
 begin
    if (sack)
       dreq <= 1'b1;
@@ -351,7 +310,7 @@ begin
          dreq <= ~pin_dmr_n;
 end
 
-always @(posedge mclk or negedge dreq)
+always @(posedge pin_clk)
 begin
       if (~dreq)
          dmgo0 <= 1'b0;
@@ -359,7 +318,7 @@ begin
          dmgo0 <= ~sack;
 end
 
-always @(posedge mclk or posedge sync)
+always @(posedge pin_clk)
 begin
       if (sync)
          dmgo <= 1'b0;
@@ -369,77 +328,50 @@ end
 
 //______________________________________________________________________________
 //
-// Bus timeout, 18 is multiplication factor between pin_clk and tclk
+// Bus transaction timer
 //
-localparam TCLK_CLK = 18;
-defparam qbus_to0.AM4_PULSE_WIDTH_CLK = 64 * TCLK_CLK;
-am4_pulse qbus_to0
-(
-   .clk(pin_clk),
-   .reset_n(~gclk_en & ~dclo),
-   .a_n(1'b0),
-   .b(mcr[35]),
-   .q(qt_req0)
-);
-
-defparam qbus_to1.AM4_PULSE_WIDTH_CLK = 1 * TCLK_CLK;
-am4_pulse qbus_to1
-(
-   .clk(pin_clk),
-   .reset_n(~dclo),
-   .a_n(1'b0),
-   .b(~qt_req0),
-   .q(qt_req)
-);
+always @(posedge pin_clk or posedge dclo)
+begin
+   if (dclo)
+   begin
+      qt_cnt <= 6'b000000;
+      qt_req <= 1'b0;
+   end
+   else
+      if (din | io_dout)
+      begin
+         qt_cnt <= qt_cnt + 6'b000001;
+         qt_req <= &qt_cnt & ~rply;
+      end
+      else
+      begin
+         qt_cnt <= 6'b000000;
+         qt_req <= 1'b0;
+      end
+end
 
 //______________________________________________________________________________
 //
 assign io_sync = ~mcr[38];
 assign io_dout = mcr[37];
-assign din = io_rdin | (io_din & sync_135 & ~astb);
-assign sync = sync_210;
+assign din = io_rdin | (io_din & din0);
+assign sync = io_sync & sync0;
+assign wadr = io_sync & ~sync0 & io_wtbt;
 
-always @(posedge pin_clk or posedge io_sync)
+always @(posedge pin_clk)
 begin
    if (io_sync)
       sync0 <= 1'b1;
    else
-      if (init | ~rply)
+      if (init | ~rply | ~io_sync)
          sync0 <= 1'b0;
+
+   if (io_sync & ~sync0)
+      la0 <= alu_y[0];
+
+   din0 <= io_din & sync0;
 end
 
-am4_delay sync0_dll
-(
-   .clk(pin_clk),
-   .inp(sync0),
-   .phase(sync_ph[9:0])
-);
-
-am4_delay sync1_dll
-(
-   .clk(pin_clk),
-   .inp(sync_150),
-   .phase(sync_ph[19:10])
-);
-
-assign sync_135 = sync_ph[8];
-assign sync_150 = sync_ph[9];
-assign sync_210 = sync_ph[13];
-assign sync_300 = sync_ph[19];
-
-assign astb_clr = sync_150 & sync_300;
-always @(posedge pin_clk or posedge dclo or posedge astb_clr)
-begin
-   if (dclo)
-      astb <= 1'b1;
-   else
-      if (astb_clr)
-         astb <= 1'b0;
-      else
-         astb <= sync0;
-end
-
-always @(posedge astb) la0 <= alu_y[0];
 //______________________________________________________________________________
 //
 // Dynamic memory refresh logic
@@ -498,7 +430,7 @@ assign ad = ~pin_ad_n;
 //
 am4_seq seq(
    .clk(tclk),             // main clock
-   .ena(1'b1),             // clock enable
+   .ena(tena),             // clock enable
    .ora({1'b0, mcu_ora}),  // or conditions
    .d(na),                 // immed address input
    .y(ma),                 // address output
@@ -683,7 +615,7 @@ assign sh_bit8  = ~mcr[48] & sh_out7
 am4_alu alu
 (
    .clk(tclk),          // ALU clock
-   .ena(1'b1),          // clock enable
+   .ena(tena),          // clock enable
    .i(alu_i),           // ALU instruction
    .a(alu_a),           // ALU port A selection
    .b(alu_b),           // ALU port B selection

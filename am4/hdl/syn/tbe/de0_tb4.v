@@ -169,8 +169,8 @@ end
 
 always @(posedge din or posedge dout)
 begin
-@ (negedge clk);
-@ (posedge clk);
+// @ (negedge clk);
+// @ (posedge clk);
 #2
    ad_oe    = 1'b0;
    rply     = 1'b1;
@@ -286,7 +286,7 @@ end
 
 always @(negedge tty_tx_rdy)
 begin
-   for (i=0; i<4000; i = i + 1)
+   for (i=0; i<512; i = i + 1)
    begin
 @ (negedge clk);
 @ (posedge clk);

@@ -121,6 +121,7 @@ tst	.def	36X, 10VH#000, 10Q#134          ; Z | A
 ;		36X, B#XX, 23X, 10VQ#134	
 tstd	.def	36X, B#0000000000, 10Q#137	; D | Z
 nopa	.def	21X, B#XX, 23X, 10Q#147		; D & Z
+resv	.def	56H#00000000000000		; reserved
 ;_________________________________________________________________________
 ;
 ; Am29811 T-condition code mux and OR modification
@@ -233,7 +234,6 @@ EVENTC	.equ	Q#7			; reset event request
 qio	.def	12X, 9V, 35X		;
 dreq	.def	16X, B#11, 38X		;
 					;
-RSYNC	.equ	B#000000000		; active SYNC with RDIN
 SYNC	.equ	B#XXXXX0XXX		; active SYNC
 WTBT	.equ	B#1XXXXXXXX		; write/byte
 RDIN	.equ	B#X0XXXXXXX		; unconditional DIN
@@ -245,7 +245,7 @@ DOUT	.equ	B#XXXXXX1XX		; active DOUT
 IOEN	.equ	B#XXXXXXX0X		; I/O in progress
 WAIT	.equ	B#XXXXXXXX1		; stop clock active
 					;
-nqio	.def	12X, NORD, 35X		; no I/O and NORD is set
+nqio	.def	12X, B#X1XXX1010, 35X	; no I/O and NORD is set
 					;
 ;_________________________________________________________________________
 ;

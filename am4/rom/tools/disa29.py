@@ -557,10 +557,7 @@ class Bf(object):
                 line += CONT + 'nqio'  # workaround for inactive silly RDIN
             return line
         line = CONT + 'qio'
-        rc = rc ^ 0x88
-        if rc == 0x88:
-            return line + '\tRSYNC'
-        rc = rc ^ 0x2
+        rc = rc ^ 0x8A
         for i in range(9):
             if rc & (1 << i):
                 if shown:
@@ -754,30 +751,33 @@ class Bf(object):
             # Provide the location counter directive
             #
             line += self.get_loc(addr)
-            #
-            # Analyze microsequencer instruction
-            #
-            line += self.get_mcu(addr, mcu)
-            #
-            # Analyze ALU opcode and operands
-            #
-            line += self.get_alu()
-            #
-            # Analyze data mux
-            #
-            line += self.get_dmux()
-            #
-            # Analyze shift mux field
-            #
-            line += self.get_shift()
-            #
-            # Analyze PSW and register control
-            #
-            line += self.get_rc()
-            #
-            # Analyze IO transaction
-            #
-            line += self.get_io()
+            if self.word:
+                #
+                # Analyze microsequencer instruction
+                #
+                line += self.get_mcu(addr, mcu)
+                #
+                # Analyze ALU opcode and operands
+                #
+                line += self.get_alu()
+                #
+                # Analyze data mux
+                #
+                line += self.get_dmux()
+                #
+                # Analyze shift mux field
+                #
+                line += self.get_shift()
+                #
+                # Analyze PSW and register control
+                #
+                line += self.get_rc()
+                #
+                # Analyze IO transaction
+                #
+                line += self.get_io()
+            else:
+                line += '\tresv\n'
             #
             # Output result to listing file
             #

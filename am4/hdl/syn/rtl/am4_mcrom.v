@@ -10,6 +10,7 @@
 module mcrom
 (
    input       clk,     // input clock
+   input       ena,     // clock enable
    input [9:0] addr,    // instruction address
    output [55:0] data   // output read opcode
 );
@@ -35,7 +36,7 @@ end
 //______________________________________________________________________________
 //
 assign data = q;
-always @ (posedge clk) q <= rom[addr];
+always @ (posedge clk) if (ena) q <= rom[addr];
 
 endmodule
 

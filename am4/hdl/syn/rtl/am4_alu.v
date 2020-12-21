@@ -4,8 +4,6 @@
 //
 // Four-bit Microprocessor Slice
 //
-`timescale 1ns / 100ps
-
 module am4_alu
 (
    input          clk,        // clock positive
@@ -57,6 +55,19 @@ wire [15:0] f_alu;            // ALU result output
                               //
 wire        c6, c7, c14, c15; // carries
 wire [16:0] sum;              // sum to get carries
+
+//______________________________________________________________________________
+//
+// Initialization to eliminate uncertain simulation
+//
+integer m;
+
+initial
+begin
+   for (m=0; m<16; m = m + 1)
+      q_ram[m] = 4'b0000;
+   q_reg = 4'b0000;
+end
 
 //______________________________________________________________________________
 //
