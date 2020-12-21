@@ -32,20 +32,22 @@ There are a few words regarding the reverse engineering process stages:
 - [1801BM2](/vm2) - USSR microprocessor, no DEC prototype, proprietary die design
 - [1801BM3](/vm3) - USSR microprocessor, no DEC prototype, proprietary die design
 - [LSI-11](/lsi) - Soviet 581-series, DEC LSI-11 clone, Western Digital MCP-1600 chipset
+- [M4](/am4) - Soviet replica of military LSI-11M, AMD Am2900 bit-slices
 
 ## PI-test perfromance
 
 The 1000 signs of Pi calculation test is based on spigot algorithm. The digits are the times in 50Hz ticks.
 All models were Wishbone-compatible and run on the DE0 board with the same system configurations, software was
 placed into static memory with zero wait states. LSI-11 was running at 80MHz and results are multiplied by 0.8
-to match with other ones. There are three variants of the test with various combinations of supported
-EIS instructions.
+to match with other ones. M4 was running at 50MHz and results are multiplied by 0.5. There are three variants
+of the test with various combinations of supported EIS instructions.
 
 | Model    | Frequency     | no EIS | MUL only | MUL/DIV |
 |----------|---------------|--------|----------|---------|
 | LSI-11   | 100MHz(80MHz) | 746    | 422      | 284     |
 | 1801BM1A | 100MHz        | 586    | ---      | ---     |
 | 1801BM1Г | 100MHz        | 588    | 458      | ---     |
+| M4       | 100MHz(50MHz) | 532    | 275      | 154     |
 | 1801BM2  | 100MHz        | 340    | 190      | 123     |
 
 ## Supported FPGA development boards

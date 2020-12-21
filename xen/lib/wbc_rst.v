@@ -263,6 +263,7 @@ begin
             sys_ms <= 1'b1;
             count_ms <= 0;
          end
+         else
             count_ms <= count_ms + 1'b1;
          //
          // System Timer interrupt

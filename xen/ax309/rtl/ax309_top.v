@@ -142,6 +142,10 @@ wbc_vm2 cpu
 `ifdef CONFIG_CPU_LSI
 wbc_lsi cpu
 `endif
+
+`ifdef CONFIG_CPU_AM4
+wbc_am4 cpu
+`endif
 (
    .osc_clk(sys_clk_p),          // ax3_clock_50 can feed PLL only
    .sys_clk_p(sys_clk_p),        // system clock positive phase

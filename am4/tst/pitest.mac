@@ -34,8 +34,8 @@
 ;
 ; Test configuration values
 ;
-		HMUL	= 0 			; hardware multiplication, 0 - no
-		HDIV 	= 0  			; hardware division, 0 - no
+		HMUL	= 1 			; hardware multiplication, 0 - no
+		HDIV 	= 1  			; hardware division, 0 - no
 		OPT 	= 3.			; use 3 if N<=14000, limits R3 to 0x1f'ff'ff'ff
 		MAXD 	= 1200.			; maximal digits (memory limited)
 ;_____________________________________________________________________________
@@ -312,7 +312,7 @@ entry:		mov	#$stack, SP		;
 		mov	#$txbuf, $txend		;
 		mov	#$txbuf, $txbeg		;
 						;
-		mov	#1409., R0		; '0581' logo
+		mov	#6148., R0		; '1804' logo
 		jsr	PC, outhex		;
 						;
 		mov	#100, @#RXCSR		;

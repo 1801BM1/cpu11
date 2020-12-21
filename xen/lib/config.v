@@ -8,17 +8,18 @@
 //
 // CPU selector - only one of available CPU type must be defined
 //
-`define CONFIG_CPU_VM1        1
+`define CONFIG_CPU_AM4        1
 
 //`define CONFIG_CPU_VM1      1
 //`define CONFIG_CPU_VM2      1
 //`define CONFIG_CPU_LSI      1
+//`define CONFIG_CPU_AM4      1
 //
 //
 // PLL selector - only one of available PLL type must be defined
 // The appropriate .sdc file musy be copied to provide constraints
 //
-`define  CONFIG_PLL_66        1
+`define  CONFIG_PLL_50        1
 
 // `define  CONFIG_PLL_50     1
 // `define  CONFIG_PLL_66     1
@@ -79,6 +80,11 @@
 `define CPU_TEST_MEMF "../../tst/lsi.mem"
 `endif
 
+`ifdef CONFIG_CPU_AM4
+`define CPU_TEST_FILE "../../tst/am4.mif"
+`define CPU_TEST_MEMF "../../tst/am4.mem"
+`endif
+
 //______________________________________________________________________________
 //
 // Reset button debounce interval (in ms))
@@ -97,7 +103,7 @@
 //
 `define CONFIG_RESET_START_ADDRESS        16'o000000
 //
-// LSI-11 boot mode
+// M4 and LSI-11 boot mode
 //
 // 00 - start reserved MicROM
 // 01 - start from 173000

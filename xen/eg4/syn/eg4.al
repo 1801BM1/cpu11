@@ -2,7 +2,7 @@
 <Project>
     <Project_Created_Time>2020-07-23 20:19:40</Project_Created_Time>
     <TD_Version>4.6.18154</TD_Version>
-    <UCode>00110100</UCode>
+    <UCode>11000001</UCode>
     <Name>eg4</Name>
     <HardWare>
         <Family>EG4</Family>
@@ -32,6 +32,12 @@
             <File>../rtl/eg4_tlib.v</File>
             <File>../rtl/vm1_tlib.v</File>
             <File>../rtl/lsi_tlib.v</File>
+            <File>../../../am4/hdl/wbc/rtl/am4_alu.v</File>
+            <File>../../../am4/hdl/wbc/rtl/am4_plm.v</File>
+            <File>../../../am4/hdl/wbc/rtl/am4_seq.v</File>
+            <File>../../../am4/hdl/wbc/rtl/am4_wb.v</File>
+            <File>../../lib/wbc_am4.v</File>
+            <File>../rtl/am4_tlib.v</File>
         </Verilog>
         <ADC_FILE>eg4.adc</ADC_FILE>
         <SDC_FILE>eg4.sdc</SDC_FILE>
@@ -64,7 +70,7 @@
         <SimProperty/>
     </Property>
     <Project_Settings>
-        <Step_Last_Change>2020-07-25 13:29:17</Step_Last_Change>
+        <Step_Last_Change>2020-12-22 15:25:25</Step_Last_Change>
         <Current_Step>0</Current_Step>
         <Step_Status>true</Step_Status>
     </Project_Settings>
