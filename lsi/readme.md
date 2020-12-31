@@ -141,4 +141,4 @@ projects.
 | QC5     | 5CEFA2F23I7N    | Cyclone V    | 86 MHz  | 1040 | 535 | 4 M10K |
 | QC10    | 10CL006U256CN8  | Cyclone 10   | 58 MHz  | 1455 | 393 | 4 M9K  |
 | EG4     | EG4S20BG256     | Eagle EG4S20 | 70 MHz  | 1559 | 590 | 5 M9K  |
-- [Lichee Tang RiscV](https://tang.sipeed.com/en/) - Anlogic Eagle EG4
+| QA7     | XC7A35TFTG256-1 | Artix 7      | 85 MHz  | 1202 | 634 | 1 BR   |

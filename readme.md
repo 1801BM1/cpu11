@@ -59,4 +59,5 @@ The synchronous models are planned to be run (and appropriate sample projects to
 - [Alinx AX309](http://artofcircuits.com/product/alinx-ax309-spartan-6-fpga-development-board-xc6slx9-2ftg256c) - Xilinx Spartan-6
 - [QMTech QC5-core](https://github.com/ChinaQMTECH/QM_CYCLONE_V) - Altera Cyclone-V
 - [QMTech QC10-core](https://github.com/ChinaQMTECH/QM_Cyclone10_10CL006) - Altera Cyclone-10LP
+- [QMTech QA7-core](https://github.com/ChinaQMTECH/QM_XC7A35T_DDR3) - Xilinx Artix-7
 - [Lichee Tang Primer](https://tang.sipeed.com/en/) - Anlogic Eagle EG4S20

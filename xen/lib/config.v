@@ -68,21 +68,25 @@
 `ifdef CONFIG_CPU_VM1
 `define CPU_TEST_FILE "../../tst/vm1.mif"
 `define CPU_TEST_MEMF "../../tst/vm1.mem"
+`define CPU_TEST_MEMN "vm1.mem"
 `endif
 
 `ifdef CONFIG_CPU_VM2
 `define CPU_TEST_FILE "../../tst/vm2.mif"
 `define CPU_TEST_MEMF "../../tst/vm2.mem"
+`define CPU_TEST_MEMN "vm2.mem"
 `endif
 
 `ifdef CONFIG_CPU_LSI
 `define CPU_TEST_FILE "../../tst/lsi.mif"
 `define CPU_TEST_MEMF "../../tst/lsi.mem"
+`define CPU_TEST_MEMN "lsi.mem"
 `endif
 
 `ifdef CONFIG_CPU_AM4
 `define CPU_TEST_FILE "../../tst/am4.mif"
 `define CPU_TEST_MEMF "../../tst/am4.mem"
+`define CPU_TEST_MEMN "am4.mem"
 `endif
 
 //______________________________________________________________________________

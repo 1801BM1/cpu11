@@ -107,3 +107,4 @@ projects.
 | QC5     | 5CEFA2F23I7N    | Cyclone V    | 131 MHz | 693  | 384 | 1 M10K |
 | QC10    | 10CL006U256CN8  | Cyclone 10   | 108 MHz | 1349 | 694 | 1 M9K  |
 | EG4     | EG4S20BG256     | Eagle EG4S20 | 95 MHz  | 1810 | 621 | 1 M9K  |
+| QA7     | XC7A35TFTG256-1 | Artix 7      | 124 MHz | 1298 | 669 | 0.5 BR |
