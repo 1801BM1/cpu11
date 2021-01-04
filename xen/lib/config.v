@@ -57,9 +57,38 @@
 `define  CONFIG_SYS_CLOCK     75000000
 `endif
 
+`ifdef   CONFIG_PLL_80
+`define  CONFIG_SYS_CLOCK     80000000
+`endif
+
+`ifdef   CONFIG_PLL_85
+`define  CONFIG_SYS_CLOCK     85000000
+`endif
+
+`ifdef   CONFIG_PLL_90
+`define  CONFIG_SYS_CLOCK     90000000
+`endif
+
+`ifdef   CONFIG_PLL_95
+`define  CONFIG_SYS_CLOCK     95000000
+`endif
+
 `ifdef   CONFIG_PLL_100
 `define  CONFIG_SYS_CLOCK     100000000
 `endif
+`ifdef   CONFIG_PLL_110
+`define  CONFIG_SYS_CLOCK     110000000
+`endif
+`ifdef   CONFIG_PLL_115
+`define  CONFIG_SYS_CLOCK     115000000
+`endif
+`ifdef   CONFIG_PLL_120
+`define  CONFIG_SYS_CLOCK     120000000
+`endif
+`ifdef   CONFIG_PLL_123
+`define  CONFIG_SYS_CLOCK     124750000
+`endif
+
 
 `define  CONFIG_SLOW_DIV  (`CONFIG_SYS_CLOCK / 5000000)
 

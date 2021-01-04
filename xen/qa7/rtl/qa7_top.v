@@ -188,6 +188,30 @@ qa7_pll66 corepll
 `ifdef CONFIG_PLL_75
 qa7_pll75 corepll
 `endif
+`ifdef CONFIG_PLL_80
+qa7_pll80 corepll
+`endif
+`ifdef CONFIG_PLL_85
+qa7_pll85 corepll
+`endif
+`ifdef CONFIG_PLL_90
+qa7_pll90 corepll
+`endif
+`ifdef CONFIG_PLL_95
+qa7_pll95 corepll
+`endif
+`ifdef CONFIG_PLL_100
+qa7_pll100 corepll
+`endif
+`ifdef CONFIG_PLL_110
+qa7_pll110 corepll
+`endif
+`ifdef CONFIG_PLL_120
+qa7_pll120 corepll
+`endif
+`ifdef CONFIG_PLL_123
+qa7_pll123 corepll
+`endif
 (
    .inclk0(clk50),
    .c0(sys_clk_p),
