@@ -57,38 +57,9 @@
 `define  CONFIG_SYS_CLOCK     75000000
 `endif
 
-`ifdef   CONFIG_PLL_80
-`define  CONFIG_SYS_CLOCK     80000000
-`endif
-
-`ifdef   CONFIG_PLL_85
-`define  CONFIG_SYS_CLOCK     85000000
-`endif
-
-`ifdef   CONFIG_PLL_90
-`define  CONFIG_SYS_CLOCK     90000000
-`endif
-
-`ifdef   CONFIG_PLL_95
-`define  CONFIG_SYS_CLOCK     95000000
-`endif
-
 `ifdef   CONFIG_PLL_100
 `define  CONFIG_SYS_CLOCK     100000000
 `endif
-`ifdef   CONFIG_PLL_110
-`define  CONFIG_SYS_CLOCK     110000000
-`endif
-`ifdef   CONFIG_PLL_115
-`define  CONFIG_SYS_CLOCK     115000000
-`endif
-`ifdef   CONFIG_PLL_120
-`define  CONFIG_SYS_CLOCK     120000000
-`endif
-`ifdef   CONFIG_PLL_123
-`define  CONFIG_SYS_CLOCK     124750000
-`endif
-
 
 `define  CONFIG_SLOW_DIV  (`CONFIG_SYS_CLOCK / 5000000)
 
@@ -97,21 +68,25 @@
 `ifdef CONFIG_CPU_VM1
 `define CPU_TEST_FILE "../../tst/vm1.mif"
 `define CPU_TEST_MEMF "../../tst/vm1.mem"
+`define CPU_TEST_MEMN "vm1.mem"
 `endif
 
 `ifdef CONFIG_CPU_VM2
 `define CPU_TEST_FILE "../../tst/vm2.mif"
 `define CPU_TEST_MEMF "../../tst/vm2.mem"
+`define CPU_TEST_MEMN "vm2.mem"
 `endif
 
 `ifdef CONFIG_CPU_LSI
 `define CPU_TEST_FILE "../../tst/lsi.mif"
 `define CPU_TEST_MEMF "../../tst/lsi.mem"
+`define CPU_TEST_MEMN "lsi.mem"
 `endif
 
 `ifdef CONFIG_CPU_AM4
 `define CPU_TEST_FILE "../../tst/am4.mif"
 `define CPU_TEST_MEMF "../../tst/am4.mem"
+`define CPU_TEST_MEMN "am4.mem"
 `endif
 
 //______________________________________________________________________________

@@ -87,13 +87,14 @@ set_property PACKAGE_PIN P9 [get_ports {qa7_hex[7]}]
 # PMOD 9x2 connector
 # 1 - 3.3V, 2 - GND, 3 - 3.3V+4k7 - M1, 4 - 3.3V+4k7 - M2
 # 17 - P5, 18 - L5
-set_property IOSTANDARD LVCMOS33 [get_ports qa7_gpio1[0]]
-set_property IOSTANDARD LVCMOS33 [get_ports qa7_gpio1[1]]
-set_property PACKAGE_PIN P5 [get_ports qa7_gpio1[0]]
-set_property PACKAGE_PIN L5 [get_ports qa7_gpio1[1]]
+set_property IOSTANDARD LVCMOS33 [get_ports {qa7_gpio1[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {qa7_gpio1[1]}]
+set_property PACKAGE_PIN P5 [get_ports {qa7_gpio1[0]}]
+set_property PACKAGE_PIN L5 [get_ports {qa7_gpio1[1]}]
 
 
 create_clock -period 20.000 -name qa7_clock_50 -waveform {0.000 10.000} [get_ports qa7_clock_50]
-set_input_jitter [get_clocks -of_objects [get_ports qa7_clock_50]] 0.2
+set_input_jitter [get_clocks -of_objects [get_ports qa7_clock_50]] 0.200
 
 set_property PHASESHIFT_MODE WAVEFORM [get_cells -hierarchical *adv*]
+

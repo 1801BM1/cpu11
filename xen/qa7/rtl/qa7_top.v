@@ -8,42 +8,6 @@
 
 //______________________________________________________________________________
 //
-// Initialized RAM block - 8K x 16
-//
-module wbc_mem
-(
-   input          wb_clk_i,
-   input  [15:0]  wb_adr_i,
-   input  [15:0]  wb_dat_i,
-   output [15:0]  wb_dat_o,
-   input          wb_cyc_i,
-   input          wb_we_i,
-   input  [1:0]   wb_sel_i,
-   input          wb_stb_i,
-   output         wb_ack_o
-);
-wire [1:0] ena;
-reg [1:0]ack;
-
-qa7_mem ram(
-   .addra(wb_adr_i[13:1]),
-   .clka(wb_clk_i),
-   .dina(wb_dat_i),
-   .wea( wb_we_i & wb_cyc_i & wb_stb_i),
-   .ena(ena),
-   .douta(wb_dat_o));
-
-assign ena = wb_we_i ? wb_sel_i : 2'b11;
-assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
-always @ (posedge wb_clk_i)
-begin
-   ack[0] <= wb_cyc_i & wb_stb_i;
-   ack[1] <= wb_cyc_i & ack[0];
-end
-endmodule
-
-//______________________________________________________________________________
-//
 // Top project module - instantiates the QA7 board itself
 //
 module qa7_top
