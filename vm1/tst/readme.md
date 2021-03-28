@@ -29,7 +29,7 @@ drive with Windows directory. Building batch copies the source file to
 shared temporary directory, creates RT-11 build.com batch and executes
 simulator application with appropriate commands. The compilation results
 can be taken from the same shared directory. ZIP arhive of simulator was used
-to compile tests can be dowloaded [here](http://www.1801bm1.com/files/utils/rt11_sim.zip)
+to compile tests can be downloaded [here](http://www.1801bm1.com/files/utils/rt11_sim.zip)
 
 To setup compilation environment:
 - create shared directory, without spaces and ASCII only symbols in name
