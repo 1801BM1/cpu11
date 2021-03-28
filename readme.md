@@ -8,7 +8,7 @@ Typically the results include:
 - restored topology in PCAD format
 - restored gate-level schematics in PCAD and pdf formats
 - original asynchronous Verilog-HDL model of processor
-- refactoring original Verilog-HDL model to synchronous one to run on real FPGA
+- refactored original Verilog-HDL model to synchronous one to run on real FPGA
 
 There are a few words regarding the reverse engineering process stages:
 - sample decapsulating, milling die from the plastic package with CNC, then etching with 104 percents boiling oleum
@@ -21,7 +21,7 @@ There are a few words regarding the reverse engineering process stages:
 - transferring vectorized images to PCB CAD system
 - schematic restoration using PCB CAD back annotation
 - manual schematic refactoring into human-readable form
-- writing the original asynchronous Verilog HDL model, with all schematics specifics
+- writing the original asynchronous Verilog HDL model, with all original schematics specifics
 - simulating and debug the original Verilog HDL model, running PDP-11 factory test software on the model
 - Verilog HDL model refactoring to get synchronous model, running on real FPGA
 - transforming processor-specific bus to standard Wishbone master interface to integrate into SoC

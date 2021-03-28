@@ -15,7 +15,7 @@ vlog -vlog01compat -work work +incdir+../../../lsi/hdl/wbc/rtl {../../../lsi/hdl
 vlog -vlog01compat -work work +incdir+../../../lsi/hdl/wbc/rtl {../../../lsi/hdl/wbc/rtl/mcp1611.v}
 vlog -vlog01compat -work work +incdir+../../../lsi/hdl/wbc/rtl {../../../lsi/hdl/wbc/rtl/mcp1621.v}
 vlog -vlog01compat -work work +incdir+../syn/db {../syn/db/de0_pll75_altpll.v}
-vlog -vlog01compat -work work +incdir+../rtl {../de0_top.v}
+vlog -vlog01compat -work work +incdir+../rtl {../rtl/de0_top.v}
 vlog -vlog01compat -work work +incdir+../../lib {../../lib/wbc_lsi.v}
 vlog -vlog01compat -work work +incdir+../../../lsi/hdl/wbc/rtl +define+LSI11_FILE_MICROM="../../../lsi/rom/all_22b.rom" {../../../lsi/hdl/wbc/rtl/mcp1631.v}
 

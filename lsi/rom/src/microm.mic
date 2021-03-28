@@ -12,7 +12,7 @@
 ; software shall at all	times remain in	Digital.
 ;
 ;
-; Disassembled and analized by <1801BM1@gmail.com>
+; Disassembled and analyzed by <1801BM1@gmail.com>
 ; To compile: cp16mic.py microm	--lst microm --obj microm.mem
 ;
 ;_________________________________________________________________________
@@ -27,7 +27,7 @@
 ; G5-G0		R5-R0	PDP-11 registers
 ;
 ; PDP-11 PSW
-; PPSWH:	bit 7	- interrupt 0/1	enable/disable,	mapped to I5
+; PPSWH:	bit 7	- interrupt 1/0	enable/disable,	mapped to I5
 ;		bit 6	- not used by LSI-11
 ;		bit 5	- not used by LSI-11
 ;		bit 4	- T-bit	trace trap, mapped to I4
@@ -1744,9 +1744,9 @@ cmd_g:	mw	RDSTL,PCL	;
 	jmp	2$		;
 				;
 	.loc	0x19A		;
-2$:	si	i5		; disable interrupts
-	jmp	resop		;
-				;
+2$:	si	i5		; enable interrupts
+	jmp	resop		; ODT starts program
+				; with enabled interrupt
 	.loc	0x19E		;
 resop:	jsr	sinit		; performs RESET
 	jmp	rsvc0		; instruction
