@@ -23,16 +23,19 @@ import copy
 import sys
 import re
 
+DC303_AX = 0x070
+
 netlist = {}
 cmplist = {}
 tcalist = {}
+romlist = [-1]*0x200
 
 class tcmp(object):
     def __init__(self):
         self.pins = {}
         self.attr = {}
         self.name = ""
-    
+
 class tnet(object):
     def __init__(self):
         self.nodes = {}
@@ -157,7 +160,7 @@ def read_netlist(f, verb):
                     continue
 #
 # Adding new component on "compInst" closure
-#                
+#
                 if token == ")":
                     if prev == ")":
                         state.s = state.STATE_NETLIST
@@ -189,7 +192,7 @@ def read_netlist(f, verb):
                     continue
 #
 # Adding new net on "net" closure
-#                
+#
                 if token == ")":
                     if prev == ")":
                         state.s = state.STATE_NETLIST
@@ -207,7 +210,7 @@ def read_netlist(f, verb):
                     continue
 #
 # Open new node list
-#                
+#
                 if token.startswith('"') and prev == "node":
                     state.s = state.STATE_NODE
                     compName = token.strip('"')
@@ -234,7 +237,7 @@ def read_netlist(f, verb):
                 comp.pins[npin] = cnet.name
                 continue
 
-            printf("Invalid state %d", state.s)
+            print("Invalid state %d", state.s)
             exit(-1)
 
     if nskip or ignor:
@@ -274,7 +277,7 @@ def tc12_expand(l, tc, tlist):
     str1 = " " + l[:index] + '1' + l[index+1:]
     tc12_expand(str1, tc, tlist)
 
-def proc_1621_12(arch, verb):
+def proc_1621_12(verb):
     vlist = []
     vdict = {}
     vlitc = {}
@@ -318,7 +321,7 @@ def proc_1621_12(arch, verb):
             continue
         l = ""
         for j in range(11):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 l = "1" + l
                 continue
             if clra & (1 << j):
@@ -367,7 +370,7 @@ def proc_1621_12(arch, verb):
         print([oct(x) for x in tcalist[i]], end="")
     print(tcalist)
 
-def proc_1621_34(arch, verb):
+def proc_1621_34(verb):
     lta = []
     lra = []
     ltsr = []
@@ -438,7 +441,7 @@ def proc_1621_34(arch, verb):
 
         tr = ""
         for j in range(0, 8):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 tr = "1" + tr
                 continue
             if clra & (1 << j):
@@ -449,7 +452,7 @@ def proc_1621_34(arch, verb):
         tc = ""
         nb = 0
         for j in range(8, 15):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 tc = "1" + tc
                 nb += 1
                 continue
@@ -463,7 +466,7 @@ def proc_1621_34(arch, verb):
 
         irq = ""
         for j in range(15, 22):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 irq = "1" + irq
                 continue
             if clra & (1 << j):
@@ -473,7 +476,7 @@ def proc_1621_34(arch, verb):
 
         tsr = ""
         for j in range(22, 24):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 tsr = "1" + tsr
                 continue
             if clra & (1 << j):
@@ -577,7 +580,7 @@ def proc_1621_34(arch, verb):
             l = l + "p[%d] | " % i
         print("%s;" % l[:-3])
 
-def proc_1621_mr(arch, verb):
+def proc_1621_mr(verb):
     print("\r\nMicroinstruction decode array [1621]")
     for i in range(24):
         vlink = "MLINK_%02d" %  i
@@ -614,7 +617,7 @@ def proc_1621_mr(arch, verb):
         clra >>= 8
         l = ""
         for j in range(9):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 l = "1" + l
                 continue
             if clra & (1 << j):
@@ -625,7 +628,7 @@ def proc_1621_mr(arch, verb):
             print("%s: 11'b%s" % (vnet.name, l))
         print("assign pl[%d] = cmp({plmq, mir[15:8]}, 9'b%s);" % (i, l))
 
-def proc_1611(arch, verb):
+def proc_1611(verb):
     pl_set = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
     pl_clr = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
 
@@ -674,7 +677,7 @@ def proc_1611(arch, verb):
 
         l = ""
         for j in range(8, 16):
-            if seta & (1 << j): 
+            if seta & (1 << j):
                 l = "1" + l
                 continue
             if clra & (1 << j):
@@ -734,17 +737,301 @@ def proc_1611(arch, verb):
             l = l + "p[%d] | " % j
         print("%s;" % l[:-3])
 
+def proc_303_pla(verb):
+    print("Decoding PLA matrix ...")
+    for i in range(138):
+        vlink = "P%d" %  i
+        vnet = netlist.get(vlink, None)
+        if vnet is None:
+            print("Net %s not found in netlist" % vlink)
+            exit(-1)
+        if verb:
+            print(vnet.name, vnet.nodes)
+
+        # gather mask for Pn-products for Hn/~Hn and In/~In
+        seta = 0
+        clra = 0
+        for t in vnet.nodes:
+            nodes = vnet.nodes[t]
+            if len(nodes) == 1 and nodes[0] == 3:
+                l = cmplist[t].pins[2]
+                if re.fullmatch(r"H[0-6]", l):
+                    clra |= 1 << int(l[1:])
+                    continue
+                if re.fullmatch(r"~H[0-6]", l):
+                    seta |= 1 << int(l[2:])
+                    continue
+                if re.fullmatch(r"I\d{1,2}", l):
+                    clra |= 1 << (int(l[1:]) + 12)
+                    continue
+                if re.fullmatch(r"~I\d{1,2}", l):
+                    seta |= 1 << (int(l[2:]) + 12)
+                    continue
+
+        if (seta & clra or seta & 0xF80 or clra & 0xF80 or
+            seta >= (1<<28) or clra >= (1<<28)):
+            print("Net: %s bitmask %03X %03X error" % (vnet.name, seta, clra))
+            exit(-1)
+
+        # convert mask to string like "000111xxxx"
+        l = ""
+        for j in range(27, -1, -1):
+            if seta & (1 << j):
+                l += "1"
+                continue
+            if clra & (1 << j):
+                l += "0"
+                continue
+            l += "x"
+
+        if verb:
+            print("%s: %07X %07X -> %s" % (vlink, seta, clra, l))
+        print("assign p[%d] = cmp({d_in, a_in}, {16'b%s, 7'b%s});"
+              % (i, l[:16], l[-7:]))
+
+    for i in range(25):
+        plink = "PL%d" %  (i * 4)
+        pnet = netlist.get(plink, None)
+        if pnet is None:
+            print("Net %s not found in netlist" % plink)
+            exit(-1)
+        if verb:
+            print(pnet.name, pnet.nodes)
+
+        d = 0
+        for t in pnet.nodes:
+            nodes = pnet.nodes[t]
+            if len(nodes) != 1:
+                print("Net %s has invalid attachment %s" % (plink, t))
+                exit(-1)
+            cmp = cmplist[t]
+            if cmp.pins[3] != plink:
+                if (cmp.pins[1] == plink and
+                    cmp.pins[2] == "CLK" and
+                    cmp.pins[3] == "+5V"):
+                    continue
+                print("Net %s has invalid attachment %s" % (plink, t))
+                exit(-1)
+            if cmp.pins[1] != "GND":
+                if cmp.pins[2] == "PG0":
+                    continue
+                print("Net %s has invalid attachment %s" % (plink, t))
+                exit(-1)
+
+            # find the Pn attachment through transistor chain
+            vnet = netlist[cmp.pins[2]]
+            for v in vnet.nodes:
+                nodes = vnet.nodes[v]
+                if len(nodes) != 1:
+                    continue
+                cmp = cmplist[v]
+                if cmp.pins[1] == "~CLK":
+                    cmp = comp_by_pin(netlist[cmp.pins[2]], 3)
+                    if cmp is None or cmp.pins[2] != "~PSTB":
+                        print("No tranceiving component found in net %s" % vnet.name)
+                        exit(-1)
+                    pname = cmp.pins[1]
+                    if re.fullmatch(r"P\d{1,3}", pname):
+                        d |= 1 << int(pname[1:])
+                        break
+                    print("Unrecognized net %s found in net %s"
+                          % (pname, vnet.name))
+                    exit(-1)
+                if cmp.pins[3] == "~CLK":
+                    cmp = comp_by_pin(netlist[cmp.pins[2]], 1)
+                    if cmp is None or cmp.pins[2] != "~PSTB":
+                        print("No tranceiving component found in net %s" % vnet.name)
+                        exit(-1)
+                    cmp = comp_by_pin(netlist[cmp.pins[3]], 1)
+                    if cmp is None or cmp.pins[3] != "+12V":
+                        print("No tranceiving component found in net %s" % vnet.name)
+                        exit(-1)
+                    pname = cmp.pins[2]
+                    if re.fullmatch(r"P\d{1,3}", pname):
+                        d |= 1 << int(pname[1:])
+                        break
+                    print("Unrecognized net %s found in net %s"
+                          % (pname, vnet.name))
+                    exit(-1)
+        l = "assign pl[%d] = " % i
+        for j in range(137, 99, -1):
+            if d  & (1 << j):
+                l = l + "p[%d] | " % j
+        for j in range(99, 9, -1):
+            if d  & (1 << j):
+                l = l + "p[%d]  | " % j
+        for j in range(9, -1, -1):
+            if d  & (1 << j):
+                l = l + "p[%d]   | " % j
+        l = l[:-3]
+        l = l.strip()
+        print("%s;" % l)
+
+def dc303_pdata(plink):
+    pnet = netlist.get(plink, None)
+    if pnet is None:
+        print("Net %s not found in netlist" % plink)
+        exit(-1)
+    data = 0
+    for t in pnet.nodes:
+        nodes = pnet.nodes[t]
+        cmp = cmplist[t]
+        if len(nodes) != 1:
+            print("Net %s has invalid attachment %s" % (plink, t))
+            exit(-1)
+        if nodes[0] != 2:
+            continue
+        if cmp.pins[1] != "GND":
+            print("Net %s has invalid attachment %s" % (plink, t))
+            exit(-1)
+        l = cmp.pins[3]
+        if not re.fullmatch(r"PL\d{1,3}", l):
+            print("Net %s has invalid attachment %s, %s" % (plink, t, l))
+            exit(-1)
+        data |= 1 << int(l[2:])
+    return data
+
+def dc303_insrom(addr, vect, nsh):
+    na = 0
+    for i in range(9):
+        if vect & (1 << (i * 8 + nsh)):
+            na |= 1 << i
+    mc = 0
+    for i in range(9):
+        if vect & (1 << (i * 8 + 4 + nsh)):
+            mc |= 1 << i
+    for i in range(9, 16):
+        if vect & (1 << (i * 4 + 36 + nsh)):
+            mc |= 1 << i
+    data = ~mc & 0xFFFF | (~na & 0x1FF) << 16
+    romlist[addr & 0x1FF] = data
+    if ((addr & DC303_AX) >= DC303_AX):
+        if (addr >= 0x200 or (addr & 0x00F) < 6):
+            xadr = addr & 0xF | (addr >> 3) & 0x30
+            romlist[xadr] = data
+    return
+
+def dc303_outrom(verb):
+    print('DEPTH = 512;\n'
+          'WIDTH = 25;\n'
+          'ADDRESS_RADIX = HEX;\n'
+          'DATA_RADIX = HEX;\n'
+          'CONTENT BEGIN')
+    for addr in range(len(romlist)):
+        data = romlist[addr]
+        if (data >= 0):
+            print('%03X: %07X;' % (addr, data))
+    print('END;')
+    return
+
+def proc_303_rom(verb):
+    print("Decoding ROM matrix ...")
+    for i in range(138):
+        vlink = "P%d" %  i
+        vnet = netlist.get(vlink, None)
+        if vnet is None:
+            print("Net %s not found in netlist" % vlink)
+            exit(-1)
+        if verb:
+            print(vnet.name, vnet.nodes)
+
+        # gather mask for Pn-products for Hn/~Hn and In/~In
+        seta = 0
+        clra = 0
+        data = 0
+        for t in vnet.nodes:
+            nodes = vnet.nodes[t]
+            cmp = cmplist[t]
+            if len(nodes) != 1:
+                print("Net %s has invalid attachment %s" % (vlink, t))
+                exit(-1)
+            if nodes[0] == 3:
+                l = cmp.pins[2]
+                if re.fullmatch(r"A[0-8]", l):
+                    clra |= 1 << int(l[1:])
+                    continue
+                if l == "AX":
+                    clra |= 1 << 9
+                    continue
+                if re.fullmatch(r"~A[0-8]", l):
+                    seta |= 1 << int(l[2:])
+                    continue
+                if l == "~AX":
+                    seta |= 1 << 9
+                    continue
+                if (re.fullmatch(r"H[0-6]", l) or
+                    re.fullmatch(r"~H[0-6]", l) or
+                    re.fullmatch(r"I\d{1,2}", l) or
+                    re.fullmatch(r"~I\d{1,2}", l)):
+                    continue
+            if nodes[0] == 1 and cmp.pins[2] == "CLK1":
+                    continue
+            if nodes[0] == 1 and cmp.pins[2] == "~PSTB":
+                    cmp = comp_by_pin(netlist[cmp.pins[3]], 2)
+                    if cmp is None or cmp.pins[1] != "~CLK":
+                        print("Net %s has unrecognized attachment %s"
+                               % (vlink, t))
+                        exit(-1)
+                    plink = cmp.pins[3]
+                    if verb:
+                        print("2: %s %s %s" % (vlink, cmp.name, plink))
+                    data |= dc303_pdata(plink)
+                    continue
+            if nodes[0] == 2 and cmp.pins[3] == "+12V":
+                    cmp = comp_by_pin(netlist[cmp.pins[1]], 3)
+                    if cmp is None or cmp.pins[2] != "~PSTB":
+                        print("Net %s has unrecognized attachment %s"
+                               % (vlink, t))
+                        exit(-1)
+                    cmp = comp_by_pin(netlist[cmp.pins[1]], 2)
+                    if cmp is None or cmp.pins[3] != "~CLK":
+                        print("Net %s has unrecognized attachment %s"
+                               % (vlink, t))
+                        exit(-1)
+                    plink = cmp.pins[1]
+                    if verb:
+                        print("3: %s %s %s" % (vlink, cmp.name, plink))
+                    data |= dc303_pdata(plink)
+                    continue
+            print("Net %s has unrecognized attachment %s" % (vlink, t))
+            exit(-1)
+
+        if seta & clra or seta >= (1 << 10) or clra >= (1 << 10):
+            print("Net: %s bitmask %03X %03X error" % (vnet.name, seta, clra))
+            exit(-1)
+        mask = seta | clra
+        addr = seta
+        if mask != 0x27F and mask != 0x07F:
+            print("Net: %s bitmask %03X %03X error" % (vnet.name, seta, clra))
+            exit(-1)
+        if mask == 0x3FF and (addr & DC303_AX) < DC303_AX:
+            print("Net: %s high AX address %03X %03X error"
+                  % (vnet.name, seta, clra))
+            exit(-1)
+        if (verb):
+            print("@ %03X:%025X %s" % (addr, data, vlink))
+        dc303_insrom(addr | (1 << 7), data, 2) # check for page 1/2
+        dc303_insrom(addr | (2 << 7), data, 1) # swap on schematics
+        dc303_insrom(addr | (3 << 7), data, 3)
+    dc303_outrom(verb)
+    return romlist
+
 def proc_netlist(arch, verb):
     print("Processing netlist for arch: %s" % arch)
 
-    if arch == "cp1611": 
-        proc_1611(arch, verb)
+    if arch == "cp1611":
+        proc_1611(verb)
         return
 
-    if arch == "cp1621": 
-        proc_1621_12(arch, verb)
-        proc_1621_34(arch, verb)
-        proc_1621_mr(arch, verb)
+    if arch == "cp1621":
+        proc_1621_12(verb)
+        proc_1621_34(verb)
+        proc_1621_mr(verb)
+        return
+
+    if arch == "dc303":
+        proc_303_pla(verb)
+        proc_303_rom(verb)
         return
 
     print("Unsupported arch: %s" % arch)
@@ -756,15 +1043,15 @@ if __name__ == '__main__':
                         type=argparse.FileType('r'),
                         help="input netlist file in PCAD-2004 ASCII format")
     parser.add_argument("--arch",
-                        choices=["cp1611", "cp1621"],
+                        choices=["cp1611", "cp1621", "dc302", "dc303"],
                         help="architecture used to translate the matrix",
-                        default = "cp1611")
+                        default = "dc303")
     parser.add_argument("--verbose",
                         action="store_true",
                         help="architecture used to translate the matrix")
     args = parser.parse_args()
     read_netlist(args.netfile, args.verbose)
     proc_netlist(args.arch, args.verbose)
-    
+
     args.netfile.close()
     exit(0)
