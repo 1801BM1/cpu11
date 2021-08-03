@@ -158,6 +158,7 @@
     <ClCompile Include="match.c" />
     <ClCompile Include="mcode.c" />
     <ClCompile Include="minit.c" />
+    <ClCompile Include="mterm.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mcode.h" />
