@@ -21,12 +21,16 @@
 int8_t cl_match = -1;
 int8_t cl_speed = -1;
 int8_t cl_table = -1;
+int8_t cl_mterm = -1;
+const char *cl_fname;
 
 enum opt_type cl_opt = PLM_OPT_NONE;
 enum plm_type cl_type = PLM_TYPE_NONE;
 
 int32_t cl_ab = -1;
 int32_t cl_ae = -1;
+int32_t cl_as = -1;
+int32_t cl_az = -1;
 int32_t cl_op = -1;
 int32_t cl_om = -1;
 
@@ -46,6 +50,15 @@ int plm_init(struct plm *plm, enum plm_type type)
 		break;
 	case PLM_TYPE_VM2_MAIN:
 		desc = &plm_desc_vm2;
+		break;
+	case PLM_TYPE_F11_CS0:
+		desc = &plm_desc_f11_cs0;
+		break;
+	case PLM_TYPE_F11_CS1:
+		desc = &plm_desc_f11_cs1;
+		break;
+	case PLM_TYPE_F11_NA_CLR0:
+		desc = &plm_desc_f11_na_clr0;
 		break;
 	default:
 		printf("mcode: unrecognized plm type %d\n", type);
@@ -736,7 +749,7 @@ static int mc_param_hex(char *s)
 			printf("mcode: invalid hex parameter: %s\n", s);
 			return -1;
 		}
-		if (r > UINT16_MAX) {
+		if (r >= UINT32_MAX/2) {
 			printf("mcode: hex parameter overflow: %05X\n", r);
 			return -1;
 		}
@@ -784,9 +797,16 @@ static int mc_proc_param(const char *p)
 		*s = tolower(*s);
 		s++;
 	};
-
+	if (b[0] != '-') {
+		cl_fname = p;
+		return 0;
+	}
 	if (!strcmp(b, "--match")) {
 		cl_match = 1;
+		return 0;
+	}
+	if (!strcmp(b, "--mterm")) {
+		cl_mterm = 1;
 		return 0;
 	}
 	if (!strcmp(b, "--speed")) {
@@ -841,6 +861,18 @@ static int mc_proc_param(const char *p)
 		cl_type = PLM_TYPE_VM2_MAIN;
 		return 0;
 	}
+	if (!strcmp(b, "--f11-0")) {
+		cl_type = PLM_TYPE_F11_CS0;
+		return 0;
+	}
+	if (!strcmp(b, "--f11-1")) {
+		cl_type = PLM_TYPE_F11_CS1;
+		return 0;
+	}
+	if (!strcmp(b, "--f11-2")) {
+		cl_type = PLM_TYPE_F11_CS2;
+		return 0;
+	}
 	eq = strchr(b, '=');
 	if (eq) {
 		eq++;
@@ -851,6 +883,14 @@ static int mc_proc_param(const char *p)
 		if (strstr(b, "--ae=") == b) {
 			cl_ae = mc_param_hex(eq);
 			return cl_ae >= 0 ? 0 : -1;
+		}
+		if (strstr(b, "--as=") == b) {
+			cl_as = mc_param_hex(eq);
+			return cl_as >= 0 ? 0 : -1;
+		}
+		if (strstr(b, "--az=") == b) {
+			cl_az = mc_param_hex(eq);
+			return cl_az >= 0 ? 0 : -1;
 		}
 		if (strstr(b, "--op=") == b) {
 			cl_op = mc_param_oct(eq);
@@ -869,26 +909,30 @@ static void mc_cmd_line(int argc, char *argv[])
 {
 	int i;
 
-	if (argc == 0) {
-		printf("Supported command line paremeters:\n"
-		       "  --match - check compliance\n"
+	if (argc <= 1) {
+		printf("Supported command line parameters:\n"
+		       "  --match - check compliance (against file)\n"
+		       "  --mterm - write table to file\n"
 		       "  --speed - performance test\n"
 		       "  --table - build address table\n"
 		       "  --32 --32t - select 32 bit operations (with tree)\n"
 		       "  --64 --64t - select 64 bit operations (with tree)\n"
 		       "  --128 --128t - select 64 bit operations (with tree)\n"
 		       "  --256 --256t - select 64 bit operations (with tree)\n"
-		       "  --vm1a --vm1g --vm2 - select matrix\n"
+		       "  --vm1a --vm1g --vm2 --f11-x - select matrix\n"
 		       "  --ab=xxx --ae=xxx - optional address range in hex\n"
+		       "  --as=xxx --az=xxx - optional address set/zero mask\n"
 		       "  --op=oooooo --om=oooooo - opcode mask in octal\n"
+		       "  filename - file for matrix input or output\n"
 		);
+		exit(0);
 	}
 	for (i = 1; i < argc; i++) {
 		if (mc_proc_param(argv[i]))
 			exit(-1);
 	}
 	/* Default action is compliance check */
-	if (cl_speed < 0 && cl_match < 0 && cl_table < 0)
+	if (cl_speed < 0 && cl_match < 0 && cl_table < 0 && cl_mterm < 0)
 		cl_match = 1;
 	/* Default matrix is VM1A main PLM */
 	if (cl_type == PLM_TYPE_NONE)
@@ -915,6 +959,15 @@ static void mc_cmd_line(int argc, char *argv[])
 		break;
 	case PLM_TYPE_VM2_MAIN:
 		strcpy(cl_text, "vm2");
+		break;
+	case PLM_TYPE_F11_CS0:
+		strcpy(cl_text, "f11-0");
+		break;
+	case PLM_TYPE_F11_CS1:
+		strcpy(cl_text, "f11-1");
+		break;
+	case PLM_TYPE_F11_CS2:
+		strcpy(cl_text, "f11-2");
 		break;
 	default:
 		printf("Unrecognized plm type\n");
@@ -957,16 +1010,24 @@ static void mc_cmd_line(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	printf("\r\nMicrocode matrix test utility (c) 1801BM1, 2020\n");
+	printf("\r\nMicrocode matrix test utility (c) 1801BM1, 2020-2022\n");
 	mc_cmd_line(argc, argv);
 	mc_query_simd();
 
 	if (cl_match > 0) {
-		if (cl_type != PLM_TYPE_VM1A_MAIN) {
+		if (cl_type != PLM_TYPE_VM1A_MAIN && !cl_fname) {
 			printf("mcode: reference match is for vm1a only\n");
 			exit(-1);
 		}
-		mc_test_ref(PLM_TYPE_VM1A_MAIN, cl_opt, cl_text);
+		if (cl_type == PLM_TYPE_VM1A_MAIN) {
+			mc_test_ref(PLM_TYPE_VM1A_MAIN, cl_opt, cl_text);
+		} else {
+			if (!cl_fname) {
+				printf("mcode: input file must be specified\n");
+				exit(-1);
+			}
+			mc_mterm_match(cl_type, cl_opt, cl_fname, cl_text);
+		}
 		exit(-1);
 	}
 	if (cl_speed > 0) {
@@ -976,6 +1037,13 @@ int main(int argc, char *argv[])
 	if (cl_table > 0) {
 		mc_test_table(cl_type, cl_opt, cl_text);
 		exit(-1);
+	}
+	if (cl_mterm && cl_match < 0) {
+		if (!cl_fname) {
+			printf("mcode: output file must be specified\n");
+			exit(-1);
+		}
+		mc_mterm_write(cl_type, cl_opt, cl_fname, cl_text);
 	}
 	printf("\n");
 }

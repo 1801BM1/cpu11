@@ -32,20 +32,27 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
 
-#define PLM_S_MAX 48   /* maximal widdth of Sum-of-Products */
-#define PLM_P_MAX 400  /* maximal number of products supported */
-#define PLM_NA_MAX_BITS 9   /* the maximal Next Address field */
-#define PLM_M_TREE_BITS 4 /* the number of bits M optimization */
+#define PLM_S_MAX 48		/* maximal width of Sum-of-Products */
+#define PLM_P_MAX 400		/* maximal number of products supported */
+#define PLM_NA_MAX_BITS 9	/* the maximal Next Address field */
+#define PLM_M_TREE_BITS 4	/* the number of bits M optimization */
 #define PLM_M_TREE (1u << PLM_M_TREE_BITS)
 #define PLM_NA_MAX (1u << PLM_NA_MAX_BITS)
 #define MCODE_PARAM_LEN 80
+#define FILE_BUF_WORDS	0x10000
+#define FILE_MAX_ERRORS	0x100
 
 enum plm_type {
 	PLM_TYPE_NONE = 0,
 	PLM_TYPE_VM1A_MAIN,
 	PLM_TYPE_VM1G_MAIN,
 	PLM_TYPE_VM2_MAIN,
+	PLM_TYPE_F11_CS0,
+	PLM_TYPE_F11_CS1,
+	PLM_TYPE_F11_CS2,
+	PLM_TYPE_F11_NA_CLR0,
 };
 
 enum opt_type {
@@ -161,6 +168,14 @@ struct plm_scan {
 extern const struct plm_desc plm_desc_vm1a;
 extern const struct plm_desc plm_desc_vm1g;
 extern const struct plm_desc plm_desc_vm2;
+extern const struct plm_desc plm_desc_f11_cs0;
+extern const struct plm_desc plm_desc_f11_cs1;
+extern const struct plm_desc plm_desc_f11_na_clr0;
+
+extern int32_t cl_ab;
+extern int32_t cl_ae;
+extern int32_t cl_as;
+extern int32_t cl_az;
 
 /* Programmable logic matrix API */
 int plm_init(struct plm *plm, enum plm_type type);
@@ -181,6 +196,10 @@ struct ma_stats {
 };
 
 void mc_test_ref(enum plm_type type, enum opt_type opt, const char *text);
+void mc_mterm_match(enum plm_type type, enum opt_type opt,
+		    const char *fname, const char *text);
+void mc_mterm_write(enum plm_type type, enum opt_type opt,
+		    const char *fname, const char *text);
 
 #define SIMD_MMX	(1u << 0)
 #define SIMD_SSE	(1u << 1)
