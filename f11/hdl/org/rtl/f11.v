@@ -43,9 +43,24 @@ module f11
 
 //______________________________________________________________________________
 //
+trireg [15:0] m;                 // microinstruction bus
+trireg [15:0] ad;                // address/data bus
+reg    [15:0] ad_in;             // input address/data register
+tri1   [21:16] a;                // high address bus
+                                 //
+wire  ad_ena;                    // enable address/data bus drivers
+wire  ad_stb;                    // latch address/data bus inputs
+
+assign pin_ad_n = ad_ena ? ~ad : 16'oZZZZZZ;
+always @(posedge ad_stb) ad_in <= ~pin_ad_n;
+assign ad =
+//______________________________________________________________________________
+//
+// Temporary workarounds
+//
 assign pin_dmgo_n = 1'bz;
 assign pin_init_n = 1'bz;
-assign pin_a_n   = 6'bzzzzzz;
+assign pin_a_n    = 6'bzzzzzz;
 assign pin_ad_n   = 16'hzzzz;
 assign pin_sync_n = 1'b1;
 assign pin_wtbt_n = 1'b1;
