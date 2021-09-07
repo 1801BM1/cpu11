@@ -8,12 +8,6 @@
 `define  _CONFIG_                      1
 
 //
-// CAUTION: CONFIG_SIM_FAST_RESET should be undefined in release version
-// Defining this parameter shorts the system reset time intervals and
-// provides much quicker simulation
-//
-`define  CONFIG_SIM_FAST_RESET         _CONFIG_
-//
 // Simulation stops (breakpoint) after this time elapsed
 //
 `define  CONFIG_SIM_TIME_LIMIT         2000000

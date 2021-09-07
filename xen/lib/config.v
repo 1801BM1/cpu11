@@ -103,11 +103,17 @@
 
 //______________________________________________________________________________
 //
-// Test software start address
+// Test software start address / confgiuration options (switches)
 //
-`define CONFIG_RESET_START_ADDRESS        16'o000000
+// vm1: read 177716 (depends on CPU number)
+// vm2: unaddressed read, [15:8] - start address, [7] - FIS exception control
+// am4: n/a
+// lsi: n/a
+// f11: fdin read, [15:9] - start address, [8] - 173000 selector, [2] - ODT on halt
 //
-// M4 and LSI-11 boot mode
+`define CONFIG_START_ADDR_OPTIONS        16'o000000
+//
+// M4, F11 and LSI-11 boot mode
 //
 // 00 - start reserved MicROM
 // 01 - start from 173000

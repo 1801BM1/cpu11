@@ -6,12 +6,6 @@
 //
 `timescale 1ns / 100ps
 //
-// CAUTION: SIM_CONFIG_FAST_RESET should be undefined in release version
-// Defining this parameter shorts the system reset time intervals and
-// provides much quicker simulation
-//
-`define  SIM_CONFIG_FAST_RESET         1
-//
 // Simulation stops (breakpoint) after this time elapsed
 //
 `define  SIM_CONFIG_TIME_LIMIT         4000000

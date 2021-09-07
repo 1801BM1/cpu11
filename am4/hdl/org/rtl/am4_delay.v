@@ -34,7 +34,7 @@ assign phase[9:0] = dll[9:0];
 endmodule
 
 //
-// sn74123 - rettrigerable monostable multivibrator (SN74123)
+// sn74123 - retrigerable monostable multivibrator
 //
 module am4_pulse
 #(parameter

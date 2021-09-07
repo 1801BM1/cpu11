@@ -194,7 +194,7 @@ de1_pll100 corepll
 //______________________________________________________________________________
 //
 assign ext_ready = 1'b1;
-assign ext_una = `CONFIG_RESET_START_ADDRESS;
+assign ext_una = `CONFIG_START_ADDR_OPTIONS;
 
 always @(posedge sys_clk_p)
 begin
