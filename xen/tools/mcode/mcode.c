@@ -57,6 +57,9 @@ int plm_init(struct plm *plm, enum plm_type type)
 	case PLM_TYPE_F11_CS1:
 		desc = &plm_desc_f11_cs1;
 		break;
+	case PLM_TYPE_F11_CS2:
+		desc = &plm_desc_f11_cs2;
+		break;
 	case PLM_TYPE_F11_NA_CLR0:
 		desc = &plm_desc_f11_na_clr0;
 		break;

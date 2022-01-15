@@ -49,6 +49,7 @@ static void mc_match_stat_update(uint32_t a, uint64_t df, uint64_t dp)
 			}
 		}
 		x >>= 1;
+		df >>= 1;
 		ps++;
 	} while (x);
 }

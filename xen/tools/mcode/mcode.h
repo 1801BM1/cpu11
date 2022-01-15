@@ -170,6 +170,7 @@ extern const struct plm_desc plm_desc_vm1g;
 extern const struct plm_desc plm_desc_vm2;
 extern const struct plm_desc plm_desc_f11_cs0;
 extern const struct plm_desc plm_desc_f11_cs1;
+extern const struct plm_desc plm_desc_f11_cs2;
 extern const struct plm_desc plm_desc_f11_na_clr0;
 
 extern int32_t cl_ab;
