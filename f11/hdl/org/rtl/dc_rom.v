@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2021 by 1801BM1@gmail.com
+// Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
 //______________________________________________________________________________
 //
@@ -8,6 +8,16 @@
 // the rest is 16-bit microcode opcode
 //
 module dc_rom
+#(parameter
+//______________________________________________________________________________
+//
+// DC303_CS defines ROM content of the DC303 ROM module
+//  - DC303_CS = 0, 23-001C7-AA, 000.rom
+//  - DC303_CS = 1, 23-002C7-AA, 001.rom
+//  - DC303_CS = 2, 23-203C7-AA, 002.rom
+//
+   DC303_ROM = 0
+)
 (
    input [9:0]    a_in,
    input [15:0]   d_in,
@@ -25,7 +35,14 @@ begin
    begin
       mem[i] = 32'h00000000;
    end
-   $readmemh("..\\..\\..\\..\\rom\\000.rom", mem);
+   if (DC303_ROM == 0)
+      $readmemh("..\\..\\..\\..\\rom\\000.rom", mem);
+   else
+   if (DC303_ROM == 1)
+      $readmemh("..\\..\\..\\..\\rom\\001.rom", mem);
+   else
+   if (DC303_ROM == 2)
+      $readmemh("..\\..\\..\\..\\rom\\002.rom", mem);
 end
 
 //

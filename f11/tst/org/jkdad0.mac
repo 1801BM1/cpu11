@@ -504,6 +504,11 @@
 ; 	equal to "1".
 ;_____________________________________________________________________________
 ;
+		HOEP	= 0			; halt on end-of-pass
+		NOSCO   = 0			; no scope trap
+		INSWR	= 000000		; 100000 for halt on error, no gtswr
+;_____________________________________________________________________________
+;
 		.asect				;
 		. = 0				; loop on test
 
@@ -529,8 +534,11 @@
 						;
 		stack	= 1100			; initial address of the stack pointer *** 1100 ***
 						; .equiv emt, error - basic definition of error call
+.if ne NOSCO                     		;
+		scope	= 240			; nop
+.iff						;
 		scope	= iot			; .equiv iot, scope - basic definition of scope call
-						;
+.endc						;
 						; miscellaneous definitions
 		ht	= 11			; code for horizontal tab
 		lf	= 12			; code for line feed
@@ -548,7 +556,11 @@
 		typon	= 104404		; trap+4 type octal nlmber (as per last call)
 		typds	= 104405		; trap+5 type decimal number (with sign)
 		typbn	= 104406		; trap+6 type binary (ascii) number
+.if ne INSWR                     		;
+		gtswr	= 240			; nop
+.iff						;
 		gtswr	= 104407		; trap+7 get soft-swr setting
+.endc						;
 		ckswr	= 104410		; trap+10 test for change in soft-swr
 		rdchr	= 104411		; trap+11 tty type in character routine
 		rdlin	= 104412		; trap+12 tty typein string routine
@@ -741,7 +753,7 @@
 						;
 		. = 174				;
 dispreg:	.word	0			; software display register
-swreg:		.word	0			; software switch register
+swreg:		.word	INSWR			; software switch register
 
 ;_____________________________________________________________________________
 ;
@@ -1335,7 +1347,7 @@ start:						;
 		clr	@#$tbit			; clear "T" bit switch
 		mov	#., @#$lpadr		; initialize the loop address for scope
 		mov	#., @#$lperr		; setup the error loop address
-	; size for a hardware switch register. If not pound or it is
+	; size for a hardware switch register. If not found or it is
 	; equal to a "-1", setup for a software switch register.
 		mov	@#errvec, -(SP)		; save error vector
 		mov	#67$, @#errvec		; set up error vector
@@ -3902,7 +3914,11 @@ $eopct:		.word	1			;
 $endct:		.word	1			;
 		$eopct				;
 		type	, 65$			; type asciz string
+.if ne HOEP                     		;
+		halt				; halt on end-of-pass
+.iff						;
 		br	64$			; get over the asciz
+.endc						;
 65$:		.asciz	<12><15>/END PASS #/	;
 		.even				;
 64$:						;
@@ -3919,7 +3935,7 @@ $endct:		.word	1			;
 		typds				; go type-decimal ascii with sign
 		type	, $crlf			; type carriage return, line feed
 $get42:		mov	@#42, R0		; get monitor address
-		beq	doagin			; branch if no monitor
+                beq     doagin                  ; branch if no monitor
 		clr	-(SP)			; insure the "T" bit is clear
 		mov	#$clr.t, -(SP)		; setup for an rti or rtt
 		br	$rtrn			; go do an rti or rtt to load the psw

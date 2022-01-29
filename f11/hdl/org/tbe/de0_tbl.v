@@ -66,6 +66,7 @@ tri1        init;       // peripheral reset
 wire [1:0]  bsel;       //
 wire [15:2] fdin;       //
                         //
+wire [15:0] adn;        //
 wire [15:0] ad_mux;     //
 tri1 [15:0] ad;         // inverted address/data bus
 tri1 [21:16] a;         // address extension
@@ -105,6 +106,7 @@ wire        ram_read, ram_write;
 assign   bsel = `SIM_CONFIG_BOOT_MODE;
 assign   fdin[15:2] = ~14'h0000;
 assign   ad = ad_oe ? (sel_ram ? ~ad_mux : ~ad_reg) : 16'hZZZZ;
+assign   adn = ~ad;
 assign   xrply = rply ? 1'bz : 1'b0;
 
 assign   ram_read  = sel_ram & ~din & ~sync;

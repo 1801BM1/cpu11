@@ -588,6 +588,11 @@
 ;		prognum=3
 ;_____________________________________________________________________________
 ;
+		HOEP	= 0			; halt on end-of-pass
+		NOSCO   = 0			; no scope trap and gtswr
+		INSWR	= 000000		; 100000 for halt on error
+;_____________________________________________________________________________
+;
 		.asect				;
 		. = 0				; loop on test
 
@@ -610,8 +615,11 @@
 
 		stack	= 1100			; initial address of the stack pointer *** 1100 ***
 						; .equiv emt, error - basic definition of error call
+.if ne NOSCO                     		;
+		scope	= 240			; nop
+.iff						;
 		scope	= iot			; .equiv iot, scope - basic definition of scope call
-						;
+.endc						;
 						; miscellaneous definitions
 		ht	= 11			; code for horizontal tab
 		lf	= 12			; code for line feed
@@ -629,7 +637,11 @@
 		typos	= 104403		; trap+3 type octal number (no leading zeros)
 		typon	= 104404		; trap+4 type octal number (as per last call)
 		typds	= 104405		; trap+5 type decimal number (with sign)
-		gtswr	= 104406		; trap+6 get soft-swr setting
+.if ne INSWR                     		;
+		gtswr	= 240			; nop
+.iff						;
+		gtswr	= 104406		; trap+7 get soft-swr setting
+.endc						;
 		ckswr	= 104407		; trap+7 test for change in soft-swr
 		rdchr	= 104410		; trap+10 tty type in character routine
 		savreg	= 104411		; trap+11 save R0-R5 routine
@@ -782,7 +794,7 @@
 ;
 		. = 174				;
 dispreg:	.word	0			; software display register
-swreg:		.word	0			; software switch register
+swreg:		.word	INSWR			; software switch register
 
 		.sbttl "STARTING ADDRESS(ES)"
 
@@ -7162,7 +7174,12 @@ $eopct:		.word	1			; 1 pass first time (qv)!!!
 $endct:		.word	1
 		$eopct
 		type	, $endmg		; type "end pass #"
+.if ne HOEP                     		;
+		halt				; halt on end-of-pass
+		nop				;
+.iff						;
 		mov	$pass, -(SP)		; save pass count for typeout
+.endc						;
 		typds				; type pass count in decimal
 		type	, $enull		; type a null character string
 $get42:		mov	@#42, R0		; get monitor address

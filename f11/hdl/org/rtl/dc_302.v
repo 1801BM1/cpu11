@@ -131,7 +131,7 @@ begin
    r[5] = 16'hFFFF;
    r[6] = 16'hFFFF;
    r[7] = 16'hFFFF;
-   r[8] = 16'hFFFF;
+   r[8] = 16'hF8FF;
    r[9] = 16'hFFFF;
    r[10] = 16'hFFFF;
    r[11] = 16'hFFFF;
@@ -198,7 +198,7 @@ assign mo[15] = 1'bz;                        // open collector for MME
 //    000      - load PLM register address from return register (affects MC/NA/AXT)
 //    001      - load PLM register or MMU control register
 //    010      - set stack overflow in Control
-//    011      - enable address conversion mode in MMU
+//    011      - address conversion for user mode in MMU
 //    100      - transfer priority and T-bit to Control
 //    101      - transfer priority to Control
 //    110      - transfer T-bit to Control
@@ -479,7 +479,7 @@ begin
          if (as6_m1) r[12][15:8] <= d[15:8];
          if (as6_m3) r[13][15:8] <= d[15:8];
          if (as[7])  r[7][15:8]  <= d[15:8];
-         if (as8h)   r[8][15:8]  <= d[15:8];
+         if (as8h)   r[8][15:8]  <= {d[15:11], 3'b000};
          if (as[9])  r[9][15:8]  <= d[15:8];
          if (as[10]) r[10][15:8] <= d[15:8];
          if (as[11]) r[11][15:8] <= d[15:8];

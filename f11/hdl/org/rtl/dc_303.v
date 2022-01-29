@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2021 by 1801BM1@gmail.com
+// Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
 // DC303 Control Chip model, for debug and simulating only
 //______________________________________________________________________________
@@ -7,6 +7,16 @@
 `timescale 1ns / 100ps
 
 module dc303
+#(parameter
+//______________________________________________________________________________
+//
+// DC303_CS defines PLA and ROM content of the DC303 module
+//  - DC303_CS = 0, 23-001C7-AA, rni = ma[8:0] == 9'x000
+//  - DC303_CS = 1, 23-002C7-AA, rni = ma[8:0] == 9'x000
+//  - DC303_CS = 2, 23-203C7-AA, rni = ma[8:4] == 5'x00
+//
+   DC303_CS = 0
+)
 (
    input          pin_clk,    // main clock
    input [15:0]   pin_ad,     // address/data bus
@@ -20,6 +30,7 @@ module dc303
 //
 wire        clk;        // primary clock
 wire        rst;        // synchronized reset
+wire [4:0]  dc_cs;      //
                         //
 wire        moe;        // MIB output enable
 reg  [15:0] m;          // MIB output register
@@ -90,6 +101,8 @@ wire        clr_lplm;   //
 assign clk = pin_clk;
 assign rst = pin_rst & ~clk;
 assign pin_cs_n = cs ? 1'b0 : 1'bz;
+assign dc_cs = DC303_CS;
+
 wire #1 sim_dclk  = clk; // suppress simulation glitches
 
 //______________________________________________________________________________
@@ -191,10 +204,10 @@ begin
    if (clk) set_wpswt <= wpsw;
 
    if (rst)
-      cs <= 1'b1;
+      cs <= (dc_cs == 5'b00000);
    else
       if (clk & cs_stb)
-         cs <= mi[10:6] == 5'b00000;
+         cs <= mi[10:6] == dc_cs;
 
    if (set_lplm)
       lplm <= 1'b1;
@@ -229,7 +242,9 @@ end
 // Data input register can be written directly from AD bus on clock high (di_stb),
 // or be written with interrupt statuses on clock low (rni))
 //
-assign rni = ~clk & (rst | (ma[8:0] == 9'o000) & cs);
+assign rni = ~clk & (rst | (ma[8:4] == 5'b00000)
+                         & ((ma[3:0] == 4'b0000) | (dc_cs == 5'b00010))
+                         & cs);
 assign di_stb = clk & ~pin_m[13] & ~pin_m[6] & ~pin_m[5] & sim_dclk;
 
 //
@@ -388,6 +403,7 @@ assign mc = clk ? 16'o177777 :
             rst ? 16'o000000 :
             ((mc_dt ? da : 16'o177777) & ((a_in[8:7] == 2'b00) ? mc_pla : mc_rom));
 
+defparam pla.DC303_PLA = DC303_CS;
 dc_pla pla
 (
    .a_in(a_in[6:0]),
@@ -396,6 +412,7 @@ dc_pla pla
    .mc(mc_pla)
 );
 
+defparam rom.DC303_ROM = DC303_CS;
 dc_rom rom
 (
    .a_in(a_in),

@@ -9,8 +9,8 @@ coinciding with original binary ones.
 |:--------|:------------|
 | CJKDAD0 | This program tests the KTF11-AA memory management
 | CJKDBD0 | This program tests the DCF11-AA CPU operations
-| CJKDCB0 | MMU and floating point test 1
-| CJKDDD0 | MMU and floating point test 2
+| CJKDCB0 | Floating Point diagnostics Part 1
+| CJKDDB0 | Floating Point diagnostics Part 2
 
 ## DEC absolute loader format
 

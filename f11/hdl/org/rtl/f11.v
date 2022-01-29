@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2021 by 1801BM1@gmail.com
+// Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
 // F-11 asynchronous model, for debug and modelling only.
 // This file contains the wrapper for F-11 "Fonz" chipset,
@@ -67,9 +67,9 @@ reg   clk_stop;                  //
 wire  start_a;                   //
                                  //
 tri1  [15:0] m;                  // microinstruction bus
-tri   [15:0] ad;                 // address/data bus
+tri0  [15:0] ad;                 // address/data bus
 reg   [15:0] ad_reg;             // output address/data register
-tri1  [21:16] a;                 // high address bus
+tri0  [21:16] a;                 // high address bus
 reg   bs_reg;                    //
 tri1  bsio;                      //
 wire  sack;                      //
@@ -135,8 +135,8 @@ wire  dma_ena_clr;               //
 reg   symme;                     //
 reg   mmu_str, mmu_str0;         //
 reg   mme_hold, mme_hold0;       //
-reg   adr_ena;                   //
-wire  ena_bsio;                  //
+reg   dis_mmu;                   // disable MMU for cycle
+wire  ena_odt;                   //
 reg   [17:16] odt_a;             //
                                  //
 wire  aclo_clr, evnt_clr;        //
@@ -211,12 +211,12 @@ begin
    end
    else
    begin
+      rclk[10] <= rclk[1];
       rclk[4]  <= rclk[10];
       rclk[6]  <= rclk[4];
       rclk[7]  <= rclk[6];
       rclk[8]  <= rclk[7];
       rclk[9]  <= rclk[8];
-      rclk[10] <= rclk[1];
    end
 end
 
@@ -302,10 +302,12 @@ assign pin_rply_n = (e130 & ~mrply_n) ? 1'b0 : 1'bz;
 // fdin[2] / E7 set - 1 - HALT causes exception 10
 //           E7 mis - 0 - HALT invokes ODT
 //
-assign ad = doe     ? 16'oZZZZZZ :
-            ad_oe   ? ~pin_ad_n :
-            svc_oe  ? svc   :
-            fdin_oe ? fdin  : 16'o000000;
+assign ad = doe      ? 16'oZZZZZZ :
+            ad_oe    ? ~pin_ad_n :
+            svc_oe   ? svc   :
+            fdin_oe  ? fdin  :
+            ~mrply_n ? 16'oZZZZZZ :
+                       16'oZZZZZZ;
 
 assign fdin = {~pin_fdin_n[15:8], dcok, 4'b0000, ~pin_fdin_n[2], pin_bsel_n[1:0]};
 assign svc = {3'bzzz, svc_reg[12:5], ctl_err, abort_n, par_err, svc_reg[4], ~dclo };
@@ -331,7 +333,7 @@ begin
       dclo <= pdclo;
 end
 
-assign ad_oe = ena_bsio | din & (~e130 | mrply_n);
+assign ad_oe = ena_odt | din & (~e130 | mrply_n);
 assign ad_stb = e163 | mmu_str;
 assign ad_ena = ~bus_disable & bus_ena;
 
@@ -360,20 +362,21 @@ begin
    end
 end
 
-assign md[15] = (e33 & e98 & ~m[12] & adr_ena) ? 1'b0 : 1'bz;
-assign ena_bsio = adr_ena & mme_hold;
+assign md[15] = (e33 & e98 & ~m[12] & dis_mmu) ? 1'b0 : 1'bz;
+assign dmmus_n = ~(e33 & e98 & ~m[12] & dis_mmu);
+assign ena_odt = dis_mmu & mme_hold;
 
 always @(posedge mclk or posedge init)
 begin
    if (init)
-      adr_ena <= 1'b0;
+      dis_mmu <= 1'b0;
    else
-      adr_ena <= ~m[6] & m[7];
+      dis_mmu <= ~m[6] & m[7];
 end
 
-assign a[16] = ena_bsio ? odt_a[16] : 1'bz;
-assign a[17] = ena_bsio ? odt_a[17] : 1'bz;
-assign bsio = ena_bsio ? odt_a[16] & odt_a[17] & ~pin_bs_n : 1'bz;
+assign a[16] = ena_odt ? odt_a[16] : 1'bz;
+assign a[17] = ena_odt ? odt_a[17] : 1'bz;
+assign bsio = ena_odt ? odt_a[16] & odt_a[17] & ~pin_bs_n : 1'bz;
 
 always @(*) if (odt_stb & mclk) odt_a[17:16] <= ad[1:0];
 //______________________________________________________________________________
@@ -579,7 +582,30 @@ dc302 data
    .pin_ad_en(doe)
 );
 
-dc303 control
+defparam ctl0.DC303_CS = 0;
+dc303 ctl0
+(
+   .pin_clk(mclk),
+   .pin_ad(ad),
+   .pin_m(md),
+   .pin_rst(reset),
+   .pin_ez_n(1'b1),
+   .pin_cs_n(csel_n)
+);
+
+defparam ctl1.DC303_CS = 1;
+dc303 ctl1
+(
+   .pin_clk(mclk),
+   .pin_ad(ad),
+   .pin_m(md),
+   .pin_rst(reset),
+   .pin_ez_n(1'b1),
+   .pin_cs_n(csel_n)
+);
+
+defparam ctl2.DC303_CS = 2;
+dc303 ctl2
 (
    .pin_clk(mclk),
    .pin_ad(ad),
