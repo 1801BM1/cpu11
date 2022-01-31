@@ -150,9 +150,6 @@ qk7_pll75 corepll
 `ifdef CONFIG_PLL_100
 qk7_pll100 corepll
 `endif
-`ifdef CONFIG_PLL_110
-qk7_pll110 corepll
-`endif
 `ifdef CONFIG_PLL_125
 qk7_pll125 corepll
 `endif
@@ -216,43 +213,6 @@ wbc_toggle tog2
 //______________________________________________________________________________
 //
 // Temporary and debug assignments
-//
-// assign   qa7_dram_dq    = 16'hzzzz;
-// assign   qa7_dram_addr  = 13'h0000;
-// assign   qa7_dram_ldqm  = 1'b0;
-// assign   qa7_dram_udqm  = 1'b0;
-// assign   qa7_dram_we_n  = 1'b1;
-// assign   qa7_dram_cas_n = 1'b1;
-// assign   qa7_dram_ras_n = 1'b1;
-// assign   qa7_dram_cs_n  = 1'b1;
-// assign   qa7_dram_ba[0] = 1'b0;
-// assign   qa7_dram_ba[1] = 1'b0;
-// assign   qa7_dram_clk   = 1'b0;
-// assign   qa7_dram_cke   = 1'b0;
-//
-// assign   qa7_spi_cs_n   = 1'b1;
-// assign   qa7_spi_clk    = 1'b0;
-// assign   qa7_spi_mosi   = 1'bz;
-//
-// assign   qa7_sd_cs_n    = 1'bz;
-// assign   qa7_sd_clk     = 1'b0;
-// assign   qa7_sd_mosi    = 1'bz;
-// assign   qa7_sd_miso    = 1'bz;
-//
-// assign   qa7_i2c_dat    = 1'hz;
-// assign   qa7_i2c_clk    = 1'hz;
-// assign   qa7_rtc_rst_n  = 1'hz;
-// assign   qa7_rtc_sclk   = 1'hz;
-// assign   qa7_rtc_sdat   = 1'hz;
-//
-// assign   qa7_vga_hs     = 1'b0;
-// assign   qa7_vga_vs     = 1'b0;
-// assign   qa7_vga_r      = 5'h0;
-// assign   qa7_vga_g      = 6'h0;
-// assign   qa7_vga_b      = 5'h0;
-//
-// assign   qa7_gpio0      = 34'hzzzzzzzzz;
-// assign   qa7_gpio1      = 34'hzzzzzzzzz;
 assign   qk7_gpio1[0]   = ena_us;
 assign   qk7_gpio1[1]   = ena_ms;
 //
