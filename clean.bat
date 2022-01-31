@@ -63,6 +63,8 @@ call :xen_aclean de10-lite
 call :xen_aclean qc5
 call :xen_aclean qc10
 call :xen_tclean eg4
+call :xen_xclean ax309
+call :xen_xclean qk7
 exit /b
 
 :xen_aclean

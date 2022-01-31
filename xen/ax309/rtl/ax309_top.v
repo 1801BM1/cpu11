@@ -126,7 +126,7 @@ wire  [7:0] seg_hex1;            // seven segment digit 1
 wire  [7:0] seg_hex2;            // seven segment digit 2
 wire  [7:0] seg_hex3;            // seven segment digit 3
 wire  [7:0] leds;                // output LEDs
-				 //
+             //
 //______________________________________________________________________________
 //
 // Select of one of the available CPUs
@@ -233,9 +233,9 @@ assign ax3_hsel[5] = ~(hsel == 3'b101);
 
 always @(posedge sys_clk_p)
 begin
-	if (~ax3_button[0])
-		hsel <= 3'b000;
-	else
+   if (~ax3_button[0])
+      hsel <= 3'b000;
+   else
       if (ena_ms)
          if (hsel == 3'b000)
             hsel <= 3'b101;

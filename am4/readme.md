@@ -103,14 +103,15 @@ The M4 board schematics is updated and Revision 3 seems to be final one.
 All results are just approximate estimations by synthesis tools (Quartus/XST/Tang Dynasty)
 on sample projects (target frequency in .sdc was set to 50MHz, relaxed time-driven P&R)
 
-| Board   | FPGA            | Family       | Fmax    | LUTs | FFs  | MEM     |
-|---------|-----------------|--------------|---------|------|------|---------|
-| DE0     | EP3C16F484C6N   | Cyclone III  | 66 MHz  | 1270 | 491  | 7 M9K   |
-| DE1     | EP2C20F484C7N   | Cyclone II   | 52 MHz  | 1491 | 477  | 14 M4K  |
-| DE2-115 | EP4CE115F29C7N  | Cyclone IV   | 60 MHz  | 1598 | 492  | 7 M9K   |
-| AX309   | XC6SLX9FTG256-2 | Spartan 6    | 64 MHz  | 927  | 464  | 7 BR8   |
-| DE10-LT | 10M50DAF484C7G  | Max 10       | 58 MHz  | 1195 | 470  | 7 M9K   |
-| QC5     | 5CEFA2F23I7N    | Cyclone V    | 73 MHz  | 554  | 553  | 6 M10K  |
-| QC10    | 10CL006U256CN8  | Cyclone 10   | 55 MHz  | 1193 | 471  | 7 M9K   |
-| EG4     | EG4S20BG256     | Eagle EG4S20 | 59 MHz  | 1021 | 392  | 7 M9K   |
-| QA7     | XC7A35TFTG256-1 | Artix 7      | 90 MHz  | 631  | 413  | 2 BR    |
+| Board   | FPGA             | Family       | Fmax    | LUTs | FFs  | MEM     |
+|---------|------------------|--------------|---------|------|------|---------|
+| DE0     | EP3C16F484C6N    | Cyclone III  | 66 MHz  | 1270 | 491  | 7 M9K   |
+| DE1     | EP2C20F484C7N    | Cyclone II   | 52 MHz  | 1491 | 477  | 14 M4K  |
+| DE2-115 | EP4CE115F29C7N   | Cyclone IV   | 60 MHz  | 1598 | 492  | 7 M9K   |
+| AX309   | XC6SLX9FTG256-2  | Spartan 6    | 64 MHz  | 927  | 464  | 7 BR8   |
+| DE10-LT | 10M50DAF484C7G   | Max 10       | 58 MHz  | 1195 | 470  | 7 M9K   |
+| QC5     | 5CEFA2F23I7N     | Cyclone V    | 73 MHz  | 554  | 553  | 6 M10K  |
+| QC10    | 10CL006U256CN8   | Cyclone 10   | 55 MHz  | 1193 | 471  | 7 M9K   |
+| EG4     | EG4S20BG256      | Eagle EG4S20 | 59 MHz  | 1021 | 392  | 7 M9K   |
+| QA7     | XC7A35TFTG256-1  | Artix 7      | 90 MHz  | 631  | 413  | 2 BR    |
+| QK7     | XC7K325TFFG676-1 | Kintex 7     | 114 MHz | 620  | 404  | 6 BR    |
