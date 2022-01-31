@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2019 by 1801BM1@gmail.com
+// Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
 // Project configuration parameters
 //______________________________________________________________________________
@@ -8,7 +8,7 @@
 //
 // CPU selector - only one of available CPU type must be defined
 //
-`define CONFIG_CPU_AM4        1
+`define CONFIG_CPU_VM2        1
 
 //`define CONFIG_CPU_VM1      1
 //`define CONFIG_CPU_VM2      1
@@ -19,12 +19,15 @@
 // PLL selector - only one of available PLL type must be defined
 // The appropriate .sdc file musy be copied to provide constraints
 //
-`define  CONFIG_PLL_50        1
+`define  CONFIG_PLL_125     1
 
 // `define  CONFIG_PLL_50     1
 // `define  CONFIG_PLL_66     1
 // `define  CONFIG_PLL_75     1
 // `define  CONFIG_PLL_100    1
+// `define  CONFIG_PLL_150    1
+// `define  CONFIG_PLL_166    1
+// `define  CONFIG_PLL_175    1
 //______________________________________________________________________________
 //
 // Simulation stops (breakpoint) after this time elapsed
@@ -59,6 +62,27 @@
 
 `ifdef   CONFIG_PLL_100
 `define  CONFIG_SYS_CLOCK     100000000
+`endif
+`ifdef   CONFIG_PLL_110
+`define  CONFIG_SYS_CLOCK     110000916
+`endif
+`ifdef   CONFIG_PLL_125
+`define  CONFIG_SYS_CLOCK     125000000
+`endif
+`ifdef   CONFIG_PLL_133
+`define  CONFIG_SYS_CLOCK     133333333
+`endif
+`ifdef   CONFIG_PLL_150
+`define  CONFIG_SYS_CLOCK     150000000
+`endif
+`ifdef   CONFIG_PLL_166
+`define  CONFIG_SYS_CLOCK     166666666
+`endif
+`ifdef   CONFIG_PLL_175
+`define  CONFIG_SYS_CLOCK     175000000
+`endif
+`ifdef   CONFIG_PLL_200
+`define  CONFIG_SYS_CLOCK     200000000
 `endif
 
 `define  CONFIG_SLOW_DIV  (`CONFIG_SYS_CLOCK / 5000000)

@@ -114,3 +114,4 @@ on sample projects (target frequency in .sdc was set to 50MHz, relaxed time-driv
 | QC10    | 10CL006U256CN8  | Cyclone 10   | 55 MHz  | 1193 | 471  | 7 M9K   |
 | EG4     | EG4S20BG256     | Eagle EG4S20 | 59 MHz  | 1021 | 392  | 7 M9K   |
 | QA7     | XC7A35TFTG256-1 | Artix 7      | 90 MHz  | 631  | 413  | 2 BR    |
+| QK7     | XC7K325TFFG676-1 | Kintex 7    | 114 MHz | 620  | 404  | 6 BR    |
