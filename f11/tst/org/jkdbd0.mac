@@ -8484,7 +8484,12 @@ ts374:		inc	(R2)			; iipdate test number
 		mov	#buff, SP		; set stack pointer
 nor:		tstb	(0)+			; if outside of core, trap to 4
 		cmp	R0, (PC)+		; is pointer inside 28k (30k) core
-hicore:		.word	160000			; may be changed to 170000 if 30k
+hicore:						;
+.if ne memlim					;
+		.word	memlim			;
+.iff						;
+		.word	160000			; may be changed to 170000 if 30K
+.endc						;
 		blo	nor			; test the rest of core
 		mov	#rotrap, @#4		; set up new vector pointer
 		tstb	@#177700		; should cause a trap

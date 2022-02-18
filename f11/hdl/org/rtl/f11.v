@@ -34,7 +34,7 @@ module f11
                                  //
    inout  [15:0]  pin_ad_n,      // inverted address/data bus
    output [21:16] pin_a_n,       // inverted high address bus
-   output         pin_umap_n,    // uppaer address mapping
+   output         pin_umap_n,    // upper address mapping
    inout          pin_bs_n,      // bank 7 select
    output         pin_sync_n,    // address strobe
    output         pin_wtbt_n,    // write/byte status
@@ -407,7 +407,7 @@ end
 //
 always @(*) if (pre_csel) clk_stut <= ~(m[12] & m[9] & m[8] & ~bus_cyc);
 always @(*) if (pre_csel) wtbt <= ~m[9] & ~m[8];
-always @(posedge e130) bus_ena = ~m[12] | ~m[9] & bus_cyc;
+always @(posedge e130) bus_ena <= ~m[12] | ~m[9] & bus_cyc;
 always @(posedge clk) bus_disable <= ~dma_ena0;
 
 assign out_cyc   = m[12] & ~m[9] & bus_cyc;
@@ -627,8 +627,8 @@ dc304 mmu
    .pin_de_n(abort_n),
    .pin_bs(bsio),
    .pin_ez_n(dmmus_n)
-
 );
+
 //_____________________________________________________________________________
 //
 endmodule

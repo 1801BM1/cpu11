@@ -272,15 +272,9 @@ set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_pla_2.v
 set_global_assignment -name SOURCE_FILE ../../tbe/config.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_tbl.v
-set_global_assignment -name VERILOG_FILE ../../tbe/tb_plm.v
-set_global_assignment -name VERILOG_FILE ../../tbe/tb_rom.v
-set_global_assignment -name VERILOG_FILE ../../tbe/tb_alu.v
 set_global_assignment -name MIF_FILE ../../../../rom/000.mif
 set_global_assignment -name MIF_FILE ../../../../rom/001.mif
 set_global_assignment -name MIF_FILE ../../../../rom/002.mif
 set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
 set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tbl.v -section_id tb_f11
-set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/tb_plm.v -section_id tb_303
-set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/tb_rom.v -section_id tb_rom
-set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/tb_alu.v -section_id tb_302
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
