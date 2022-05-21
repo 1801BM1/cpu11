@@ -2,27 +2,21 @@
 // Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
 // DC303 Control Chip model, for debug and simulating only
+//
+//  - DC303_CS = 0, 23-001C7-AA, rni = ma[8:0] == 9'x000
+//  - DC303_CS = 1, 23-002C7-AA, rni = ma[8:0] == 9'x000
+//  - DC303_CS = 2, 23-203C7-AA, rni = ma[8:4] == 5'x00
 //______________________________________________________________________________
 //
 `timescale 1ns / 100ps
 
 module dc303
-#(parameter
-//______________________________________________________________________________
-//
-// DC303_CS defines PLA and ROM content of the DC303 module
-//  - DC303_CS = 0, 23-001C7-AA, rni = ma[8:0] == 9'x000
-//  - DC303_CS = 1, 23-002C7-AA, rni = ma[8:0] == 9'x000
-//  - DC303_CS = 2, 23-203C7-AA, rni = ma[8:4] == 5'x00
-//
-   DC303_CS = 0
-)
+#(parameter DC303_FPP = 1)
 (
    input          pin_clk,    // main clock
    input [15:0]   pin_ad,     // address/data bus
    inout [15:0]   pin_m,      // microinstruction bus
    input          pin_rst,    // reset
-   input          pin_ez_n,   // enable Z-state
    output         pin_cs_n    // chip select
 );
 
@@ -30,19 +24,12 @@ module dc303
 //
 wire        clk;        // primary clock
 wire        rst;        // synchronized reset
-wire [4:0]  dc_cs;      //
                         //
 wire        moe;        // MIB output enable
-reg  [15:0] m;          // MIB output register
 reg  [15:0] mi;         // MIB input register on clock low phase
 reg  [15:0] d;          // data word input register
 reg  [15:0] da;         // data word input for next address workaround
-                        //
-wire        rd_na;      // read next address on MIB (for test)
-wire        rd_mc;      // read normal microcode on MIB (no test)
-reg         test;       // test cycle
-reg         cs;         // chip select
-reg         ez;         // enable Z-state
+reg  [2:0]  cs;         // chip select
                         //
 reg         axt;        // address extension bit
 reg  [8:0]  nar;        // next address register
@@ -53,17 +40,32 @@ wire [8:0]  ma;         // address read from ROM matrix
 wire [15:0] mc;         // microcode read from ROM matrix
 reg  [9:0]  a_in;       // address inputs for ROM/PLA
 reg  [15:0] d_in;       // data inputs for ROM/PLA
+                        //
 wire [8:0]  ma_pla;     // address from PLA
+wire [8:0]  ma_pla0;    //
+wire [8:0]  ma_pla1;    //
+wire [8:0]  ma_pla2;    //
+                        //
 wire [8:0]  ma_rom;     // address from ROM
+wire [8:0]  ma_rom0;    //
+wire [8:0]  ma_rom1;    //
+wire [8:0]  ma_rom2;    //
+                        //
 wire [15:0] mc_pla;     // microcode from PLA
+wire [15:0] mc_pla0;    //
+wire [15:0] mc_pla1;    //
+wire [15:0] mc_pla2;    //
+                        //
 wire [15:0] mc_rom;     // microcode from ROM
+wire [15:0] mc_rom0;    //
+wire [15:0] mc_rom1;    //
+wire [15:0] mc_rom2;    //
                         //
 reg         axtt;       //
 reg         rnit;       //
 wire        rni;        // read next instruction
 wire        jump;       // jump microinstruction
 wire        cjmp;       // conditional jump microinstruction
-wire        cs_stb;     // chip select strobe on jump
 wire        di_stb;     // data input service word strobe
                         //
 reg  [3:0]  pri_in;     // priority input latch
@@ -100,43 +102,16 @@ wire        clr_lplm;   //
 //
 assign clk = pin_clk;
 assign rst = pin_rst;
-assign pin_cs_n = cs ? 1'b0 : 1'bz;
-assign dc_cs = DC303_CS;
+assign pin_cs_n = ~(cs[2:0] != 3'b000);
 
 wire #1 sim_dclk  = clk; // suppress simulation glitches
 
 //______________________________________________________________________________
 //
-// MIB[10] - test_n, asserted to read next address on MIB, implemented
-//                   for test purposes only, reads 9 bit of next address
-//                   and AXT bit value, DC302 never asserts test_n
-//
-always @(*) if (clk) test <= ~pin_m[10];
-assign rd_mc = ~test;
-assign rd_na = test & clk;
-
-//______________________________________________________________________________
-//
 // Microinstruction bus (MIB)
 //
-always @(*) if (clk) ez <= ~pin_ez_n;
-assign moe = ~clk & ~ez & cs;
-assign pin_m = moe ? m : 16'hzzzz;
-
-always @(*)
-begin
-   if (rd_mc) m[15:0] = mc[15:0];
-   if (rd_na)
-   begin
-      m[0] = nar[0] & ~clr_na[0];
-      m[1] = nar[1] & ~clr_na[1];
-      m[2] = nar[2] & ~clr_na[2];
-      m[3] = nar[3] & ~clr_na[3];
-      m[8:4] = na[8:4];
-      m[9] = axt;
-      m[15:10] = 6'b111111;
-   end
-end
+assign moe = ~clk & (cs != 3'b000);
+assign pin_m = moe ? mc : 16'hzzzz;
 
 always @(*) if (~clk) mi <= pin_m;
 //______________________________________________________________________________
@@ -144,8 +119,7 @@ always @(*) if (~clk) mi <= pin_m;
 // Next microinstruction address (NA)
 //
 always @(*) if (~clk) nar <= ma;
-assign cs_stb = mi[15:11] == 5'b00000;
-assign jump = clk & cs_stb;
+assign jump = clk & (mi[15:11] == 5'b00000);
 assign cjmp = clk & ~pin_m[11] & (mi[15:11] == 5'b00001);
 
 //
@@ -204,10 +178,14 @@ begin
    if (clk) set_wpswt <= wpsw;
 
    if (rst)
-      cs <= (dc_cs == 5'b00000);
+      cs <= 3'b001;
    else
-      if (clk & cs_stb)
-         cs <= mi[10:6] == dc_cs;
+      if (jump)
+      begin
+         cs[0] <= (mi[10:6] == 5'b00000);
+         cs[1] <= (mi[10:6] == 5'b00001) & DC303_FPP;
+         cs[2] <= (mi[10:6] == 5'b00010) & DC303_FPP;
+      end
 
    if (set_lplm)
       lplm <= 1'b1;
@@ -230,7 +208,7 @@ begin
    if (~clk) rnit <= rni;
    if (clk) axtt <= axt;
 
-   if (~cs | rnit)
+   if ((cs == 3'b000) | jump | rnit)
       axt <= 1'b0;
    else
       if (~clk & tgl_axt)
@@ -243,8 +221,8 @@ end
 // or be written with interrupt statuses on clock low (rni))
 //
 assign rni = ~clk & (rst | (ma[8:4] == 5'b00000)
-                         & ((ma[3:0] == 4'b0000) | (dc_cs == 5'b00010))
-                         & cs);
+                         & ((ma[3:0] == 4'b0000) | cs[2])
+                         & (cs != 3'b000));
 assign di_stb = clk & ~pin_m[13] & ~pin_m[6] & ~pin_m[5] & sim_dclk;
 
 //
@@ -373,19 +351,19 @@ always @(*)
 begin
    if (~clk)
    begin
-      na_x00 <= (na[8:3] == 6'b000001) & (na[1:0] == 2'b00);
-      na_xxx <= na[8:3] == 6'b000001;
-      na_111 <= na[8:0] == 9'b000001111;
+      na_x00 <= (ma[8:3] == 6'b000001) & (ma[1:0] == 2'b00);
+      na_xxx <= ma[8:3] == 6'b000001;
+      na_111 <= ma[8:0] == 9'b000001111;
    end
 end
 
-assign clr_na[0] = clk & na_xxx & dcop[3];
-assign clr_na[1] = clk & na_xxx & dcop[3] & dcop[2]
-                 | clk & na_111 & dcop[0];
-assign clr_na[2] = clk & na_xxx & dcop[4] & dcop[2] & dcop[3]
-                 | clk & na_111 & dcop[4] & dcop[0]
-                 | clk & na_x00 & dcop[4];
-assign clr_na[3] = clk & na_111 & dcop[1];
+assign clr_na[0] = na_xxx & dcop[3];
+assign clr_na[1] = na_xxx & dcop[3] & dcop[2]
+                 | na_111 & dcop[0];
+assign clr_na[2] = na_xxx & dcop[4] & dcop[2] & dcop[3]
+                 | na_111 & dcop[4] & dcop[0]
+                 | na_x00 & dcop[4];
+assign clr_na[3] = na_111 & dcop[1];
 
 //______________________________________________________________________________
 //
@@ -395,30 +373,79 @@ begin
    if (clk) d_in = d;
 end
 
-assign ma = clk ? 9'o777 :
-            rst ? 9'o000 :
+assign ma = rst ? 9'o000 :
             ((na_dt ? da[8:0] : 9'o777) & ((a_in[8:7] == 2'b00) ? ma_pla : ma_rom));
 
-assign mc = clk ? 16'o177777 :
-            rst ? 16'o000000 :
+assign mc = rst ? 16'o000000 :
             ((mc_dt ? da : 16'o177777) & ((a_in[8:7] == 2'b00) ? mc_pla : mc_rom));
 
-defparam pla.DC303_PLA = DC303_CS;
-dc_pla pla
+
+defparam pla0.DC303_PLA = 0;
+dc_pla pla0
 (
    .a_in(a_in[6:0]),
    .d_in(d_in),
-   .ma(ma_pla),
-   .mc(mc_pla)
+   .ma(ma_pla0),
+   .mc(mc_pla0)
 );
 
-defparam rom.DC303_ROM = DC303_CS;
-dc_rom rom
+defparam pla1.DC303_PLA = 1;
+dc_pla pla1
+(
+   .a_in(a_in[6:0]),
+   .d_in(d_in),
+   .ma(ma_pla1),
+   .mc(mc_pla1)
+);
+
+defparam pla2.DC303_PLA = 2;
+dc_pla pla2
+(
+   .a_in(a_in[6:0]),
+   .d_in(d_in),
+   .ma(ma_pla2),
+   .mc(mc_pla2)
+);
+
+defparam rom0.DC303_ROM = 0;
+dc_rom rom0
 (
    .a_in(a_in),
-   .ma(ma_rom),
-   .mc(mc_rom)
+   .ma(ma_rom0),
+   .mc(mc_rom0)
 );
+
+defparam rom1.DC303_ROM = 1;
+dc_rom rom1
+(
+   .a_in(a_in),
+   .ma(ma_rom1),
+   .mc(mc_rom1)
+);
+
+defparam rom2.DC303_ROM = 2;
+dc_rom rom2
+(
+   .a_in(a_in),
+   .ma(ma_rom2),
+   .mc(mc_rom2)
+);
+
+assign mc_pla = (cs[0] ? mc_pla0 : 16'o000000)
+              | (cs[1] ? mc_pla1 : 16'o000000)
+              | (cs[2] ? mc_pla2 : 16'o000000);
+
+assign ma_pla = (cs[0] ? ma_pla0 : 9'o000)
+              | (cs[1] ? ma_pla1 : 9'o000)
+              | (cs[2] ? ma_pla2 : 9'o000);
+
+assign mc_rom = (cs[0] ? mc_rom0 : 16'o000000)
+              | (cs[1] ? mc_rom1 : 16'o000000)
+              | (cs[2] ? mc_rom2 : 16'o000000);
+
+assign ma_rom = (cs[0] ? ma_rom0 : 9'o000)
+              | (cs[1] ? ma_rom1 : 9'o000)
+              | (cs[2] ? ma_rom2 : 9'o000);
 
 //______________________________________________________________________________
 //

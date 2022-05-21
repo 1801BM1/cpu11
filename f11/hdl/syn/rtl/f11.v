@@ -18,6 +18,15 @@
 `timescale 1ns / 100ps
 
 module f11
+#(parameter
+//______________________________________________________________________________
+//
+// F11_CORE_MMU enables code MMU generation in the dc304 module
+// F11_CORE_FPP enables code of FPP MiCROM in the dc303 module
+//
+   F11_CORE_MMU = 1,
+   F11_CORE_FPP = 1
+)
 (
    input          pin_clk,       // processor clock
    input          pin_dclo_n,    // processor reset
@@ -66,7 +75,7 @@ wire  ad_oe;                     //
                                  //
 tri1  umap_n;                    // upper addresses mapping enable
 tri1  abort_n;                   // abort bus cycle (error/timeout)
-wire  reset;                     // reset control chip/CPU
+reg   reset;                     // reset control chip/CPU
 tri1  mrply_n;                   // MMU access acknowlegement
 tri1  csel_n;                    // control chip selected
                                  //
@@ -296,7 +305,23 @@ begin
             sync <= 1'b0;
 end
 
-assign reset = init | ~mclk & (ctl_err | bus_err | dclo | ~abort_n);
+always @(posedge pin_clk or posedge init)
+begin
+   if (init)
+      reset <= 1'b1;
+   else
+   begin
+      if (mce_p)
+         reset <= 1'b0;
+      else
+         if (~abort_n)
+            reset <= 1'b1;
+         else        // (ctl_err | bus_err)
+            if (mce_n & (csel_n | qt_req | dclo))
+               reset <= 1'b1;
+   end
+end
+
 //______________________________________________________________________________
 //
 // Interrupts
@@ -392,36 +417,13 @@ dc302 data
    .pin_ad_en(doe)
 );
 
-defparam ctl0.DC303_CS = 0;
+defparam ctl0.DC303_FPP = F11_CORE_FPP;
 dc303 ctl0
 (
    .pin_clk(mclk),
    .pin_ad(ad),
    .pin_m(m),
    .pin_rst(reset),
-   .pin_ez_n(1'b1),
-   .pin_cs_n(csel_n)
-);
-
-defparam ctl1.DC303_CS = 1;
-dc303 ctl1
-(
-   .pin_clk(mclk),
-   .pin_ad(ad),
-   .pin_m(m),
-   .pin_rst(reset),
-   .pin_ez_n(1'b1),
-   .pin_cs_n(csel_n)
-);
-
-defparam ctl2.DC303_CS = 2;
-dc303 ctl2
-(
-   .pin_clk(mclk),
-   .pin_ad(ad),
-   .pin_m(m),
-   .pin_rst(reset),
-   .pin_ez_n(1'b1),
    .pin_cs_n(csel_n)
 );
 

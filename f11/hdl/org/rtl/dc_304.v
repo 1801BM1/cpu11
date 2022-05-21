@@ -30,6 +30,7 @@ reg  [15:0] di;               // data word input register
 wire [15:0] d;                // data bus multiplexer
 reg  [21:16] a;               // high address lines
 reg  [15:13] la;              // page address latch
+reg  mi4c, mi5c;              //
 reg  mi7c, mi9c;              //
 reg  synct;                   //
 wire sync;                    //
@@ -212,14 +213,23 @@ always @(*) if (clk) mi_rst <= (~mi[4] & ~mi[5] & mi[6] & m[7]) & sim_dclk;
 always @(*) if (clk) km_sel <= ~mi[4] | ~mi[5] | mi[6];  // kernel mode
 always @(*) if (clk) fp_selt <= ~mr_sel & (m[5] | m[6]); // fpp select
 assign sr_rst = ~clk & ~mi9c & mi_rst;
-assign fp_sel = fp_selt & mi[5] & mi[4];
+assign fp_sel = fp_selt & mi5c & mi4c;
 
 //______________________________________________________________________________
 //
 // MMU resister access from the bus transactions (read/write by PDP-11 CPU)
 //
-always @(*) if (clk) mi7c <= mi[7];
-always @(*) if (clk) mi9c <= mi[9];
+always @(*)
+begin
+   if (clk)
+   begin
+      mi4c <= mi[4];
+      mi5c <= mi[5];
+      mi7c <= mi[7];
+      mi9c <= mi[9];
+   end
+end
+
 always @(negedge clk) synct <= ~mi7c;
 assign sync = clk | ~mi7c;
 

@@ -377,6 +377,14 @@ end
 
 //_____________________________________________________________________________
 //
+`ifdef CONFIG_F11_CORE_MMU
+defparam cpu.F11_CORE_MMU = `CONFIG_F11_CORE_MMU;
+`endif
+
+`ifdef CONFIG_F11_CORE_FPP
+defparam cpu.F11_CORE_FPP = `CONFIG_F11_CORE_FPP;
+`endif
+
 f11 cpu
 (
    .pin_clk(clk),                // processor clock
