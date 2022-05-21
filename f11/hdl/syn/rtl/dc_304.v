@@ -14,7 +14,9 @@ module dc304
    output         pin_bso,    // bus select output
    input          pin_bsi,    // bus select input
    input  [12:4]  pin_m,      // microinstruction bus
-   inout          pin_m15,    // address conversion flag
+   input  [12:4]  pin_mo,     // microinstruction early status
+   input  [12:4]  pin_mc,     // microinstruction latched status
+   output         pin_m15,    // address conversion flag
    output         pin_me_n,   // mapping enabled
    output         pin_ra_n,   // register access reply
    output         pin_de_n,   // invalid memory access
@@ -26,13 +28,12 @@ module dc304
 wire        clk;              // primary clock
                               //
 reg  [12:4] m;                // microinstuction register
-wire [12:4] mi;               // microinstruction bus inputs
+wire [12:4] mo;               // microinstruction early status
+wire [12:4] mc;               // microinstruction latched status
 reg  [15:0] di;               // data word input register
 wire [15:0] d;                // data bus multiplexer
 reg  [21:16] a;               // high address lines
 reg  [15:13] la;              // page address latch
-reg  mi4c, mi5c;              //
-reg  mi7c, mi9c;              //
                               //
 reg  synct;                   //
 wire sync;                    //
@@ -42,7 +43,7 @@ wire pae;                     // physical address enable
                               //
 wire ez;                      // disable A/D outputs
 reg  ezc;                     // latched A/D disable
-wire astb, astbc;             // address strobe microinstruction
+wire astb, astbc, astbo;      // address strobe microinstruction
 reg  astbd;                   // address strobe microinstruction
 reg  atreq;                   // address translation request
 wire di_stb;                  // A/D bus input register strobe (address)
@@ -71,7 +72,6 @@ reg [4:0] fa;                 // FPP register index
 wire en_um;                   // UMAP translate
 wire en_as;                   // AS, 22-bit address
 wire mmu_en;                  // MMU enable
-wire m15;                     // ack MMU address conversion
 wire rply;                    // reply MMU register access
 wire bso;                     //
 reg bsc, bsi;                 //
@@ -130,23 +130,24 @@ wire lim_err;                 //
 assign clk = pin_clk;         // primary clock
 wire #1 sim_dclk = clk;       // suppress simulation glitches
 
-assign mi[12:4] = pin_m[12:4];
+assign mo[12:4] = pin_mo[12:4];
+assign mc[12:4] = pin_mc[12:4];
+
 always @(*) if (~clk) m[12:4] <= pin_m[12:4];
 always @(*) if (clk | di_stb) di <= pin_ad;
 always @(*) if (clk) la[15:13] <= pin_ad[15:13];
 
-assign doe =  clk & ~ez & mi[12] & mi[9] & ~mi[8]
+assign doe =  clk & ~ez & mc[12] & mc[9] & ~mc[8]
                   & (mr_sel | ~synct & (m[6] | m[5])) // MMU/FPP register read
            | ~clk & ~ezc & ~derr & atreq;             // PA address output
 assign hoe = doe | err_stb;
-assign m15 = clk & astb & mmu_en & ~m[7];
-assign rply = clk & mr_sel & mi[12] & (~mi[8] | ~mi[9]);
+assign rply = clk & mr_sel & mc[12] & (~mc[8] | ~mc[9]);
 
 assign pin_ad[15:13] = hoe ? d[15:13] : 3'oZ;
 assign pin_ad[12:0] = doe ? d[12:0] : 13'oZZZZZ;
 assign pin_a[21:16] = (doe & ~clk) ? a[21:16] : 6'oZZ;
 
-assign pin_m15  = m15 ? 1'b0 : 1'bz;
+assign pin_m15 = ~(astbo & mmu_en & ~m[7]);
 assign pin_me_n = en_um ? 1'b0 : 1'bz;
 assign pin_ra_n = rply ? 1'b0 : 1'bz;
 assign pin_de_n = clk | ~derr;
@@ -174,7 +175,8 @@ assign wh = ~clk & ~trans & (id[3] | fa_amux | fa_bmux);
 assign ez = ~pin_ez_n;
 always @(*) if (clk) ezc <= ~pin_ez_n;
 
-assign astb = ~mi[12] & m[12] & clk & sim_dclk;
+assign astb  = ~mc[12] & m[12] & clk & sim_dclk;
+assign astbo = ~mo[12] & m[12];
 assign astbc = astbd & ~clk;
 assign di_stb = ~clk & ezc & astbd;
 always @(*) if (clk) astbd <= astb;
@@ -198,42 +200,31 @@ always @(*)
 begin
    if (clk)
    begin
-      id[0] = mi[12] & ~mi[9];         // write data
-      id[1] = mi[12] & mi[9] & ~mi[8]; // read data
+      id[0] = mc[12] & ~mc[9];         // write data
+      id[1] = mc[12] & mc[9] & ~mc[8]; // read data
       id[2] = astb
-            | mr_sel & mi[12] & ~mi[9] & ~mi[8] & ~ba[0] // write low byte
-            | mr_sel & mi[12] & ~mi[9] &  mi[8]          // write word
-            | ~synct & mi[12] & ~mi[9] & fp_sel;         // write FPP register
+            | mr_sel & mc[12] & ~mc[9] & ~mc[8] & ~ba[0] // write low byte
+            | mr_sel & mc[12] & ~mc[9] &  mc[8]          // write word
+            | ~synct & mc[12] & ~mc[9] & fp_sel;         // write FPP register
       id[3] = astb
-            | mr_sel & mi[12] & ~mi[9] & ~mi[8] &  ba[0] // write high byte
-            | mr_sel & mi[12] & ~mi[9] &  mi[8]          // write word
-            | ~synct & mi[12] & ~mi[9] & fp_sel;         // write FPP register
+            | mr_sel & mc[12] & ~mc[9] & ~mc[8] &  ba[0] // write high byte
+            | mr_sel & mc[12] & ~mc[9] &  mc[8]          // write word
+            | ~synct & mc[12] & ~mc[9] & fp_sel;         // write FPP register
    end
 end
 
-always @(*) if (clk) mi_rst <= (~mi[4] & ~mi[5] & mi[6] & m[7]) & sim_dclk;
-always @(*) if (clk) km_sel <= ~mi[4] | ~mi[5] | mi[6];  // kernel mode
+always @(*) if (clk) mi_rst <= (~mc[4] & ~mc[5] & mc[6] & m[7]) & sim_dclk;
+always @(*) if (clk) km_sel <= ~mc[4] | ~mc[5] | mc[6];  // kernel mode
 always @(*) if (clk) fp_selt <= ~mr_sel & (m[5] | m[6]); // fpp select
-assign sr_rst = ~clk & ~mi9c & mi_rst;
-assign fp_sel = fp_selt & mi5c & mi4c;
+assign sr_rst = ~clk & ~mc[9] & mi_rst;
+assign fp_sel = fp_selt & mc[5] & mc[4];
 
 //______________________________________________________________________________
 //
 // MMU resister access from the bus transactions (read/write by PDP-11 CPU)
 //
-always @(*)
-begin
-   if (clk)
-   begin
-      mi4c <= mi[4];
-      mi5c <= mi[5];
-      mi7c <= mi[7];
-      mi9c <= mi[9];
-   end
-end
-
-always @(negedge clk) synct <= ~mi7c;
-assign sync = clk | ~mi7c;
+always @(negedge clk) synct <= ~mc[7];
+assign sync = clk | ~mc[7];
 
 always @(*)
 begin
@@ -281,8 +272,8 @@ assign fa_m765 = ~m[7] | ~m[6];        // FPP register in m[7:5]
 assign fa_s210 = m[7] & m[6] & ~m[5];  // FPP register in ir[2:0] - fsrc/fdst
 assign fa_s076 = m[7] & m[6] & m[5];   // FPP register in ir[7:6] - ac
 
-always @(*) if (clk) fa_amux <= mi[4] & ~mi[5] & ~mi[6] &  m[4];
-always @(*) if (clk) fa_bmux <= mi[4] & ~mi[5] & ~mi[6] & ~m[4];
+always @(*) if (clk) fa_amux <= mc[4] & ~mc[5] & ~mc[6] &  m[4];
+always @(*) if (clk) fa_bmux <= mc[4] & ~mc[5] & ~mc[6] & ~m[4];
 
 always @(*)
 begin
@@ -336,8 +327,8 @@ assign fs[17] = fr_ena & fa[4] &  fa[3] & fa[1];
 //
 // W bit - dirty page logic
 //
-assign w_set = ~mr_sel & ~derr & ~mi9c & atreq & trans;
-always @(*) if (clk) w_clr <= mi[12] & ~mi[9] & mr_sel & (sa_23xx | sa_76xx);
+assign w_set = ~mr_sel & ~derr & ~mc[9] & atreq & trans;
+always @(*) if (clk) w_clr <= mc[12] & ~mc[9] & mr_sel & (sa_23xx | sa_76xx);
 
 always @(*)
 begin
@@ -466,7 +457,7 @@ assign err_stb = ~clk & sta_stb & trans & derr;
 assign derr = ~clk & ~ezc & (req_ro | req_le | req_nr);
 
 assign req_nr = atreq & ~db[1];
-assign req_ro = atreq & db[1] & ~db[2] & ~mi9c;
+assign req_ro = atreq & db[1] & ~db[2] & ~mc[9];
 assign req_le = atreq & lim_err;
 
 //______________________________________________________________________________

@@ -9,11 +9,12 @@
 module dc302
 (
    input          pin_clk,    // main clock
-   inout [15:0]   pin_ad,     // address/data bus
+   inout  [15:0]  pin_ad,     // address/data bus
    output         pin_bso,    // bus select output
    input          pin_bsi,    // bus select input
-   inout [15:0]   pin_m,      // microinstruction bus
-   input          pin_ez_n,   // enable Z-state
+   input  [15:0]  pin_m,      // microinstruction opcode
+   output [14:0]  pin_mo,     // microinstruction early status
+   input  [15:0]  pin_mc,     // microinstruction latched status
    output         pin_ad_en   // Quartus workaround
 );
 
@@ -21,7 +22,7 @@ module dc302
 //
 wire        clk;              // primary clock
                               //
-wire        doe, does, doesc; // data bus output enable
+wire        doe, doesc;       // data bus output enable
 wire [15:0] d;                // internal data bus
 reg  [15:0] dc;               // registered D-mux data
 reg  [15:0] di;               // registered input data
@@ -39,17 +40,17 @@ wire        astb, badr, bsyn; //
 reg         bsyn_in, badr_in; //
 reg         bcyc;             // in bus cycle
 reg         rinit;            // INIT latch
+wire        rinit_rc;         //
 reg         wtbt, wbyte;      //
 reg         d0c;              //
 reg         io_a0, io_a0c;    //
 reg         io_psw, io_pswc;  //
 reg         psw_wb;           // PSW write byte
                               //
-wire        moe;              // microinstruction bus output enable
-wire [15:0] mo;               //
 reg  [15:0] m;                // microinstruction register
 reg  [15:0] ir;               // PDP instruction register
 reg         ir_stb;           // instruction register strobe
+wire        ir_stb_rc;        //
                               //
 reg  [15:0] b;                // ALU input port B
 reg  [15:0] ac;               // ALU carries
@@ -87,7 +88,6 @@ wire [1:0]  rsm;              // register select processor model
 wire        cm_pro;           // current mode - 00 (kernel)
 wire        pm_pro;           // previous mode - 00 (kernel)
                               //
-reg         m15c;             // MMU enabled cycle
 reg         psel;             // PSW selected
 wire [69:0] idm;              // matrix output
 reg  [69:0] id;               // registered output
@@ -149,51 +149,17 @@ wire #1 sim_dclk = clk; // suppress simulation glitches
 
 always @(*) if (~clk) m <= pin_m;
 
-assign does = clk & (io_psw | (m[15:12] != 4'b1101));
-assign doe = clk & pin_ez_n & does;
-assign moe = clk & pin_ez_n;
-
+assign doe = clk & (io_psw | (m[15:12] != 4'b1101));
 assign pin_bso = doe & (d[15:13] == 3'b111);
 assign pin_ad = doe ? d : 16'hZZZZ;
-assign pin_m  = moe ? mo : 16'hZZZZ;
 assign pin_ad_en = doe;
 
-assign mo[0] = ir_stb & m[4]; // general purpose outputs
-assign mo[1] = ir_stb & m[5]; // 0101 - clear timer event
-assign mo[2] = ir_stb & m[6]; // 0110 - clear ACLO event
-assign mo[3] = ir_stb & m[7]; // 0111 - ODT address ext load
-
+//______________________________________________________________________________
 //
-// mo[12,9,8]
-//    000      AWO   - address, write only
-//    001      ARW   - address, read-modify-write
-//    010      unused
-//    011      ARO   - address, read only
-//    100      DOUTB - data, write byte
-//    101      DOUT  - data, write word
-//    110      DIN   - data, read word
-//    111      NOP
-//
-assign mo[8]  = ~( (m[15:10] == 6'b000110)
-                 | (m[15:12] == 4'b1101) & ~io_psw
-                 | (m[15:10] == 6'b000100) & ~io_psw & wbyte);
-assign mo[9]  = ~( (m[15:10] == 6'b000110)
-                 | (m[15:10] == 6'b000100) & ~io_psw
-                 | (m[15:10] == 6'b000111));
-assign mo[12] = ~( (m[15:10] == 6'b000101)   // address for read
-                 | (m[15:10] == 6'b000110)   // address for write
-                 | (m[15:10] == 6'b000111)); // address for read-write
-
-assign mo[7]  = id[3] | id[17] | id[18]      // nSYNC - bus cycle
-              | ~bcyc & m[7] & m[6] & ~m[4]
-              | ~bcyc & ~astb;
-
-assign mo[10] = 1'b1;                        // test mode disabled
-assign mo[11] = ~mbra;                       // microinstruction branch
-assign mo[13] = id[19];                      // IAK - interrupt acknowledge
-assign mo[14] = rinit;                       // peripheral reset
-assign mo[15] = 1'bz;                        // open collector for MME
-
+assign pin_mo[0]  = ir_stb_rc & m[4];  // general purpose outputs
+assign pin_mo[1]  = ir_stb_rc & m[5];  // 0101 - clear timer event
+assign pin_mo[2]  = ir_stb_rc & m[6];  // 0110 - clear ACLO event
+assign pin_mo[3]  = ir_stb_rc & m[7];  // 0111 - ODT address ext load
 //
 // mo[6:4]  CTRL
 //    000      - load PLM register address from return register (affects MC/NA/AXT)
@@ -205,17 +171,46 @@ assign mo[15] = 1'bz;                        // open collector for MME
 //    110      - transfer T-bit to Control
 //    111      - no operation
 //
-assign mo[4] = ~(id[21] | id[22] | id[25] | astb & ystk);
-assign mo[5] = ~(id[21] | id[22] | id[23] | id[24]
-               | id[26] | id[27] | id[28] | id[18] & io_psw);
-assign mo[6] = ~(id[22] | id[23] | id[24] | astb & ystk
-               | astb & ~pm_pro & ~m[4] & ~m[6]
-               | astb & ~cm_pro & ~m[4] & m[6]);
+assign pin_mo[4]  = ~(idm[21] | idm[22] | idm[25] | astb & ystk);
+assign pin_mo[5]  = ~(idm[21] | idm[22] | idm[23] | idm[24]
+                    | idm[26] | idm[27] | idm[28] | idm[18] & io_psw);
+assign pin_mo[6]  = ~(idm[22] | idm[23] | idm[24] | astb & ystk
+                  | astb & ~pm_pro & ~m[4] & ~m[6]
+                  | astb & ~cm_pro & ~m[4] & m[6]);
 
-assign astb = (m[15:10] == 6'b000101)
-            | (m[15:10] == 6'b000110)
-            | (m[15:10] == 6'b000111);
+assign pin_mo[7]  = idm[3] | idm[17] | idm[18]  // nSYNC - bus cycle
+                  | ~bcyc & m[7] & m[6] & ~m[4]
+                  | ~bcyc & ~astb;
+//
+// mo[12,9,8]
+//    000      AWO   - address, write only
+//    001      ARW   - address, read-modify-write
+//    010      unused
+//    011      ARO   - address, read only
+//    100      DOUTB - data, write byte
+//    101      DOUT  - data, write word
+//    110      DIN   - data, read word
+//    111      NOP
+//
+assign pin_mo[8]  = ~( (m[15:10] == 6'b000110)
+                     | (m[15:12] == 4'b1101) & ~io_psw
+                     | (m[15:10] == 6'b000100) & ~io_psw & wbyte);
+assign pin_mo[9]  = ~( (m[15:10] == 6'b000110)
+                     | (m[15:10] == 6'b000100) & ~io_psw
+                     | (m[15:10] == 6'b000111));
+assign pin_mo[12] = ~astb;
 
+assign pin_mo[10] = 1'b1;        // test mode disabled
+assign pin_mo[11] = ~mbra;       // microinstruction branch
+assign pin_mo[13] = idm[19];     // IAK - interrupt acknowledge
+assign pin_mo[14] = rinit_rc;    // peripheral reset
+
+assign astb = (m[15:10] == 6'b000101)  // address for read
+            | (m[15:10] == 6'b000110)  // address for write
+            | (m[15:10] == 6'b000111); // address for read-write
+
+//______________________________________________________________________________
+//
 assign bdc_en = clk & (m[15:10] == 6'b110011);
 assign pa_en = ~clk | ~bdc_en;
 
@@ -226,7 +221,7 @@ begin
       fx_ren[0] <= id[25] & ~io_psw &  m[7] & ~cm_pro;
       fx_ren[1] <= id[25] & ~io_psw &  m[7] & ~cm_pro & psw[15];
       fx_ren[2] <= id[25] & ~io_psw & ~m[7];
-      fx_ren[3] <= does;
+      fx_ren[3] <= doe;
    end
 end
 
@@ -236,7 +231,7 @@ assign fx_en2 = ~clk & fx_ren[2];
 assign fx_en  = ~clk & fx_ren[3];
 assign doesc = fx_ren[3];
 
-always @(negedge clk) bsyn_in <= ~mo[7];
+always @(negedge clk) bsyn_in <= ~pin_mc[7];
 always @(negedge clk) badr_in <= astb;
 assign bsyn = bsyn_in & ~clk;
 assign badr = badr_in & ~clk & ~sim_dclk;
@@ -273,29 +268,25 @@ begin
 end
 always @(*) if (clk) io_a0 <= io_a0c;
 
-always @(*)
-if (clk & sim_dclk)
-begin
-   if (id[21] & m[7]) rinit <= 1'b1;
-   if (id[3] | id[18]) rinit <= 1'b0;
-end
+always @(posedge clk) rinit <= rinit_rc;
+assign rinit_rc = ~(idm[3] | idm[18]) & ((idm[21] & m[7]) | rinit);
 
 //______________________________________________________________________________
 //
 // PSW access, latch virtual or physical address depending on MMU enable
 //
-always @(*) if (clk) m15c <= pin_m[15];
 always @(*)
 begin
-   if (m15c & clk)   psel <= pin_bsi & (pin_ad[12:1] == 12'hFFF); // latch original
-   if (~m15c & ~clk) psel <= pin_bsi & (pin_ad[12:1] == 12'hFFF); // latch translated
+   if (pin_mc[15] & clk)   psel <= pin_bsi & (pin_ad[12:1] == 12'hFFF); // latch original
+   if (~pin_mc[15] & ~clk) psel <= pin_bsi & (pin_ad[12:1] == 12'hFFF); // latch translated
 end
 
 //______________________________________________________________________________
 //
 always @(*) if (ir_stb & ~clk) ir <= pa;
-always @(*) if (clk) ir_stb <= (m[15:8] == 8'b00010001)
-                             | (m[15:10] == 6'b110101);
+always @(posedge clk) ir_stb <= ir_stb_rc;
+assign ir_stb_rc = (m[15:8] == 8'b00010001)
+                 | (m[15:10] == 6'b110101);
 
 //______________________________________________________________________________
 //
@@ -611,82 +602,82 @@ endfunction
 
 always @(*) if (clk) id <= idm;
 
-assign idm[0]  = clk & cmp(m[15:8], 8'b10001x0x);
-assign idm[1]  = clk & cmp(m[15:8], 8'b100000xx);
-assign idm[2]  = clk & cmp(m[15:8], 8'b100001xx) & psw[0];
-assign idm[3]  = clk & cmp(m[15:8], 8'b00000xxx);
-assign idm[4]  = clk & cmp(m[15:8], 8'bx0x1xxxx);
-assign idm[5]  = clk & cmp(m[15:8], 8'b10000xxx);
-assign idm[6]  = clk & cmp(m[15:8], 8'bxxxxxxx0);
-assign idm[7]  = clk & cmp(m[15:8], 8'b0xxxxxxx);
-assign idm[8]  = clk & cmp(m[15:8], 8'b1xxxxx0x);
-assign idm[9]  = clk & cmp(m[15:8], 8'b111011x0);
+assign idm[0]  = cmp(m[15:8], 8'b10001x0x);
+assign idm[1]  = cmp(m[15:8], 8'b100000xx);
+assign idm[2]  = cmp(m[15:8], 8'b100001xx) & psw[0];
+assign idm[3]  = cmp(m[15:8], 8'b00000xxx);
+assign idm[4]  = cmp(m[15:8], 8'bx0x1xxxx);
+assign idm[5]  = cmp(m[15:8], 8'b10000xxx);
+assign idm[6]  = cmp(m[15:8], 8'bxxxxxxx0);
+assign idm[7]  = cmp(m[15:8], 8'b0xxxxxxx);
+assign idm[8]  = cmp(m[15:8], 8'b1xxxxx0x);
+assign idm[9]  = cmp(m[15:8], 8'b111011x0);
 
-assign idm[10] = clk & cmp(m[15:8], 8'b111011x1);
-assign idm[11] = clk & cmp(m[15:8], 8'b10xx01xx);
-assign idm[12] = clk & cmp(m[15:8], 8'b110000x1);
-assign idm[13] = clk & cmp(m[15:8], 8'b1xxxxxx1);
-assign idm[14] = clk & cmp(m[15:8], 8'b1x1x10xx);
-assign idm[15] = clk & cmp(m[15:8], 8'b11x00xxx);
-assign idm[16] = clk & cmp(m[15:8], 8'b1111110x);
-assign idm[17] = clk & cmp(m[15:8], 8'b1101xx1x);
-assign idm[18] = clk & cmp(m[15:8], 8'b00010000);
-assign idm[19] = clk & cmp(m[15:8], 8'b110111xx);
+assign idm[10] = cmp(m[15:8], 8'b111011x1);
+assign idm[11] = cmp(m[15:8], 8'b10xx01xx);
+assign idm[12] = cmp(m[15:8], 8'b110000x1);
+assign idm[13] = cmp(m[15:8], 8'b1xxxxxx1);
+assign idm[14] = cmp(m[15:8], 8'b1x1x10xx);
+assign idm[15] = cmp(m[15:8], 8'b11x00xxx);
+assign idm[16] = cmp(m[15:8], 8'b1111110x);
+assign idm[17] = cmp(m[15:8], 8'b1101xx1x);
+assign idm[18] = cmp(m[15:8], 8'b00010000);
+assign idm[19] = cmp(m[15:8], 8'b110111xx);
 
-assign idm[20] = clk & cmp(m[15:8], 8'b0100xxxx);
-assign idm[21] = clk & cmp(m[15:8], 8'b00010010);
-assign idm[22] = clk & cmp(m[15:8], 8'b00010011);
-assign idm[23] = clk & cmp(m[15:8], 8'b00010001);
-assign idm[24] = clk & cmp(m[15:8], 8'b110101xx);
-assign idm[25] = clk & cmp(m[15:8], 8'b110110xx);
-assign idm[26] = clk & cmp(m[15:8], 8'b110110xx) & cm_pro;
-assign idm[27] = clk & cmp(m[15:8], 8'b110110xx) & ~m[7];
-assign idm[28] = clk & cmp(m[15:8], 8'b110110xx) & io_psw;
+assign idm[20] = cmp(m[15:8], 8'b0100xxxx);
+assign idm[21] = cmp(m[15:8], 8'b00010010);
+assign idm[22] = cmp(m[15:8], 8'b00010011);
+assign idm[23] = cmp(m[15:8], 8'b00010001);
+assign idm[24] = cmp(m[15:8], 8'b110101xx);
+assign idm[25] = cmp(m[15:8], 8'b110110xx);
+assign idm[26] = cmp(m[15:8], 8'b110110xx) & cm_pro;
+assign idm[27] = cmp(m[15:8], 8'b110110xx) & ~m[7];
+assign idm[28] = cmp(m[15:8], 8'b110110xx) & io_psw;
 assign idm[29] = 1'b0;
 
-assign idm[30] = clk & cmp(m[15:8], 8'b1x0000x1);
-assign idm[31] = clk & cmp(m[15:8], 8'b0100xxxx);
-assign idm[32] = clk & cmp(m[15:8], 8'b1111011x);
-assign idm[33] = clk & cmp(m[15:8], 8'b11111110) & bra;
-assign idm[34] = clk & cmp(m[15:8], 8'b110001xx) & psw_n;
-assign idm[35] = clk & cmp(m[15:8], 8'b10xxx1xx) & psw[0];
-assign idm[36] = clk & cmp(m[15:8], 8'b1111010x) & psw[0];
-assign idm[37] = clk & cmp(m[15:8], 8'b1111010x) & ~psw[0];
-assign idm[38] = clk & cmp(m[15:8], 8'b10001xxx);
-assign idm[39] = clk & cmp(m[15:8], 8'b10111xxx);
+assign idm[30] = cmp(m[15:8], 8'b1x0000x1);
+assign idm[31] = cmp(m[15:8], 8'b0100xxxx);
+assign idm[32] = cmp(m[15:8], 8'b1111011x);
+assign idm[33] = cmp(m[15:8], 8'b11111110) & bra;
+assign idm[34] = cmp(m[15:8], 8'b110001xx) & psw_n;
+assign idm[35] = cmp(m[15:8], 8'b10xxx1xx) & psw[0];
+assign idm[36] = cmp(m[15:8], 8'b1111010x) & psw[0];
+assign idm[37] = cmp(m[15:8], 8'b1111010x) & ~psw[0];
+assign idm[38] = cmp(m[15:8], 8'b10001xxx);
+assign idm[39] = cmp(m[15:8], 8'b10111xxx);
 
-assign idm[40] = clk & cmp(m[15:8], 8'b100110xx);
-assign idm[41] = clk & cmp(m[15:8], 8'b0011xxxx);
-assign idm[42] = clk & cmp(m[15:8], 8'b00011x00);
-assign idm[43] = clk & cmp(m[15:8], 8'b00010100);
-assign idm[44] = clk & cmp(m[15:8], 8'b10110xxx);
-assign idm[45] = clk & cmp(m[15:8], 8'b1101xxxx);
-assign idm[46] = clk & cmp(m[15:8], 8'b110011xx);
-assign idm[47] = clk & cmp(m[15:8], 8'b10100xxx);
-assign idm[48] = clk & cmp(m[15:8], 8'b100111xx);
-assign idm[49] = clk & cmp(m[15:8], 8'b10010xxx);
+assign idm[40] = cmp(m[15:8], 8'b100110xx);
+assign idm[41] = cmp(m[15:8], 8'b0011xxxx);
+assign idm[42] = cmp(m[15:8], 8'b00011x00);
+assign idm[43] = cmp(m[15:8], 8'b00010100);
+assign idm[44] = cmp(m[15:8], 8'b10110xxx);
+assign idm[45] = cmp(m[15:8], 8'b1101xxxx);
+assign idm[46] = cmp(m[15:8], 8'b110011xx);
+assign idm[47] = cmp(m[15:8], 8'b10100xxx);
+assign idm[48] = cmp(m[15:8], 8'b100111xx);
+assign idm[49] = cmp(m[15:8], 8'b10010xxx);
 
-assign idm[50] = clk & cmp(m[15:8], 8'b1111110x);
-assign idm[51] = clk & cmp(m[15:8], 8'b111100xx);
-assign idm[52] = clk & cmp(m[15:8], 8'b111011xx);
-assign idm[53] = clk & cmp(m[15:8], 8'b111010xx);
-assign idm[54] = clk & cmp(m[15:8], 8'b111001xx);
-assign idm[55] = clk & cmp(m[15:8], 8'b110000xx);
-assign idm[56] = clk & cmp(m[15:8], 8'b10101xxx);
-assign idm[57] = clk & cmp(m[15:8], 8'b0101xxxx);
-assign idm[58] = clk & cmp(m[15:8], 8'b0010xxxx);
-assign idm[59] = clk & cmp(m[15:8], 8'b000100xx);
+assign idm[50] = cmp(m[15:8], 8'b1111110x);
+assign idm[51] = cmp(m[15:8], 8'b111100xx);
+assign idm[52] = cmp(m[15:8], 8'b111011xx);
+assign idm[53] = cmp(m[15:8], 8'b111010xx);
+assign idm[54] = cmp(m[15:8], 8'b111001xx);
+assign idm[55] = cmp(m[15:8], 8'b110000xx);
+assign idm[56] = cmp(m[15:8], 8'b10101xxx);
+assign idm[57] = cmp(m[15:8], 8'b0101xxxx);
+assign idm[58] = cmp(m[15:8], 8'b0010xxxx);
+assign idm[59] = cmp(m[15:8], 8'b000100xx);
 
-assign idm[60] = clk & cmp(m[15:8], 8'b00010101);
-assign idm[61] = clk & cmp(m[15:8], 8'b00011x01);
-assign idm[62] = clk & cmp(m[15:8], 8'b111000xx);
-assign idm[63] = clk & cmp(m[15:8], 8'b0110xxxx);
-assign idm[64] = clk & cmp(m[15:8], 8'b111110xx);
-assign idm[65] = clk & cmp(m[15:8], 8'b0111xxxx);
-assign idm[66] = clk & cmp(m[15:8], 8'b101x10xx);
-assign idm[67] = clk & cmp(m[15:8], 8'b110001xx);
-assign idm[68] = clk & cmp(m[15:8], 8'b10000xxx);
-assign idm[69] = clk & cmp(m[15:8], 8'b110010xx);
+assign idm[60] = cmp(m[15:8], 8'b00010101);
+assign idm[61] = cmp(m[15:8], 8'b00011x01);
+assign idm[62] = cmp(m[15:8], 8'b111000xx);
+assign idm[63] = cmp(m[15:8], 8'b0110xxxx);
+assign idm[64] = cmp(m[15:8], 8'b111110xx);
+assign idm[65] = cmp(m[15:8], 8'b0111xxxx);
+assign idm[66] = cmp(m[15:8], 8'b101x10xx);
+assign idm[67] = cmp(m[15:8], 8'b110001xx);
+assign idm[68] = cmp(m[15:8], 8'b10000xxx);
+assign idm[69] = cmp(m[15:8], 8'b110010xx);
 
 assign mid30 = id[35] | id[42] | id[43] | id[46] | id[48] | id[59] | id[66];
 assign mid31 = id[31] | id[32] | id[33] | id[34] | id[36] | id[38] | id[39]

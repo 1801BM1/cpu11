@@ -61,6 +61,9 @@ reg   qrdy;                      // qbus ready for transaction
 reg   drdy;                      // data ready to complete
 wire  qwait;                     // wait Q-bus at mclk high
                                  //
+wire  [15:0] mo;                 // early microbus status/command
+reg   [15:0] mc;                 // latched microbus status/command
+                                 //
 tri1  [15:0] m;                  // microinstruction bus
 tri0  [15:0] ad;                 // address/data bus
 reg   [15:0] ad_reg;             // output address/data register
@@ -91,11 +94,7 @@ reg   bus_err;                   //
 reg   bus_cyc;                   //
                                  //
 reg   sync, sy_set, sy_clr;      //
-reg   din, dout, iako;           //
-                                 //
-reg   wtbt;                      //
-wire  dout_cyc;                  //
-wire  din_cyc;                   //
+reg   din, dout, iako, wtbt;     //
 wire  rply;                      //
                                  //
 reg   dis_mmu;                   // disable MMU for cycle
@@ -123,12 +122,12 @@ end
 assign mce_n = ~init & mclk & ~qwait;
 assign mce_p = init | ~mclk & ~mme0;
 
-assign qwait = ~drdy &  m[12] & ~(m[9] & m[8]) & bus_cyc
-             | ~qrdy & ~m[12];
+assign qwait = ~drdy &  mc[12] & ~(mc[9] & mc[8]) & bus_cyc
+             | ~qrdy & ~mc[12];
 
 always @(posedge pin_clk)
 begin
-   mme0 <= ~m[15] & mce_n & ~init;
+   mme0 <= ~mc[15] & mce_n & ~init;
    mme1 <= mme0 & ~init & abort_n;
 
    if ((~din & ~dout) | init)
@@ -156,7 +155,7 @@ begin
       if (mce_n)
       begin
          bus_err  <= qt_req;
-         bus_init <= m[14];
+         bus_init <= mc[14];
       end
    end
 end
@@ -202,7 +201,7 @@ assign ad = doe      ? 16'oZZZZZZ :
 assign fdin = {~pin_fdin_n[15:8], ~init, 4'b0000, ~pin_fdin_n[2], pin_bsel_n[1:0]};
 assign svc = {3'bzzz, svc_reg[12:5], ctl_err, abort_n, 1'b0, svc_reg[4], ~dclo };
 
-assign fdin_oe = mclk & m[3];
+assign fdin_oe = mclk & mc[3];
 assign svc_oe = ~mclk & ~mme0 & ~mme1;
 
 always @(posedge pin_clk or posedge init)
@@ -215,8 +214,8 @@ begin
 end
 
 assign ad_oe = din & mrply_n;
-assign ad_stb = mce_n & ~m[12] | mclk & m[12] & ~m[9] & bus_cyc | mme0;
-assign ena_odt = mce_n & ~m[12] & dis_mmu;
+assign ad_stb = mce_n & ~mc[12] | mclk & mc[12] & ~mc[9] & bus_cyc | mme0;
+assign ena_odt = mce_n & ~mc[12] & dis_mmu;
 
 always @(posedge pin_clk or posedge init)
 begin
@@ -239,9 +238,6 @@ begin
 end
 //______________________________________________________________________________
 //
-assign dout_cyc  = m[12] & ~m[9] & bus_cyc;
-assign din_cyc   = m[12] & m[9] & ~m[8] & bus_cyc;
-
 assign rply = qt_req | ~pin_rply_n;
 
 always @(posedge pin_clk)
@@ -254,9 +250,9 @@ begin
    end
    else
    begin
-      din <= din_cyc & mclk;
-      dout <= dout_cyc & mclk;
-      iako <= m[13] & mclk;
+      din  <= mclk & mc[12] & mc[9] & ~mc[8] & bus_cyc;
+      dout <= mclk & mc[12] & ~mc[9] & bus_cyc;
+      iako <= mclk & mc[13];
    end
 end
 
@@ -267,9 +263,9 @@ end
 always @(posedge pin_clk)
 begin
    if (mce_n)
-      wtbt <= ~m[9] & ~m[8];
+      wtbt <= ~mc[9] & ~mc[8];
    if (mclk)
-      ad_ena <= ~m[12] | ~m[9] & bus_cyc;
+      ad_ena <= ~mc[12] | ~mc[9] & bus_cyc;
 end
 
 always @(posedge pin_clk)
@@ -287,9 +283,9 @@ begin
       begin
          ctl_err <= csel_n;
          pdclo   <= 1'b0;
-         bus_cyc <= ~m[12] | ~m[7];
-         sy_set  <= ~m[7];
-         sy_clr  <= m[7] & ~rply;
+         bus_cyc <= ~mc[12] | ~mc[7];
+         sy_set  <= ~mc[7];
+         sy_clr  <= mc[7] & ~rply;
       end
 end
 
@@ -326,10 +322,10 @@ end
 //
 // Interrupts
 //
-assign srun     = (m[3:0] == 4'b0001) & mce_n;
-assign evnt_clr = (m[3:0] == 4'b0101) & mce_n;
-assign aclo_clr = (m[3:0] == 4'b0110) & mce_n;
-assign odt_stb  = (m[3:0] == 4'b0111) & mce_n;
+assign srun     = (mc[3:0] == 4'b0001) & mce_n;
+assign evnt_clr = (mc[3:0] == 4'b0101) & mce_n;
+assign aclo_clr = (mc[3:0] == 4'b0110) & mce_n;
+assign odt_stb  = (mc[3:0] == 4'b0111) & mce_n;
 
 always @(posedge pin_clk)
 begin
@@ -411,9 +407,10 @@ dc302 data
    .pin_clk(mclk),
    .pin_ad(ad),
    .pin_m(m),
+   .pin_mo(mo[14:0]),
+   .pin_mc(mc),
    .pin_bsi(bsio),
    .pin_bso(bs_cpu),
-   .pin_ez_n(1'b1),
    .pin_ad_en(doe)
 );
 
@@ -423,6 +420,8 @@ dc303 ctl0
    .pin_clk(mclk),
    .pin_ad(ad),
    .pin_m(m),
+   .pin_mo(mo),
+   .pin_mc(mc),
    .pin_rst(reset),
    .pin_cs_n(csel_n)
 );
@@ -433,7 +432,9 @@ dc304 mmu
    .pin_ad(ad),
    .pin_a(a),
    .pin_m(m[12:4]),
-   .pin_m15(m[15]),
+   .pin_mo(mo[12:4]),
+   .pin_mc(mc[12:4]),
+   .pin_m15(mo[15]),
    .pin_me_n(umap_n),
    .pin_ra_n(mrply_n),
    .pin_de_n(abort_n),
@@ -441,6 +442,8 @@ dc304 mmu
    .pin_bso(bs_mmu),
    .pin_ez_n(~ena_odt)
 );
+
+always @(posedge pin_clk) if (mce_p) mc <= mo;
 
 //_____________________________________________________________________________
 //

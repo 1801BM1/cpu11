@@ -16,6 +16,8 @@ module dc303
    input          pin_clk,    // main clock
    input [15:0]   pin_ad,     // address/data bus
    inout [15:0]   pin_m,      // microinstruction bus
+   input [15:0]   pin_mo,     // microinstruction early status
+   input [15:0]   pin_mc,     // microinstruction latched status
    input          pin_rst,    // reset
    output         pin_cs_n    // chip select
 );
@@ -120,7 +122,7 @@ always @(*) if (~clk) mi <= pin_m;
 //
 always @(*) if (~clk) nar <= ma;
 assign jump = clk & (mi[15:11] == 5'b00000);
-assign cjmp = clk & ~pin_m[11] & (mi[15:11] == 5'b00001);
+assign cjmp = clk & ~pin_mc[11] & (mi[15:11] == 5'b00001);
 
 //
 // na[3:0] - reset at dedicated addresses
@@ -143,7 +145,7 @@ assign na[8] = nar[8] & ~jump;
 always @(*) if (clk) pri_in[3:0] <= pin_ad[7:4];
 always @(*) if (pri_stb) pri[2:0] <= pri_in[3:1];
 always @(*) if (tbit_stb) tbit <= pri_in[0];
-always @(*) if (clk) dc[7:0] <= {mi[7:4], pin_m[9], pin_m[6:4]};
+always @(*) if (clk) dc[7:0] <= {mi[7:4], pin_mc[9], pin_mc[6:4]};
 
 function dc_cmp
 (
@@ -223,7 +225,7 @@ end
 assign rni = ~clk & (rst | (ma[8:4] == 5'b00000)
                          & ((ma[3:0] == 4'b0000) | cs[2])
                          & (cs != 3'b000));
-assign di_stb = clk & ~pin_m[13] & ~pin_m[6] & ~pin_m[5] & sim_dclk;
+assign di_stb = clk & ~pin_mc[13] & ~pin_mc[6] & ~pin_mc[5] & sim_dclk;
 
 //
 // Internal requests, provided by internal logic
