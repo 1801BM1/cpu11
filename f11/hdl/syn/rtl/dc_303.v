@@ -14,23 +14,22 @@ module dc303
 #(parameter DC303_FPP = 1)
 (
    input          pin_clk,    // main clock
-   input [15:0]   pin_ad,     // address/data bus
-   inout [15:0]   pin_m,      // microinstruction bus
-   input [15:0]   pin_mo,     // microinstruction early status
-   input [15:0]   pin_mc,     // microinstruction latched status
+   input          pin_mce_p,  // master rising edge
+   input          pin_mce_n,  // master falling edge
+   input  [15:0]  pin_ad,     // address/data bus
+   output [15:0]  pin_m,      // microinstruction bus
+   input  [15:0]  pin_mc,     // microinstruction latched status
+   input  [12:0]  pin_svc,    // service status word
+   input          pin_bra,    // microinstruction branch
    input          pin_rst,    // reset
-   output         pin_cs_n    // chip select
+   output         pin_cs      // chip select
 );
 
 //______________________________________________________________________________
 //
-wire        clk;        // primary clock
-wire        rst;        // synchronized reset
-                        //
-wire        moe;        // MIB output enable
 reg  [15:0] mi;         // MIB input register on clock low phase
 reg  [15:0] d;          // data word input register
-reg  [15:0] da;         // data word input for next address workaround
+wire [15:0] da;         //
 reg  [2:0]  cs;         // chip select
                         //
 reg         axt;        // address extension bit
@@ -63,21 +62,20 @@ wire [15:0] mc_rom0;    //
 wire [15:0] mc_rom1;    //
 wire [15:0] mc_rom2;    //
                         //
-reg         axtt;       //
-reg         rnit;       //
-wire        rni;        // read next instruction
+wire [15:0] svc;        // service status word
+reg         rni;        // read next instruction
 wire        jump;       // jump microinstruction
 wire        cjmp;       // conditional jump microinstruction
 wire        di_stb;     // data input service word strobe
                         //
-reg  [3:0]  pri_in;     // priority input latch
 reg  [2:0]  pri;        // priority
 reg         tbit;       // T-bit
 reg         wpsw;       //
+reg         wpswt;      //
 reg         lplm;       //
 reg         sovf;       // stack overflow
                         //
-reg  [7:0]  dc;         // processor opcode decoder
+wire [7:0]  dc;         // processor opcode decoder
 wire [4:0]  dcop;       // decoded opcodes
 reg         na_x00;     // na == 9'b000001x00
 reg         na_xxx;     // na == 9'b000001xxx
@@ -91,38 +89,31 @@ wire        na_dt;      // replace next address with data
                         //
 reg         set_soft;   //
 reg         clr_soft;   //
-reg         set_wpswt;  //
 wire        set_sof;    // set stack overflow
-wire        set_nusd;   // set unknown not used (in chip 0) flag
 wire        set_lplm;   //
 wire        set_wpsw;   //
 wire        clr_lplm;   //
 
 //______________________________________________________________________________
 //
-// Clocks and Reset
-//
-assign clk = pin_clk;
-assign rst = pin_rst;
-assign pin_cs_n = ~(cs[2:0] != 3'b000);
-
-wire #1 sim_dclk  = clk; // suppress simulation glitches
-
-//______________________________________________________________________________
-//
 // Microinstruction bus (MIB)
 //
-assign moe = ~clk & (cs != 3'b000);
-assign pin_m = moe ? mc : 16'hzzzz;
+always @(posedge pin_clk or posedge pin_rst)
+begin
+   if (pin_rst)
+         mi <= 16'h0000;
+   else
+      if (pin_mce_n)
+         mi <= mc;
+end
+assign pin_m = mi;
 
-always @(*) if (~clk) mi <= pin_m;
 //______________________________________________________________________________
 //
 // Next microinstruction address (NA)
 //
-always @(*) if (~clk) nar <= ma;
-assign jump = clk & (mi[15:11] == 5'b00000);
-assign cjmp = clk & ~pin_mc[11] & (mi[15:11] == 5'b00001);
+assign jump = (mi[15:11] == 5'b00000);
+assign cjmp = ~pin_bra & (mi[15:11] == 5'b00001);
 
 //
 // na[3:0] - reset at dedicated addresses
@@ -140,12 +131,30 @@ assign na[6] = cjmp ? mi[6] : (nar[6] & ~jump);
 assign na[7] = cjmp ? mi[7] : (nar[7] & ~jump);
 assign na[8] = nar[8] & ~jump;
 
+always @(posedge pin_clk or posedge pin_rst)
+begin
+   if (pin_rst)
+      cs <= 3'b001;
+   else
+      if (jump & pin_mce_p)
+      begin
+         cs[0] <= (mi[10:6] == 5'b00000);
+         cs[1] <= (mi[10:6] == 5'b00001) && DC303_FPP;
+         cs[2] <= (mi[10:6] == 5'b00010) && DC303_FPP;
+      end
+end
+assign pin_cs = (cs[2:0] != 3'b000);
+
 //______________________________________________________________________________
 //
-always @(*) if (clk) pri_in[3:0] <= pin_ad[7:4];
-always @(*) if (pri_stb) pri[2:0] <= pri_in[3:1];
-always @(*) if (tbit_stb) tbit <= pri_in[0];
-always @(*) if (clk) dc[7:0] <= {mi[7:4], pin_mc[9], pin_mc[6:4]};
+always @(posedge pin_clk)
+begin
+   if (pin_mce_n)
+   begin
+      if (pri_stb) pri[2:0] <= pin_ad[7:5];
+      if (tbit_stb) tbit <= pin_ad[4];
+   end
+end
 
 function dc_cmp
 (
@@ -161,60 +170,46 @@ begin
 end
 endfunction
 
-assign pri_stb  = ~clk & dc_cmp(dc, 4'bxxxx, 4'bx10x);            // transfer prio
-assign tbit_stb = ~clk & dc_cmp(dc, 4'bxxxx, 4'bx1x0);            // transfer tbit
-assign tgl_axt  = ~clk & dc_cmp(dc, 4'bxx0x, 4'bx000);
-assign mc_dt    = ~clk & dc_cmp(dc, 4'bxx10, 4'bx000);            // data to mc
-assign na_dt    = ~clk & dc_cmp(dc, 4'bxxx1, 4'bx000);            // data to na
-assign set_sof  = ~clk & dc_cmp(dc, 4'bxxxx, 4'bx010) & set_soft; // stack ovf
-assign set_nusd = ~clk & dc_cmp(dc, 4'bx1xx, 4'b0100);
-assign set_lplm = ~clk & dc_cmp(dc, 4'b000x, 4'b1001) & tbit;
-assign set_wpsw = ~clk & dc_cmp(dc, 4'bxx1x, 4'b0100);
-assign clr_lplm = ~clk & dc_cmp(dc, 4'bxxx1, 4'bx1x0);
+assign dc[7:0] = {mi[7:4], pin_mc[9], pin_mc[6:4]};
+assign pri_stb  = dc_cmp(dc, 4'bxxxx, 4'bx10x);             // transfer prio
+assign tbit_stb = dc_cmp(dc, 4'bxxxx, 4'bx1x0);             // transfer tbit
+assign tgl_axt  = dc_cmp(dc, 4'bxx0x, 4'bx000);
+assign mc_dt    = dc_cmp(dc, 4'bxx10, 4'bx000);             // data to mc
+assign na_dt    = dc_cmp(dc, 4'bxxx1, 4'bx000);             // data to na
+assign set_sof  = dc_cmp(dc, 4'bxxxx, 4'bx010) & set_soft;  // stack ovf
+assign set_lplm = dc_cmp(dc, 4'b000x, 4'b1001) & tbit;
+assign clr_lplm = dc_cmp(dc, 4'bxxx1, 4'bx1x0);
+assign set_wpsw = dc_cmp(dc, 4'bxx1x, 4'b0100);
 
-always @(*)
+always @(posedge pin_clk)
 begin
-   if (rni)  set_soft <= 1'b1;
-   if (sovf) set_soft <= 1'b0;
-   if (clk)  clr_soft <= ~lplm;
-   if (clk) set_wpswt <= wpsw;
+   if (pin_mce_n)
+   begin
+      if (set_lplm) lplm <= 1'b1;
+      if (clr_lplm) lplm <= 1'b0;
 
-   if (rst)
-      cs <= 3'b001;
-   else
-      if (jump)
-      begin
-         cs[0] <= (mi[10:6] == 5'b00000);
-         cs[1] <= (mi[10:6] == 5'b00001) & DC303_FPP;
-         cs[2] <= (mi[10:6] == 5'b00010) & DC303_FPP;
-      end
+      if (set_sof)
+         sovf <= 1'b1;
+      else
+         if (clr_lplm & clr_soft)
+            sovf <= 1'b0;
+   end
+   if (pin_mce_p)
+   begin
+      if (rni)  set_soft <= 1'b1;
+      if (sovf) set_soft <= 1'b0;
+      clr_soft <= ~lplm;
+   end
 
-   if (set_lplm)
-      lplm <= 1'b1;
-   else
-      if (clr_lplm)
-         lplm <= 1'b0;
+   if (pin_mce_n) wpswt <= wpsw;
+   if (pin_mce_n & set_wpsw) wpsw <= 1'b1;
+   if (pin_rst | pin_mce_p & ~rni & wpswt) wpsw <= 1'b0;
 
-   if (set_sof)
-      sovf <= 1'b1;
-   else
-      if (clr_lplm & clr_soft)
-         sovf <= 1'b0;
-
-   if (set_wpsw | set_wpswt & rni)
-      wpsw <= 1'b1;
-   else
-      if (~clk)
-         wpsw <= 1'b0;
-
-   if (~clk) rnit <= rni;
-   if (clk) axtt <= axt;
-
-   if ((cs == 3'b000) | jump | rnit)
+   if (pin_mce_p & (rni | jump))
       axt <= 1'b0;
    else
-      if (~clk & tgl_axt)
-         axt <= ~axtt;
+      if (pin_mce_n & tgl_axt)
+         axt <= ~axt;
 end
 
 //______________________________________________________________________________
@@ -222,10 +217,16 @@ end
 // Data input register can be written directly from AD bus on clock high (di_stb),
 // or be written with interrupt statuses on clock low (rni))
 //
-assign rni = ~clk & (rst | (ma[8:4] == 5'b00000)
-                         & ((ma[3:0] == 4'b0000) | cs[2])
-                         & (cs != 3'b000));
-assign di_stb = clk & ~pin_mc[13] & ~pin_mc[6] & ~pin_mc[5] & sim_dclk;
+always @(posedge pin_clk or posedge pin_rst)
+begin
+   if (pin_rst)
+      rni <= 1'b1;
+   else
+      rni <= (ma[8:4] == 5'b00000)
+           & ((ma[3:0] == 4'b0000) | cs[2])
+           & (cs != 3'b000);
+end
+assign di_stb = ~pin_mc[13] & ~pin_mc[6] & ~pin_mc[5];
 
 //
 // Internal requests, provided by internal logic
@@ -250,33 +251,23 @@ assign di_stb = clk & ~pin_mc[13] & ~pin_mc[6] & ~pin_mc[5] & sim_dclk;
 // DAL1     - bus timeout, high level
 // DAL0     - DCLO, low level means OK
 //
-always @(*)
+assign svc[7:0] = pin_svc[7:0];
+assign svc[8]  = pin_svc[8]  & (pri[2:0] < 3'o7);   // IRQ7 masking
+assign svc[9]  = pin_svc[9]  & (pri[2:0] < 3'o6);   // IRQ6 masking
+assign svc[10] = pin_svc[10] & (pri[2:0] < 3'o5);   // IRQ5 masking
+assign svc[11] = pin_svc[11] & (pri[2:0] < 3'o4);   // IRQ4 masking
+assign svc[12] = pin_svc[12] & (pri[2:0] < 3'o6);   // EVNT masking
+assign svc[13] = sovf;
+assign svc[14] = lplm;
+assign svc[15] = wpsw;
+
+always @(posedge pin_clk)
 begin
-   if (di_stb | rni)
-   begin
-      d[7:0] <= pin_ad[7:0];
-      d[8]  <= pin_ad[8]  & (clk | (pri[2:0] < 3'o7));   // IRQ7 masking
-      d[9]  <= pin_ad[9]  & (clk | (pri[2:0] < 3'o6));   // IRQ6 masking
-      d[10] <= pin_ad[10] & (clk | (pri[2:0] < 3'o5));   // IRQ5 masking
-      d[11] <= pin_ad[11] & (clk | (pri[2:0] < 3'o4));   // IRQ4 masking
-      d[12] <= pin_ad[12] & (clk | (pri[2:0] < 3'o6));   // EVNT masking
-   end
-   if (di_stb)
-   begin
-      d[13] <= pin_ad[13];
-      d[14] <= pin_ad[14];
-      d[15] <= pin_ad[15];
-   end
-   if (rni)
-   begin
-      d[13] <= sovf;
-      d[14] <= lplm;
-      d[15] <= wpsw;
-   end
-   if (di_stb)
-      da <= pin_ad;
+   if (pin_mce_n & di_stb) d <= pin_ad;
+   if (pin_mce_p & rni) d <= svc;
 end
 
+assign da = di_stb ? pin_ad : d;
 //______________________________________________________________________________
 //
 // PDP-11 opcode decoder for special microcode addresses
@@ -349,14 +340,23 @@ assign dcop[3] = op_cmp(d[15:6], 10'bxx01xxxxxx)   // not x0xxxx and not x7xxxx
                | op_cmp(d[15:6], 10'bx01xxxxxxx)   // normal opcode
                | op_cmp(d[15:6], 10'bx1x0xxxxxx);  //
 
-always @(*)
+always @(posedge pin_clk or posedge pin_rst)
 begin
-   if (~clk)
+   if (pin_rst)
    begin
-      na_x00 <= (ma[8:3] == 6'b000001) & (ma[1:0] == 2'b00);
-      na_xxx <= ma[8:3] == 6'b000001;
-      na_111 <= ma[8:0] == 9'b000001111;
+      na_x00 <= 1'b0;
+      na_xxx <= 1'b0;
+      na_111 <= 1'b0;
+      nar <= 9'h000;
    end
+   else
+      if (pin_mce_n)
+      begin
+         na_x00 <= (ma[8:3] == 6'b000001) & (ma[1:0] == 2'b00);
+         na_xxx <= ma[8:3] == 6'b000001;
+         na_111 <= ma[8:0] == 9'b000001111;
+         nar <= ma;
+      end
 end
 
 assign clr_na[0] = na_xxx & dcop[3];
@@ -369,18 +369,17 @@ assign clr_na[3] = na_111 & dcop[1];
 
 //______________________________________________________________________________
 //
-always @(*)
+always @(posedge pin_clk)
 begin
-   if (clk) a_in = {axt, na};
-   if (clk) d_in = d;
+   if (pin_mce_p)
+   begin
+      a_in = {axt, na};
+      d_in <= rni ? svc : d;
+   end
 end
 
-assign ma = rst ? 9'o000 :
-            ((na_dt ? da[8:0] : 9'o777) & ((a_in[8:7] == 2'b00) ? ma_pla : ma_rom));
-
-assign mc = rst ? 16'o000000 :
-            ((mc_dt ? da : 16'o177777) & ((a_in[8:7] == 2'b00) ? mc_pla : mc_rom));
-
+assign ma = (na_dt ? da[8:0] : 9'o777) & ((a_in[8:7] == 2'b00) ? ma_pla : ma_rom);
+assign mc = (mc_dt ? da : 16'o177777) & ((a_in[8:7] == 2'b00) ? mc_pla : mc_rom);
 
 defparam pla0.DC303_PLA = 0;
 dc_pla pla0
@@ -412,7 +411,9 @@ dc_pla pla2
 defparam rom0.DC303_ROM = 0;
 dc_rom rom0
 (
-   .a_in(a_in),
+   .clk(pin_clk),
+   .cen(pin_mce_p),
+   .a_in({axt, na}),
    .ma(ma_rom0),
    .mc(mc_rom0)
 );
@@ -420,7 +421,9 @@ dc_rom rom0
 defparam rom1.DC303_ROM = 1;
 dc_rom rom1
 (
-   .a_in(a_in),
+   .clk(pin_clk),
+   .cen(pin_mce_p),
+   .a_in({axt, na}),
    .ma(ma_rom1),
    .mc(mc_rom1)
 );
@@ -428,26 +431,28 @@ dc_rom rom1
 defparam rom2.DC303_ROM = 2;
 dc_rom rom2
 (
-   .a_in(a_in),
+   .clk(pin_clk),
+   .cen(pin_mce_p),
+   .a_in({axt, na}),
    .ma(ma_rom2),
    .mc(mc_rom2)
 );
 
-assign mc_pla = (cs[0] ? mc_pla0 : 16'o000000)
-              | (cs[1] ? mc_pla1 : 16'o000000)
-              | (cs[2] ? mc_pla2 : 16'o000000);
+assign mc_pla = ( cs[0]              ? mc_pla0 : 16'o000000)
+              | ((cs[1] & DC303_FPP) ? mc_pla1 : 16'o000000)
+              | ((cs[2] & DC303_FPP) ? mc_pla2 : 16'o000000);
 
-assign ma_pla = (cs[0] ? ma_pla0 : 9'o000)
-              | (cs[1] ? ma_pla1 : 9'o000)
-              | (cs[2] ? ma_pla2 : 9'o000);
+assign ma_pla = ( cs[0]              ? ma_pla0 : 9'o000)
+              | ((cs[1] & DC303_FPP) ? ma_pla1 : 9'o000)
+              | ((cs[2] & DC303_FPP) ? ma_pla2 : 9'o000);
 
-assign mc_rom = (cs[0] ? mc_rom0 : 16'o000000)
-              | (cs[1] ? mc_rom1 : 16'o000000)
-              | (cs[2] ? mc_rom2 : 16'o000000);
+assign mc_rom = ( cs[0]              ? mc_rom0 : 16'o000000)
+              | ((cs[1] & DC303_FPP) ? mc_rom1 : 16'o000000)
+              | ((cs[2] & DC303_FPP) ? mc_rom2 : 16'o000000);
 
-assign ma_rom = (cs[0] ? ma_rom0 : 9'o000)
-              | (cs[1] ? ma_rom1 : 9'o000)
-              | (cs[2] ? ma_rom2 : 9'o000);
+assign ma_rom = ( cs[0]              ? ma_rom0 : 9'o000)
+              | ((cs[1] & DC303_FPP) ? ma_rom1 : 9'o000)
+              | ((cs[2] & DC303_FPP) ? ma_rom2 : 9'o000);
 
 //______________________________________________________________________________
 //

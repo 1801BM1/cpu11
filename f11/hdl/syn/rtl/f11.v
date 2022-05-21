@@ -64,7 +64,7 @@ wire  qwait;                     // wait Q-bus at mclk high
 wire  [15:0] mo;                 // early microbus status/command
 reg   [15:0] mc;                 // latched microbus status/command
                                  //
-tri1  [15:0] m;                  // microinstruction bus
+wire  [15:0] m;                  // microinstruction bus
 tri0  [15:0] ad;                 // address/data bus
 reg   [15:0] ad_reg;             // output address/data register
 tri0  [21:16] a;                 // high address bus
@@ -80,7 +80,7 @@ tri1  umap_n;                    // upper addresses mapping enable
 tri1  abort_n;                   // abort bus cycle (error/timeout)
 reg   reset;                     // reset control chip/CPU
 tri1  mrply_n;                   // MMU access acknowlegement
-tri1  csel_n;                    // control chip selected
+wire  csel;                      // control chip selected
                                  //
 reg   qt_req;                    // Q-bus timer request
 reg   [5:0] qt_cnt;              // Q-bus timer counter
@@ -104,8 +104,8 @@ reg   [17:16] odt_a;             //
 wire  aclo_clr, evnt_clr;        //
 wire  odt_stb, srun;             //
                                  //
-wire  svc_oe, fdin_oe;           //
-wire  [15:0] svc;                //
+wire  fdin_oe;                   //
+wire  [12:0] svc;                //
 wire  [15:0] fdin;               //
 reg   [12:4] svc_reg;            //
                                  //
@@ -193,16 +193,14 @@ assign pin_rply_n = ~mrply_n ? 1'b0 : 1'bz;
 //
 assign ad = doe      ? 16'oZZZZZZ :
             ad_oe    ? ~pin_ad_n :
-            svc_oe   ? svc   :
             fdin_oe  ? fdin  :
             ~mrply_n ? 16'oZZZZZZ :
                        16'oZZZZZZ;
 
 assign fdin = {~pin_fdin_n[15:8], ~init, 4'b0000, ~pin_fdin_n[2], pin_bsel_n[1:0]};
-assign svc = {3'bzzz, svc_reg[12:5], ctl_err, abort_n, 1'b0, svc_reg[4], ~dclo };
+assign svc = {svc_reg[12:5], ctl_err, abort_n, 1'b0, svc_reg[4], ~dclo };
 
 assign fdin_oe = mclk & mc[3];
-assign svc_oe = ~mclk & ~mme0 & ~mme1;
 
 always @(posedge pin_clk or posedge init)
 begin
@@ -281,7 +279,7 @@ begin
    else
       if (mce_n)
       begin
-         ctl_err <= csel_n;
+         ctl_err <= ~csel;
          pdclo   <= 1'b0;
          bus_cyc <= ~mc[12] | ~mc[7];
          sy_set  <= ~mc[7];
@@ -313,7 +311,7 @@ begin
          if (~abort_n)
             reset <= 1'b1;
          else        // (ctl_err | bus_err)
-            if (mce_n & (csel_n | qt_req | dclo))
+            if (mce_n & (~csel | qt_req | dclo))
                reset <= 1'b1;
    end
 end
@@ -404,7 +402,10 @@ end
 //
 dc302 data
 (
-   .pin_clk(mclk),
+   .clk(mclk),
+   .pin_clk(pin_clk),
+   .pin_mce_p(mce_p),
+   .pin_mce_n(mce_n),
    .pin_ad(ad),
    .pin_m(m),
    .pin_mo(mo[14:0]),
@@ -414,21 +415,27 @@ dc302 data
    .pin_ad_en(doe)
 );
 
-defparam ctl0.DC303_FPP = F11_CORE_FPP;
-dc303 ctl0
+defparam ctl.DC303_FPP = F11_CORE_FPP;
+dc303 ctl
 (
-   .pin_clk(mclk),
+   .pin_clk(pin_clk),
+   .pin_mce_p(mce_p),
+   .pin_mce_n(mce_n),
    .pin_ad(ad),
    .pin_m(m),
-   .pin_mo(mo),
    .pin_mc(mc),
+   .pin_svc(svc),
+   .pin_bra(mo[11]),
    .pin_rst(reset),
-   .pin_cs_n(csel_n)
+   .pin_cs(csel)
 );
 
 dc304 mmu
 (
-   .pin_clk(mclk),
+   .clk(mclk),
+   .pin_clk(pin_clk),
+   .pin_mce_p(mce_p),
+   .pin_mce_n(mce_n),
    .pin_ad(ad),
    .pin_a(a),
    .pin_m(m[12:4]),

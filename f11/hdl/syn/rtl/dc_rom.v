@@ -19,14 +19,20 @@ module dc_rom
    DC303_ROM = 0
 )
 (
+   input          clk,
+   input          cen,
    input [9:0]    a_in,
    output [8:0]   ma,
    output [15:0]  mc
 );
 
 wire [8:0] addr;
+reg  [8:0] qa;
+reg [15:0] qc;
 reg [31:0] mem [0:511];
+
 integer i;
+
 
 initial
 begin
@@ -52,8 +58,17 @@ end
 assign addr[3:0] = a_in[3:0];
 assign addr[8:4] = (a_in[9] & (a_in[6:4] == 3'b111)) ? {3'b000, a_in[8:7]} : a_in[8:4];
 
-assign mc = mem[addr][15:0];
-assign ma = mem[addr][24:16];
+always @(posedge clk)
+begin
+   if (cen)
+   begin
+      qa <= mem[addr][24:16];
+      qc <= mem[addr][15:0];
+   end
+end
+
+assign mc = qc;
+assign ma = qa;
 
 endmodule
 

@@ -8,7 +8,10 @@
 
 module dc302
 (
+   input          clk,        //
    input          pin_clk,    // main clock
+   input          pin_mce_p,  // master rising edge
+   input          pin_mce_n,  // master falling edge
    inout  [15:0]  pin_ad,     // address/data bus
    output         pin_bso,    // bus select output
    input          pin_bsi,    // bus select input
@@ -20,8 +23,6 @@ module dc302
 
 //______________________________________________________________________________
 //
-wire        clk;              // primary clock
-                              //
 wire        doe, doesc;       // data bus output enable
 wire [15:0] d;                // internal data bus
 reg  [15:0] dc;               // registered D-mux data
@@ -47,7 +48,7 @@ reg         io_a0, io_a0c;    //
 reg         io_psw, io_pswc;  //
 reg         psw_wb;           // PSW write byte
                               //
-reg  [15:0] m;                // microinstruction register
+wire [15:0] m;                // microinstruction register
 reg  [15:0] ir;               // PDP instruction register
 reg         ir_stb;           // instruction register strobe
 wire        ir_stb_rc;        //
@@ -112,7 +113,7 @@ wire        psw_stb;          //
 reg         psw_n, psw_z;     //
 reg         psw_v, psw_c;     //
 wire [15:0] psw;              //
-reg         mbra;             // microinstruction branch
+wire        mbra;             // microinstruction branch
 wire        bra;              // PDP instruction branch
                               //
 genvar      vi;               // variable for generate
@@ -144,15 +145,13 @@ end
 
 //______________________________________________________________________________
 //
-assign clk = pin_clk;
 wire #1 sim_dclk = clk; // suppress simulation glitches
-
-always @(*) if (~clk) m <= pin_m;
 
 assign doe = clk & (io_psw | (m[15:12] != 4'b1101));
 assign pin_bso = doe & (d[15:13] == 3'b111);
 assign pin_ad = doe ? d : 16'hZZZZ;
 assign pin_ad_en = doe;
+assign m = pin_m;
 
 //______________________________________________________________________________
 //
@@ -231,8 +230,15 @@ assign fx_en2 = ~clk & fx_ren[2];
 assign fx_en  = ~clk & fx_ren[3];
 assign doesc = fx_ren[3];
 
-always @(negedge clk) bsyn_in <= ~pin_mc[7];
-always @(negedge clk) badr_in <= astb;
+always @(posedge pin_clk)
+begin
+   if (pin_mce_n)
+   begin
+      bsyn_in <= ~pin_mc[7];
+      badr_in <= astb;
+   end
+end
+
 assign bsyn = bsyn_in & ~clk;
 assign badr = badr_in & ~clk & ~sim_dclk;
 
@@ -290,14 +296,14 @@ assign ir_stb_rc = (m[15:8] == 8'b00010001)
 
 //______________________________________________________________________________
 //
-always @(*) if (~clk) mbra = (m[10:8] == 3'b000) & wpsw_n
-                           | (m[10:8] == 3'b001) & wpsw_zl & wpsw_zh
-                           | (m[10:8] == 3'b010) & wpsw_c
-                           | (m[10:8] == 3'b011) & wpsw_v
-                           | (m[10:8] == 3'b100) & psw_n
-                           | (m[10:8] == 3'b101) & psw_z
-                           | (m[10:8] == 3'b110) & psw_c
-                           | (m[10:8] == 3'b111) & ~cm_pro;
+assign mbra = (m[10:8] == 3'b000) & wpsw_n
+            | (m[10:8] == 3'b001) & wpsw_zl & wpsw_zh
+            | (m[10:8] == 3'b010) & wpsw_c
+            | (m[10:8] == 3'b011) & wpsw_v
+            | (m[10:8] == 3'b100) & psw_n
+            | (m[10:8] == 3'b101) & psw_z
+            | (m[10:8] == 3'b110) & psw_c
+            | (m[10:8] == 3'b111) & ~cm_pro;
 
 assign bra = ~ir[8] ^ ( ~ir[15] &  ir[10] & (psw_n ^ psw_v)
                       |  ir[15] & ~ir[10] & ~ir[9] & psw_n

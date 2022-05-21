@@ -194,7 +194,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de0_hex3*
 							    
 
 set_global_assignment -name FAMILY "Cyclone III"
-set_global_assignment -name DEVICE EP3C40F484C6
+set_global_assignment -name DEVICE EP3C16F484C6
 set_global_assignment -name TOP_LEVEL_ENTITY de0
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 12.1
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:41:40  AUGUST 01, 2014"
@@ -277,4 +277,5 @@ set_global_assignment -name MIF_FILE ../../../../rom/001.mif
 set_global_assignment -name MIF_FILE ../../../../rom/002.mif
 set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
 set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tbl.v -section_id tb_f11
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

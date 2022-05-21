@@ -8,7 +8,10 @@
 
 module dc304
 (
+   input          clk,        //
    input          pin_clk,    // main clock
+   input          pin_mce_p,  // master rising edge
+   input          pin_mce_n,  // master falling edge
    inout  [15:0]  pin_ad,     // address/data bus
    output [21:16] pin_a,      // high address bus
    output         pin_bso,    // bus select output
@@ -25,9 +28,7 @@ module dc304
 
 //______________________________________________________________________________
 //
-wire        clk;              // primary clock
-                              //
-reg  [12:4] m;                // microinstuction register
+wire [12:4] m;                // microinstuction register
 wire [12:4] mo;               // microinstruction early status
 wire [12:4] mc;               // microinstruction latched status
 reg  [15:0] di;               // data word input register
@@ -127,13 +128,12 @@ wire lim_err;                 //
                               //
 //______________________________________________________________________________
 //
-assign clk = pin_clk;         // primary clock
 wire #1 sim_dclk = clk;       // suppress simulation glitches
 
 assign mo[12:4] = pin_mo[12:4];
 assign mc[12:4] = pin_mc[12:4];
+assign m[12:4] = pin_m[12:4];
 
-always @(*) if (~clk) m[12:4] <= pin_m[12:4];
 always @(*) if (clk | di_stb) di <= pin_ad;
 always @(*) if (clk) la[15:13] <= pin_ad[15:13];
 
