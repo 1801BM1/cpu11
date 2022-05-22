@@ -65,7 +65,9 @@ wire  [15:0] mo;                 // early microbus status/command
 reg   [15:0] mc;                 // latched microbus status/command
                                  //
 wire  [15:0] m;                  // microinstruction bus
-tri0  [15:0] ad;                 // address/data bus
+wire  [15:0] ad;                 // shared address/data bus
+wire  [15:0] ad_cpu;             // CPU address/data output
+wire  [15:0] ad_mmu;             // MMU address/data output
 reg   [15:0] ad_reg;             // output address/data register
 tri0  [21:16] a;                 // high address bus
 wire  bs_cpu, bs_mmu, bsio;      // I/O bank select logic
@@ -90,7 +92,6 @@ reg   init, dclo, pdclo;         // DCLO logic registers
 reg   aclo, aclo0;               //
 reg   evnt, evnt0;               //
 reg   ctl_err;                   //
-reg   bus_err;                   //
 reg   bus_cyc;                   //
                                  //
 reg   sync, sy_set, sy_clr;      //
@@ -146,18 +147,10 @@ always @(posedge pin_clk)
 begin
    init <= ~pin_dclo_n;
    if (init)
-   begin
-      bus_err  <= 1'b0;
       bus_init <= 1'b0;
-   end
    else
-   begin
       if (mce_n)
-      begin
-         bus_err  <= qt_req;
          bus_init <= mc[14];
-      end
-   end
 end
 //______________________________________________________________________________
 //
@@ -169,7 +162,7 @@ always @(posedge pin_clk)
 begin
    if (ad_stb)
    begin
-         ad_reg <= ad;
+         ad_reg <= (mme0 | mme1) ? ad_mmu : ad_cpu;
          bs_reg <= bsio;
    end
 end
@@ -191,11 +184,9 @@ assign pin_rply_n = ~mrply_n ? 1'b0 : 1'bz;
 // fdin[2] / E7 set - 1 - HALT causes exception 10
 //           E7 mis - 0 - HALT invokes ODT
 //
-assign ad = doe      ? 16'oZZZZZZ :
-            ad_oe    ? ~pin_ad_n :
-            fdin_oe  ? fdin  :
-            ~mrply_n ? 16'oZZZZZZ :
-                       16'oZZZZZZ;
+assign ad = (doe & mclk) ? ad_cpu    :
+            ad_oe        ? ~pin_ad_n :
+            fdin_oe      ? fdin      : ad_mmu;
 
 assign fdin = {~pin_fdin_n[15:8], ~init, 4'b0000, ~pin_fdin_n[2], pin_bsel_n[1:0]};
 assign svc = {svc_reg[12:5], ctl_err, abort_n, 1'b0, svc_reg[4], ~dclo };
@@ -227,12 +218,12 @@ end
 assign a[16] = ena_odt ? odt_a[16] : 1'bz;
 assign a[17] = ena_odt ? odt_a[17] : 1'bz;
 assign bsio =  ena_odt & odt_a[16] & odt_a[17] & bs_cpu
-             |~ena_odt & (bs_cpu | bs_mmu);
+             |~ena_odt & ((mme0 | mme1) ? bs_mmu : bs_cpu);
 
 always @(posedge pin_clk)
 begin
    if (odt_stb)
-      odt_a[17:16] <= ad[1:0];
+      odt_a[17:16] <= ad_cpu[1:0];
 end
 //______________________________________________________________________________
 //
@@ -402,17 +393,17 @@ end
 //
 dc302 data
 (
-   .clk(mclk),
    .pin_clk(pin_clk),
    .pin_mce_p(mce_p),
    .pin_mce_n(mce_n),
-   .pin_ad(ad),
+   .pin_ado(ad_cpu),
+   .pin_adi(ad),
    .pin_m(m),
    .pin_mo(mo[14:0]),
    .pin_mc(mc),
    .pin_bsi(bsio),
    .pin_bso(bs_cpu),
-   .pin_ad_en(doe)
+   .pin_aden(doe)
 );
 
 defparam ctl.DC303_FPP = F11_CORE_FPP;
@@ -436,7 +427,8 @@ dc304 mmu
    .pin_clk(pin_clk),
    .pin_mce_p(mce_p),
    .pin_mce_n(mce_n),
-   .pin_ad(ad),
+   .pin_ado(ad_mmu),
+   .pin_adi(ad),
    .pin_a(a),
    .pin_m(m[12:4]),
    .pin_mo(mo[12:4]),

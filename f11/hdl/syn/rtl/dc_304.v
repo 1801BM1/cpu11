@@ -12,7 +12,8 @@ module dc304
    input          pin_clk,    // main clock
    input          pin_mce_p,  // master rising edge
    input          pin_mce_n,  // master falling edge
-   inout  [15:0]  pin_ad,     // address/data bus
+   input  [15:0]  pin_adi,    // input address/data bus
+   output [15:0]  pin_ado,    // output address/data bus
    output [21:16] pin_a,      // high address bus
    output         pin_bso,    // bus select output
    input          pin_bsi,    // bus select input
@@ -38,7 +39,7 @@ reg  [15:13] la;              // page address latch
                               //
 reg  synct;                   //
 wire sync;                    //
-wire hoe, doe;                // A/D output enable
+wire doe;                     // A/D output enable
 wire wl, wh;                  // write from DI register output
 wire pae;                     // physical address enable
                               //
@@ -134,17 +135,15 @@ assign mo[12:4] = pin_mo[12:4];
 assign mc[12:4] = pin_mc[12:4];
 assign m[12:4] = pin_m[12:4];
 
-always @(*) if (clk | di_stb) di <= pin_ad;
-always @(*) if (clk) la[15:13] <= pin_ad[15:13];
+always @(*) if (clk | di_stb) di <= pin_adi;
+always @(*) if (clk) la[15:13] <= pin_adi[15:13];
 
 assign doe =  clk & ~ez & mc[12] & mc[9] & ~mc[8]
                   & (mr_sel | ~synct & (m[6] | m[5])) // MMU/FPP register read
            | ~clk & ~ezc & ~derr & atreq;             // PA address output
-assign hoe = doe | err_stb;
 assign rply = clk & mr_sel & mc[12] & (~mc[8] | ~mc[9]);
 
-assign pin_ad[15:13] = hoe ? d[15:13] : 3'oZ;
-assign pin_ad[12:0] = doe ? d[12:0] : 13'oZZZZZ;
+assign pin_ado[15:0] = d[15:0];
 assign pin_a[21:16] = (doe & ~clk) ? a[21:16] : 6'oZZ;
 
 assign pin_m15 = ~(astbo & mmu_en & ~m[7]);
