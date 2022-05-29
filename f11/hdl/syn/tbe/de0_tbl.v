@@ -125,7 +125,7 @@ begin
    bsio <= ~bs_n;
    wflg <= ~wtbt;
 
-   if (bs_n & (~ad < 16'o100000))
+   if (bs_n & (~ad < 16'o100000) & (~a == 6'b000000))
    begin
       sel_all = 1'b1;
       sel_ram = 1'b1;

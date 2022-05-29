@@ -22,8 +22,8 @@ srec_cat %cpu11_tmp%\%1.bin -binary --fill 0x00 0x0000 0x8000 -byte-swap 2 -o .\
 srec_cat %cpu11_tmp%\%1.bin -binary --fill 0x00 0x0000 0x8000 -byte-swap 2 -o .\out\test.hex -Intel
 srec_cat %cpu11_tmp%\%1.bin -binary --fill 0x00 0x0000 0x8000 -byte-swap 2 -o .\out\test.mif -Memory_Initialization_File 16 -obs=2
 if not exist ..\..\xen\tst mkdir ..\..\xen\tst
-copy .\out\test.mif ..\..\xen\tst\lsi.mif >> NUL
-copy .\out\test.mem ..\..\xen\tst\lsi.mem >> NUL
+copy .\out\test.mif ..\..\xen\tst\f11.mif >> NUL
+copy .\out\test.mem ..\..\xen\tst\f11.mem >> NUL
 
 @echo on
 exit

@@ -1,11 +1,9 @@
 //
 // Copyright (c) 2014-2021 by 1801BM1@gmail.com
 //
-// DC302 Data Chip model, for debug and simulating only
+// DC302 Data Chip model
 //______________________________________________________________________________
 //
-`timescale 1ns / 100ps
-
 module dc302
 (
    input          pin_clk,    // main clock
@@ -18,7 +16,8 @@ module dc302
    input  [15:0]  pin_m,      // microinstruction opcode
    output [14:0]  pin_mo,     // microinstruction early status
    input  [15:0]  pin_mc,     // microinstruction latched status
-   output         pin_aden    // address/data bus enable
+   output         pin_aden,   // address/data bus enable
+   output [2:0]   pin_pga     // early page address for MMU
 );
 
 //______________________________________________________________________________
@@ -138,6 +137,7 @@ end
 //
 assign doe = io_psw | (m[15:12] != 4'b1101);
 assign pin_aden = doe;
+assign pin_pga = pa[15:13];
 assign pin_bso = a[15:13] == 3'b111;
 assign pin_ado = a;
 assign m = pin_m;

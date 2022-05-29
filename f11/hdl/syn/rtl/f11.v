@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
-// F-11 asynchronous model, for debug and modelling only.
+// F-11 synchronous model, for debug and simulate.
 // This file contains the wrapper for F-11 "Fonz" chipset,
 // it implements external circuits of the M6/KDF-11Ax (M8186)
 // processor, supporting MMU and 22-bit address and micROM
@@ -15,8 +15,6 @@
 //
 //______________________________________________________________________________
 //
-`timescale 1ns / 100ps
-
 module f11
 #(parameter
 //______________________________________________________________________________
@@ -38,14 +36,14 @@ module f11
                                  //
    inout  [15:0]  pin_ad_n,      // inverted address/data bus
    output [21:16] pin_a_n,       // inverted high address bus
-   output         pin_umap_n,    // uppaer address mapping
+   output         pin_umap_n,    // upper address mapping
    inout          pin_bs_n,      // bank 7 select
    output         pin_sync_n,    // address strobe
    output         pin_wtbt_n,    // write/byte status
    output         pin_dout_n,    // data output strobe
    output         pin_din_n,     // data input strobe
    output         pin_iako_n,    // interrupt vector input
-   inout          pin_rply_n,    // transaction reply
+   input          pin_rply_n,    // transaction reply
                                  //
    input [15:2]   pin_fdin_n,    // fast input configuration
    input [1:0]    pin_bsel_n     // boot mode selector
@@ -69,7 +67,9 @@ wire  [15:0] ad;                 // shared address/data bus
 wire  [15:0] ad_cpu;             // CPU address/data output
 wire  [15:0] ad_mmu;             // MMU address/data output
 reg   [15:0] ad_reg;             // output address/data register
-tri0  [21:16] a;                 // high address bus
+wire  [21:16] at_mmu;            // MMU translated address
+reg   [21:16] a;                 // high address bus
+wire  [2:0] pga;                 // page address for MMU
 wire  bs_cpu, bs_mmu, bsio;      // I/O bank select logic
 reg   bs_reg;                    //
                                  //
@@ -78,10 +78,10 @@ reg   ad_ena;                    // enable address/data bus drivers
 wire  ad_stb;                    // latch address/data bus inputs
 wire  ad_oe;                     //
                                  //
-tri1  umap_n;                    // upper addresses mapping enable
-tri1  abort_n;                   // abort bus cycle (error/timeout)
+wire  umap_n;                    // upper addresses mapping enable
+wire  abort_n;                   // abort bus cycle (error/timeout)
 reg   reset;                     // reset control chip/CPU
-tri1  mrply_n;                   // MMU access acknowlegement
+wire  mrply_n;                   // MMU access acknowlegement
 wire  csel;                      // control chip selected
                                  //
 reg   qt_req;                    // Q-bus timer request
@@ -98,7 +98,6 @@ reg   sync, sy_set, sy_clr;      //
 reg   din, dout, iako, wtbt;     //
 wire  rply;                      //
                                  //
-reg   dis_mmu;                   // disable MMU for cycle
 wire  ena_odt;                   // ODT adress translation
 reg   [17:16] odt_a;             //
                                  //
@@ -162,8 +161,10 @@ always @(posedge pin_clk)
 begin
    if (ad_stb)
    begin
-         ad_reg <= (mme0 | mme1) ? ad_mmu : ad_cpu;
-         bs_reg <= bsio;
+      ad_reg <= mme0 ? ad_mmu : ad_cpu;
+      a[21:16] <= mme0 ? at_mmu[21:16] :
+                  ena_odt ? {4'o00, odt_a[17:16]} : 6'o00;
+      bs_reg <= bsio;
    end
 end
 
@@ -174,7 +175,6 @@ assign pin_iako_n = ~iako;
 assign pin_sync_n = ~sync;
 assign pin_wtbt_n = ~wtbt;
 assign pin_init_n = bus_init ? 1'b0 : 1'bz;
-assign pin_rply_n = ~mrply_n ? 1'b0 : 1'bz;
 
 //______________________________________________________________________________
 //
@@ -204,19 +204,8 @@ end
 
 assign ad_oe = din & mrply_n;
 assign ad_stb = mce_n & ~mc[12] | mclk & mc[12] & ~mc[9] & bus_cyc | mme0;
-assign ena_odt = mce_n & ~mc[12] & dis_mmu;
+assign ena_odt = mce_n & ~mc[12] & ~m[6] & m[7];
 
-always @(posedge pin_clk or posedge init)
-begin
-   if (init)
-      dis_mmu <= 1'b0;
-   else
-      if (mce_p)
-         dis_mmu <= ~m[6] & m[7];
-end
-
-assign a[16] = ena_odt ? odt_a[16] : 1'bz;
-assign a[17] = ena_odt ? odt_a[17] : 1'bz;
 assign bsio =  ena_odt & odt_a[16] & odt_a[17] & bs_cpu
              |~ena_odt & ((mme0 | mme1) ? bs_mmu : bs_cpu);
 
@@ -227,7 +216,7 @@ begin
 end
 //______________________________________________________________________________
 //
-assign rply = qt_req | ~pin_rply_n;
+assign rply = qt_req | (~mrply_n & mclk) | ~pin_rply_n;
 
 always @(posedge pin_clk)
 begin
@@ -299,7 +288,7 @@ begin
       if (mce_p)
          reset <= 1'b0;
       else
-         if (~abort_n)
+         if (~abort_n & ~mclk)
             reset <= 1'b1;
          else        // (ctl_err | bus_err)
             if (mce_n & (~csel | qt_req | dclo))
@@ -403,7 +392,8 @@ dc302 data
    .pin_mc(mc),
    .pin_bsi(bsio),
    .pin_bso(bs_cpu),
-   .pin_aden(doe)
+   .pin_aden(doe),
+   .pin_pga(pga)
 );
 
 defparam ctl.DC303_FPP = F11_CORE_FPP;
@@ -421,15 +411,16 @@ dc303 ctl
    .pin_cs(csel)
 );
 
+defparam mmu.DC304_FPP = F11_CORE_FPP;
+defparam mmu.DC304_MMU = F11_CORE_MMU;
 dc304 mmu
 (
-   .clk(mclk),
    .pin_clk(pin_clk),
    .pin_mce_p(mce_p),
    .pin_mce_n(mce_n),
    .pin_ado(ad_mmu),
    .pin_adi(ad),
-   .pin_a(a),
+   .pin_a(at_mmu),
    .pin_m(m[12:4]),
    .pin_mo(mo[12:4]),
    .pin_mc(mc[12:4]),
@@ -439,7 +430,7 @@ dc304 mmu
    .pin_de_n(abort_n),
    .pin_bsi(bsio),
    .pin_bso(bs_mmu),
-   .pin_ez_n(~ena_odt)
+   .pin_pga(pga)
 );
 
 always @(posedge pin_clk) if (mce_p) mc <= mo;

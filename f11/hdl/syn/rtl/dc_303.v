@@ -1,15 +1,13 @@
 //
 // Copyright (c) 2014-2022 by 1801BM1@gmail.com
 //
-// DC303 Control Chip model, for debug and simulating only
+// DC303 Control Chip model
 //
 //  - DC303_CS = 0, 23-001C7-AA, rni = ma[8:0] == 9'x000
 //  - DC303_CS = 1, 23-002C7-AA, rni = ma[8:0] == 9'x000
 //  - DC303_CS = 2, 23-203C7-AA, rni = ma[8:4] == 5'x00
 //______________________________________________________________________________
 //
-`timescale 1ns / 100ps
-
 module dc303
 #(parameter DC303_FPP = 1)
 (
@@ -93,7 +91,7 @@ wire        set_sof;    // set stack overflow
 wire        set_lplm;   //
 wire        set_wpsw;   //
 wire        clr_lplm;   //
-
+                        //
 //______________________________________________________________________________
 //
 // Microinstruction bus (MIB)
@@ -438,21 +436,21 @@ dc_rom rom2
    .mc(mc_rom2)
 );
 
-assign mc_pla = ( cs[0]              ? mc_pla0 : 16'o000000)
-              | ((cs[1] & DC303_FPP) ? mc_pla1 : 16'o000000)
-              | ((cs[2] & DC303_FPP) ? mc_pla2 : 16'o000000);
+assign mc_pla = ( cs[0]               ? mc_pla0 : 16'o000000)
+              | ((cs[1] && DC303_FPP) ? mc_pla1 : 16'o000000)
+              | ((cs[2] && DC303_FPP) ? mc_pla2 : 16'o000000);
 
-assign ma_pla = ( cs[0]              ? ma_pla0 : 9'o000)
-              | ((cs[1] & DC303_FPP) ? ma_pla1 : 9'o000)
-              | ((cs[2] & DC303_FPP) ? ma_pla2 : 9'o000);
+assign ma_pla = ( cs[0]               ? ma_pla0 : 9'o000)
+              | ((cs[1] && DC303_FPP) ? ma_pla1 : 9'o000)
+              | ((cs[2] && DC303_FPP) ? ma_pla2 : 9'o000);
 
-assign mc_rom = ( cs[0]              ? mc_rom0 : 16'o000000)
-              | ((cs[1] & DC303_FPP) ? mc_rom1 : 16'o000000)
-              | ((cs[2] & DC303_FPP) ? mc_rom2 : 16'o000000);
+assign mc_rom = ( cs[0]               ? mc_rom0 : 16'o000000)
+              | ((cs[1] && DC303_FPP) ? mc_rom1 : 16'o000000)
+              | ((cs[2] && DC303_FPP) ? mc_rom2 : 16'o000000);
 
-assign ma_rom = ( cs[0]              ? ma_rom0 : 9'o000)
-              | ((cs[1] & DC303_FPP) ? ma_rom1 : 9'o000)
-              | ((cs[2] & DC303_FPP) ? ma_rom2 : 9'o000);
+assign ma_rom = ( cs[0]               ? ma_rom0 : 9'o000)
+              | ((cs[1] && DC303_FPP) ? ma_rom1 : 9'o000)
+              | ((cs[2] && DC303_FPP) ? ma_rom2 : 9'o000);
 
 //______________________________________________________________________________
 //

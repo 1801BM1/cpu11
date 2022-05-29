@@ -76,7 +76,11 @@ this model is included in the package as a demo of the closest possible approxim
 to the original die. Maybe not synthesizable with some tools, simulation only.
 
 #### \hdl\syn
-- synchronous Verilog HDL model, not implemented yet
+- synchronous Verilog HDL model, the frontend bus is Q-Bus, uses single clock to operate, does not
+contain latches, MMU and FPP register arrays are optimized for inferred block memory and whole model
+can be synthesized for synchronous FPGAs. The master generator (mclk) is refactored, high and low
+phases take single clock, hence, master clock is half of oscillator clock (no a quarter or slower
+as in original F11). This model is intermedate step for final Wishbone-compatible version.
 
 #### \hdl\wbc
 - synchronous Wishbone compatible version of F11, not implemented yet

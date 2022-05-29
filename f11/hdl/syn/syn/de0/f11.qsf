@@ -259,13 +259,16 @@ set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_rom -section_id tb_rom
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_302 -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_302
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_302 -section_id tb_302
+set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tbl.v -section_id tb_f11
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_global_assignment -name VERILOG_FILE ../../rtl/f11.v
-set_global_assignment -name VERILOG_FILE ../../rtl/dc_rom.v
-set_global_assignment -name VERILOG_FILE ../../rtl/dc_delay.v
 set_global_assignment -name VERILOG_FILE ../../rtl/dc_302.v
 set_global_assignment -name VERILOG_FILE ../../rtl/dc_303.v
 set_global_assignment -name VERILOG_FILE ../../rtl/dc_304.v
 set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_pla.v
+set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_rom.v
+set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_fpp.v
+set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_mmu.v
 set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_pla_0.v
 set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_pla_1.v
 set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/dc_pla_2.v
@@ -276,6 +279,4 @@ set_global_assignment -name MIF_FILE ../../../../rom/000.mif
 set_global_assignment -name MIF_FILE ../../../../rom/001.mif
 set_global_assignment -name MIF_FILE ../../../../rom/002.mif
 set_global_assignment -name MIF_FILE ../../../../tst/out/test.mif
-set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tbl.v -section_id tb_f11
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
