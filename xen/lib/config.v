@@ -8,18 +8,19 @@
 //
 // CPU selector - only one of available CPU type must be defined
 //
-`define CONFIG_CPU_AM4        1
+`define CONFIG_CPU_F11        1
 
 //`define CONFIG_CPU_VM1      1
 //`define CONFIG_CPU_VM2      1
 //`define CONFIG_CPU_LSI      1
 //`define CONFIG_CPU_AM4      1
+//`define CONFIG_CPU_F11      1
 //
 //
 // PLL selector - only one of available PLL type must be defined
 // The appropriate .sdc file musy be copied to provide constraints
 //
-`define  CONFIG_PLL_50        1
+`define  CONFIG_PLL_100       1
 
 // `define  CONFIG_PLL_50     1
 // `define  CONFIG_PLL_66     1
@@ -33,7 +34,7 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
-`define  CONFIG_SIM_TIME_LIMIT      5000000
+`define  CONFIG_SIM_TIME_LIMIT      10000000
 //
 // External clock frequency
 //
@@ -64,21 +65,27 @@
 `ifdef   CONFIG_PLL_100
 `define  CONFIG_SYS_CLOCK     100000000
 `endif
+
 `ifdef   CONFIG_PLL_125
 `define  CONFIG_SYS_CLOCK     125000000
 `endif
+
 `ifdef   CONFIG_PLL_133
 `define  CONFIG_SYS_CLOCK     133333333
 `endif
+
 `ifdef   CONFIG_PLL_150
 `define  CONFIG_SYS_CLOCK     150000000
 `endif
+
 `ifdef   CONFIG_PLL_166
 `define  CONFIG_SYS_CLOCK     166666666
 `endif
+
 `ifdef   CONFIG_PLL_175
 `define  CONFIG_SYS_CLOCK     175000000
 `endif
+
 `ifdef   CONFIG_PLL_200
 `define  CONFIG_SYS_CLOCK     200000000
 `endif
@@ -111,6 +118,12 @@
 `define CPU_TEST_MEMN "am4.mem"
 `endif
 
+`ifdef CONFIG_CPU_F11
+`define CPU_TEST_FILE "../../tst/f11.mif"
+`define CPU_TEST_MEMF "../../tst/f11.mem"
+`define CPU_TEST_MEMN "f11.mem"
+`endif
+
 //______________________________________________________________________________
 //
 // Reset button debounce interval (in ms))
@@ -125,13 +138,18 @@
 
 //______________________________________________________________________________
 //
-// Test software start address / confgiuration options (switches)
+// Test software start address / configuration options (switches)
 //
 // vm1: read 177716 (depends on CPU number)
-// vm2: unaddressed read, [15:8] - start address, [7] - FIS exception control
+// vm2: unaddressed read:
+//       [15:8] - start address
+//       [7] - FIS exception control
 // am4: n/a
 // lsi: n/a
-// f11: fdin read, [15:9] - start address, [8] - 173000 selector, [2] - ODT on halt
+// f11: fdin read (emulated as unaddressed one)
+//       [15:9] - start address,
+//       [8] - 173000 selector
+//       [2] - ODT on halt
 //
 `define CONFIG_START_ADDR_OPTIONS        16'o000000
 //
@@ -173,3 +191,12 @@
 // Default value (if undefined) - 1
 //
 `define CONFIG_VM2_CORE_FIX_PREFETCH         0
+
+//______________________________________________________________________________
+//
+// CONFIG_F11_CORE_MMU != 0 - enables MMU feature
+// CONFIG_F11_CORE_FPP != 0 - enables FPP feature
+// Default value (if undefined) - 1 (enabled)
+//
+`define CONFIG_F11_CORE_MMU                  1
+`define CONFIG_F11_CORE_FPP                  1

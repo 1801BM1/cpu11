@@ -40,14 +40,30 @@ begin
    begin
       mem[i] = 32'h00000000;
    end
+   //
+   // The filename for MicROM content might be explicitly
+   // specified in synthesys/simulating tool settings
+   //
    if (DC303_ROM == 0)
-      $readmemh("..\\..\\..\\..\\rom\\000.rom", mem);
+      `ifdef F11_FILE_MICROM_000
+         $readmemh(`F11_FILE_MICROM_000, mem);
+      `else
+         $readmemh("..\\..\\..\\..\\rom\\000.rom", mem);
+      `endif
    else
    if (DC303_ROM == 1)
-      $readmemh("..\\..\\..\\..\\rom\\001.rom", mem);
+      `ifdef F11_FILE_MICROM_001
+         $readmemh(`F11_FILE_MICROM_001, mem);
+      `else
+         $readmemh("..\\..\\..\\..\\rom\\001.rom", mem);
+      `endif
    else
    if (DC303_ROM == 2)
-      $readmemh("..\\..\\..\\..\\rom\\002.rom", mem);
+      `ifdef F11_FILE_MICROM_002
+         $readmemh(`F11_FILE_MICROM_002, mem);
+      `else
+         $readmemh("..\\..\\..\\..\\rom\\002.rom", mem);
+      `endif
 end
 
 //

@@ -652,6 +652,78 @@ module de0_ram16k (
       altsyncram_component.width_byteena_a = 2;
 endmodule
 
+module de0_ram32k (
+   address,
+   byteena,
+   clock,
+   data,
+   rden,
+   wren,
+   q);
+
+   input [13:0]  address;
+   input [1:0]  byteena;
+   input   clock;
+   input [15:0]  data;
+   input   rden;
+   input   wren;
+   output   [15:0]  q;
+`ifndef ALTERA_RESERVED_QIS
+// synopsys translate_off
+`endif
+   tri1  [1:0]  byteena;
+   tri1    clock;
+   tri1    rden;
+`ifndef ALTERA_RESERVED_QIS
+// synopsys translate_on
+`endif
+
+   wire [15:0] sub_wire0;
+   wire [15:0] q = sub_wire0[15:0];
+
+   altsyncram  altsyncram_component (
+            .address_a (address),
+            .byteena_a (byteena),
+            .clock0 (clock),
+            .data_a (data),
+            .wren_a (wren),
+            .rden_a (rden),
+            .q_a (sub_wire0),
+            .aclr0 (1'b0),
+            .aclr1 (1'b0),
+            .address_b (1'b1),
+            .addressstall_a (1'b0),
+            .addressstall_b (1'b0),
+            .byteena_b (1'b1),
+            .clock1 (1'b1),
+            .clocken0 (1'b1),
+            .clocken1 (1'b1),
+            .clocken2 (1'b1),
+            .clocken3 (1'b1),
+            .data_b (1'b1),
+            .eccstatus (),
+            .q_b (),
+            .rden_b (1'b1),
+            .wren_b (1'b0));
+   defparam
+      altsyncram_component.byte_size = 8,
+      altsyncram_component.clock_enable_input_a = "BYPASS",
+      altsyncram_component.clock_enable_output_a = "BYPASS",
+      altsyncram_component.init_file = `CPU_TEST_FILE,
+      altsyncram_component.intended_device_family = "Cyclone III",
+      altsyncram_component.lpm_hint = "ENABLE_RUNTIME_MOD=NO",
+      altsyncram_component.lpm_type = "altsyncram",
+      altsyncram_component.numwords_a = 16384,
+      altsyncram_component.operation_mode = "SINGLE_PORT",
+      altsyncram_component.outdata_aclr_a = "NONE",
+      altsyncram_component.outdata_reg_a = "UNREGISTERED",
+      altsyncram_component.power_up_uninitialized = "FALSE",
+      altsyncram_component.read_during_write_mode_port_a = "NEW_DATA_NO_NBE_READ",
+      altsyncram_component.widthad_a = 14,
+      altsyncram_component.width_a = 16,
+      altsyncram_component.width_byteena_a = 2;
+endmodule
+
 //______________________________________________________________________________
 //
 // Initialized RAM block - 8K x 16
@@ -673,6 +745,43 @@ reg  [1:0] ack;
 
 de0_ram16k ram(
    .address(wb_adr_i[13:1]),
+   .byteena(ena),
+   .clock(wb_clk_i),
+   .data(wb_dat_i),
+   .rden(~wb_we_i & wb_cyc_i & wb_stb_i),
+   .wren( wb_we_i & wb_cyc_i & wb_stb_i),
+   .q(wb_dat_o));
+
+assign ena = wb_we_i ? wb_sel_i : 2'b11;
+assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
+always @ (posedge wb_clk_i)
+begin
+   ack[0] <= wb_cyc_i & wb_stb_i;
+   ack[1] <= wb_cyc_i & ack[0];
+end
+endmodule
+
+//______________________________________________________________________________
+//
+// Initialized RAM block - 16K x 16
+//
+module wbc_mem_32k
+(
+   input          wb_clk_i,
+   input  [15:0]  wb_adr_i,
+   input  [15:0]  wb_dat_i,
+   output [15:0]  wb_dat_o,
+   input          wb_cyc_i,
+   input          wb_we_i,
+   input  [1:0]   wb_sel_i,
+   input          wb_stb_i,
+   output         wb_ack_o
+);
+wire [1:0] ena;
+reg  [1:0] ack;
+
+de0_ram32k ram(
+   .address(wb_adr_i[14:1]),
    .byteena(ena),
    .clock(wb_clk_i),
    .data(wb_dat_i),

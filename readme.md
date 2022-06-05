@@ -35,7 +35,7 @@ There are a few words regarding the reverse engineering process stages:
 - [F-11](/f11) - Soviet 1811-series, DEC F-11 clone, DEC DC302/DC303/DC304 "Fonz" chipset
 - [M4](/am4) - Soviet replica of military LSI-11M, AMD Am2900 bit-slices
 
-## PI-test perfromance
+## PI-test performance
 
 The 1000 signs of Pi calculation test is based on spigot algorithm. The digits are the times in 50Hz ticks.
 All models were Wishbone-compatible and run on the DE0 board with the same system configurations, software was
@@ -43,13 +43,18 @@ placed into static memory with zero wait states. LSI-11 was running at 80MHz and
 to match with other ones. M4 was running at 50MHz and results are multiplied by 0.5. There are three variants
 of the test with various combinations of supported EIS instructions.
 
-| Model    | Frequency     | no EIS | MUL only | MUL/DIV |
-|----------|---------------|--------|----------|---------|
-| LSI-11   | 100MHz(80MHz) | 746    | 422      | 284     |
-| 1801BM1A | 100MHz        | 586    | ---      | ---     |
-| 1801BM1Г | 100MHz        | 588    | 458      | ---     |
-| M4       | 100MHz(50MHz) | 532    | 275      | 154     |
-| 1801BM2  | 100MHz        | 340    | 190      | 123     |
+| Model    | Frequency     | no EIS | MUL only | MUL/DIV | cpm |
+|----------|---------------|--------|----------|---------|-----|
+| LSI-11   | 100MHz(80MHz) | 746    | 422      | 284     |  x1 |
+| F-11     | 100MHz        | 693    | 429      | 323     |  x2 |
+| 1801BM1A | 100MHz        | 586    | ---      | ---     |  x2 |
+| 1801BM1Г | 100MHz        | 588    | 458      | ---     |  x2 |
+| M4       | 100MHz(50MHz) | 532    | 275      | 154     |  x1 |
+| 1801BM2  | 100MHz        | 340    | 190      | 123     |  x2 |
+
+Notes: "cpm" means core clocks per microinstruction, how many clocks model takes to execute single microcode
+instruction. For LSI-11 the four phases c1-c4 were refactored to the single core clock, for F-11 four phases
+were refactored to two core clocks. In addition the 1801ВМ2 performs the instruction prefetch gaining some boost.
 
 ## Supported FPGA development boards
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:

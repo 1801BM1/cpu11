@@ -361,6 +361,56 @@ endmodule
 
 //______________________________________________________________________________
 //
+module eg4_ram32k ( doa, dia, addra, clka, wea );
+
+   output [15:0] doa;
+
+   input  [15:0] dia;
+   input  [13:0] addra;
+   input  [1:0] wea;
+   input  clka;
+
+   EG_LOGIC_BRAM #( .DATA_WIDTH_A(16),
+            .ADDR_WIDTH_A(14),
+            .DATA_DEPTH_A(16384),
+            .DATA_WIDTH_B(16),
+            .ADDR_WIDTH_B(14),
+            .DATA_DEPTH_B(16384),
+            .BYTE_ENABLE(8),
+            .BYTE_A(2),
+            .BYTE_B(2),
+            .MODE("SP"),
+            .REGMODE_A("NOREG"),
+            .WRITEMODE_A("NORMAL"),
+            .RESETMODE("SYNC"),
+            .IMPLEMENT("32K"),
+            .DEBUGGABLE("NO"),
+            .PACKABLE("NO"),
+               .INIT_FILE(`CPU_TEST_FILE),
+            .FILL_ALL("NONE"))
+         inst(
+            .dia(dia),
+            .dib({16{1'b0}}),
+            .addra(addra),
+            .addrb({14{1'b0}}),
+            .cea(1'b1),
+            .ceb(1'b0),
+            .ocea(1'b0),
+            .oceb(1'b0),
+            .clka(clka),
+            .clkb(1'b0),
+            .wea(1'b0),
+            .bea(wea),
+            .web(1'b0),
+            .beb(2'b00),
+            .rsta(1'b0),
+            .rstb(1'b0),
+            .doa(doa),
+            .dob());
+endmodule
+
+//______________________________________________________________________________
+//
 // Initialized RAM block - 8K x 16
 //
 module wbc_mem
@@ -381,6 +431,42 @@ reg  [1:0] ack;
 eg4_ram16k ram(
    .clka(wb_clk_i),
    .addra(wb_adr_i[13:1]),
+   .dia(wb_dat_i),
+   .doa(wb_dat_o),
+   .wea(ena));
+
+assign ena[0] = wb_cyc_i & wb_stb_i & wb_we_i & wb_sel_i[0];
+assign ena[1] = wb_cyc_i & wb_stb_i & wb_we_i & wb_sel_i[1];
+assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
+always @ (posedge wb_clk_i)
+begin
+   ack[0] <= wb_cyc_i & wb_stb_i;
+   ack[1] <= wb_cyc_i & ack[0];
+end
+endmodule
+
+//______________________________________________________________________________
+//
+// Initialized RAM block - 16K x 16
+//
+module wbc_mem_32k
+(
+   input          wb_clk_i,
+   input  [15:0]  wb_adr_i,
+   input  [15:0]  wb_dat_i,
+   output [15:0]  wb_dat_o,
+   input          wb_cyc_i,
+   input          wb_we_i,
+   input  [1:0]   wb_sel_i,
+   input          wb_stb_i,
+   output         wb_ack_o
+);
+wire [1:0] ena;
+reg  [1:0] ack;
+
+eg4_ram32k ram(
+   .clka(wb_clk_i),
+   .addra(wb_adr_i[14:1]),
    .dia(wb_dat_i),
    .doa(wb_dat_o),
    .wea(ena));

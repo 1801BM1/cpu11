@@ -159,10 +159,15 @@ set_global_assignment -name DEVICE_FILTER_PIN_COUNT 256
 set_global_assignment -name VERILOG_MACRO "LSI11_DEPTH_MICROM=(* max_depth = 1024 *)"
 set_global_assignment -name VERILOG_MACRO "LSI11_FILE_MICROM=\"..\\\\..\\\\..\\\\lsi\\\\rom\\\\all_22b.rom\""
 set_global_assignment -name VERILOG_MACRO "M4_FILE_MICROM=\"..\\\\..\\\\..\\\\am4\\\\rom\\\\mc.rom\""
+set_global_assignment -name VERILOG_MACRO "F11_FILE_MICROM_000=\"..\\\\..\\\\..\\\\f11\\\\rom\\\\000.rom\""
+set_global_assignment -name VERILOG_MACRO "F11_FILE_MICROM_001=\"..\\\\..\\\\..\\\\f11\\\\rom\\\\001.rom\""
+set_global_assignment -name VERILOG_MACRO "F11_FILE_MICROM_002=\"..\\\\..\\\\..\\\\f11\\\\rom\\\\002.rom\""
+
 set_global_assignment -name VERILOG_FILE ../../lib/config.v
 set_global_assignment -name VERILOG_FILE ../rtl/qc10_top.v
 set_global_assignment -name VERILOG_FILE ../rtl/qc10_alib.v
 set_global_assignment -name VERILOG_FILE ../rtl/vm1_alib.v
+set_global_assignment -name VERILOG_FILE ../rtl/f11_alib.v
 set_global_assignment -name MIF_FILE ../../lib/vm1_reg.mif
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
@@ -171,6 +176,7 @@ set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm1.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm2.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_lsi.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_am4.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_f11.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_wb.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_plm.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_tve.v
@@ -186,10 +192,25 @@ set_global_assignment -name VERILOG_FILE ../../../am4/hdl/wbc/rtl/am4_seq.v
 set_global_assignment -name VERILOG_FILE ../../../am4/hdl/wbc/rtl/am4_plm.v
 set_global_assignment -name VERILOG_FILE ../../../am4/hdl/wbc/rtl/am4_mcrom.v
 set_global_assignment -name VERILOG_FILE ../../../am4/hdl/wbc/rtl/am4_alu.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_302.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_303.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_304.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_fpp.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_pla.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_pla_0.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_pla_1.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_pla_2.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/dc_rom.v
+set_global_assignment -name VERILOG_FILE ../../../f11/hdl/wbc/rtl/f11_wb.v
 set_global_assignment -name MIF_FILE ../../../am4/rom/mc.mif
+set_global_assignment -name MIF_FILE ../../../f11/rom/000.mif
+set_global_assignment -name MIF_FILE ../../../f11/rom/001.mif
+set_global_assignment -name MIF_FILE ../../../f11/rom/002.mif
 set_global_assignment -name MIF_FILE ../../tst/lsi.mif
 set_global_assignment -name MIF_FILE ../../tst/vm1.mif
 set_global_assignment -name MIF_FILE ../../tst/vm2.mif
+set_global_assignment -name MIF_FILE ../../tst/am4.mif
+set_global_assignment -name MIF_FILE ../../tst/f11.mif
 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top

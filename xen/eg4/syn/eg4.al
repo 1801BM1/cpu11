@@ -2,7 +2,7 @@
 <Project>
     <Project_Created_Time>2020-07-23 20:19:40</Project_Created_Time>
     <TD_Version>4.6.18154</TD_Version>
-    <UCode>11000001</UCode>
+    <UCode>11011110</UCode>
     <Name>eg4</Name>
     <HardWare>
         <Family>EG4</Family>
@@ -19,6 +19,8 @@
             <File>../../lib/wbc_vic.v</File>
             <File>../../lib/wbc_vm1.v</File>
             <File>../../lib/wbc_vm2.v</File>
+            <File>../../lib/wbc_am4.v</File>
+            <File>../../lib/wbc_f11.v</File>
             <File>../../../lsi/hdl/wbc/rtl/lsi_wb.v</File>
             <File>../../../lsi/hdl/wbc/rtl/mcp_plm.v</File>
             <File>../../../lsi/hdl/wbc/rtl/mcp1611.v</File>
@@ -29,15 +31,23 @@
             <File>../../../vm1/hdl/wbc/rtl/vm1_wb.v</File>
             <File>../../../vm2/hdl/wbc/rtl/vm2_plm.v</File>
             <File>../../../vm2/hdl/wbc/rtl/vm2_wb.v</File>
-            <File>../rtl/eg4_tlib.v</File>
-            <File>../rtl/vm1_tlib.v</File>
-            <File>../rtl/lsi_tlib.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_alu.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_plm.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_seq.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_wb.v</File>
-            <File>../../lib/wbc_am4.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_302.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_303.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_304.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_pla.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_pla_0.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_pla_1.v</File>
+            <File>../../../f11/hdl/wbc/rtl/dc_pla_2.v</File>
+            <File>../../../f11/hdl/wbc/rtl/f11_wb.v</File>
+            <File>../rtl/eg4_tlib.v</File>
+            <File>../rtl/vm1_tlib.v</File>
+            <File>../rtl/lsi_tlib.v</File>
             <File>../rtl/am4_tlib.v</File>
+            <File>../rtl/f11_tlib.v</File>
         </Verilog>
         <ADC_FILE>eg4.adc</ADC_FILE>
         <SDC_FILE>eg4.sdc</SDC_FILE>
@@ -63,6 +73,7 @@
         <RtlProperty/>
         <GateProperty>
             <opt_timing>high</opt_timing>
+            <report>verbose</report>
         </GateProperty>
         <PlaceProperty>
             <opt_timing>high</opt_timing>
@@ -70,8 +81,8 @@
         <SimProperty/>
     </Property>
     <Project_Settings>
-        <Step_Last_Change>2020-12-22 15:25:25</Step_Last_Change>
-        <Current_Step>0</Current_Step>
+        <Step_Last_Change>2022-06-12 13:24:17</Step_Last_Change>
+        <Current_Step>60</Current_Step>
         <Step_Status>true</Step_Status>
     </Project_Settings>
 </Project>

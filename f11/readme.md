@@ -53,15 +53,22 @@ half of 1980th.
 - 1811ВУх / ВС303 - ~12600 gates (depends on PLA/ROM content)
 - 1811BT1 / DC304 - 10383 gates
 
-## Asynchronous model
-Only asynchronous model is presented for the moment, it includes both
-MMU and FPP options. This model contains latches and intended
-for simulation only. The factory tests passed by the model in simulation:
-
+## Models passed the factory tests
+The factory tests passed by the model in simulation and on real FPGA:
 - [jkdad0](/f11/tst/org/jkdad0.mac) - MMU diagnostics
 - [jkdbd0](/f11/tst/org/jkdbd0.mac) - instruction set (BIS/EIS)
 - [jkdcb0](/f11/tst/org/jkdcb0.mac) - FPP diagnostics, part 1
 - [jkddb0](/f11/tst/org/jkddb0.mac) - FPP diagnostics, part 2
+
+## Documentation
+- [KDF11A processor schematic](http://www.bitsavers.org/pdf/dec/pdp11/1123/MP00734_KDF11A_EngrDrws.pdf) -
+  the drawing and schematics of the M8186 DEC board, was used in PDP-11/23 model
+- [KDF11B processor schematic](http://www.bitsavers.org/pdf/dec/pdp11/1123/MP01236_KDF11-B_schem.pdf) -
+  the drawing and schematics of the M8189 DEC board, was used in PDP-11/23+ model
+- [F11 microcode description](/f11/doc/1811.pdf) - the F11 microcode mnemonics,
+  restored from reverse engineering, might differ from originals (no one knows
+  how these ones looked like)
+- [Micro Disassembler](/f11/rom/tools/disf11.py) - the Microcode Disassembler developed in Python
 
 ## Directory structure
 #### \hdl
@@ -83,7 +90,9 @@ phases take single clock, hence, master clock is half of oscillator clock (no a 
 as in original F11). This model is intermedate step for final Wishbone-compatible version.
 
 #### \hdl\wbc
-- synchronous Wishbone compatible version of F11, not implemented yet
+- synchronous Wishbone compatible version of F-11 synchronous core uses a single clock,
+is FPGA-optimized, and follows the original command execution timings, is intended for SoC building.
+Model uses at least two core clocks to execute single microcode instruction.
 
 #### [\cad\f11](https://github.com/1801BM1/cad11/tree/master/f11) (moved to dedicated repo)
 - topology in Sprint Layout format
@@ -118,3 +127,26 @@ be run before building FPGA bitstream to include test software image
 - switches and buttons can be read from input register at 177714<sub>8</sub>
 - board button[0] is reset, short press less than 1 sec causes system reset,
   long press over 1 second simulates power reset (excluding RAM content)
+
+## Fmax and FPGA resources
+- Wishbone compatible F-11 core
+- CPU register file over flip-flops, MicROM in RAM blocks
+- MMU and FPP options are enabled (disabling of both typically frees ~30 percents
+  of logic, ~20 percents of registers, ~70 percents of block memory and provides
+  ~10 percents of Fmax gain)
+- FPP and MMU register files use RAM blocks
+- balanced area/speed optimization chosen
+- slow model, worst corner
+
+All results are just approximate estimations by synthesis tools (Quartus/XST/Vivado) on sample
+projects.
+
+| Board   | FPGA             | Family       | Fmax    | LUTs | FFs  | MEM    |
+|---------|------------------|--------------|---------|------|------|--------|
+| DE0     | EP3C16F484C6N    | Cyclone III  | 115 MHz | 2843 | 752  | 7 M9K  |
+| DE1     | EP2C20F484C7N    | Cyclone II   | 64 MHz  | 2753 | 728  | 11 M4K |
+| DE2-115 | EP4CE115F29C7N   | Cyclone IV   | 97 MHz  | 2794 | 720  | 7 M9K  |
+| DE10-LT | 10M50DAF484C7G   | Max 10       | 86 MHz  | 2691 | 736  | 7 M9K  |
+| QC5     | 5CEFA2F23I7N     | Cyclone V    | 106 MHz | 2114 | 1099 | 6 M10K |
+| QC10    | 10CL006U256CN8   | Cyclone 10   | 79 MHz  | 2677 | 724  | 7 M9K  |
+| EG4     | EG4S20BG256      | Eagle EG4S20 | 86 MHz  | 3821 | 830  | 9 M9K  |
