@@ -57,7 +57,7 @@ integer i, i0;
 
 reg         clk;        // processor clock
 reg         dclo;       // processor reset
-reg         aclo;       // power fail notoficaton
+reg         aclo;       // power fail notificaton
 reg         evnt;       // timer interrupt requests
 reg         halt;       // radial interrupt requests
 reg         virq;       // vectored interrupt request
@@ -364,7 +364,7 @@ am4 cpu
    .pin_clk(clk),             // processor clock
    .pin_init_n(init),         // peripheral reset
    .pin_dclo_n(dclo),         // processor reset
-   .pin_aclo_n(aclo),         // power fail notoficaton
+   .pin_aclo_n(aclo),         // power fail notificaton
    .pin_halt_n(halt),         // halt mode request
    .pin_evnt_n(evnt),         // timer interrupt requests
    .pin_virq_n(virq),         // vectored interrupt request

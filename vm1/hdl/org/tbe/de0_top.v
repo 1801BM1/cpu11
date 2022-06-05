@@ -99,7 +99,7 @@ vm1 cpu
    .pin_pa_n(2'b11),                   // processor number
    .pin_init_n(de0_gpio0_d[0]),        // peripheral reset
    .pin_dclo_n(de0_gpio0_d[1]),        // processor reset
-   .pin_aclo_n(de0_gpio0_d[2]),        // power fail notoficaton
+   .pin_aclo_n(de0_gpio0_d[2]),        // power fail notificaton
    .pin_irq_n(de0_gpio0_d[5:3]),       // radial interrupt requests
    .pin_virq_n(de0_gpio0_d[6]),        // vectored interrupt request
                                        //

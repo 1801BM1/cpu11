@@ -2,7 +2,7 @@
 // Copyright (c) 2014-2020 by 1801BM1@gmail.com
 //
 // M4 processor microcode ROM, special version for Anlogic Eagle EG4S20.
-// Tang Dynasty IDE does not recognize the inferred ROM coorectly
+// Tang Dynasty IDE does not recognize the inferred ROM correctly
 // and we should engage the explicit ROM IP with initialization file.
 //______________________________________________________________________________
 //

@@ -9,7 +9,7 @@ module lsi_wb
 //______________________________________________________________________________
 //
 // LSI11_ORIGINAL_MICROM nonzero value means the original DEC Microm
-// 1631-10/07/15 conten is used, we can optimize 4 MSBs with ordinal logic
+// 1631-10/07/15 content is used, we can optimize 4 MSbs with ordinal logic
 // and save memory blocks
 //
    LSI11_ORIGINAL_MICROM = 1

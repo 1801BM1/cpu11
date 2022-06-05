@@ -2,7 +2,7 @@
 // Copyright (c) 2014-2019 by 1801BM1@gmail.com
 //
 // MCP-1631 MicROM model, special version for Anlogic Eagle EG4S20.
-// Tang Dynasty IDE does not recognize the inferred ROM coorectly
+// Tang Dynasty IDE does not recognize the inferred ROM correctly
 // and we should engage the explicit ROM IP with initialization file.
 //______________________________________________________________________________
 //
@@ -12,7 +12,7 @@ module mcp1631
 //______________________________________________________________________________
 //
 // LSI11_ORIGINAL_MICROM nonzero value means the original DEC Microm
-// 1631-10/07/15 conten is used, we can optimize 4 MSBs with ordinal logic
+// 1631-10/07/15 content is used, we can optimize 4 MSbs with ordinal logic
 // and save memory blocks
 //
    LSI11_ORIGINAL_MICROM = 1

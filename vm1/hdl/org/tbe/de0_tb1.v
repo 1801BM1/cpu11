@@ -59,7 +59,7 @@ reg         clk;        // processor clock
 reg         sp;         // peripheral timer input
 reg [1:0]   pa;         // processor number
 reg         dclo;       // processor reset
-reg         aclo;       // power fail notoficaton
+reg         aclo;       // power fail notificaton
 reg [3:1]   irq;        // radial interrupt requests
 reg         virq;       // vectored interrupt request
                         //
@@ -376,7 +376,7 @@ vm1 cpu0
    .pin_pa_n(pa),             // processor number
    .pin_init_n(init),         // peripheral reset
    .pin_dclo_n(dclo),         // processor reset
-   .pin_aclo_n(aclo),         // power fail notoficaton
+   .pin_aclo_n(aclo),         // power fail notificaton
    .pin_irq_n(irq),           // radial interrupt requests
    .pin_virq_n(virq),         // vectored interrupt request
                               //

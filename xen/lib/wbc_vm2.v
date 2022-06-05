@@ -137,7 +137,7 @@ vm2_wb cpu
                                        //
    .vm_init(vm_init_out),              // peripheral reset
    .vm_dclo(vm_dclo_in),               // processor reset
-   .vm_aclo(vm_aclo_in),               // power fail notoficaton
+   .vm_aclo(vm_aclo_in),               // power fail notificaton
    .vm_halt(vm_halt),                  // halt mode interrupt requests
    .vm_evnt(vm_evnt),                  // timer interrupt requests
    .vm_virq(vm_virq),                  // vectored interrupt request
@@ -155,7 +155,7 @@ vm2_wb cpu
    .wbi_dat_i(vm_ivec),                // interrupt vector input
    .wbi_stb_o(vm_istb),                // interrupt vector strobe
    .wbi_ack_i(vm_iack),                // interrupt vector acknowledgement
-   .wbi_una_o(vm_una)                  // unaddresse read request
+   .wbi_una_o(vm_una)                  // unaddressed read request
 );
 
 //______________________________________________________________________________
@@ -232,7 +232,6 @@ assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
                   | (mx_stb[2] ? mx_dat[2] : 16'o000000);
 
 //______________________________________________________________________________
-//
 //
 // Simulation stop flag and console
 //

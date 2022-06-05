@@ -62,7 +62,7 @@ reg         clk_f2;     //
                         //
 reg         sp;         // peripheral timer input
 reg         dclo;       // processor reset
-reg         aclo;       // power fail notoficaton
+reg         aclo;       // power fail notificaton
 reg         evnt;       // timer interrupt requests
 reg         halt;       // radial interrupt requests
 reg         virq;       // vectored interrupt request

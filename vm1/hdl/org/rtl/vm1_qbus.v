@@ -30,7 +30,7 @@ module vm1_qbus
    output         pin_init_out,  // peripheral reset output
                                  //
    input          pin_dclo,      // processor reset
-   input          pin_aclo,      // power fail notoficaton
+   input          pin_aclo,      // power fail notificaton
    input  [3:1]   pin_irq,       // radial interrupt requests
    input          pin_virq,      // vectored interrupt request
                                  //

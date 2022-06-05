@@ -110,7 +110,7 @@ am4 cpu
    .pin_clk(clk),                      // processor clock
    .pin_init_n(de0_gpio0_d[0]),        // peripheral reset
    .pin_dclo_n(de0_gpio0_d[1]),        // processor reset
-   .pin_aclo_n(de0_gpio0_d[2]),        // power fail notoficaton
+   .pin_aclo_n(de0_gpio0_d[2]),        // power fail notificaton
    .pin_halt_n(de0_gpio0_d[3]),        // halt interrupt requests
    .pin_evnt_n(de0_gpio0_d[4]),        // timer interrupt requests
    .pin_virq_n(de0_gpio0_d[5]),        // vectored interrupt request

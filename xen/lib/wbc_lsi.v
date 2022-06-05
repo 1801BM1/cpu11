@@ -134,7 +134,7 @@ lsi_wb cpu
                                        //
    .vm_init(vm_init_out),              // peripheral reset
    .vm_dclo(vm_dclo_in),               // processor reset
-   .vm_aclo(vm_aclo_in),               // power fail notoficaton
+   .vm_aclo(vm_aclo_in),               // power fail notificaton
    .vm_halt(vm_halt),                  // halt mode interrupt requests
    .vm_evnt(vm_evnt),                  // timer interrupt requests
    .vm_virq(vm_virq),                  // vectored interrupt request
@@ -227,8 +227,8 @@ assign wb_ack     = mx_ack[0] | mx_ack[1] | mx_ack[2];
 assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
                   | (mx_stb[1] ? mx_dat[1] : 16'o000000)
                   | (mx_stb[2] ? mx_dat[2] : 16'o000000);
+
 //______________________________________________________________________________
-//
 //
 // Simulation stop flag and console
 //
