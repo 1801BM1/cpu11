@@ -27,6 +27,7 @@ module am4_wb
    input          vm_virq,       // vectored interrupt request
                                  //
    input          wbm_gnt_i,     // master wishbone granted
+   output         wbm_ios_o,     // master wishbone I/O select
    output [15:0]  wbm_adr_o,     // master wishbone address
    output [15:0]  wbm_dat_o,     // master wishbone data output
    input  [15:0]  wbm_dat_i,     // master wishbone data input
@@ -67,6 +68,7 @@ wire        wb_reset;            //
 reg  [15:0] dreg_i;              // input data register
 reg  [15:0] dreg_o;              // output data register
 reg  [15:0] areg;                // address register
+reg         aios;                // I/O bank address
                                  //
 wire        wb_start;            //
 wire        wb_wclr, wb_wset;    //
@@ -660,6 +662,7 @@ assign wb_rdone   = wb_stb & wbm_ack_i & ~wb_we;
 assign wb_idone   = wb_iak & wbi_ack_i;
 assign wb_reset   = qt_req | vm_dclo;
 
+assign wbm_ios_o  = aios;
 assign wbm_adr_o  = areg;
 assign wbm_dat_o  = dreg_o;
 assign wbm_cyc_o  = wb_cyc;
@@ -703,6 +706,8 @@ begin
    //
    if (adr_stb)
       areg <= alu_y;
+   if (adr_stb)
+      aios <= &alu_y[15:13];
    if (iow_stb)
       dreg_o <= alu_y;
    //

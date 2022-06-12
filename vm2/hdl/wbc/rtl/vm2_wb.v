@@ -59,12 +59,13 @@ module vm2_wb
                                  //
                                  // adr MSB is halt mode flag
    input          wbm_gnt_i,     // master wishbone granted
+   output         wbm_ios_o,     // master wishbone I/O select
    output [16:0]  wbm_adr_o,     // master wishbone address
    output [15:0]  wbm_dat_o,     // master wishbone data output
    input  [15:0]  wbm_dat_i,     // master wishbone data input
    output         wbm_cyc_o,     // master wishbone cycle
    output         wbm_we_o,      // master wishbone direction
-   output [1:0]   wbm_sel_o,     // master wishbone byte election
+   output [1:0]   wbm_sel_o,     // master wishbone byte selection
    output         wbm_stb_o,     // master wishbone strobe
    input          wbm_ack_i,     // master wishbone acknowledgement
                                  //
@@ -1841,6 +1842,7 @@ assign wb_done    = mc_res | wb_idone | wb_wdone | (wb_rdone & ~wio_wr_xt);
 
 
 assign wbm_adr_o  = iop_sta ? {sel, areg[15:0]} : wb_adr;
+assign wbm_ios_o  = iop_sta ? &areg[15:13] : &wb_adr[15:13];
 assign wbm_dat_o  = qreg;
 assign wbm_cyc_o  = wb_cyc;
 assign wbm_we_o   = wb_we;

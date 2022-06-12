@@ -59,7 +59,7 @@ wire [15:0] wb_out;                    // master data out bus
 wire [15:0] wb_mux;                    // master data in bus
 wire        wb_cyc;                    // master wishbone cycle
 wire        wb_we;                     // master wishbone direction
-wire [1:0]  wb_sel;                    // master wishbone byte election
+wire [1:0]  wb_sel;                    // master wishbone byte selection
 wire        wb_stb;                    // master wishbone strobe
 wire        wb_ack;                    // master wishbone acknowledgement
                                        //
@@ -157,7 +157,7 @@ f11_wb cpu
    .wbm_dat_i(wb_mux),                 // master wishbone data input
    .wbm_cyc_o(wb_cyc),                 // master wishbone cycle
    .wbm_we_o(wb_we),                   // master wishbone direction
-   .wbm_sel_o(wb_sel),                 // master wishbone byte election
+   .wbm_sel_o(wb_sel),                 // master wishbone byte selection
    .wbm_stb_o(wb_stb),                 // master wishbone strobe
    .wbm_ack_i(wb_ack),                 // master wishbone acknowledgement
                                        //

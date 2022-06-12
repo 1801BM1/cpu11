@@ -36,12 +36,13 @@ module lsi_wb
    input          vm_virq,       // vectored interrupt request
                                  //
    input          wbm_gnt_i,     // master wishbone granted
+   output         wbm_ios_o,     // master wishbone I/O select
    output [15:0]  wbm_adr_o,     // master wishbone address
    output [15:0]  wbm_dat_o,     // master wishbone data output
    input  [15:0]  wbm_dat_i,     // master wishbone data input
    output         wbm_cyc_o,     // master wishbone cycle
    output         wbm_we_o,      // master wishbone direction
-   output [1:0]   wbm_sel_o,     // master wishbone byte election
+   output [1:0]   wbm_sel_o,     // master wishbone byte selection
    output         wbm_stb_o,     // master wishbone strobe
    input          wbm_ack_i,     // master wishbone acknowledgement
                                  //
@@ -56,7 +57,8 @@ module lsi_wb
 //
 reg   [15:0] wb_adr;             // master wishbone address
 reg   [15:0] wb_dat;             // master wishbone data output
-reg   [1:0] wb_sel;              // master wishbone byte election
+reg   [1:0] wb_sel;              // master wishbone byte selection
+reg   wb_ios;                    // master wishbone I/O selection
 reg   wb_cyc;                    // master wishbone cycle
 reg   wb_we;                     // master wishbone direction
 reg   wb_stb;                    // master wishbone strobe
@@ -128,6 +130,7 @@ wire  m_breq;                    // bus request
 assign wbm_adr_o[15:0] = wb_adr[15:0];
 assign wbm_dat_o[15:0] = wb_dat[15:0];
 assign wbm_sel_o[1:0] = wb_sel[1:0];
+assign wbm_ios_o = wb_ios;
 assign wbm_cyc_o = wb_cyc;
 assign wbm_stb_o = wb_stb;
 assign wbi_stb_o = wb_iak;
@@ -137,6 +140,7 @@ assign vm_init = init_st;
 
 always @(posedge vm_clk_p)
 begin
+   if (m_astb) wb_ios = &m_ado[15:13];
    if (m_astb) wb_adr = m_ado;
    if (m_dstb) wb_dat = m_ado;
 

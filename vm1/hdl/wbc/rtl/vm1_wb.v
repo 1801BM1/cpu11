@@ -53,12 +53,13 @@ module vm1_wb
    input          vm_virq,          // vectored interrupt request
                                     //
    input          wbm_gnt_i,        // master wishbone granted
+   output         wbm_ios_o,        // master wishbone I/O select
    output [15:0]  wbm_adr_o,        // master wishbone address
    output [15:0]  wbm_dat_o,        // master wishbone data output
    input  [15:0]  wbm_dat_i,        // master wishbone data input
    output         wbm_cyc_o,        // master wishbone cycle
    output         wbm_we_o,         // master wishbone direction
-   output [1:0]   wbm_sel_o,        // master wishbone byte election
+   output [1:0]   wbm_sel_o,        // master wishbone byte selection
    output         wbm_stb_o,        // master wishbone strobe
    input          wbm_ack_i,        // master wishbone acknowledgement
                                     //
@@ -198,6 +199,7 @@ wire           dout_done;           //
 reg            dout_req;            //
                                     //
 reg            wb_uplr;             // transaction internal request
+reg            wb_ios;              // I/O bank select
 reg   [15:0]   wb_adr;              // wishbone address register
 reg   [15:0]   wb_dat;              // wishbone input data register
                                     //
@@ -294,6 +296,7 @@ end
 assign vm_init_out = init_out[0] | reset_rc;
 assign wbm_dat_o   = au_ta0 ? {qreg[7:0], 8'o000} : (plrt[6] ? {8'o000, qreg[7:0]} : qreg);
 assign wbm_adr_o   = wb_adr;
+assign wbm_ios_o   = wb_ios;
 
 //______________________________________________________________________________
 //
@@ -1325,6 +1328,7 @@ begin
    wb_uplr <= uplr_stb;
    if (wb_uplr)
    begin
+      wb_ios <= &areg[15:13];
       wb_adr <= areg;
       au_ta0 <= areg[0] & plrt[6];
    end

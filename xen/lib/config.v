@@ -20,7 +20,7 @@
 // PLL selector - only one of available PLL type must be defined
 // The appropriate .sdc file musy be copied to provide constraints
 //
-`define  CONFIG_PLL_100       1
+`define  CONFIG_PLL_50        1
 
 // `define  CONFIG_PLL_50     1
 // `define  CONFIG_PLL_66     1

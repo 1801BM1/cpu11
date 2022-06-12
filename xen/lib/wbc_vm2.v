@@ -52,12 +52,13 @@ wire        ena_us, ena_ms;            //
 wire        clk_slow, i50Hz;           //
                                        //
 wire        wb_clk;                    //
+wire        wb_ios;                    // master address I/O select
 wire [16:0] wb_adr;                    // master address out bus
 wire [15:0] wb_out;                    // master data out bus
 wire [15:0] wb_mux;                    // master data in bus
 wire        wb_cyc;                    // master wishbone cycle
 wire        wb_we;                     // master wishbone direction
-wire [1:0]  wb_sel;                    // master wishbone byte election
+wire [1:0]  wb_sel;                    // master wishbone byte selection
 wire        wb_stb;                    // master wishbone strobe
 wire        wb_ack;                    // master wishbone acknowledgement
                                        //
@@ -143,12 +144,13 @@ vm2_wb cpu
    .vm_virq(vm_virq),                  // vectored interrupt request
                                        //
    .wbm_gnt_i(1'b1),                   // master wishbone granted
+   .wbm_ios_o(wb_ios),                 // master wishbone I/O select
    .wbm_adr_o(wb_adr),                 // master wishbone address
    .wbm_dat_o(wb_out),                 // master wishbone data output
    .wbm_dat_i(wb_mux),                 // master wishbone data input
    .wbm_cyc_o(wb_cyc),                 // master wishbone cycle
    .wbm_we_o(wb_we),                   // master wishbone direction
-   .wbm_sel_o(wb_sel),                 // master wishbone byte election
+   .wbm_sel_o(wb_sel),                 // master wishbone byte selection
    .wbm_stb_o(wb_stb),                 // master wishbone strobe
    .wbm_ack_i(wb_ack),                 // master wishbone acknowledgement
                                        //
@@ -222,9 +224,9 @@ wbc_vic #(.N(2)) vic
 
 //______________________________________________________________________________
 //
-assign mx_stb[0]  = wb_stb & wb_cyc & (wb_adr[15:4] == (16'o177700 >> 4));
-assign mx_stb[1]  = wb_stb & wb_cyc & (wb_adr[15:14] == 2'o0);
-assign mx_stb[2]  = wb_stb & wb_cyc & (wb_adr[15:3] == (16'o177560 >> 3));
+assign mx_stb[0]  = wb_stb & wb_cyc &  wb_ios & (wb_adr[12:4] == (13'o17700 >> 4));
+assign mx_stb[1]  = wb_stb & wb_cyc & ~wb_ios & (wb_adr[15:14] == 2'o0);
+assign mx_stb[2]  = wb_stb & wb_cyc &  wb_ios & (wb_adr[12:3] == (13'o17560 >> 3));
 
 assign wb_ack     = mx_ack[0] | mx_ack[1] | mx_ack[2];
 assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
@@ -237,7 +239,7 @@ assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
 //
 assign tty_end    = wb_stb & wb_cyc & (wb_adr[15:0] == 16'o000172);
 assign tty_dat    = wb_out[7:0];
-assign tty_stb    = (wb_adr == 16'o177566) & wb_stb & wb_we & wb_ack;
+assign tty_stb    = wb_ios & (wb_adr == 13'o17566) & wb_stb & wb_we & wb_ack;
 
 //______________________________________________________________________________
 //
