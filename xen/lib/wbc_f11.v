@@ -76,7 +76,7 @@ reg  [15:0] vm_reg0, vm_reg1;          //
 wire        vm_init_out;               //
 wire        vm_dclo_in;                //
 wire        vm_aclo_in;                //
-wire        vm_virq;                   //
+wire [7:4]  vm_virq;                   //
 wire        vm_halt;                   //
 wire        vm_evnt;                   //
                                        //
@@ -147,7 +147,7 @@ f11_wb cpu
    .vm_aclo(vm_aclo_in),               // power fail notificaton
    .vm_halt(vm_halt),                  // halt mode interrupt requests
    .vm_evnt(vm_evnt),                  // timer interrupt requests
-   .vm_virq({vm_virq, 3'b000}),        // vectored interrupt requests
+   .vm_virq(vm_virq),                  // vectored interrupt requests
    .vm_bsel(bsel),                     //
                                        //
    .wbm_gnt_i(1'b1),                   // master wishbone granted
@@ -224,7 +224,7 @@ wbc_vic #(.N(2)) vic
    .wb_ack_o(vm_iack),
    .wb_una_i(vm_una),
    .rsel(ext_una),
-   .ivec({16'o000064, 16'o000060}),
+   .ivec({16'o070064, 16'o070060}),
    .ireq({tx_irq, rx_irq}),
    .iack({tx_ack, rx_ack})
 );
@@ -282,7 +282,7 @@ assign leds[3]    = vm_aclo_in;
 assign leds[4]    = vm_dclo_in;
 assign leds[5]    = sys_rst;
 assign leds[6]    = pwr_rst;
-assign leds[7]    = vm_virq;
+assign leds[7]    = vm_virq[7];
 
 //______________________________________________________________________________
 //

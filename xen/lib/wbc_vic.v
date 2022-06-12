@@ -11,14 +11,14 @@ module wbc_vic #(parameter N=1)
 (
    input                wb_clk_i,   // system clock
    input                wb_rst_i,   // peripheral reset
-   output reg           wb_irq_o,   // vectored interrupt request
+   output reg  [7:4]    wb_irq_o,   // vectored interrupt request
    output reg  [15:0]   wb_dat_o,   // interrupt vector output
    input                wb_stb_i,   // interrupt vector strobe
    output reg           wb_ack_o,   // interrupt vector acknowledgement
    input                wb_una_i,   // unaddressed read tag
                                     //
    input        [15:0]  rsel,       // unaddressed read content
-   input    [N*16-1:0]  ivec,       // interrupt vector values
+   input    [N*16-1:0]  ivec,       // interrupt vector prio/values
    input       [N-1:0]  ireq,       // interrupt request lines
    output reg  [N-1:0]  iack        // interrupt acknowledgements
 );
@@ -40,11 +40,14 @@ begin
    end
    else
    begin
-      wb_ack_o <= wb_stb_i & (wb_irq_o | wb_una_i) & ~wb_ack_o;
-      wb_irq_o <= ~(&nvec) & (~wb_ack_o | wb_una_i);
+      wb_ack_o <= wb_stb_i & (wb_irq_o[4] | wb_una_i) & ~wb_ack_o;
+      wb_irq_o[4] <= ~(&nvec) & (~wb_ack_o | wb_una_i) & (trunc_w3(ivec >> (nvec*16)) >= 3'o4);
+      wb_irq_o[5] <= ~(&nvec) & (~wb_ack_o | wb_una_i) & (trunc_w3(ivec >> (nvec*16)) >= 3'o5);
+      wb_irq_o[6] <= ~(&nvec) & (~wb_ack_o | wb_una_i) & (trunc_w3(ivec >> (nvec*16)) >= 3'o6);
+      wb_irq_o[7] <= ~(&nvec) & (~wb_ack_o | wb_una_i) & (trunc_w3(ivec >> (nvec*16)) >= 3'o7);
 
       for (i=N-1; i>=0; i=i-1)
-         iack[i] <= (nvec == i) & ireq[i] & wb_stb_i & ~wb_una_i & wb_irq_o & ~iack[i];
+         iack[i] <= (nvec == i) & ireq[i] & wb_stb_i & ~wb_una_i & wb_irq_o[4] & ~iack[i];
 
       if (wb_stb_i & ~wb_ack_o)
          if (wb_una_i)
@@ -70,7 +73,11 @@ function integer log2(input integer value);
 endfunction
 
 function [15:0] trunc_w16(input [N*16-1:0] value);
-   trunc_w16 = value[15:0];
+   trunc_w16 = {4'b0000, value[11:0]}; // [11:0] provide vector
+endfunction
+
+function [15:0] trunc_w3(input [N*16-1:0] value);
+   trunc_w3 = value[14:12];            // [14:12] provide priority
 endfunction
 
 function [W-1:0] trunc_int(input integer value);
