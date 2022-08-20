@@ -622,7 +622,7 @@ begin
       xr = " n/a";
       yr = " n/a";
    end
-   $display("plm[%02O->%02O] %s %s %s %s %s %s %s %s %s %s %06O %06O %06O ir:%06O %1O %1O %02O",
+   $display("plm[%02X->%02X] %s %s %s %s %s %s %s %s %s %s %06O %06O %06O ir:%06O %1O %1O %02X",
             pa, cpu.core.na, type, word, wdir, sta, xr, yr, vec, op, sh, qbus,
             cpu.core.cpc, cpu.core.pc1, cpu.core.pc2,
             cpu.core.ireg, pix, pri, pia);

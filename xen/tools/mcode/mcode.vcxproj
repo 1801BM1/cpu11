@@ -159,6 +159,7 @@
     <ClCompile Include="mcode.c" />
     <ClCompile Include="minit.c" />
     <ClCompile Include="mterm.c" />
+    <ClCompile Include="qmc16.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mcode.h" />

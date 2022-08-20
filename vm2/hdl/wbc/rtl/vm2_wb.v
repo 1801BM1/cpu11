@@ -17,24 +17,21 @@ module vm2_wb
 //
 // Original 1801BM2 processor contains microcode bug at the following conditions:
 // - two operands PDP-11 instruction is being executed
-// - source has addressing method @PC (field value 17 octal)
+// - source has addressing method @PC, -(PC) or @-(PC)
 // - destination does not involve PC (dst register field !=7)
 // - no extra instruction words are used by destination (no E(Rn), @E(Rn))
 // - Q-bus is slow and opcode prefetch is not completed before microcode
 // starts source field  processing and fetching the source data (slow RPLY/AR)
 //
-// At the source operand processing the source address is taken from PC and
-// written back to the PC and Q-bus address register unchanged. This writing back
-// also rewrites the PC2 register containing the modified prefetch address (PC+2/4).
-// Then at the command completion microcode does not restart the prefetch with
-// io_cmd code and prefetch continues with wrong address in PC2. The next
-// instruction behaviour may become undefined.
+// The bug is related to inapropriate handling of buffer instruction register,
+// if Q-bus slow and the prefetch is in not complete the CPU waits for completion
+// and requests the another prefetch to BIR. The microcode fix is very complicated
+// hence the approach to wait prefectch completion was chosen.
 //
-// Fix just blocks the PC2 write in the affected instructions and prefetch
-// address is no corrupted. If zero parameter is specified the model follows
-// the original 1801BM2 behaviour (with prefetch bug).
+// If zero parameter is specified the model follows the original 1801BM2 behaviour
+// (with prefetch bug).
 //
-   VM2_CORE_FIX_PREFETCH = 1
+   VM2_CORE_FIX_PREFETCH = 0
 )
 (
    //
@@ -289,7 +286,7 @@ reg   [5:0]    iocmd_st;               //
 reg   [1:0]    iopc_st;                //
 reg   [5:1]    io_st;                  //
 reg            buf_res;                //
-reg            pc2_res;                // ignore pc2 write
+reg            bir_fix;                // need prefetch fix needed decoded
 wire           wr1;                    // ALU read args phase strobe
 wire           wr2;                    // ALU write result phase strobe
 wire           alu_wr;                 // ALU write result
@@ -711,22 +708,23 @@ end
 
 //______________________________________________________________________________
 //
-// Instructions with two operands and source address mode is @PC
-// For this instruction we suppress the pc2 write in source read phase
+// Instructions with two operands and sources address mode is @PC
+// For this instruction we force prefetch completion wait
 //
 always @(posedge vm_clk_p)
 begin
    if (mc_res)
-      pc2_res <= 1'b0;
+      bir_fix <= 1'b0;
    else
       if (ir_stb)
-         pc2_res <= (breg[14:12] != 3'o0)    // two ops instructions
-                  & (breg[14:12] != 3'o7)    //
-                  & (breg[11:6] == 6'o17)    // source is @PC
-                  & (breg[5:3] != 3'o6)      // not E(Rn) destination
-                  & (breg[5:3] != 3'o7)      // not @E(Rn) destination
-                  & (breg[2:0] != 3'o7)      // not PC related destination
-                  & (VM2_CORE_FIX_PREFETCH != 0);
+         bir_fix = (breg[14:12] != 3'o0)    // two ops instructions
+                 & (breg[14:12] != 3'o7)    //
+                 & (breg[8:6] == 3'o7)      // source is PC related
+                 & (breg[10:9] == 2'o1)     // source @PC or @-(PC) mode
+                 & (breg[2:0] != 3'o7)      // not PC related destination
+                 & (breg[5:3] != 3'o6)      // not E(Rn) destination
+                 & (breg[5:3] != 3'o7)      // not @E(Rn) destination
+                 & (VM2_CORE_FIX_PREFETCH != 0);
 end
 
 //______________________________________________________________________________
@@ -1519,7 +1517,7 @@ assign pc_wr      = cpsw_stb | (pc1_wr & (~psw[7] | ~psw[8]) & (io_wr | ~io_pswr
 assign pc1_wr     = (wr2 & wa_pc & ~io_rcdr) | word27 | (wr1 & io_rcdr & ~iopc_st[1]);
 
 assign pc_wax     = wr2 & wa_r1;
-assign pc2_wa     = wr2 & wa_pc & ~(pc2_res & ~io_rcd & ~io_cmd);
+assign pc2_wa     = wr2 & wa_pc;
 
 assign ra_wa      = wr2 & ra_fw;
 assign ra_wx      = alu_wr & ra_fr;
@@ -1718,7 +1716,7 @@ begin
    end
 end
 
-assign mc_drdy_rc = (mc_stb ? pla[27] : ~plm[27]) | mc_drdy1;
+assign mc_drdy_rc = (mc_stb ? pla[27] : ~plm[27]) & ~bir_fix | mc_drdy1;
 always @(posedge vm_clk_n)
 begin
    if (iop_sta)

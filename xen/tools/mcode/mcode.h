@@ -25,10 +25,12 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <immintrin.h>
+#include <errno.h>
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
@@ -53,6 +55,7 @@ enum plm_type {
 	PLM_TYPE_F11_CS1,
 	PLM_TYPE_F11_CS2,
 	PLM_TYPE_F11_NA_CLR0,
+	PLM_TYPE_VM2_DEC,
 };
 
 enum opt_type {
@@ -168,6 +171,7 @@ struct plm_scan {
 extern const struct plm_desc plm_desc_vm1a;
 extern const struct plm_desc plm_desc_vm1g;
 extern const struct plm_desc plm_desc_vm2;
+extern const struct plm_desc plm_desc_vm2_dec;
 extern const struct plm_desc plm_desc_f11_cs0;
 extern const struct plm_desc plm_desc_f11_cs1;
 extern const struct plm_desc plm_desc_f11_cs2;
@@ -177,6 +181,9 @@ extern int32_t cl_ab;
 extern int32_t cl_ae;
 extern int32_t cl_as;
 extern int32_t cl_az;
+extern int32_t cl_op;
+extern int32_t cl_om;
+extern int32_t cl_qmc;
 
 /* Programmable logic matrix API */
 int plm_init(struct plm *plm, enum plm_type type);
@@ -201,6 +208,7 @@ void mc_mterm_match(enum plm_type type, enum opt_type opt,
 		    const char *fname, const char *text);
 void mc_mterm_write(enum plm_type type, enum opt_type opt,
 		    const char *fname, const char *text);
+void mc_test_qmc16(const struct plm *tpl);
 
 #define SIMD_MMX	(1u << 0)
 #define SIMD_SSE	(1u << 1)

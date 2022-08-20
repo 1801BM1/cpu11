@@ -183,14 +183,15 @@ static void mc_match_64(FILE *f, struct plm *tpl, const char *text)
 				mc_match_stat_update(a, fbuf.w64[w], t);
 				if (err_max++ >= FILE_MAX_ERRORS)
 					continue;
-				printf("Mismatch: %08llX != %08llX @ %08X\n",
-					t, fbuf.w64[w], a);
+				printf("Mismatch: %08" PRIX64
+				       " != %08" PRIX64 " @ %08X\n",
+				       t, fbuf.w64[w], a);
 			}
 		}
 		if (i >= ae)
 			break;
 	}
-	printf("Match result %s: %08X, %08llX\n", text, aerr, derr);
+	printf("Match result %s: %08X, %08" PRIX64 "\n", text, aerr, derr);
 	if (err_max)
 		mc_match_stat_show();
 }
@@ -252,8 +253,9 @@ void mc_mterm_match(enum plm_type type, enum opt_type opt,
 		exit(-1);
 	}
 	if (sz != ms) {
-		printf("mcode: invalid input file size (%s, %llu, %llu)\n",
-			fname, (uint64_t)sz, (uint64_t)ms);
+		printf("mcode: invalid input file size"
+		       " (%s, %" PRIu64 ", %" PRIu64 ")\n",
+		       fname, (uint64_t)sz, (uint64_t)ms);
 		assert(0);
 		fclose(f);
 		exit(-1);

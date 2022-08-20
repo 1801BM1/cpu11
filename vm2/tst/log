@@ -1,0 +1,43 @@
+011737 	000400				mov	@PC, @#tebuf ; R4
+
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000456 000456 000460 ir:070400 5 1 3e
+# plm[3f->3c]  op2  word  fr *x  ****    R7      R2    ------     x  ---  rdat 000460 000460 000462 ir:011737 7 5 30
+# plm[3c->29]  op2  word     *x  ****   R_SRC   QREG   ------     y  ---  ---- 000460 000460 000460 ir:011737 4 5 3c
+# plm[29->28]  op1  word  f2 *x  ****    R7    000002  ------   x+y  ---  pref 000460 000460 000460 ir:011737 4 5 29
+# plm[28->0c]  op1  word  fw ac  ****    R7       bir  ------     y  ---  dcop 000460 000460 000462 ir:011737 4 5 28
+# plm[0c->1e]  op2  byte     *x  wsta   QREG    R_SRC  ------     y  ---  ---- 000462 000462 000462 ir:011737 4 5 0c
+# plm[1e->3e]  op1  word  fr *x  ****    R7    000002  ------   x+y  ---  rcmd 000462 000462 000462 ir:011737 4 1 1e
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000462 000464 000464 ir:011737 4 1 3e
+# plm[3f->3e]  op1  byte     *x  wsta    R0    000001  ------   x+y  ---  ---- 000464 000464 000466 ir:005200 2 0 08
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000464 000464 000466 ir:005200 0 1 3e
+# plm[3f->3e]  op1  byte     *x  wsta    R1    000001  ------   x+y  ---  ---- 000466 000466 000470 ir:005201 2 0 08
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000466 000466 000470 ir:005201 0 1 3e
+# plm[3f->3e]  op1  byte     *x  wsta    R2    000001  ------   x+y  ---  ---- 000470 000470 000472 ir:005202 2 0 08
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000470 000470 000472 ir:005202 0 1 3e
+
+
+011704
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000456 000456 000460 ir:070400 5 1 3e
+# plm[3f->2d]  op2  word  fr *x  ****    R7      R2    ------     x  ---  rdat 000460 000460 000462 ir:011704 7 4 30
+# plm[2d->2f]  op2  word     *x  ****   R_SRC   QREG   ------     y  ---  ---- 000460 000460 000460 ir:011704 4 4 2d
+# plm[2f->2c]  op1  word  f2 *x  ****    R7    000002  ------   x+y  ---  pref 000460 000460 000460 ir:011704 4 4 2f
+# plm[2c->3e]  op2  byte     *x  wsta    R4     R_SRC  ------     y  ---  ---- 000460 000460 000462 ir:011704 4 4 2c
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000460 000460 000462 ir:011704 4 1 3e
+# plm[3f->3e]  op1  byte     *x  wsta    R0    000001  ------   x+y  ---  ---- 000462 000462 000464 ir:005200 2 0 08
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000462 000462 000464 ir:005200 0 1 3e
+# plm[3f->3e]  op1  byte     *x  wsta    R0    000001  ------   x+y  ---  ---- 000464 000464 000466 ir:005200 2 0 08
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000464 000464 000466 ir:005200 0 1 3e
+# plm[3f->3e]  op1  byte     *x  wsta    R1    000001  ------   x+y  ---  ---- 000466 000466 000470 ir:005201 2 0 08
+# plm[3e->3f]  op1  word  f2 *x  nzv-    R7    000002  ------   x+y  ---  pref 000466 000466 000470 ir:005201 0 1 3e
+
+
+iop_rcd
+
+
+assign io_rcd     = (plr[24:21] == 4'b0111);    // Read command ahead
+assign io_cmd     = (plr[24:21] == 4'b0010)     // Read command
+                  | (plr[24:21] == 4'b0110);    //
+	
+
+io_rcd 0111 -> io_cmd 0110
+na	 3E -> 1E na

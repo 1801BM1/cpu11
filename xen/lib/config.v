@@ -8,7 +8,7 @@
 //
 // CPU selector - only one of available CPU type must be defined
 //
-`define CONFIG_CPU_F11        1
+`define CONFIG_CPU_VM2        1
 
 //`define CONFIG_CPU_VM1      1
 //`define CONFIG_CPU_VM2      1

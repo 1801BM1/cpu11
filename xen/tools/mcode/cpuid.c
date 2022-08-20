@@ -45,8 +45,8 @@ static inline int get_cpuid(uint32_t *info, uint32_t leaf)
 
 static inline int get_cpuid_ex(uint32_t *info, uint32_t leaf, uint32_t subleaf)
 {
-	return __get_cpuid_count(leaf, subleaf, info + 0, info + 1,
-				 info + 2, info + 3);
+	__cpuid_count(leaf, subleaf, info[0], info[1], info[2], info[3]);
+	return 0;
 }
 #endif
 #endif

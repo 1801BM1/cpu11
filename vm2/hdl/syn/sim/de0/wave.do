@@ -287,7 +287,6 @@ add wave -noupdate -group Registers -group pc1 /tb2/cpu/core/pc1_wr
 add wave -noupdate -group Registers -group pc1 /tb2/cpu/core/wr2
 add wave -noupdate -group Registers -group pc2 -radix octal /tb2/cpu/core/pc2
 add wave -noupdate -group Registers -group pc2 /tb2/cpu/core/pc2_wa
-add wave -noupdate -group Registers -group pc2 /tb2/cpu/core/pc2_res
 add wave -noupdate -group Registers -group pc2 /tb2/cpu/core/pc2_rx
 add wave -noupdate -group Registers /tb2/cpu/core/rn_rx
 add wave -noupdate -group Registers /tb2/cpu/core/rn_ry

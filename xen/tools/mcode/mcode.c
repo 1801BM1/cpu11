@@ -33,6 +33,7 @@ int32_t cl_as = -1;
 int32_t cl_az = -1;
 int32_t cl_op = -1;
 int32_t cl_om = -1;
+int32_t cl_qmc = -1;
 
 char cl_text[16];
 
@@ -62,6 +63,9 @@ int plm_init(struct plm *plm, enum plm_type type)
 		break;
 	case PLM_TYPE_F11_NA_CLR0:
 		desc = &plm_desc_f11_na_clr0;
+		break;
+	case PLM_TYPE_VM2_DEC:
+		desc = &plm_desc_vm2_dec;
 		break;
 	default:
 		printf("mcode: unrecognized plm type %d\n", type);
@@ -651,11 +655,49 @@ mc_test_speed(enum plm_type type, enum opt_type opt, const char *text)
 }
 
 static void
+mc_test_decode(enum plm_type type, enum opt_type opt,
+	       struct plm *tpl, const char *text)
+{
+	static struct ma_stats tab;
+	uint32_t val, max, amx, ina;
+	uint32_t op, om;
+	uint64_t start;
+
+	max = 1ul << tpl->in_nb;	/* input value limit */
+	amx = 1ul << tpl->na_nb; /* microaddress limit */
+	memset(&tab, 0, sizeof(tab));
+	op = cl_op < 0 ? 0 : ((cl_op & UINT16_MAX) << (tpl->in_nb - 16));
+	om = cl_om < 0 ? 0 : ((cl_om & UINT16_MAX) << (tpl->in_nb - 16));
+	start = mc_query_ms();
+	for (val = 0; val < max; val++) {
+		if ((val & om) == op) {
+			uint64_t sop = plm_get(tpl, val);
+
+			ina = (uint32_t)(sop >> PLM_S_MAX);
+			tab.jmp[ina].count++;
+			tab.jmp[ina].zeros |=  val;
+			tab.jmp[ina].ones  |= ~val;
+		}
+	}
+	start = mc_query_ms() - start;
+	printf("Elapsed %s: %" PRIu64 ".%03" PRIu64 "\n", text,
+		start / 1000, start % 1000);
+
+	for (ina = 0; ina < amx; ina++) {
+		if (tab.jmp[ina].count) {
+			printf("  %02X: %08X z:%06o o:%06o\n", ina,
+				tab.jmp[ina].count,
+				~tab.jmp[ina].zeros & UINT16_MAX,
+				~tab.jmp[ina].ones & UINT16_MAX);
+		}
+	}
+}
+
+static void
 mc_test_table(enum plm_type type, enum opt_type opt, const char *text)
 {
 	static struct plm tpl;
 	static struct ma_stats tab[PLM_NA_MAX];
-	static struct ma_stats *ps;
 	struct ma_check {
 		uint32_t uop;
 		uint32_t opcode;
@@ -676,20 +718,28 @@ mc_test_table(enum plm_type type, enum opt_type opt, const char *text)
 	switch (type) {
 	case PLM_TYPE_VM1A_MAIN:
 	case PLM_TYPE_VM1G_MAIN:
+		op = cl_op < 0 ? 0 : ((cl_op & UINT16_MAX) << (tpl.in_nb - 16));
+		om = cl_om < 0 ? 0 : ((cl_om & UINT16_MAX) << (tpl.in_nb - 16));
 		chk.uop = (1 << 12);
 		break;
 	case PLM_TYPE_VM2_MAIN:
-	case PLM_TYPE_NONE:
+		op = cl_op < 0 ? 0 : ((uint32_t)cl_op << tpl.na_nb);
+		om = cl_om < 0 ? 0 : ((uint32_t)cl_om << tpl.na_nb);
 		break;
+	case PLM_TYPE_VM2_DEC:
+		mc_test_decode(type, opt, &tpl, text);
+		return;
+	case PLM_TYPE_NONE:
+	default:
+		printf("mcode: unsupported build for table %s\n", text);
+		exit(-1);
 	}
 	max = 1ul << tpl.in_nb;	/* input value limit */
 	amx = 1ul << tpl.na_nb; /* microaddress limit */
 	memset(&tab, 0, sizeof(tab));
-	ps = tab;
-	ab = cl_ab < 0 ? 0 : MAX(cl_ab, (int)amx);
+	ab = cl_ab < 0 ? 0 : MIN(cl_ab, (int)amx);
 	ae = cl_ae < 0 ? amx : MIN(cl_ae, (int)amx);
-	op = cl_op < 0 ? 0 : ((cl_op & UINT16_MAX) << (tpl.in_nb - 16));
-	om = cl_om < 0 ? 0 : ((cl_om & UINT16_MAX) << (tpl.in_nb - 16));
+
 	start = mc_query_ms();
 	for (adr = ab; adr < ae; adr++) {
 		printf("%02X ...\n", adr);
@@ -698,34 +748,110 @@ mc_test_table(enum plm_type type, enum opt_type opt, const char *text)
 				uint64_t sop = plm_get(&tpl, val);
 
 				ina = (uint32_t)(sop >> PLM_S_MAX);
-				ps->jmp[ina].count++;
-				ps->jmp[ina].zeros |=  val;
-				ps->jmp[ina].ones  |= ~val;
+				tab[adr].jmp[ina].count++;
+				tab[adr].jmp[ina].zeros |=  val;
+				tab[adr].jmp[ina].ones  |= ~val;
 
 				if (sop & chk.uop)
-					ps->uops++;
+					tab[adr].uops++;
 			}
 		}
-		++ps;
 	}
 	start = mc_query_ms() - start;
 	printf("Elapsed %s: %" PRIu64 ".%03" PRIu64 "\n", text,
 		start / 1000, start % 1000);
+
 	for (adr = ab; adr < ae; adr++) {
 		printf("[%02X]", adr);
+		/* print addresses jumping from to current */
+		for (ina = 0; ina < amx; ina++) {
+			if (tab[ina].jmp[adr].count) {
+				ret = 0;
+				printf(" %02X", ina);
+			}
+		}
+		if (ret)
+			printf(" none");
 		if (tab[adr].uops)
 			printf(" uop:%08X%s\n", tab[adr].uops,
 			       tab[adr].uops == max / amx ? " (full)" : "");
 		else
 			printf("\n");
+		/* print addresses jumping to from current */
 		for (ina = 0; ina < amx; ina++) {
 			if (tab[adr].jmp[ina].count) {
+				uint32_t zs = ~tab[adr].jmp[ina].zeros;
+				uint32_t os = ~tab[adr].jmp[ina].ones;
+
+				zs &= (1ul << tpl.in_nb) - 1;
+				os &= (1ul << tpl.in_nb) - 1;
+				zs >>= tpl.na_nb;
+				os >>= tpl.na_nb;
 				printf("  %02X: %08X z:%08X o:%08X\n", ina,
-				       tab[adr].jmp[ina].count,
-				       tab[adr].jmp[ina].zeros,
-				       tab[adr].jmp[ina].ones);
+				       tab[adr].jmp[ina].count, zs, os);
 			}
 		}
+	}
+	/* remove not referenced addresses */
+	do {
+		ret = 0;
+		for (adr = ab; adr < ae; adr++) {
+			uint32_t ref = 0;
+
+			for (ina = 0; ina < amx; ina++) {
+				if (tab[ina].jmp[adr].count) {
+					ref++;
+					break;
+				}
+			}
+			if (ref)
+				continue;
+			for (ina = 0; ina < amx; ina++) {
+				if (tab[adr].jmp[ina].count) {
+					tab[adr].jmp[ina].count = 0;
+					ret++;
+				}
+			}
+		}
+		if (ret)
+			printf("Unused destination reference(s): %u\n", ret);
+	} while (ret);
+	/* print addresses jumping from to current */
+	for (adr = ab; adr < ae; adr++) {
+		printf("[%02X]", adr);
+		for (ina = 0; ina < amx; ina++)
+			if (tab[ina].jmp[adr].count)
+				printf(" %02X", ina);
+		printf("\n");
+	}
+}
+
+/* Quine-McCluskey term minimization for decoders */
+void mc_test_qmc(enum plm_type type, enum opt_type opt, const char *text)
+{
+	static struct plm tpl;
+	int ret;
+
+	switch (type) {
+	case PLM_TYPE_VM2_DEC:
+		break;
+	default:
+		printf("Unsupported type for Quine-McCluskey: %s\n", text);
+		return;
+	}
+	printf("Quine-McCluskey decoder matrix minimization (%s)\n", text);
+	ret = plm_init(&tpl, type);
+	if (ret)
+		exit(-1);
+	ret = plm_opt(&tpl, opt);
+	if (ret)
+		exit(-1);
+	switch (type) {
+	case PLM_TYPE_VM2_DEC:
+		mc_test_qmc16(&tpl);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -782,6 +908,34 @@ static int mc_param_oct(char *s)
 		}
 		if (r > UINT16_MAX) {
 			printf("mcode: octal parameter overflow: %06o\n", r);
+			return -1;
+		}
+	} while (1);
+	return r;
+}
+
+static int mc_param_dec(char *s)
+{
+	int r = 0;
+
+	if (*s == 0) {
+		printf("mcode: empty parameter\n");
+		return -1;
+	}
+	do {
+		char c = *s++;
+
+		if (!c)
+			break;
+		if (c >= '0' && c <= '9') {
+			c -= '0';
+			r = r * 10 + c;
+		} else {
+			printf("mcode: invalid decimal parameter: %s\n", s);
+			return -1;
+		}
+		if (r > UINT16_MAX) {
+			printf("mcode: decimal parameter overflow: %d\n", r);
 			return -1;
 		}
 	} while (1);
@@ -864,6 +1018,10 @@ static int mc_proc_param(const char *p)
 		cl_type = PLM_TYPE_VM2_MAIN;
 		return 0;
 	}
+	if (!strcmp(b, "--vm2d")) {
+		cl_type = PLM_TYPE_VM2_DEC;
+		return 0;
+	}
 	if (!strcmp(b, "--f11-0")) {
 		cl_type = PLM_TYPE_F11_CS0;
 		return 0;
@@ -903,6 +1061,10 @@ static int mc_proc_param(const char *p)
 			cl_om = mc_param_oct(eq);
 			return cl_om >= 0 ? 0 : -1;
 		}
+		if (strstr(b, "--qmc=") == b) {
+			cl_qmc = mc_param_dec(eq);
+			return cl_qmc >= 0 ? 0 : -1;
+		}
 	}
 	printf("mcode: unrecognized parameter: %s\n", p);
 	return -1;
@@ -920,12 +1082,13 @@ static void mc_cmd_line(int argc, char *argv[])
 		       "  --table - build address table\n"
 		       "  --32 --32t - select 32 bit operations (with tree)\n"
 		       "  --64 --64t - select 64 bit operations (with tree)\n"
-		       "  --128 --128t - select 64 bit operations (with tree)\n"
-		       "  --256 --256t - select 64 bit operations (with tree)\n"
-		       "  --vm1a --vm1g --vm2 --f11-x - select matrix\n"
+		       "  --128 --128t - select 128 bit operations (with tree)\n"
+		       "  --256 --256t - select 256 bit operations (with tree)\n"
+		       "  --vm1a --vm1g --vm2 --vm2d --f11-x - select matrix\n"
 		       "  --ab=xxx --ae=xxx - optional address range in hex\n"
 		       "  --as=xxx --az=xxx - optional address set/zero mask\n"
 		       "  --op=oooooo --om=oooooo - opcode mask in octal\n"
+		       "  --qmc=n - Quine-McCluskey minimization attempt\n"
 		       "  filename - file for matrix input or output\n"
 		);
 		exit(0);
@@ -935,7 +1098,8 @@ static void mc_cmd_line(int argc, char *argv[])
 			exit(-1);
 	}
 	/* Default action is compliance check */
-	if (cl_speed < 0 && cl_match < 0 && cl_table < 0 && cl_mterm < 0)
+	if (cl_speed < 0 && cl_match < 0 &&
+	    cl_table < 0 && cl_mterm < 0 && cl_qmc < 0)
 		cl_match = 1;
 	/* Default matrix is VM1A main PLM */
 	if (cl_type == PLM_TYPE_NONE)
@@ -962,6 +1126,9 @@ static void mc_cmd_line(int argc, char *argv[])
 		break;
 	case PLM_TYPE_VM2_MAIN:
 		strcpy(cl_text, "vm2");
+		break;
+	case PLM_TYPE_VM2_DEC:
+		strcpy(cl_text, "vm2d");
 		break;
 	case PLM_TYPE_F11_CS0:
 		strcpy(cl_text, "f11-0");
@@ -1041,12 +1208,16 @@ int main(int argc, char *argv[])
 		mc_test_table(cl_type, cl_opt, cl_text);
 		exit(-1);
 	}
-	if (cl_mterm && cl_match < 0) {
+	if (cl_mterm > 0 && cl_match < 0) {
 		if (!cl_fname) {
 			printf("mcode: output file must be specified\n");
 			exit(-1);
 		}
 		mc_mterm_write(cl_type, cl_opt, cl_fname, cl_text);
+	}
+	if (cl_qmc >= 0) {
+		mc_test_qmc(cl_type, cl_opt, cl_text);
+		exit(-1);
 	}
 	printf("\n");
 }

@@ -19,7 +19,7 @@
 `define  SIM_CONFIG_DEBUG_TTY          1
 //
 // The amount clki clocks to delay RPLY for DIN to reproduce the (PC)
-// prefetch bug. Value 4 or more should be specified, 0 for maximal speed.
+// prefetch bug. Value 6 or more should be specified, 0 for maximal speed.
 //
 `define  SIM_CONFIG_PREFETCH_BUG       0
 

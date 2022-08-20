@@ -214,7 +214,6 @@ add wave -noupdate -group Registers -group pc1 /tb1/de0_top/cpu/cpu/pc1_wr
 add wave -noupdate -group Registers -group pc1 /tb1/de0_top/cpu/cpu/wr2
 add wave -noupdate -group Registers -group pc2 -radix octal /tb1/de0_top/cpu/cpu/pc2
 add wave -noupdate -group Registers -group pc2 /tb1/de0_top/cpu/cpu/pc2_wa
-add wave -noupdate -group Registers -group pc2 /tb1/de0_top/cpu/cpu/pc2_res
 add wave -noupdate -group Registers -group psw -group cond /tb1/de0_top/cpu/cpu/cond_c
 add wave -noupdate -group Registers -group psw -group cond /tb1/de0_top/cpu/cpu/cond_c0
 add wave -noupdate -group Registers -group psw -group cond /tb1/de0_top/cpu/cpu/cond_c1

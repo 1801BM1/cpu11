@@ -239,7 +239,7 @@ assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
 //
 assign tty_end    = wb_stb & wb_cyc & (wb_adr[15:0] == 16'o000172);
 assign tty_dat    = wb_out[7:0];
-assign tty_stb    = wb_ios & (wb_adr == 13'o17566) & wb_stb & wb_we & wb_ack;
+assign tty_stb    = wb_ios & (wb_adr[12:0] == 13'o17566) & wb_stb & wb_we & wb_ack;
 
 //______________________________________________________________________________
 //

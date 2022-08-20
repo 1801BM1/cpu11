@@ -1602,10 +1602,10 @@ const struct plm_desc plm_desc_vm2 = {
 			2, -1
 		},
 	},
-	.xin = 0x3F,
-	.xout = ((1ull << 34 | 1ull << 35 | 1ull << 36) ^ 0x1FFFFFFFFFull) |
-		  1ull << (0 + PLM_S_MAX) | 1ull << (1 + PLM_S_MAX) |
-		  1ull << (2 + PLM_S_MAX),
+	.xin = 0,
+	.xout = ((1ull << 31 | 1ull << 32 | 1ull << 33) ^ 0x1FFFFFFFFFull) |
+		  1ull << (3 + PLM_S_MAX) | 1ull << (4 + PLM_S_MAX) |
+		  1ull << (5 + PLM_S_MAX),
 	.in_nb = 28,
 	.out_nb = 37,
 	.na_nb = 6,
@@ -2562,7 +2562,7 @@ const struct plm_desc plm_desc_f11_cs2 = {
 		"x0101001xxxxxxxxxxxxxxx", /* 135 */
 		"x010000xxxx0110xxxxxxxx", /* 136 */
 		"x010000xxxx0100xxxxxxxx", /* 137 */
-},
+	},
 	.s = {
 		(const int16_t[]) { /* mc[0] - pl[1] */
 			137, 136, 126, 125, 124, 123, 122, 121, 110, 104,
@@ -2796,4 +2796,104 @@ const struct plm_desc plm_desc_f11_cs2 = {
 	.out_nb = 25,
 	.na_nb = 9,
 	.na_bits = { 16, 17, 18, 19, 20, 21, 22, 23, 24 }
+};
+
+const struct plm_desc plm_desc_vm2_dec = {
+	.p = {
+		"0000000000000110", /* 0 */
+		"1000110100000xxx", /* 1 */
+		"0000110100xxxxxx", /* 2 */
+		"000000000001xxxx", /* 3 */
+		"01110xxxxx000xxx", /* 4 */
+		"00000000101xxxxx", /* 5 */
+		"0111100xxx000xxx", /* 6 */
+		"01111010000xxxxx", /* 7 */
+		"x000110111000xxx", /* 8 */
+		"x0x1000xxx000xxx", /* 9 */
+		"0000000000001xxx", /* 10 */
+		"x0001100xx000xxx", /* 11 */
+		"000000001x000xxx", /* 12 */
+		"0000x0x000xxxxxx", /* 13 */
+		"x10x000xxx000xxx", /* 14 */
+		"0000000000000011", /* 15 */
+		"x000101111xxxxxx", /* 16 */
+		"0000000000000x01", /* 17 */
+		"10000000xxxxxxxx", /* 18 */
+		"0000100xxx000xxx", /* 19 */
+		"0000000001000xxx", /* 20 */
+		"x0000xx0000xxxx0", /* 21 */
+		"x0000001xxxxxxxx", /* 22 */
+		"xx10000xxx000xxx", /* 23 */
+		"1000x00xxxxxxxxx", /* 24 */
+		"x000101xxx000xxx", /* 25 */
+		"0001xxxxxxxxxxxx", /* 26 */
+		"0111111xxxxxxxxx", /* 27 */
+		"0000xx01xxxxxxxx", /* 28 */
+		"x000001xxxxxxxxx", /* 29 */
+		"1000110100xxxxxx", /* 30 */
+		"x00001xxxxxxxxxx", /* 31 */
+		"x0000xx00xxxxxxx", /* 32 */
+		"x0001100xxxxxxxx", /* 33 */
+		"00000000x1xxxxxx", /* 34 */
+		"x10x000xxxxxxxxx", /* 35 */
+		"x000110111xxxxxx", /* 36 */
+		"0000100xxxxxxxxx", /* 37 */
+		"1x0xxxxxxxxxxxxx", /* 38 */
+		"0111100xxxxxxxxx", /* 39 */
+		"x0x1000xxxxxxxxx", /* 40 */
+		"xx10000xxxxxxxxx", /* 41 */
+		"x000101xxxxxxxxx", /* 42 */
+		"01110xxxxxxxxxxx", /* 43 */
+		"10xxxxxxxxxxxxxx", /* 44 */
+		"xx01xxxxxxxxxxxx", /* 45 */
+		"x1x0xxxxxxxxxxxx", /* 46 */
+		"x01xxxxxxxxxxxxx", /* 47 */
+	},
+	.s = {
+		(const int16_t[]) { /* pl[0] */
+			43, 41, 40, 39, 35, 25, 20, 19, 12, 11, 8, 1, -1
+		},
+		(const int16_t[]) { /* pl[1] */
+			-1
+		},
+		(const int16_t[]) { /* pl[2] */
+			0, -1
+		},
+		(const int16_t[]) { /* pl[3] */
+			47, 43, 37, 32, 30, 16, -1
+		},
+		(const int16_t[]) { /* pl[4] */
+			37, 32, 28, 26, 13, -1
+		},
+		(const int16_t[]) { /* pl[5] */
+			42, 37, 36, 34, 33, 30, 12, -1
+		},
+		(const int16_t[]) { /* pl[6] */
+			43, 41, 40, 39, 35, 20, 19, -1
+		},
+		(const int16_t[]) { /* pl[7] */
+			47, 46, 45, 43, 39, 27, -1
+		},
+		(const int16_t[]) { /* pl[8] */
+			42, 37, 36, 34, 33, 30, 23, 14, 12, 9,
+			6,  4,  -1
+		},
+		(const int16_t[]) { /* pl[9] */
+			31, 29, 27, 24, 22, 21, 20, 19, 17, 15,
+			10, 7,  5,  3,  2,  -1
+		},
+		(const int16_t[]) { /* pl[10] */
+			44, 38, -1
+		},
+		(const int16_t[]) { /* pl[11] */
+			31, 29, 22, 20, 19, 18, -1
+		},
+	},
+	.xin = 0,
+	.xout = (0xFFFull ^ (1 << 6 | 1 << 9 | 1 << 11)) |
+		(0x38ull << (0 + PLM_S_MAX)),
+	.in_nb = 16,
+	.out_nb = 12,
+	.na_nb = 6,
+	.na_bits = { 11, 9, 6, 7, 8, 0 }
 };
