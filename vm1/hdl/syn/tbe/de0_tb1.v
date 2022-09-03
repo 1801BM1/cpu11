@@ -172,10 +172,11 @@ end
 always @(posedge din or posedge dout)
 begin
 @ (negedge clk);
+   rply_reg = 1'b1;
 @ (posedge clk);
    ad_oe    = 1'b0;
-#2
-   rply_reg = 1'b1;
+// #2
+// rply_reg = 1'b1;
 end
 
 always @(negedge din)

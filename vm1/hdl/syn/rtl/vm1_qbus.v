@@ -604,7 +604,7 @@ begin
 end
 
 assign din_start    = oe_set | (plrt[8] & sync_fedge);
-assign din_done     = din_out_l & (rply_ack[3] | rply_ack[2]);
+assign din_done     = din_out_l & (/* rply_ack[3] | */ rply_ack[2]);
 always @(posedge pin_clk_n) din_out_l <= din_out;
 always @(posedge pin_clk_p or posedge mjres)
 begin
@@ -619,7 +619,7 @@ begin
 end
 
 assign qbus_tena = dout_out | din_out;
-assign oe_clr_fc = mjres | (~rply_ack_fc & rply_ack[1] & ~qbus_flag);
+assign oe_clr_fc = mjres | (/* ~rply_ack_fc &  */ rply_ack[1] & ~qbus_flag);
 assign oe_set_fc = qbus_gnt & iak_flag & ~dmr_req & ~qbus_own;
 always @(posedge pin_clk_n)
 begin
