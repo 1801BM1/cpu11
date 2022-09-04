@@ -15,6 +15,7 @@ echo link hd2:%1.obj /execute:hd2:%1.lda /lda >>%cpu11_tmp%\build.com
 
 srec_cat %cpu11_tmp%\%1.lda -dec_binary -o %cpu11_tmp%\%1.bin -binary
 move vt52.log %cpu11_tmp%\vt52.log >>NUL
+rem fc /b %cpu11_tmp%\%1.bin %1.bin
 
 if not exist .\out mkdir out
 srec_cat %cpu11_tmp%\%1.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o .\out\test.mem --VMem 16

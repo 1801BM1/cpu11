@@ -1,4 +1,4 @@
-		.title	test            	;
+		.title	test			;
 		.list	meb			;
 						;
 		R0	= %0			;
@@ -33,21 +33,21 @@
 ;_____________________________________________________________________________
 ;
 		.macro	vect, offset, adr, val	;
-		. 	= offset		;
-	.if 	nb, <adr>			;
+		.	= offset		;
+	.if	nb, <adr>			;
 		.word	adr			;
 	.iff					;
 		.word	.+2			;
-	.endc 					;
+	.endc					;
 	.if	nb, <val>			;
 		.word	val			;
-	.iff            			;
+	.iff					;
 		.word	340			;
 	.endc					;
 		.endm				;
 ;_____________________________________________________________________________
 ;
-		.asect      			; ловушка прерываний 0-376
+		.asect				; interrupts 0-376
 		. = 0				;
 						;
 ;		vect	0			;
@@ -55,7 +55,7 @@
 						;
 ;_____________________________________________________________________________
 ;
-		vect	4 			;
+		vect	4			;
 		vect	10			;
 		vect	14			;
 		vect	20			;
@@ -131,7 +131,7 @@ $txbeg:		.word	0			;
 $txend:		.word	0			;
 $txbuf:		.blkb	TXSIZE			;
 		.even				;
-		         			;
+						;
 $rxbeg:		.word	0			;
 $rxend:		.word	0			;
 $rxbuf:		.blkb	RXSIZE			;
@@ -144,7 +144,7 @@ isr50:		inc	$ticks			;
 ;_____________________________________________________________________________
 ;
 isrrx:		mov	R0, -(SP)		;
-		mov	$rxbeg, R0		;
+		mov	$rxbeg,	R0		;
 		movb	@#RXDAT, (R0)+		;
 		cmp	R0, #$rxbuf+RXSIZE	;
 		blo	1$			;
@@ -154,14 +154,14 @@ isrrx:		mov	R0, -(SP)		;
 		rti				;
 						;
 inkey:		mov	R1, -(SP)		;
-		mov	$rxend, R1		;
-		mov	$rxbeg, R0		;
+		mov	$rxend,	R1		;
+		mov	$rxbeg,	R0		;
 		sub	R1, R0			;
 		bne	1$			;
 		mov	(SP)+, R1		;
 		sec				;
 		rts	PC			;
-		             			;
+						;
 1$:		movb	(R1)+, R0		;
 		cmp	R1, #$rxbuf+RXSIZE	;
 		blo	2$			;
@@ -169,16 +169,16 @@ inkey:		mov	R1, -(SP)		;
 2$:		mov	R1, $rxend		;
 		mov	(SP)+, R1		;
 		clc				;
-		rts	PC			;	
+		rts	PC			;
 						;
 getch:		jsr	PC, inkey		;
 		bcs	getch			;
-		rts	PC			;	
+		rts	PC			;
 						;
 ;_____________________________________________________________________________
 ;
 isrtx:		mov	R0, -(SP)		;
-		mov	$txend, R0		;
+		mov	$txend,	R0		;
 		cmp	R0, $txbeg		;
 		bne	1$			;
 		bic	#100, @#TXCSR		;
@@ -192,7 +192,7 @@ isrtx:		mov	R0, -(SP)		;
 2$:		mov	R0, $txend		;
 		mov	(SP)+, R0		;
 		rti				;
-						;		
+						;
 putch:						;
 ;		tstb	@#TXCSR			;
 ;		bpl	putch			;
@@ -200,7 +200,7 @@ putch:						;
 ;		rts	PC			;
 ;						;
 		mov	R1, -(SP)		;
-		mov	$txbeg, R1		;
+		mov	$txbeg,	R1		;
 		movb	R0, (R1)+		;
 		cmp	R1, #$txbuf+TXSIZE	;
 		blo	1$			;
@@ -211,7 +211,7 @@ putch:						;
 		bis	#100, @#TXCSR		;
 		mov	(SP)+, R1		;
 		rts	PC			;
-		                		;
+						;
 print:		mov	R1, -(SP)		;
 		mov	R0, R1			;
 1$:		movb	(R1)+, R0		;
@@ -227,14 +227,14 @@ outhex:		mov	R1, -(SP)		;
 		mov	R0, -(SP)		;
 						;
 		bic	#177760, R0		;
-		movb	1$(R0), R1		;
+		movb	1$(R0),	R1		;
 		mov	(SP), R0		;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R0		;
+		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
 		mov	R1, @#177714		;
@@ -242,14 +242,14 @@ outhex:		mov	R1, -(SP)		;
 		mov	(SP), R0		;
 		swab	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R1		;
+		movb	1$(R0),	R1		;
 		movb	1(SP), R0		;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R0		;
+		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
 		mov	R1, @#177715		;
@@ -273,9 +273,9 @@ entry:		mov	#037406, @#177714	;
 		mov	#$rxbuf, $rxbeg		;
 		mov	#$txbuf, $txend		;
 		mov	#$txbuf, $txbeg		;
-		                   		;
+						;
 		mov	#100, @#RXCSR		;
-		mov     #000, @#TXCSR		;
+		mov	#000, @#TXCSR		;
 		clr	R0			;
 		mtps	R0			;
 						;
@@ -291,7 +291,7 @@ start:
 ;		jsr	PC, outhex		;
 ;		br	5$			;
 						;
-		mov	#14001, R0		;
+		mov	#14001,	R0		;
 		jsr	PC, outhex		;
 		.print	#mes1			;
 						;
@@ -303,7 +303,7 @@ start:
 2$:		br	1$			;
 
 mes1:		.asciz	<15><12><15><12>"Press key to select test [0-0]: "
-	        .even
+		.even
 ;_____________________________________________________________________________
 ;
 testc:		.print	#mes2			;
@@ -323,11 +323,11 @@ testc:		.print	#mes2			;
 		br	1$			;
 
 mes2:		.asciz	<15><12>"movb Rx, Rx carry flag test "<15><12>
-	        .even
+		.even
 ;_____________________________________________________________________________
 ;
 ;						;
-;		mov	#atest, R0		;
+;		mov	#atest,	R0		;
 ;		jsr	PC, print		;
 ;						;
 ;1$:		jsr	PC, getch		;

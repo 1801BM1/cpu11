@@ -64,7 +64,7 @@
 ;	designed to run	under APT and ACT systems. When	running
 ;	under APT with bit 5 of	$envm low it will be required to
 ;	have a SLU with	TTY registers having addresses of 176560-66
-;	and interrupt vectors of 70 for receiver and 74 for trans-
+;	and interrupt vectors of 70 for	receiver and 74	for trans-
 ;	mitter.
 ;
 ; 2.	Requirements
@@ -214,7 +214,7 @@
 ;_____________________________________________________________________________
 ;
 		HOEP	= 0			; halt on end-of-pass
-		NOEISI  = 0			; no EIS-iterruptible tests
+		NOEISI	= 0			; no EIS-iterruptible tests
 ;_____________________________________________________________________________
 ;
 ;
@@ -234,7 +234,7 @@
 ;
 		$tn	= 1			;
 		$swr	= 160000		; halt on error, loop on test
-						; inhibit error typout
+						; inhibit error	typout
 		. = 0				; trap catcher 0 - 776
 ;_____________________________________________________________________________
 ;
@@ -1807,7 +1807,7 @@ tst222:		scope				;
 		mfps	@#psword		; save ps
 		cmpb	#0, @#psword		; is ps	= 0
 		beq	.+10			;
-		jsr	PC, $hlt		; seen an error go to the halt routine
+		jsr	PC, $hlt		; seen an error	go to the halt routine
 		.word	154			; ps is	wrong
 						;
 		cmp	#0, R2			; is high order	= 0
@@ -3327,7 +3327,7 @@ eash:		cmp	(SP)+, (SP)+		; restore the stack pointer
 tst310:		bitb	#40, @#$envm		; if type outs has been	suppressed
 		bne	emul+2			; then skip this test
 		mov	@#ttyout, R2		;
-		mov	#rta310, (R2)+		; set interrupt vector to rta310
+		mov	#rta310, (R2)+		; set interrupt	vector to rta310
 		mov	#340, (R2)		; and the interrupt PSW	as 340
 		mtps	#10			;
 		mov	#30, @#temp1		; prepare to execute this sub test 30 times
@@ -3402,7 +3402,7 @@ $eopct:		.word	1			;
 $endct:		.word	4			;
 		.word	$eopct			;
 		type	,$endmg			; type "END PASS"
-.if ne HOEP                     		;
+.if ne HOEP					;
 		halt				; halt on end-of-pass
 .endc						;
 		type	,$enull			; type a NULL character
@@ -3435,7 +3435,7 @@ $pwrup:		mov	#begin,	SP		; restore the SP
 ; Program comes	here on	encountering any error
 ;
 $hlt:		mov	@(SP), @#$fatal		; place	the error number at location $fatal
-		bit	#20000,	@#$swreg	; has the operator asked to suppress error type outs
+		bit	#20000,	@#$swreg	; has the operator asked to suppress error type	outs
 		bne	6$			;
 		type	,$crlf			; go and type a	CR, LF,	followed by 3 spaces
 		mov	R0, -(SP)		; save R0

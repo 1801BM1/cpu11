@@ -1,38 +1,36 @@
 ;
-;	VM1VE1.MAC  -  1801VM1 VE-Timer Test #1
+; VM1VE1.MAC - 1801VM1 VE-Timer Test #1
 ;
 ;_____________________________________________________________________________
 ;
+		TTKS  =:  0177560
+		TTKB  =:  0177562
+		TTPS  =:  0177564
+		TTPB  =:  0177566
 
-	TTKS  =:  0177560
-	TTKB  =:  0177562
-	TTPS  =:  0177564
-	TTPB  =:  0177566
-
-	TTKINT =: 060
-	TTPINT =: 064
-	LTCINT =: 0100
+		TTKINT =: 060
+		TTPINT =: 064
+		LTCINT =: 0100
 
 ;_____________________________________________________________________________
 ;
-.Macro	.Print	ARG
-		Mov	R0,-(SP)
-.IIF NB	ARG	Mov	ARG, R0	
-		Call	StrOut
-		Mov	(SP)+,R0
-.EndM
-
+.macro	.print	ARG
+		mov	R0, -(SP)
+.IIF NB	ARG	mov	ARG, R0
+		jsr	PC, StrOut
+		mov	(SP)+, R0
+.endm
 
 ;_____________________________________________________________________________
 ;
 		.asect
 		. = 0
-		jmp	@#Start	
-	
+		jmp	@#start
+
 		. = 1000
-Start:  	mov	#Start, SP
+start:		mov	#Start,	SP
 		mov	#0, R0
-		call	outhex
+		jsr	PC, outhex
 
 
 		mov	#10000., R3
@@ -41,270 +39,235 @@ Start:  	mov	#Start, SP
 		sob	R3, 1$
 		bic	#100, @#TTPS
 
-2$:		.Print	#MES1
-		call	NewVect
+2$:		.print	#MES1
+		jsr	PC, newvect
 		mov	#60, FILL
 
-		call	VeTst
-		call	VeTst2
+		jsr	PC, VeTst
+		jsr	PC, VeTst2
 
-		.Print	#MES2	
-		mov	#14001, R0
-		call	outhex
+		.print	#MES2
+		mov	#14001,	R0
+		jsr	PC, outhex
 3$:		wait
 		br	3$
 
 ;_____________________________________________________________________________
 ;
-NewV64:		bic	#100, @#TTPS
+newv64:		bic	#100, @#TTPS
 		.Print	#Int64
 		rti
 
-NewV60:		inc	$Exit
+newv60:		inc	$Exit
 		tstb	@#TTKB
 		rti
 
-NewV34:		.Print	#MesNop
+newv34:		.Print	#MesNop
 		rti
 
-NewV20:		mov	2(SP), $PSW
+newv20:		mov	2(SP), $PSW
 		rti
 
 
-NewV14:		clr	2(SP)
+newv14:		clr	2(SP)
 		.Print	#Trap14
 		rtt
 
-NewV04:		.Print	#Trap4
+newv04:		.Print	#Trap4
 		.Print	#MESPC
 		Mov	(SP), $PSW
-		Call	PrPsw3
+		jsr	PC, PrPsw3
 		Mov	$Ret, (SP)
 		RtI
 
 ;_____________________________________________________________________________
 ;
-
-NewVect:	Mov	#NewV64,@#064
-		Mov	#NewV60,@#060
-		Mov	#NewV34,@#034
-		Mov	#NewV20,@#020
-		Mov	#NewV14,@#014
-		Mov	#NewV04,@#004
-		Return
-
-;===============================================
-
-VeTst:
-	MOV     #1, @#177712
-	CLR	@#177710
-	MOV     #177777,@#177706
-
-	MOV     #20, @#177712 
-	MOV     #10000.,R0
-
-1$:	Nop
-	SOB     R0,1$
-
-	TST	@#177710
-	BEQ     4$
-	CMP     #177777,@#177710
-	BEQ     3$
-	.Print	#MESOk
-	RETURN
-3$:	.Print	#MESBad	    
-	RETURN
-4$:	.Print	#MESS	    
-	RETURN
-
-
-VeTst2:
-	MOV     #1, @#177712
-	CLR	@#177710
-	MOV     #0,@#177706
-
-	MOV	#160, 177712 
-	Mov	#14, R3
-	
-2$:	MOV     #5000.,R0
-1$:	Nop
-	SOB     R0,1$
-
-	call	showt
-	SOB	R3,2$
-
-	reset
-	.printf	#Mes17
-	call	showt
-	reset
-	.printf	#Mes17
-	call	showt
-
-	MOV	@#177712, R1
-	MOV	R1,$PSW
-	.Print	#MES10
-	Call	PrPSW3
-
-	call	showt
-	
-
-	MOV     #1, @#177712
-
-	TST	@#177710
-	BEQ     4$
-	CMP     #177777,@#177710
-	BEQ     3$
-	.Print	#MESOk
-	RETURN
-3$:	.Print	#MESBad	    
-	RETURN
-4$:	.Print	#MESS	    
-	RETURN
-
-showt:		mov	@#177710, R1
-		neg	R1
-		mov	R1, $PSW
-		.Print	#MES10
-		jmp	PrPSW3
-
-;============================
-
-SetT:
-	MFPS	R0
-	BiS	#020, R0
-	Mov	(SP)+, R1
-	Mov	R0,-(SP)
-	Mov	R1,-(SP)
-	RTT
-
-SetT.Int:
-	MTPS	#340
-	Mov	#020,R0
-	Mov	(SP)+, R1
-	Mov	R0,-(SP)
-	Mov	R1,-(SP)
-	.Print	#MES7
-	BiS	#100, @#TTPS
-	Nop
-	RTT
-
-
-
-PrPSW:
-	IOT
-PrPSW2:
-	.Print	#MES5
-PrPSW3:
-	Mov	$PSW, R1
-	Mov	#MesBuf, R0
-	Call	DIGIT
-	.Byte	8.,6.
-	MovB	#200,(R0)
-	.Print	#MesBuf
-	.Print	#CrLf
-
-	Return
-
-
-;===============================================
-
-;;;	.PSECT	.KOD.
-
-StrOut:
-;;	Mov	R1,-(SP)
-	TstB	@#TTPS
-	BPl	.-4.
-1$:	MovB	(R0)+,R1
-	BEq	2$
-	BMi	3$
-	MovB	R1, @#TTPB
-	TstB	@#TTPS
-	BPl	.-4.
-	Br	1$
-2$:	MovB	#015,@#TTPB
-	TstB	@#TTPS
-	BPl	.-4.
-	MovB	#012,@#TTPB
-	TstB	@#TTPS
-	BPl	.-4.
-3$:
-;;	Mov	(SP)+,R1
-	Return
-
-
-;===============================================
-
-DIGOUT::MOV	@(SP),R1	;
-	MOV	@R1,R1		;
-	ADD	#2,(SP)		;
-DIGIT::
-	BIC	#1,(SP)
-	MOVB	@(SP),OSN	;
-	INC	(SP)		;
-	MOVB	@(SP),NDIG	;
-	INC	(SP)		;
-	BIC	#^C17,NDIG	;
-	BIC	#^C77,OSN	;
-	MOV	#SYMR,ADDS	;
-	BIT	#40,OSN		;
-	BNE	1$		; 
-	ADD	#SYMD-SYMR,ADDS	;
-1$:	CALL	DIG		;
-	RETURN			;
-
-
-;===============================================
-
-DIG:
-	MOV	R1,	-(SP)	;
-	MOV	#-1,	R1	;
-1$:	INC	R1		;
-	SUB	OSN,	(SP)	;
-
-;;;	MFPS	R4
-;;;	Clr	@#2
-;;;	MTPS	R4
-
-	BCC	1$		;
-	ADD	(PC)+,	(SP)	;
-OSN:	.WORD	0		;
-
-	DEC	NDIG		;
-	TST	R1		;
-	BEQ	L2$		;
-	CALL	DIG		;
-L2$:	TSTB	(PC)+		;
-NDIG:	.WORD	0		;
-	BEQ	L3$		;
-	BMI	L3$		; 
-	MOVB	(PC)+,	(R0)+	;
-FILL::	.WORD	40		;
-	DECB	NDIG		;
-	BR	L2$		; 
-L3$:	ADD	(PC)+,@SP	;
-ADDS:	.WORD	SYMR		;
-	MOVB	@(SP)+,	(R0)+	;
-	RETURN			;
+NewVect:	mov	#newv64, @#064		;
+		mov	#newv60, @#060		;
+		mov	#newv34, @#034		;
+		mov	#newv20, @#020		;
+		mov	#newv14, @#014		;
+		mov	#newv04, @#004		;
+		rts	PC			;
+						;
+;_____________________________________________________________________________
 ;
-;;;	.PSECT	.TEXT.
-
-SYMR:	.ASCII	! ABCDEFGHIJKLMNOPQRSTUVWXYZ$./! ;
-SYMD:	.ASCII	!0123456789ABCDEF!		 ;
-	.EVEN
-
+VeTst:		mov	#1, @#177712		;
+		clr	@#177710		;
+		mov	#177777, @#177706	;
+		mov	#20, @#177712		;
+		mov	#10000., R0		;
+						;
+1$:		nop				;
+		sob	R0, 1$			;
+		tst	@#177710		;
+		beq	4$			;
+		cmp	#177777, @#177710	;
+		beq	3$			;
+		.print	#MESOk			;
+		rts	PC			;
+						;
+3$:		.print	#MESBad			;
+		rts	PC			;
+						;
+4$:		.print	#MESS			;
+		rts	PC			;
+						;
+VeTst2:		mov	#1, @#177712		;
+		clr	@#177710		;
+		mov	#0, @#177706		;
+		mov	#160, 177712		;
+		mov	#14, R3			;
+						;
+2$:		mov	#5000. ,R0		;
+1$:		nop				;
+		sob	R0, 1$			;
+		jsr	PC, showt		;
+		sob	R3, 2$			;
+		reset				;
+						;
+		.print	#Mes17			;
+		jsr	PC, showt		;
+		reset				;
+		.print	#Mes17			;
+		jsr	PC, showt		;
+		mov	@#177712, R1		;
+		mov	R1, $PSW		;
+		.print	#MES10			;
+		jsr	PC, PrPSW3		;
+		jsr	PC, showt		;
+		mov	#1, @#177712		;
+		tst	@#177710		;
+		beq	4$			;
+		cmp	#177777, @#177710	;
+		beq	3$			;
+		.print	#MESOk			;
+		rts	PC			;
+3$:		.print	#MESBad			;
+		rts	PC			;
+4$:		.print	#MESS			;
+		rts	PC			;
+						;
+showt:		mov	@#177710, R1		;
+		neg	R1			;
+		mov	R1, $PSW		;
+		.Print	#MES10			;
+		jmp	PrPSW3			;
+;_____________________________________________________________________________
+;
+SetT:		mfps	R0			;
+		bis	#020, R0		;
+		mov	(SP)+, R1		;
+		mov	R0, -(SP)		;
+		mov	R1, -(SP)		;
+		rtt				;
+						;
+SetT.Int:	mtps	#340			;
+		mov	#020, R0		;
+		mov	(SP)+, R1		;
+		mov	R0, -(SP)		;
+		mov	R1, -(SP)		;
+		.print	#mes7			;
+		bis	#100, @#TTPS		;
+		nop				;
+		rtt				;
+						;
+PrPSW:		iot				;
+PrPSW2:		.print	#mes5			;
+PrPSW3:		mov	$PSW, R1		;
+		mov	#MesBuf, R0		;
+		jsr	PC, digit		;
+		.byte	8.,6.			;
+		movb	#200, (R0)		;
+		.print	#MesBuf			;
+		.print	#CrLf			;
+		rts	PC			;
+						;
+;_____________________________________________________________________________
+;
+strout:		tstb	@#TTPS			;
+		bpl	.-4.			;
+1$:		movb	(R0)+, R1		;
+		beq	2$			;
+		bmi	3$			;
+		movb	R1, @#TTPB		;
+		tstb	@#TTPS			;
+		bpl	.-4.			;
+		br	1$			;
+						;
+2$:		movb	#015, @#TTPB		;
+		tstb	@#TTPS			;
+		bpl	.-4.			;
+		movb	#012, @#TTPB		;
+		tstb	@#TTPS			;
+		bpl	.-4.			;
+3$:		rts	PC			;
+						;
+;_____________________________________________________________________________
+;
+digout:		mov	@(SP), R1		;
+		mov	@R1, R1			;
+		add	#2, (SP)		;
+						;
+digit:		bic	#1, (SP)		;
+		movb	@(SP), osn		;
+		inc	(SP)			;
+		movb	@(SP), ndig		;
+		inc	(SP)			;
+		bic	#^C17, ndig		;
+		bic	#^C77, osn		;
+		mov	#symr, adds		;
+		bit	#40, osn		;
+		bne	1$			;
+		add	#symd-symr, adds	;
+1$:		jsr	PC, dig			;
+		rts	PC			;
+						;
+;_____________________________________________________________________________
+;
+dig:		mov	R1, -(SP)		;
+		mov	#-1, R1			;
+1$:		inc	R1			;
+		sub	osn, (SP)		;
+		bcc	1$			;
+		add	(PC)+,(SP)		;
+OSN:		.word	0			;
+						;
+		dec	ndig			;
+		tst	R1			;
+		beq	L2$			;
+		jsr	PC, dig			;
+L2$:		tstb	(PC)+			;
+ndig:		.word	0			;
+		beq	L3$			;
+		bmi	L3$			;
+		movb	(PC)+, (R0)+		;
+fill:		.word	40			;
+		decb	ndig			;
+		br	L2$			;
+L3$:		add	(PC)+, @SP		;
+adds:		.word	symr			;
+		movb	@(SP)+,	(R0)+		;
+		rts	PC			;
+						;
+;_____________________________________________________________________________
+;
+symr:		.asciz	" ABCDEFGHIJKLMNOPQRSTUVWXYZ$./"
+symd:		.asciz	"0123456789ABCDEF"
+		.even
 
 outhex:		mov	R1, -(SP)		;
 		mov	R0, -(SP)		;
 						;
 		bic	#177760, R0		;
-		movb	1$(R0), R1		;
+		movb	1$(R0),	R1		;
 		mov	(SP), R0		;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R0		;
+		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
 		mov	R1, @#177714		;
@@ -312,14 +275,14 @@ outhex:		mov	R1, -(SP)		;
 		mov	(SP), R0		;
 		swab	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R1		;
+		movb	1$(R0),	R1		;
 		movb	1(SP), R0		;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R0		;
+		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
 		mov	R1, @#177715		;
@@ -333,57 +296,55 @@ outhex:		mov	R1, -(SP)		;
 		.byte	177, 157, 167, 174	;
 		.byte	071, 136, 171, 161	;
 						;
-
-;===============================================
-
-L57774:	.Word	0
-L57776:	.Word	0
-
-
-$Exit:	.Word	0
-$PSW:	.Word	0
-$PSW1:	.Word	0
-
-$Ret:	.Word	0
-
-$TClr:	.Word	1
-
-$Word:	.Word	0
+;_____________________________________________________________________________
+;
+L57774:		.word	0
+L57776:		.word	0
 
 
-MES1:	.ASCIZ	<012><017>/1801VM1 VE-Timer Test #1A/<015><012>
+$Exit:		.word	0
+$PSW:		.word	0
+$PSW1:		.word	0
 
-Trap4:	.ASCIZ	/>>> Trap to 004 <<</
-Trap14:	.ASCIZ	/>>> Trap to 014 <<</
-Int64:	.ASCIZ	/>>> Interrupt <<</
-MES2:	.ASCIZ	<015><012>/Program completed./<017>
-MESOk:	.ASCIZ	/VE-Timer ..OK/
-MESBad:	.ASCIZ	/VE-Timer ..Not OK/
-MESS:	.ASCIZ	/VE-Timer ..000/
-MES4:	.ASCIZ	/*/
-MES3:	.ASCIZ	/MFPS R5/
-MESPC:	.ASCII	/PC/<57><200>
-MES8:	.ASCII	/R5/<57><200>
-MES5:	.ASCII	/PSW/<57><200>
-MES6:	.ASCIZ	/*/
-MES7:	.ASCIZ	/*/
-MesNop:	.ASCIZ	/NOP/
-T1:	.ASCIZ	<015><012>/Test 1/<015><012>/------/
-T2:	.ASCIZ	<015><012>/Test 2/<015><012>/------/
-MES10:	.ASCIZ	/177710/<57><200>
-MES11:	.ASCIZ	/*/
-MESR1:	.ASCIZ	/R1/<57><200>
-MES12:	.ASCIZ	/*/
-MES13:	.ASCIZ	/*/
-MES14:	.ASCII	/*/
-MES14a:	.ASCIZ	/*/
-MES15:	.ASCII	/*/
-MES15a:	.ASCIZ	/*/
-MES16:	.ASCII	/*/
-MES16a:	.ASCIZ	/*/
-MES17:	.ASCII	<15><12>/Reset/
-MES17a:	.ASCIZ	/*/
-CrLf:	.ASCII	<0>
-MesBuf:	.BlkB	80.
+$Ret:		.word	0
+$TClr:		.word	1
+$Word:		.word	0
 
-	.END
+MES1:		.asciz	<012><017>"1801VM1 VE-Timer Test #1A"<015><012>
+
+Trap4:		.asciz	">>> Trap to 004 <<<"
+Trap14:		.asciz	">>> Trap to 014 <<<"
+Int64:		.asciz	">>> Interrupt <<<"
+MES2:		.asciz	<015><012>"Program completed."<017>
+MESOk:		.asciz	"VE-Timer ..OK"
+MESBad:		.asciz	"VE-Timer ..Not OK"
+MESS:		.asciz	"VE-Timer ..000"
+MES4:		.asciz	"*"
+MES3:		.asciz	"MFPS R5"
+MESPC:		.asciz	"PC"<57><200>
+MES8:		.asciz	"R5"<57><200>
+MES5:		.asciz	"PSW"<57><200>
+MES6:		.asciz	"*"
+MES7:		.asciz	"*"
+MesNop:		.asciz	"NOP"
+T1:		.asciz	<015><012>"Test 1"<015><012>"------"
+T2:		.asciz	<015><012>"Test 2"<015><012>"------"
+MES10:		.asciz	"177710"<57><200>
+MES11:		.asciz	"*"
+MESR1:		.asciz	"R1"<57><200>
+MES12:		.asciz	"*"
+MES13:		.asciz	"*"
+MES14:		.asciz	"*"
+MES14a:		.asciz	"*"
+MES15:		.asciz	"*"
+MES15a:		.asciz	"*"
+MES16:		.asciz	"*"
+MES16a:		.asciz	"*"
+MES17:		.asciz	<15><12>"Reset"
+MES17a:		.asciz	"*"
+CrLf:		.asciz	<0>
+MesBuf:		.blkb	80.
+
+;_____________________________________________________________________________
+;
+		.end

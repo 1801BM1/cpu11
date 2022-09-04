@@ -1,4 +1,4 @@
-		.title	test            	;
+		.title	test			;
 		.list	meb			;
 						;
 		R0	= %0			;
@@ -29,21 +29,21 @@
 ;_____________________________________________________________________________
 ;
 		.macro	vect, offset, adr, val	;
-		. 	= offset		;
-	.if 	nb, <adr>			;
+		.	= offset		;
+	.if	nb, <adr>			;
 		.word	adr			;
 	.iff					;
 		.word	.+2			;
-	.endc 					;
+	.endc					;
 	.if	nb, <val>			;
 		.word	val			;
-	.iff            			;
+	.iff					;
 		.word	340			;
 	.endc					;
 		.endm				;
 ;_____________________________________________________________________________
 ;
-		.asect      			; ловушка прерываний 0-376
+		.asect				; ловушка прерываний 0-376
 		. = 0				;
 						;
 		vect	0			;
@@ -136,7 +136,7 @@ isr50:		inc	$ticks			;
 ;_____________________________________________________________________________
 ;
 isrrx:		mov	R0, -(SP)		;
-		mov	$rxbeg, R0		;
+		mov	$rxbeg,	R0		;
 		movb	@#RXDAT, (R0)+		;
 		cmp	R0, #$rxbuf+RXSIZE	;
 		blo	1$			;
@@ -146,8 +146,8 @@ isrrx:		mov	R0, -(SP)		;
 		rti				;
 						;
 inkey:		mov	R1, -(SP)		;
-		mov	$rxend, R1		;
-		mov	$rxbeg, R0		;
+		mov	$rxend,	R1		;
+		mov	$rxbeg,	R0		;
 		sub	R1, R0			;
 		bne	1$			;
 		mov	(SP)+, R1		;
@@ -170,7 +170,7 @@ getch:		jsr	PC, inkey		;
 ;_____________________________________________________________________________
 ;
 isrtx:		mov	R0, -(SP)		;
-		mov	$txend, R0		;
+		mov	$txend,	R0		;
 		cmp	R0, $txbeg		;
 		bne	1$			;
 		bic	#100, @#TXCSR		;
@@ -192,7 +192,7 @@ putch:						;
 ;		rts	PC			;
 ;						;
 		mov	R1, -(SP)		;
-		mov	$txbeg, R1		;
+		mov	$txbeg,	R1		;
 		movb	R0, (R1)+		;
 		cmp	R1, #$txbuf+TXSIZE	;
 		blo	1$			;
@@ -219,14 +219,14 @@ outhex:		mov	R1, -(SP)		;
 		mov	R0, -(SP)		;
 						;
 		bic	#177760, R0		;
-		movb	1$(R0), R1		;
+		movb	1$(R0),	R1		;
 		mov	(SP), R0		;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R0		;
+		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
 		mov	R1, @#177714		;
@@ -234,14 +234,14 @@ outhex:		mov	R1, -(SP)		;
 		mov	(SP), R0		;
 		swab	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R1		;
+		movb	1$(R0),	R1		;
 		movb	1(SP), R0		;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		asr	R0			;
 		bic	#177760, R0		;
-		movb	1$(R0), R0		;
+		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
 		mov	R1, @#177715		;
@@ -257,8 +257,8 @@ outhex:		mov	R1, -(SP)		;
 						;
 ;_____________________________________________________________________________
 ;
-entry:		mov	#077406, @#177714	; 7F 06 0 111 111 100 000 110
-		mov	#037555, @#177715	; 3F 6F 0 011 111 101 101 101
+entry:		mov	#077406, @#177714	; 7F 06	0 111 111 100 000 110
+		mov	#037555, @#177715	; 3F 6F	0 011 111 101 101 101
 		mov	#$stack, SP		;
 						;
 		mov	#$rxbuf, $rxend		;
@@ -269,7 +269,7 @@ entry:		mov	#077406, @#177714	; 7F 06 0 111 111 100 000 110
 		mov	R0, @#140000		; bus timeout test
 godt:						;
 		mov	#100, @#RXCSR		;
-		mov     #000, @#TXCSR		;
+		mov	#000, @#TXCSR		;
 		clr	R0			;
 		mtps	R0			;
 						;
@@ -282,7 +282,7 @@ start:		.print	#mes1			;
 		jsr	PC, putch		;
 		br	1$			;
 
-mes1:	.asciz	<15><12><15><12>"LSI-11 started, echo test....@"<12><15>
+mes1:	.asciz	<15><12><15><12>"LSI-11 started, echo test...@"<12><15>
 ;_____________________________________________________________________________
 ;
 		.end

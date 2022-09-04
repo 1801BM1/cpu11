@@ -63,7 +63,7 @@
 ;		(70000-75037) for reserved instruction trapping
 ;		in the last test of this diagnostic.
 ;
-;	bit 5=1	(40 octal) if we want to suppress "end of pass" typeout
+;	bit 5=1	(40 octal) if we want to suppress "end of pass"	typeout
 ;
 ;	bit 4=1	(20 octal) to suppress testing opcodes 75400-76777 for
 ;		reserved instructions traps in the last	test of	this
@@ -215,7 +215,7 @@
 ;_____________________________________________________________________________
 ;
 		HOEP	= 0			; halt on end-of-pass
-		MEMLIM	= 0			; 40000 to cut the loop
+		MEMLIM	= 0			; 40000	to cut the loop
 ;_____________________________________________________________________________
 ;
 		.asect
@@ -258,15 +258,15 @@
 ;_____________________________________________________________________________
 ;
 		.macro	vect, offset, adr, val	;
-		. 	= offset		;
-	.if 	nb, <adr>			;
+		.	= offset		;
+	.if	nb, <adr>			;
 		.word	adr			;
 	.iff					;
 		.word	.+2			;
-	.endc 					;
+	.endc					;
 	.if	nb, <val>			;
 		.word	val			;
-	.iff            			;
+	.iff					;
 		.word	0			;
 	.endc					;
 		.endm				;
@@ -277,8 +277,8 @@
 		vect	4			;
 		vect	10			;
 		vect	14			;
-		vect	20			; 
-		vect	24, 200			; power fail entry
+		vect	20			;
+		vect	24, 200			; power	fail entry
 		vect	30			;
 		vect	34			;
 		vect	40			;
@@ -1850,7 +1850,7 @@ tst47:		inc	@#$testn		; update test number
 		mov	#buff, SP		; stack	pointer	setup
 		mov	#retk, rtrap5		; return from trap pointer
 instk:		jsr	R0, R0			; trap on this instruction
-retk:		cmp	#instk+2, buff-4	; check	for incremented PC
+retk:		cmp	#instk+2, buff-4	; check	for incremented	PC
 		beq	tst50			;
 		mov	#174, @#$fatal		; move to mailbox *** 174 ***
 		inc	(R2)			; set msgtyp to	fatal error
@@ -2420,7 +2420,7 @@ tst70:		inc	@#$testn		; update test number
 1$:						;
 .if ne memlim					;
 		mov	#memlim-10, R0		; to reduce simulation time
-.iff						; let's set pointer close to the 
+.iff						; let's	set pointer close to the
 		clr	R0			; real memory limit
 .endc						;
 		clr	6			;
@@ -2695,7 +2695,7 @@ inst:		halt				; will continue	reserved inst
 status:		0				;
 ;_____________________________________________________________________________
 ;
-terr:		mov	r2stor, R2		; restore R2
+terr:		mov	r2stor,	R2		; restore R2
 		mov	#255, @#$fatal		; indicate error
 		inc	(R2)			;
 		halt				;
@@ -2707,7 +2707,7 @@ gin3:		inc	@#$pass			;
 		bne	1$			; branch if not
 		jsr	R5, type		;
 		eopmsg				;
-.if ne HOEP                     		;
+.if ne HOEP					;
 		halt				; halt on end-of-pass
 .endc						;
 		reset				;

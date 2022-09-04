@@ -102,7 +102,7 @@
 ; 5.1	Operating mode
 ;
 ;	An 8-bit byte $ENVM (i.e. location 117)	has been used to define
-;	the operating mode. All typeouts can be suppressed by making
+;	the operating mode. All	typeouts can be	suppressed by making
 ;	bit 5 of byte $ENVM high. In other words by placing a 20000 in
 ;	location 116.
 ;
@@ -232,7 +232,7 @@
 		.type	= iot			;
 ;_____________________________________________________________________________
 ;
-		.macro	jmpR0			; MACRO-11 generates an error Z
+		.macro	jmpR0			; MACRO-11 generates an	error Z
 		.word	000120			; jmp (R0)+ works differently
 		.endm				; on PDP-11 models
 						;
@@ -254,15 +254,15 @@
 ;_____________________________________________________________________________
 ;
 		.macro	vect, offset, adr, val	;
-		. 	= offset		;
-	.if 	nb, <adr>			;
+		.	= offset		;
+	.if	nb, <adr>			;
 		.word	adr			;
 	.iff					;
 		.word	.+2			;
-	.endc 					;
+	.endc					;
 	.if	nb, <val>			;
 		.word	val			;
-	.iff            			;
+	.iff					;
 		.word	0			;
 	.endc					;
 		.endm				;
@@ -274,7 +274,7 @@
 		vect	10			;
 		vect	14			;
 		vect	20, type		; type out the message
-		vect	24, 200			; power fail entry
+		vect	24, 200			; power	fail entry
 		vect	30			;
 		vect	34			;
 		vect	40			;
@@ -292,7 +292,7 @@
 		. = 74				;
 		.word	76			; overlapping with vector
 		.even				;
-$mail:				; 		; apt mailbox
+$mail:				;		; apt mailbox
 $msgty:		.word	0	; amsgty	; message type code
 $fatal:		.word	0	; afatal	; fatal	error number
 $testn:		.word	0	; atestn	; test number
@@ -341,7 +341,7 @@ $unitm:		.word	0			; additional run time (secs)
 						;
 		. = $apthd			;
 adr:						;
-		. = adr + 2			;
+		. = adr	+ 2			;
 adr1:						;
 		. = adr1 + 2			;
 adr2:						;
@@ -428,7 +428,7 @@ start:		mov	#start,	SP		; set the stack	pointer
 						; proper test number
 ;_____________________________________________________________________________
 ;
-; TEST 0 - check branch instructions with zero condition codes
+; TEST 0 - check branch	instructions with zero condition codes
 ;
 nobit:		cmp	(R5), #0		; if in	wrong sequence go to
 		bne	cc0			; halt at end of the test
@@ -454,7 +454,7 @@ cc0:		mov	#1, -(R5)		; one of the above branches
 endcc0:		bvc	nbit			;
 ;_____________________________________________________________________________
 ;
-; TEST 1 - check branch instructions with N-bit set
+; TEST 1 - check branch	instructions with N-bit	set
 ;
 nbit:		cmp	(R5), #1		; if in	wrong sequence go to
 		bne	cc1			; halt at end of the test
@@ -475,7 +475,7 @@ cc1:		mov	#2, -(R5)		; one of the above branches
 endcc1:		bne	vbit			;
 ;_____________________________________________________________________________
 ;
-; TEST 2 - check branch instructions with N&V bits set
+; TEST 2 - check branch	instructions with N&V bits set
 ;
 vbit:		cmp	(R5), #2		;
 		bne	cc2			; if in	wrong sequence go to
@@ -498,7 +498,7 @@ cc2:		mov	#3, -(R5)		; one of the above branches
 endcc2:		bge	cbit			;
 ;_____________________________________________________________________________
 ;
-; TEST 3 - check branch instructions with N, V&C bits set
+; TEST 3 - check branch	instructions with N, V&C bits set
 ;
 cbit:		cmp	(R5), #3		;
 		bne	cc3			; if in	wrong sequence go to
@@ -519,7 +519,7 @@ cc3:		mov	#4, -(R5)		; one of the above branches
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 4 - check branch instructions with N, Z, V&C bits set
+; TEST 4 - check branch	instructions with N, Z,	V&C bits set
 ;
 zbit:		cmp	(R5), #4		;
 		bne	cc4			; if in	wrong sequence go to
@@ -542,7 +542,7 @@ cc4:		mov	#5, -(R5)		; one of the above branches
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 5 - check branch instructions with all the condition codes set
+; TEST 5 - check branch	instructions with all the condition codes set
 ;
 yescc:		cmp	(R5), #5		;
 		bne	cc6			; if in	wrong sequence go to
@@ -585,7 +585,7 @@ cc5:		mov	#7, -(R5)		; one of the above branches
 endcc5:		bpl	branch			;
 ;_____________________________________________________________________________
 ;
-; TEST 7 - check upward and backward branches
+; TEST 7 - check upward	and backward branches
 ;
 branch:		cmp	(R5), #7		;
 		beq	1$			; if in	wrong sequence
@@ -757,7 +757,7 @@ endjp5:		mov	#37, -(R5)		;
 		halt				; jump error or	wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 13 - test jmp instruction for mode 6 and 7
+; TEST 13 - test jmp instruction for mode 6 and	7
 ;
 jmp6:		cmp	(R5), #13		;
 		bne	endjp7			; if in	wrong sequence go to
@@ -957,7 +957,7 @@ eregs:		mov	#70, -(R5)		;
 ; check	byte instructions, destination mode 0 only
 ;_____________________________________________________________________________
 ;
-; TEST 16 - new instructions used in this section are tstb, clrb, movb
+; TEST 16 - new	instructions used in this section are tstb, clrb, movb
 ;
 tstb0:		cmp	(R5), #16		;
 		beq	2$			; if in	wrong sequence
@@ -977,7 +977,7 @@ tstb0:		cmp	(R5), #16		;
 		jsr	PC, @#$cc10		; check	for cc = 10
 ;_____________________________________________________________________________
 ;
-; TEST 17 - new instructions used in this section are cmpb, bisb
+; TEST 17 - new	instructions used in this section are cmpb, bisb
 ;
 cmpb0:		cmp	(R5), #17		;
 		bne	ecmpb0			; if in	wrong sequence go to
@@ -1019,7 +1019,7 @@ ecmpb0:		mov	#76, -(R5)		;
 		halt				; wrong	cc or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 20 - new instructions used in this section are bicb, bitb
+; TEST 20 - new	instructions used in this section are bicb, bitb
 
 bicb0:		cmp	(R5), #20		;
 		beq	2$			; if in	wrong sequence
@@ -1053,7 +1053,7 @@ bicb0:		cmp	(R5), #20		;
 		jsr	PC, @#$cc11		; check	for cc = 11
 ;_____________________________________________________________________________
 ;
-; TEST 21 - new instructions used in this section are incb, decb
+; TEST 21 - new	instructions used in this section are incb, decb
 ;
 incb0:		cmp	(R5), #21		;
 		beq	1$			; if in	wrong sequence
@@ -1091,7 +1091,7 @@ incb0:		cmp	(R5), #21		;
 		jsr	PC, @#$cc1		; check	for cc = 1
 ;_____________________________________________________________________________
 ;
-; TEST 22 - new instruction in this section is comb
+; TEST 22 - new	instruction in this section is comb
 ;
 comb0:		cmp	(R5), #22		;
 		beq	1$			; if in	wrong sequence
@@ -1125,7 +1125,7 @@ comb0:		cmp	(R5), #22		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;_____________________________________________________________________________
 ;
-; TEST 23 - new instruction in this section is negb
+; TEST 23 - new	instruction in this section is negb
 ;
 negb0:		cmp	(R5), #23		;
 		bne	enegb0			; if in	wrong sequence go to
@@ -1149,7 +1149,7 @@ enegb0:		mov	#110, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 24 - new instruction in this section is rolb
+; TEST 24 - new	instruction in this section is rolb
 ;
 rolb0:		cmp	(R5), #24		;
 		bne	erolb0			; if in	wrong sequence go to
@@ -1175,7 +1175,7 @@ erolb0:		mov	#112, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 25 - new instruction in this section is rorb
+; TEST 25 - new	instruction in this section is rorb
 ;
 rorb0:		cmp	(R5), #25		;
 		bne	erorb0			; if in	wrong sequence go to
@@ -1201,7 +1201,7 @@ erorb0:		mov	#114, -(R5)		;
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 26 - new instruction in this section is aslb
+; TEST 26 - new	instruction in this section is aslb
 ;
 aslb0:		cmp	(R5), #26		;
 		beq	2$			; if in	wrong sequence
@@ -1227,7 +1227,7 @@ aslb0:		cmp	(R5), #26		;
 		jsr	PC, @#$cc4		; check	for cc = 4
 ;_____________________________________________________________________________
 ;
-; TEST 27 - new instruction in this section is asrb
+; TEST 27 - new	instruction in this section is asrb
 ;
 asrb0:		cmp	(R5), #27		;
 		bne	easrb0			; if in	wrong sequence go to
@@ -1258,7 +1258,7 @@ easrb0:		mov	#120, -(R5)		;
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 30 - new instruction in this section is adcb
+; TEST 30 - new	instruction in this section is adcb
 ;
 adcb0:		cmp	(R5), #30		;
 		beq	2$			; if in	wrong sequence
@@ -1282,7 +1282,7 @@ adcb0:		cmp	(R5), #30		;
 		inc	-(R5)			;
 		halt				; adcb instruction failed
 						;
-4$:		movb	#177, R0		; load largest positive number
+4$:		movb	#177, R0		; load largest positive	number
 		sec				; C = 1
 		adcb	R0			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -1298,7 +1298,7 @@ adcb0:		cmp	(R5), #30		;
 		jsr	PC, @#$cc5		; check	for cc	= 5
 ;_____________________________________________________________________________
 ;
-; TEST 31 - new instruction in this section is sbcb
+; TEST 31 - new	instruction in this section is sbcb
 ;
 sbcb0:		cmp	(R5), #31		;
 		beq	1$			; if in	wrong sequence go
@@ -1348,7 +1348,7 @@ sbcb0:		cmp	(R5), #31		;
 ; Check	word instructions, destination mode 0 only
 ;_____________________________________________________________________________
 ;
-; TEST 32 - new instructions used in this section are tst, clr, mov
+; TEST 32 - new	instructions used in this section are tst, clr,	mov
 ;
 tst0:		cmp	(R5), #32		;
 		beq	1$			; if in	wrong sequence
@@ -1378,7 +1378,7 @@ tst0:		cmp	(R5), #32		;
 		jsr	PC, $cc5		;
 ;_____________________________________________________________________________
 ;
-; TEST 33 - new instructions used in this section are cmp, bis
+; TEST 33 - new	instructions used in this section are cmp, bis
 ;
 cmp0:		cmp	(R5), #33		;
 		bne	ecmp0			; if in	wrong sequence go to
@@ -1405,7 +1405,7 @@ ecmp0:		mov	#134, -(R5)		;
 		halt				; wrong	cc or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 34 - new instructions used in this section are bic, bit
+; TEST 34 - new	instructions used in this section are bic, bit
 ;
 bic0:		cmp	(R5), #34		;
 		bne	ebic0			; if in	wrong sequence
@@ -1445,7 +1445,7 @@ ebic0:		mov	#137, -(R5)		;
 		halt				; bic failed or	sequence error
 ;_____________________________________________________________________________
 ;
-; TEST 35 - new instructions used in this section are inc, dec
+; TEST 35 - new	instructions used in this section are inc, dec
 ;
 inc0:		cmp	(R5), #35		;
 		beq	2$			; if in	wrong sequence
@@ -1482,7 +1482,7 @@ inc0:		cmp	(R5), #35		;
 		jsr	PC, @#$cc1		; check	for cc = 1
 ;_____________________________________________________________________________
 ;
-; TEST 36 - new instruction in this section is com
+; TEST 36 - new	instruction in this section is com
 ;
 com0:		cmp	(R5), #36		;
 		beq	1$			; if in	wrong sequence
@@ -1516,7 +1516,7 @@ com0:		cmp	(R5), #36		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;_____________________________________________________________________________
 ;
-; TEST 37 - new instruction in this section is neg
+; TEST 37 - new	instruction in this section is neg
 ;
 neg0:		cmp	(R5), #37		;
 		bne	eneg0			; if in	wrong sequence go to
@@ -1541,7 +1541,7 @@ eneg0:		mov	#146, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 40 - new instruction in this section is rol
+; TEST 40 - new	instruction in this section is rol
 ;
 rol0:		cmp	(R5), #40		;
 		bne	erol0			; if in	wrong sequence go to
@@ -1567,7 +1567,7 @@ erol0:		mov	  #150,	-(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 41 - new instruction in this section is ror
+; TEST 41 - new	instruction in this section is ror
 ;
 ror0:		cmp	(R5), #41		;
 		bne	eror0			; if in	wrong sequence go to
@@ -1593,7 +1593,7 @@ eror0:		mov	#152, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 42 - new instruction in this section is asl
+; TEST 42 - new	instruction in this section is asl
 ;
 asl0:		cmp	(R5), #42		;
 		beq	2$			; if in	wrong sequence
@@ -1617,7 +1617,7 @@ asl0:		cmp	(R5), #42		;
 		jsr	PC, @#$cc4		; check	for cc = 4
 ;_____________________________________________________________________________
 ;
-; TEST 43 - new instruction in this section is asr
+; TEST 43 - new	instruction in this section is asr
 ;
 asr0:		cmp	(R5), #43		;
 		bne	easr0			; if in	wrong sequence go to
@@ -1646,7 +1646,7 @@ easr0:		mov	#156, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 44 - new instruction in this section is adc
+; TEST 44 - new	instruction in this section is adc
 ;
 adc0:		cmp	(R5), #44		;
 		beq	2$			; if in	wrong sequence
@@ -1670,7 +1670,7 @@ adc0:		cmp	(R5), #44		;
 		inc	-(R5)			;
 		halt				; adc instruction failed
 						;
-4$:		mov	#77777,	R0		; load largest positive number
+4$:		mov	#77777,	R0		; load largest positive	number
 		sec				; C = 1
 		adc	R0			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -1685,7 +1685,7 @@ adc0:		cmp	(R5), #44		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;____________________________________________________________________________
 ;
-; TEST 45 - new instruction in this section is sbc
+; TEST 45 - new	instruction in this section is sbc
 ;
 sbc0:		cmp	(R5), #45		;
 		beq	1$			; if in	wrong sequence
@@ -1733,7 +1733,7 @@ sbc0:		cmp	(R5), #45		;
 		jsr	PC, @#$cc2		; check	for cc = 2
 ;_____________________________________________________________________________
 ;
-; TEST 46 - new instruction in this section is sxt
+; TEST 46 - new	instruction in this section is sxt
 ;
 sxt0:		cmp	(R5), #46		;
 		bne	esxt0			; if in	wrong sequence go to
@@ -1759,7 +1759,7 @@ esxt0:		mov	#167, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 47 - new instruction in this section is swab
+; TEST 47 - new	instruction in this section is swab
 ;
 swab0:		cmp	(R5), #47		;
 		bne	eswab0			; if in	wrong sequence go to
@@ -1787,7 +1787,7 @@ eswab0:		mov	#171, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 50 - new instruction in this section is xor
+; TEST 50 - new	instruction in this section is xor
 ;
 xor0:		cmp	(R5), #50		;
 		bne	exor0			; if in	wrong sequence go to
@@ -1815,7 +1815,7 @@ exor0:		mov	#172, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 51 - new instruction in this section is add
+; TEST 51 - new	instruction in this section is add
 ;
 add0:		cmp	(R5), #51		;
 		bne	eadd0			; if in	wrong sequence go to
@@ -1858,7 +1858,7 @@ eadd0:		mov	#176, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 52 - new instruction in this section is sub
+; TEST 52 - new	instruction in this section is sub
 ;
 sub0:		cmp	(R5), #52		;
 		beq	2$			; if in	wrong sequence
@@ -1900,7 +1900,7 @@ sub0:		cmp	(R5), #52		;
 		jsr	PC, @#$cc4		; check	for cc = 4
 ;_____________________________________________________________________________
 ;
-; TEST 53 - new instructions in this section is mtps & mfps
+; TEST 53 - new	instructions in	this section is	mtps & mfps
 ;
 psw:		cmp	(R5), #53		;
 		bne	epsw			; if in	wrong sequence go to
@@ -1929,7 +1929,7 @@ epsw:		mov	#204, -(R5)		;
 		halt				; failed or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 54 - check modes 0 & 1 using the movb and mov instructions
+; TEST 54 - check modes	0 & 1 using the	movb and mov instructions
 ;
 mode0:		cmp	(R5), #54		;
 		bne	emode0			; if in	wrong sequence go to
@@ -1976,7 +1976,7 @@ emode0:		mov	#210, -(R5)		; mov instruction
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 55 - check mode 2 using the movb and mov instructions
+; TEST 55 - check mode 2 using the movb	and mov	instructions
 ;
 mode2:		cmp	(R5), #55		;
 		bne	emode2			; if in	wrong sequence go to
@@ -2015,7 +2015,7 @@ emode2:		mov	#212, -(R5)		; instructions
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 56 - check mode 3 using the movb and mov instructions
+; TEST 56 - check mode 3 using the movb	and mov	instructions
 ;
 mode3:		cmp	(R5), #56		;
 		bne	emode3			; if in	wrong sequence go to
@@ -2055,7 +2055,7 @@ emode3:		mov	#214, -(R5)		;
 		halt				; failed in mode 3
 ;_____________________________________________________________________________
 ;
-; TEST 57 - check mode 4 using the movb and mov instructions
+; TEST 57 - check mode 4 using the movb	and mov	instructions
 ;
 mode4:		cmp	(R5), #57		;
 		bne	emode4			; if in	wrong sequence go to
@@ -2126,7 +2126,7 @@ emode4:		mov	#221, -(R5)		; instructions
 		halt				; or wrong	sequence
 ;_____________________________________________________________________________
 ;
-; TEST 60 - check mode 5 using the movb and mov instructions
+; TEST 60 - check mode 5 using the movb	and mov	instructions
 ;
 mode5:		cmp	(R5), #60		;
 		bne	emode5			; if in	wrong sequence go to
@@ -2173,7 +2173,7 @@ mode5:		cmp	(R5), #60		;
 		mov	@-(R0),	@-(R2)		; temp ---> temp 2
 		cmp	(R0)+, (R1)+		; adjust the pointers
 		mov	@-(R1),	@-(R0)		; temp1	---> temp
-		cmp	#52525, temp		; check	it
+		cmp	#52525,	temp		; check	it
 		bne	emode5			; failed
 		tst	temp2			; check	it
 		beq	mode6			; OK, continue
@@ -2183,7 +2183,7 @@ emode5:		mov	#224, -(R5)		; instructions
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 61 check mode 6 using the movb and mov instructions
+; TEST 61 check	mode 6 using the movb and mov instructions
 ;
 mode6:		cmp	(R5), #61		;
 		bne	emode6			; if in	wrong sequence go to
@@ -2215,7 +2215,7 @@ emode6:		mov	#226, -(R5)		; instructions
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 62 - check mode 7 using the movb and mov instructions
+; TEST 62 - check mode 7 using the movb	and mov	instructions
 ;
 mode7:		cmp	(R5), #62		;
 		bne	emode7			; if in	wrong sequence go to
@@ -2245,7 +2245,7 @@ emode7:		mov	#230, -(R5)		; instructions
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 63 - new instructions used in this section are tstb, clrb, movb
+; TEST 63 - new	instructions used in this section are tstb, clrb, movb
 ;
 tstb1:		cmp	(R5), #63		;
 		bne	etstb1			; if in	wrong sequence go to
@@ -2277,7 +2277,7 @@ etstb1:		mov	#232, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 64 - new instructions used in this section are cmpb, bisb
+; TEST 64 - new	instructions used in this section are cmpb, bisb
 ;
 cmpb1:		cmp	(R5), #64		;
 		bne	ecmpb1			; if in	wrong sequence go to
@@ -2307,7 +2307,7 @@ ecmpb1:		mov	#235, -(R5)		;
 		halt				;
 ;_____________________________________________________________________________
 ;
-; TEST 65 - new instructions used in this section are bicb, bitb
+; TEST 65 - new	instructions used in this section are bicb, bitb
 ;
 bicb1:		cmp	(R5), #65		;
 		beq	2$			; if in	wrong sequence
@@ -2365,7 +2365,7 @@ bicb1:		cmp	(R5), #65		;
 		jsr	PC, @#$cc4		; check	for cc = 4
 ;_____________________________________________________________________________
 ;
-; TEST 66 - new instructions used in this section are incb, decb
+; TEST 66 - new	instructions used in this section are incb, decb
 ;
 incb1:		cmp	(R5), #66		;
 		bne	eincb1			; if in	wrong sequence go to
@@ -2376,7 +2376,7 @@ incb1:		cmp	(R5), #66		;
 		incb	(R4)			; add ones into	location
 		jsr	PC, @#$cc13		; check	for cc = 13
 		mov	#376, (R4)		;
-		mov	#$cc11, R0		; make R0 point	to checking
+		mov	#$cc11,	R0		; make R0 point	to checking
 		incb	(R4)+			; routine for cc = 11
 		jsrR0				; jsr PC, (R0)+	/ check
 		tstb	-(R4)			; decrement R4 by 1
@@ -2413,7 +2413,7 @@ eincb1:		mov	#244, -(R5)		;
 		halt				; or sequence error
 ;_____________________________________________________________________________
 ;
-; TEST 67 - new instruction in this section is comb
+; TEST 67 - new	instruction in this section is comb
 ;
 comb1:		cmp	(R5), #67		;
 		beq	1$			; if in	wrong sequence
@@ -2452,7 +2452,7 @@ comb1:		cmp	(R5), #67		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;_____________________________________________________________________________
 ;
-; TEST 70 - new instruction in this section is negb
+; TEST 70 - new	instruction in this section is negb
 ;
 negb1:		cmp	(R5), #70		;
 		bne	enegb1			; if in	wrong sequence go to
@@ -2478,7 +2478,7 @@ enegb1:		mov	#251, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 71 - new instruction in this section is rolb
+; TEST 71 - new	instruction in this section is rolb
 ;
 rolb1:		cmp	(R5), #71		;
 		bne	erolb1			; if in	wrong sequence go to
@@ -2506,7 +2506,7 @@ erolb1:		mov	#253, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 72 - new instruction in this section is rorb
+; TEST 72 - new	instruction in this section is rorb
 ;
 rorb1:		cmp	(R5), #72		;
 		bne	erorb1			; if in	wrong sequence go to
@@ -2534,7 +2534,7 @@ erorb1:		mov	#255, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 73 - new instruction in this section is aslb
+; TEST 73 - new	instruction in this section is aslb
 ;
 aslb1:		cmp	(R5), #73		;
 		beq	2$			; it in	wrong sequence
@@ -2561,7 +2561,7 @@ aslb1:		cmp	(R5), #73		;
 		jsr	PC, @#$cc4		; check	for cc = 4
 ;_____________________________________________________________________________
 ;
-; TEST 74 - new instruction in this section is asrb
+; TEST 74 - new	instruction in this section is asrb
 ;
 asrb1:		cmp	(R5), #74		;
 		bne	easrb1			; if in	wrong sequence go to
@@ -2594,7 +2594,7 @@ easrb1:		mov	#261, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 75 - new instruction in this section is adcb
+; TEST 75 - new	instruction in this section is adcb
 ;
 adcb1:		cmp	(R5), #75		;
 		beq	2$			; if in	wrong sequence
@@ -2619,7 +2619,7 @@ adcb1:		cmp	(R5), #75		;
 		inc	-(R5)			;
 		halt				; adcb instruction failed
 						;
-4$:		movb	#177, (R0)		; load largest positive byte
+4$:		movb	#177, (R0)		; load largest positive	byte
 		sec				; C = 1
 		adcb	(R0)			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -2635,7 +2635,7 @@ adcb1:		cmp	(R5), #75		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;_____________________________________________________________________________
 ;
-; TEST 76 - new instruction in this section is sbcb
+; TEST 76 - new	instruction in this section is sbcb
 ;
 sbcb1:		cmp	(R5), #76		;
 		beq	1$			; if in	wrong sequence
@@ -2686,7 +2686,7 @@ sbcb1:		cmp	(R5), #76		;
 ; check	word instructions, not destination mode	0
 ;_____________________________________________________________________________
 ;
-; TEST 77 - new instructions used in this section are tst, clr, mov
+; TEST 77 - new	instructions used in this section are tst, clr,	mov
 ;
 tst1:		cmp	(R5), #77		;
 		beq	1$			; if in	wrong sequence
@@ -2810,7 +2810,7 @@ bic1:		cmp	(R5), #101		;
 		inc	-(R5)			;
 		halt				;
 						; mov R0, (R0)+
-3$:		movR0p 				; place	address of temp2 in temp2
+3$:		movR0p				; place	address	of temp2 in temp2
 		sevc				; set V	& C bits
 		bic	@-(R0),	R0		; clear	R0
 		jsr	PC, @#$cc5		; check	for cc = 5
@@ -2881,7 +2881,7 @@ inc1:		cmp	(R5), #102		;
 		jsr	PC, @#$cc1		; check	for cc = 1
 ;_____________________________________________________________________________
 ;
-; TEST 103 - new instruction in this section is com
+; TEST 103 - new instruction in	this section is	com
 ;
 com1:		cmp	(R5), #103		;
 		beq	1$			; if in	wrong sequence
@@ -2917,7 +2917,7 @@ com1:		cmp	(R5), #103		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;_____________________________________________________________________________
 ;
-; TEST 104 - new instruction in this section is neg
+; TEST 104 - new instruction in	this section is	neg
 ;
 neg1:		cmp	(R5), #104		;
 		bne	eneg1			; if in	wrong sequence go to
@@ -2944,7 +2944,7 @@ eneg1:		mov	#312, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 105 - new instruction in this section is rol
+; TEST 105 - new instruction in	this section is	rol
 ;
 rol1:		cmp	(R5), #105		;
 		bne	erol1			; if in	wrong sequence go to
@@ -2972,7 +2972,7 @@ erol1:		mov	#314, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 106 - new instruction in this section is ror
+; TEST 106 - new instruction in	this section is	ror
 
 ror1:		cmp	(R5), #106		;
 		bne	eror1			; if in	wrong sequence go to
@@ -2999,7 +2999,7 @@ eror1:		mov	#316, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 107 - new instruction in this section is asl
+; TEST 107 - new instruction in	this section is	asl
 ;
 asl1:		cmp	(R5), #107		;
 		beq	2$			; if in	wrong sequence
@@ -3058,7 +3058,7 @@ easr1:		mov	#322, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 111 - new instruction in this section is adc
+; TEST 111 - new instruction in	this section is	adc
 ;
 adc1:		cmp	(R5), #111		;
 		beq	2$			; if in	wrong sequence
@@ -3083,7 +3083,7 @@ adc1:		cmp	(R5), #111		;
 		inc	-(R5)			;
 		halt				; adc instruction failed
 						;
-4$:		mov	#77777,	(R0)		; load largest positive number
+4$:		mov	#77777,	(R0)		; load largest positive	number
 		sec				; C = 1
 		adc	(R0)			; add C	bit = 1
 		jsr	PC, @#$cc12		; check	for cc = 12
@@ -3099,7 +3099,7 @@ adc1:		cmp	(R5), #111		;
 		jsr	PC, @#$cc5		; check	for cc = 5
 ;_____________________________________________________________________________
 ;
-; TEST 112 - new instruction in this section is sbc
+; TEST 112 - new instruction in	this section is	sbc
 ;
 sbc1:		cmp	(R5), #112		;
 		beq	1$			; if in	wrong sequence
@@ -3148,7 +3148,7 @@ sbc1:		cmp	(R5), #112		;
 		jsr	PC, @#$cc2		; check	for cc = 2
 ;_____________________________________________________________________________
 ;
-; TEST 113 - new instruction in this section is sxt
+; TEST 113 - new instruction in	this section is	sxt
 ;
 sxt1:		cmp	(R5), #113		;
 		bne	esxt1			; if in	wrong sequence go to
@@ -3175,7 +3175,7 @@ esxt1:		mov	#333, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 114 - new instruction in this section is swab
+; TEST 114 - new instruction in	this section is	swab
 ;
 swab1:		cmp	(R5), #114		;
 		bne	eswab1			; if in	wrong sequence go to
@@ -3204,7 +3204,7 @@ eswab1:		mov	#335 ,-(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 115 - new instruction in this section is xor
+; TEST 115 - new instruction in	this section is	xor
 ;
 xor1:		cmp	(R5), #115		;
 		bne	exor1			; if in	wrong sequence go to
@@ -3232,7 +3232,7 @@ exor1:		mov	#336, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 116 - new instruction in this section is add
+; TEST 116 - new instruction in	this section is	add
 ;
 add1:		cmp	(R5), #116		;
 		bne	eadd1			; if in	wrong sequence go to
@@ -3297,7 +3297,7 @@ eadd1:		mov	#343, -(R5)		;
 		halt				; or wrong sequence
 ;_____________________________________________________________________________
 ;
-; TEST 117 - new instruction in this section is sub
+; TEST 117 - new instruction in	this section is	sub
 ;
 sub1:		cmp	(R5), #117		;
 		bne	esub1			; if in	wrong sequence go to
@@ -3345,7 +3345,7 @@ esub1:		mov	#347, -(R5)		;
 		halt				; or sequence error
 ;_____________________________________________________________________________
 ;
-; TEST 120 - new instruction in this section is sob
+; TEST 120 - new instruction in	this section is	sob
 ;
 sob0:		cmp	(R5), #120		;
 		bne	esob0			; if in	wrong sequence go to
@@ -3498,7 +3498,7 @@ next:		cmp	(R5), #123		;
 		bne	doagn			; of pass every	377 passes
 						;
 		.type	, endpas		; type end of pass message
-.if ne HOEP                     		;
+.if ne HOEP					;
 		halt				; halt on end-of-pass
 .endc						;
 						;

@@ -12,7 +12,7 @@
 ; copyright notice. This software, or any other	copies thereof,	may not
 ; be provided or otherwise made	available to any other person except for
 ; use on such system and to one	who agrees to these license terms.
-; Title to and ownership of the software shall at all times remain in
+; Title	to and ownership of the	software shall at all times remain in
 ; DEC.
 ;
 ; The information in this document is subject to change	without	notice
@@ -402,15 +402,15 @@
 ;_____________________________________________________________________________
 ;
 		.macro	vect, offset, adr, val	;
-		. 	= offset		;
-	.if 	nb, <adr>			;
+		.	= offset		;
+	.if	nb, <adr>			;
 		.word	adr			;
 	.iff					;
 		.word	.+2			;
-	.endc 					;
+	.endc					;
 	.if	nb, <val>			;
 		.word	val			;
-	.iff            			;
+	.iff					;
 		.word	0			;
 	.endc					;
 		.endm				;
@@ -422,7 +422,7 @@
 		vect	10			;
 		vect	14			;
 		vect	20			;
-		vect	24, 200			; power fail entry
+		vect	24, 200			; power	fail entry
 		vect	30			;
 		vect	34			;
 		vect	40			;
@@ -455,7 +455,7 @@
 		jmp	nooop			; go to	type heading & initialization
 restrt:		jmp	begin			;	start the program
 						;
-		.nlist   			;
+		.nlist				;
 		vect	210			;
 		vect	214			;
 		vect	220			;
@@ -1473,7 +1473,7 @@ end22:		cmpb	#22, $testn		; check	the test number
 ;_____________________________________________________________________________
 ;
 ; TEST 23:	fsub (LSI-11 floating subtract instruction)
-;		177520.017552 -	135352.051107 = 177520.017552
+;		177520.017552 -	135352.051107 =	177520.017552
 ;		ps = 010, stack	pointer	= R1
 ;
 		scope				;
@@ -2250,7 +2250,7 @@ tst44:		jsr	R5, pushr		; push 4 words onto R3 stack, set priority
 		jsr	PC, popr		; pop the answer
 		mov	R3, $sp			; save "stack pointer"
 		cmpb	#204, $psw		; check	ps (except T bit)
-		beq	.+6 			; branch if OK
+		beq	.+6			; branch if OK
 		hlt				; ps not equal to 204
 		.word	317			; the error number is 317
 						;
@@ -2367,7 +2367,7 @@ end46:		cmpb	#46, $testn$		; check	the test number
 tst47:		jsr	R5, push7		; push 4 words onto stack, set priority
 		.word	stk47			; top of stack
 		.word	104000,104000		; second operand on top
-		.word	104000,105004		; first	operand on bottom
+		.word	104000,105004		; first	operand	on bottom
 		.word	252			; processor priority level
 		.word	traper,	340		; FIS trap vector
 		nop				;
@@ -2411,7 +2411,7 @@ end47:		cmpb	#47, $testn		; check	the test number
 ;_____________________________________________________________________________
 ;
 ; TEST 50:	fmul (LSI-11 floating multiply instruction)
-;		134600.073601 *	104000.104000 = 000401.000000
+;		134600.073601 *	104000.104000 =	000401.000000
 ;		ps = 200, stack	pointer	= PC
 ;
 		scope				;
@@ -3023,7 +3023,7 @@ end62:		cmpb	#62, $testn		; check	the test number
 		scope				;
 tst63:		jsr	R5, pushs		; push 4 words onto stack, set priority
 		.word	000006,123456		; second operand on top
-		.word	100052,052525		; first	operand on bottom
+		.word	100052,052525		; first	operand	on bottom
 		.word	357			; processor priority level
 		.word	isr63, 311		; FIS trap vector
 		nop				;
@@ -3501,7 +3501,7 @@ $eopct:		.word	1			;
 $endct:		.word	1			;
 		.word	$eopct			;
 		type	,$endmg			; type "END PASS"
-.if ne HOEP                     		;
+.if ne HOEP					;
 		halt				; halt on end-of-pass
 .endc						;
 						;
@@ -3556,8 +3556,8 @@ pushs:		tst	(SP)+			; pop stack by 1
 		add	#10, R5			; point	to end of data
 		mtps	(R5)+			; set the processor status
 		inc	R5			;
-		mov	(R5)+, @fisvec 		; set up FIS error trap	vector
-		mov	(R5)+, @fislvl 		; trap status
+		mov	(R5)+, @fisvec		; set up FIS error trap	vector
+		mov	(R5)+, @fislvl		; trap status
 		jmp	(R5)			; return
 ;_____________________________________________________________________________
 ;
@@ -3603,8 +3603,8 @@ pushr:		mov	#stack0, R4		; set R4 to stack
 		mov	(R5)+, (R4)+		;
 		mtps	(R5)+			; set the processor status
 		inc	R5			;
-		mov	(R5)+, @fisvec 		; set up FIS error trap	vector
-		mov	(R5)+, @fislvl 		; trap status
+		mov	(R5)+, @fisvec		; set up FIS error trap	vector
+		mov	(R5)+, @fislvl		; trap status
 		rts	R5			; return
 ;_____________________________________________________________________________
 ;
@@ -3648,8 +3648,8 @@ push7:		mov	(R5)+, R4		; set R4 to stack
 		mov	(R5)+, (R4)+		;
 		mtps	(R5)+			; set the processor status
 		inc	R5			;
-		mov	(R5)+, @fisvec 		; set up FIS error trap	vector
-		mov	(R5)+, @fislvl 		; trap status
+		mov	(R5)+, @fisvec		; set up FIS error trap	vector
+		mov	(R5)+, @fislvl		; trap status
 		rts	R5			; return
 ;_____________________________________________________________________________
 ;
