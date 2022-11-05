@@ -52,6 +52,7 @@ module f11_wb
    output         wbi_stb_o,     // interrupt vector strobe
    output         wbi_una_o,     // unaddressed fast input read
                                  //
+   output         vm_umap,       // enable dma address translation
    input [1:0]    vm_bsel        // boot mode selector
 );
 
@@ -398,6 +399,7 @@ end
 //
 // Wishbone master and interrupt interfaces
 //
+assign vm_umap    = umap;
 assign io_wtbt    = mce_p & wb_bcyc & mo[12] & ~mo[9] & ~mo[8];
 assign iow_req    = mce_p & wb_bcyc & mo[12] & ~mo[9];
 assign ior_req    = mce_p & wb_bcyc & mo[12] & mo[9] & ~mo[8];
