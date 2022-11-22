@@ -413,7 +413,7 @@ assign wbm_adr_o  = wb_adr;
 assign wbm_dat_o  = ad_cpu;
 assign wbm_cyc_o  = wb_bcyc;
 assign wbm_we_o   = wb_we & ~mr_sel;
-assign wbm_stb_o  = wb_stb & ~mr_sel;
+assign wbm_stb_o  = ~wb_iako & wb_stb & ~mr_sel;
 assign wbm_sel_o  = wb_sel;
 assign wbi_stb_o  = wb_iako | wb_fdin;
 assign wbi_una_o  = wb_fdin;
@@ -506,10 +506,10 @@ begin
       //
       // Wishbone cycle start-end
       //
-      if (~mc[7] & adr_stb)
+      if (adr_stb)
       begin
-         wb_bcyc <= 1'b1;
-         wb_sel  <= 2'b11;
+         wb_bcyc <= ~mc[7];
+         wb_sel  <= mc[7] ? 2'b00 : 2'b11;
          wb_we   <= 1'b0;
          wb_stb  <= 1'b0;
       end
