@@ -17,7 +17,8 @@ module dc302
    output [14:0]  pin_mo,     // microinstruction early status
    input  [15:0]  pin_mc,     // microinstruction latched status
    output         pin_aden,   // address/data bus enable
-   output [2:0]   pin_pga     // early page address for MMU
+   output [2:0]   pin_pga,    // early page address for MMU
+   output         pin_psw     // access to PSW physical address
 );
 
 //______________________________________________________________________________
@@ -137,6 +138,7 @@ end
 //
 assign doe = io_psw | (m[15:12] != 4'b1101);
 assign pin_aden = doe;
+assign pin_psw = io_psw;
 assign pin_pga = pa[15:13];
 assign pin_bso = a[15:13] == 3'b111;
 assign pin_ado = a;

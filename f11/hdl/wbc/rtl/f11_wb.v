@@ -107,6 +107,7 @@ wire  umap;                      // upper addresses mapping enable
 wire  abort;                     // abort bus cycle (error/timeout)
 reg   mc_res;                    // reset control chip/CPU
 wire  mr_sel;                    // MMU register selected
+wire  io_psw;                    // PSW physical address selected
 wire  csel;                      // control chip selected
                                  //
 reg   qt_req;                    // Q-bus timer request
@@ -328,7 +329,8 @@ dc302 data
    .pin_bsi(bsio),
    .pin_bso(bs_cpu),
    .pin_aden(doe),
-   .pin_pga(pga)
+   .pin_pga(pga),
+   .pin_psw(io_psw)
 );
 
 defparam ctl.DC303_FPP = F11_CORE_FPP;
@@ -515,7 +517,7 @@ begin
       end
       else
       begin
-         if (wb_wdone | wb_rdone | wb_stb & mr_sel)
+         if (wb_wdone | wb_rdone | wb_stb & mr_sel | io_psw)
          begin
             if (mc[7])
                wb_bcyc <= 1'b0;
