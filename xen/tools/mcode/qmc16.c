@@ -311,7 +311,7 @@ static int qmc_check_128(const struct arr *a, qmc_t value)
 		register __m128i vx;
 		const __m128i *vp = (const __m128i *)p;
 
-		p += vn << 3;
+		p += (uintptr_t)vn << 3;
 		/* SSE2/128-bit code, handles eight elements per iteration */
 		do {
 			vx = _mm_load_si128(vp);
@@ -344,7 +344,7 @@ static int qmc_check_256(const struct arr *a, qmc_t value)
 		register __m256i vx;
 		const __m256i *vp = (const __m256i *)p;
 
-		p += vn << 4;
+		p += (uintptr_t)vn << 4;
 		/* AVX2/256-bit code, handles sixteen elements per iteration */
 		do {
 			vx = _mm256_load_si256(vp);
@@ -425,7 +425,7 @@ static void qmc_scan_128(qmc_t term, qmc_t xmask,
 		register __m128i vx, vt;
 		const __m128i *vp = (const __m128i *)p;
 
-		p += vn << 3;
+		p += (uintptr_t)vn << 3;
 		/* SSE2/128-bit code, handles eight elements per iteration */
 		do {
 			vx = _mm_load_si128(vp);
@@ -463,7 +463,7 @@ static void qmc_scan_256(qmc_t term, qmc_t xmask,
 		register __m256i vx, vt;
 		const __m256i *vp = (const __m256i *)p;
 
-		p += vn << 4;
+		p += (uintptr_t)vn << 4;
 		/* AVX2/256-bit code, handles sixteen elements per iteration */
 		do {
 			vx = _mm256_load_si256(vp);
@@ -558,7 +558,7 @@ static void qmc_term_128(qmc_t term, qmc_t xmask,
 			const __m128i *vp = (const __m128i *)p;
 			uint32_t vm;
 
-			p += vn << 3;
+			p += (uintptr_t)vn << 3;
 			/* SSE2/128-bit code, handles eight elements */
 			do {
 				vx = _mm_load_si128(vp);
@@ -653,7 +653,7 @@ static void qmc_term_256(qmc_t term, qmc_t xmask,
 			const __m256i *vp = (const __m256i *)p;
 			uint32_t vm;
 
-			p += vn << 4;
+			p += (uintptr_t)vn << 4;
 			/* AVX2/256-bit code, handles sixteen elements */
 			do {
 				vx = _mm256_load_si256(vp);
@@ -1096,7 +1096,7 @@ static int qmc16_opt(enum opt_type opt)
 	}
 }
 
-void mc_test_qmc16(const struct plm *tpl)
+static void mc_test_qmc16_vm2(const struct plm *tpl)
 {
 	struct grp *store;
 	struct grp *group[QMC_NBIT + 1];
@@ -1168,5 +1168,80 @@ void mc_test_qmc16(const struct plm *tpl)
 	start = mc_query_ms() - start;
 	printf("Elapsed: %" PRIu64 ".%03" PRIu64 "\n",
 		start / 1000, start % 1000);
+}
+
+static void mc_test_qmc16_vm3(const struct plm *tpl)
+{
+	struct grp *store;
+	struct grp *group[QMC_NBIT + 1];
+	uint32_t val, max, i, n, op, om;
+	uint64_t qm, qv;
+	uint64_t start;
+
+	if (qmc16_opt(tpl->opt))
+		return;
+	max = 1ul << tpl->in_nb;	/* input value limit */
+	qv = cl_qv < 0 ? 0 : (uint64_t)cl_qv;
+	qm = cl_qm < 0 ? (1ull << tpl->out_nb) - 1 : (uint64_t)cl_qm;
+	op = cl_op < 0 ? 0x20000 : (uint32_t)cl_op;
+	om = cl_om < 0 ? 0x30000 : (uint32_t)cl_om;
+
+	start = mc_query_ms();
+	store = grp_alloc(ARR_MAX);
+	for (i = 0; i <= QMC_NBIT; i++)
+		group[i] = grp_alloc(QMC_NMAX);
+	n = 0;
+	/* fill the groups depending on the number of bits */
+	for (val = 0; val < max; val++) {
+		uint64_t sop;
+
+		if ((val & om) != op)
+			continue;
+		sop = plm_get(tpl, val);
+		if ((sop & qm) == qv) {
+			uint32_t v = val & (QMC_NMAX - 1);
+
+			i = _mm_popcnt_u32(v);
+			assert(i <= QMC_NBIT);
+			grp_append(group[i], v, 0);
+			grp_append(store, v, ARR_VALUE);
+			n++;
+		}
+	}
+	if (n) {
+		printf("Value %08llo:%08llo: %u\n", qv, qm, n);
+		if (cl_qmc <= 0) {
+			for (i = 0; i <= QMC_NBIT; i++)
+				if (group[i]->node[0] &&
+					group[i]->node[0]->len)
+					printf("  [%02u] %u\n", i,
+						group[i]->node[0]->len);
+		} else {
+			/* execute the next stages of algorithm */
+			qmc16_prime(tpl, group, store);
+		}
+	}
+	for (i = 0; i <= QMC_NBIT; i++)
+		grp_free(group[i]);
+	grp_free(store);
+	start = mc_query_ms() - start;
+	printf("Elapsed: %" PRIu64 ".%03" PRIu64 "\n",
+		start / 1000, start % 1000);
+}
+
+void mc_test_qmc16(const struct plm *tpl)
+{
+	switch (tpl->type) {
+	case PLM_TYPE_VM2_DEC:
+		mc_test_qmc16_vm2(tpl);
+		break;
+	case PLM_TYPE_VM3_DEC:
+		mc_test_qmc16_vm3(tpl);
+		break;
+	default:
+		printf("mcode: Quine-McCluskey not supported\n");
+		assert(0);
+		break;
+	}
 }
 

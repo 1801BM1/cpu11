@@ -33,6 +33,8 @@ int32_t cl_as = -1;
 int32_t cl_az = -1;
 int32_t cl_op = -1;
 int32_t cl_om = -1;
+int64_t cl_qv = -1;
+int64_t cl_qm = -1;
 int32_t cl_qmc = -1;
 
 char cl_text[16];
@@ -66,6 +68,12 @@ int plm_init(struct plm *plm, enum plm_type type)
 		break;
 	case PLM_TYPE_VM2_DEC:
 		desc = &plm_desc_vm2_dec;
+		break;
+	case PLM_TYPE_VM3_DEC:
+		desc = &plm_desc_vm3_dec;
+		break;
+	case PLM_TYPE_VM3_MAIN:
+		desc = &plm_desc_vm3;
 		break;
 	default:
 		printf("mcode: unrecognized plm type %d\n", type);
@@ -185,28 +193,6 @@ static inline uint64_t plm_node_64(const struct plm_n *node, uint32_t value)
 	return s;
 }
 
-static inline uint64_t get_64_of_128(__m128i s)
-{
-	union {
-		uint64_t u64[2];
-		__m128i u128;
-	} t;
-
-	t.u128 = s;
-	return t.u64[0];
-}
-
-static inline uint64_t get_64_of_256(__m256i s)
-{
-	union {
-		uint64_t u64[4];
-		__m256i u256;
-	} t;
-
-	t.u256 = s;
-	return t.u64[0];
-}
-
 static inline uint64_t plm_node_128(const struct plm_n *node, uint32_t value)
 {
 	register __m128i v, s, a, x, z, t;
@@ -235,7 +221,7 @@ static inline uint64_t plm_node_128(const struct plm_n *node, uint32_t value)
 	} while (--n);
 	t = _mm_unpackhi_epi64(s, s);
 	s = _mm_or_si128(s, t);
-	return get_64_of_128(s);
+	return (uint64_t)_mm_extract_epi64(s, 0);
 }
 
 static inline uint64_t plm_node_256(const struct plm_n *node, uint32_t value)
@@ -268,7 +254,7 @@ static inline uint64_t plm_node_256(const struct plm_n *node, uint32_t value)
 	s = _mm256_or_si256(s, t);
 	t = _mm256_unpackhi_epi64(s, s);
 	s = _mm256_or_si256(s, t);
-	return get_64_of_256(s);
+	return (uint64_t)_mm256_extract_epi64(s, 0);
 }
 
 static void
@@ -664,7 +650,7 @@ mc_test_decode(enum plm_type type, enum opt_type opt,
 	uint64_t start;
 
 	max = 1ul << tpl->in_nb;	/* input value limit */
-	amx = 1ul << tpl->na_nb; /* microaddress limit */
+	amx = 1ul << tpl->na_nb;	/* microaddress limit */
 	memset(&tab, 0, sizeof(tab));
 	op = cl_op < 0 ? 0 : ((cl_op & UINT16_MAX) << (tpl->in_nb - 16));
 	om = cl_om < 0 ? 0 : ((cl_om & UINT16_MAX) << (tpl->in_nb - 16));
@@ -723,6 +709,7 @@ mc_test_table(enum plm_type type, enum opt_type opt, const char *text)
 		chk.uop = (1 << 12);
 		break;
 	case PLM_TYPE_VM2_MAIN:
+	case PLM_TYPE_VM3_MAIN:
 		op = cl_op < 0 ? 0 : ((uint32_t)cl_op << tpl.na_nb);
 		om = cl_om < 0 ? 0 : ((uint32_t)cl_om << tpl.na_nb);
 		break;
@@ -835,6 +822,8 @@ void mc_test_qmc(enum plm_type type, enum opt_type opt, const char *text)
 	switch (type) {
 	case PLM_TYPE_VM2_DEC:
 		break;
+	case PLM_TYPE_VM3_DEC:
+		break;
 	default:
 		printf("Unsupported type for Quine-McCluskey: %s\n", text);
 		return;
@@ -848,6 +837,7 @@ void mc_test_qmc(enum plm_type type, enum opt_type opt, const char *text)
 		exit(-1);
 	switch (type) {
 	case PLM_TYPE_VM2_DEC:
+	case PLM_TYPE_VM3_DEC:
 		mc_test_qmc16(&tpl);
 		break;
 	default:
@@ -874,6 +864,9 @@ static int mc_param_hex(char *s)
 		} else if (c >= 'a' && c <= 'f') {
 			c -= 'a' - 10;
 			r = (r << 4) + c;
+		} else if (c >= 'A' && c <= 'F') {
+			c -= 'A' - 10;
+			r = (r << 4) + c;
 		} else {
 			printf("mcode: invalid hex parameter: %s\n", s);
 			return -1;
@@ -886,7 +879,7 @@ static int mc_param_hex(char *s)
 	return r;
 }
 
-static int mc_param_oct(char *s)
+static int64_t mc_param_oct(char *s, int64_t limit)
 {
 	int r = 0;
 
@@ -906,8 +899,9 @@ static int mc_param_oct(char *s)
 			printf("mcode: invalid octal parameter: %s\n", s);
 			return -1;
 		}
-		if (r > UINT16_MAX) {
-			printf("mcode: octal parameter overflow: %06o\n", r);
+		if (r < 0 || r > limit) {
+			printf("mcode: octal parameter overflow: %llo\n",
+				(uint64_t)r);
 			return -1;
 		}
 	} while (1);
@@ -1022,6 +1016,14 @@ static int mc_proc_param(const char *p)
 		cl_type = PLM_TYPE_VM2_DEC;
 		return 0;
 	}
+	if (!strcmp(b, "--vm3")) {
+		cl_type = PLM_TYPE_VM3_MAIN;
+		return 0;
+	}
+	if (!strcmp(b, "--vm3d")) {
+		cl_type = PLM_TYPE_VM3_DEC;
+		return 0;
+	}
 	if (!strcmp(b, "--f11-0")) {
 		cl_type = PLM_TYPE_F11_CS0;
 		return 0;
@@ -1054,12 +1056,20 @@ static int mc_proc_param(const char *p)
 			return cl_az >= 0 ? 0 : -1;
 		}
 		if (strstr(b, "--op=") == b) {
-			cl_op = mc_param_oct(eq);
+			cl_op = (int)mc_param_oct(eq, (1ll << PLM_S_MAX) - 1);
 			return cl_op >= 0 ? 0 : -1;
 		}
 		if (strstr(b, "--om=") == b) {
-			cl_om = mc_param_oct(eq);
+			cl_om = (int)mc_param_oct(eq, (1ll << PLM_S_MAX) - 1);
 			return cl_om >= 0 ? 0 : -1;
+		}
+		if (strstr(b, "--qv=") == b) {
+			cl_qv = (int)mc_param_oct(eq, (1ll << PLM_S_MAX) - 1);
+			return cl_qv >= 0 ? 0 : -1;
+		}
+		if (strstr(b, "--qm=") == b) {
+			cl_qm = (int)mc_param_oct(eq, (1ll << PLM_S_MAX) - 1);
+			return cl_qm >= 0 ? 0 : -1;
 		}
 		if (strstr(b, "--qmc=") == b) {
 			cl_qmc = mc_param_dec(eq);
@@ -1084,10 +1094,11 @@ static void mc_cmd_line(int argc, char *argv[])
 		       "  --64 --64t - select 64 bit operations (with tree)\n"
 		       "  --128 --128t - select 128 bit operations (with tree)\n"
 		       "  --256 --256t - select 256 bit operations (with tree)\n"
-		       "  --vm1a --vm1g --vm2 --vm2d --f11-x - select matrix\n"
+		       "  --vm1a (vm1g vm2 vm2d vm3 vm3d f11-x) - select matrix\n"
 		       "  --ab=xxx --ae=xxx - optional address range in hex\n"
 		       "  --as=xxx --az=xxx - optional address set/zero mask\n"
 		       "  --op=oooooo --om=oooooo - opcode mask in octal\n"
+		       "  --qv=oooooo --qm=oooooo - QnM match in octal\n"
 		       "  --qmc=n - Quine-McCluskey minimization attempt\n"
 		       "  filename - file for matrix input or output\n"
 		);
@@ -1129,6 +1140,12 @@ static void mc_cmd_line(int argc, char *argv[])
 		break;
 	case PLM_TYPE_VM2_DEC:
 		strcpy(cl_text, "vm2d");
+		break;
+	case PLM_TYPE_VM3_MAIN:
+		strcpy(cl_text, "vm3");
+		break;
+	case PLM_TYPE_VM3_DEC:
+		strcpy(cl_text, "vm3d");
 		break;
 	case PLM_TYPE_F11_CS0:
 		strcpy(cl_text, "f11-0");

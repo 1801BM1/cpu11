@@ -56,6 +56,8 @@ enum plm_type {
 	PLM_TYPE_F11_CS2,
 	PLM_TYPE_F11_NA_CLR0,
 	PLM_TYPE_VM2_DEC,
+	PLM_TYPE_VM3_DEC,
+	PLM_TYPE_VM3_MAIN,
 };
 
 enum opt_type {
@@ -171,7 +173,9 @@ struct plm_scan {
 extern const struct plm_desc plm_desc_vm1a;
 extern const struct plm_desc plm_desc_vm1g;
 extern const struct plm_desc plm_desc_vm2;
+extern const struct plm_desc plm_desc_vm3;
 extern const struct plm_desc plm_desc_vm2_dec;
+extern const struct plm_desc plm_desc_vm3_dec;
 extern const struct plm_desc plm_desc_f11_cs0;
 extern const struct plm_desc plm_desc_f11_cs1;
 extern const struct plm_desc plm_desc_f11_cs2;
@@ -183,6 +187,8 @@ extern int32_t cl_as;
 extern int32_t cl_az;
 extern int32_t cl_op;
 extern int32_t cl_om;
+extern int64_t cl_qv;
+extern int64_t cl_qm;
 extern int32_t cl_qmc;
 
 /* Programmable logic matrix API */

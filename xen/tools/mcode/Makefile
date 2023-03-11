@@ -13,7 +13,7 @@ HEADERS = $(wildcard *.h)
 CFLAGS += -msse -msse2 -mfxsr -mavx -mavx2 -mxsave
 
 %.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -Wa,-adhln=$@.lst
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
