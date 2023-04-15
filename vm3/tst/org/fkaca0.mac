@@ -1,0 +1,2560 @@
+;
+;			IDENTIFICATION
+;			--------------
+; Product code:		MAINDEC-11-DFKAC-A-D
+; Product name:		11/34 EIS Instruction Test
+; Date:			Dec-1975
+; Maintainer:		Diagnostic Group
+; Author:		Glenn Jonhson
+;
+; Ccopyright (c) 1975
+; Digital Equipment Corporation, Maynard, Mass.
+;
+; This software is furnished under a license for use only
+; on a single computer system and may be copied only with
+; the inclusion of the above copyright notice. This software,
+; or any other copies thereof, may not	be provided
+; or otherwise made available to any other person except
+; for use on such system and to one who agrees to these
+; license terms. Title to and ownership of the software
+; shall at all times remain in DEC.
+;
+; The information in.this document is subject to change
+; without notice and should not be construed as a commit-
+; ment by Digital Equipment Corporation,
+;
+; DEC assumes no responsibility for the use or reliability
+; of its software on equipment which is not supplied by
+; DEC.
+;
+;
+; CONTENTS
+;
+; 1.	Abstract
+; 2.	Requirements
+; 2.1	Equipment
+; 2.2	Storage
+; 2.3	Preliminary programs
+; 3.	Loading procedure
+; 4.	Starting procedure
+; 4.1	Control switch settings
+; 4.2	Starting address
+; 4.3	Program and/or operator action
+; 5.	Operating procedure
+; 5.1	Switch settings
+; 5.2	Subroutine abstracts
+; 6.	Errors
+; 6.1	Error printout
+; 6.2	Error recovery
+; 7.	Restrictions
+; 8.	Miscellaneous
+; 8.1	Execution time
+; 8.2	Stack pointer
+; 8.3	Pass counter
+; 8.4	Test number
+; 8.5	Power fail
+; 9.	Program description
+;
+; 1.	Abstract
+;
+;	This program tests the 11/34 extended instruction set
+;	(ash, ashc, mul, and div) using registers 0-5 at-least
+;	once with each instruction. The program should be run for
+;	at least 2 passes with all switches low, the program is
+;	designed to run under apt, and act, systems.
+;
+;	This program is a modification of the ls1-11 eis test,
+;	it has been modified to account for any lsi-11 - 11/34 differences.
+;
+;
+; 2.	Requirements
+; 2.1	Equipment
+;
+;	11/34 standard computer and 4kW of memory
+;
+; 2.2	Storage
+;
+;	Program storage - the routines use memory 0 - 17500
+;
+; 2.3	Preliminary programs
+;
+;	none
+;
+; 3.	Loading procedure
+;
+;	Use standard procedure for ABS tapes,
+;
+; 4.	Starting procedure
+; 4.1	Control switch	settings
+;
+;	See 5.1 (all low for worst case testing)
+;
+; 4.2	Starting address
+;
+;	After loading the program it should always be started at 200,
+;	if it is desired to save the pass counter then the program
+;	should be restarted at location restrt (i.e. 222j otherwise the
+;	program can be restarted at 200
+;
+; 4.3	Program and/or operator action
+; 4.3.1	Stand alone
+;
+;	 1)  Load program into memory using ABS loader,
+;	 2)  Set switches (see sec 5.1) all low for worst case,
+;	 3)  Start at 200.
+;	 4)  The program will loop and "END PASS" will be typed after
+;	     completion of first pass and every 4th pass, however type
+;	     out will be suppressed if	bit 5 of location $envm	is high
+;	 5)  A minimum of two passes should always be run,
+;
+; 4.3.2	Under APT
+;
+;	Load the program and start after setting the desired switches
+;	(see sec. 5.1).
+;
+; 5.	Operating procedure
+; 5.1	Switch settings
+;
+;	If no hardware switch register is available, the program
+;	automatically uses the contents of loc. 176 as the software
+;	switch register. the user should set this location before
+;	starting the program,
+;
+;	bit #	octal value	function
+;
+;	15	100000......... halt on error
+;	13	020000......... inhibit printout
+;
+;	An 8 bit byte $envm (i.e. location 421) has been used to define
+;	the operating mode, all typeouts can be suppressed by making
+;	bit 5 of byte $envm high, in other words by plcing a 20000 in
+;	location 420
+;
+; 5.2	Subroutine abstracts
+; 5.2.1	Halt routine
+;
+;	This routine called via jsr instruction i$ used each time
+;	an error is seen and an error message of the format given
+;	in sec, 6.1 is typed out unless supressed by the switches
+;	defined in sec, 5.1
+;
+; 5.2.2	Trap catcher
+;
+;	A ".+2" - "halt" sequence is repeated from 0-776 to catch
+;	any unexpected traps, thus any unexpected traps or
+;	interrupts will halt at the vector +2.
+;
+; 6.	Errors
+; 6.1	Error printout
+;
+;	The format is as follows:
+;
+;	adr	errnm
+;
+;	Where:
+;		adr	- address of error
+;		errnm	- error number
+;
+;	In most cases the  comment beside the call for halt subroutine
+;	tells what was being checked and what was expected. all
+;	printouts will be suppressed when bit 5 of location $envm
+;	is high, while running under apt the diagnostic will not
+;	support spooling of console outputs,
+;
+;
+; 6.2	Error recovery
+;
+;	Restart at 200 or 222 (see sec 4.2)
+;
+;
+; 7.	Restrictions
+;
+;	None
+;
+;
+; 8.	Miscellaneous
+;
+;
+; 8.1	Execution time
+;
+;	Normally first "END PASS" will be typed within 1 second and
+;	within 10 seconds for every consecutive 400 passes
+;
+; 8.2	Stack pointer
+;
+;	Stack is initially set to 600
+;
+; 8.3	Pass count
+;
+;	A 16 bit location "$pass" (i.e. location 406) is used to keep
+;	pass count. it can be cleared by restarting the program at 200
+;
+;
+; 8.4	Test number
+;
+;	A 16 bit location "$testn" (i.e. location 404) is used to keep track
+;	of the test number, upper byte of this location gives the iteration
+;	number and the lower byte the test that was being executed
+;
+;8.5	Power fail
+;
+;	The diagnostic can be power failed with no errors. To use,
+;	start the test as usual and power down then up at any time,
+;	The program should restart from test 0 after typing "power"
+;	with no errors, however if the program is stored in a MOS
+;	memory that can not hold data with power down then the program
+;	will not recover from a power fail.
+;
+;9.	Program description
+;
+;	This program tests all the eis instructions of the 11/34
+;	for ash and ashc instructions every even pass is executed
+;	with destination mode 0 for all registers and every odd pass
+;	with destination mode,of 67, the diagnostic does not make a
+;	pass with T-bit set,
+;_____________________________________________________________________________
+;
+		HOEP	= 0			; halt on end-of-pass
+		NOSCO	= 0			; no scope trap
+		INSWR	= 000000		; 100000 for halt on error, no gtswr
+;_____________________________________________________________________________
+;
+		.asect				;
+		. = 0				; loop on test
+						;
+		.title	dfkaca			;
+		.nlist	cnd, mc, md		;
+		.list	me			;
+;_____________________________________________________________________________
+;
+		$tn	= 1			;
+		$swr	= 160000		; halt on error, loop on test
+						; inhibit error	typout
+		dummy	= 0			;
+		errnm	= 1			;
+		f	= 51			;
+		n	= 176			;
+						;
+.if ne NOSCO					;
+		scope	= nop			;
+		scope1	= nop			;
+		scope3	= nop			;
+.iff						;
+		scope	= 10701			;
+		scope1	= 10701			;
+		scope3	= 10703			;
+.endc						;
+						;
+		sw09	= 1000			;
+		sw10	= 2000			;
+		sw11	= 4000			;
+		sw12	= 10000			;
+		type	= iot			;
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		.	= offset		;
+	.if	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff					;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+; All unused locations from 4-776 contain a ".+2, halt"
+; sequence to catch illegal traps and interrupts
+; location 0 contains 0	to catch improperly loaded vectors
+;
+		.sbttl	"trap catcher"
+
+		.nlist				;
+		vect	0, 2			;
+		vect	4, 6			;
+		vect	10, 12			;
+		vect	14, 16			;
+		vect	20, $type		;
+		vect	24, 200			; for apt start	up
+		vect	30, 32			;
+		vect	34, 36			;
+		vect	40, 42			; hooks	required by act-11
+		vect	44, $apthd, $endad	; set loc.46 to	address	of $endad in .seop
+		.list				;
+;_____________________________________________________________________________
+;
+		.sbttl	"act11 hooks"
+
+		.nlist				;
+		vect	50, 52			; set loc.52 to	zero
+		vect	54, 56			;
+		vect	60, 62			;
+		vect	64, 66			;
+		vect	70, 72			;
+		vect	74, 76			;
+		vect	100, 102		;
+		vect	104, 106		;
+		vect	110, 112		;
+		vect	114, 116		;
+		vect	120, 122		;
+		vect	124, 126		;
+		vect	130, 132		;
+		vect	134, 136		;
+		vect	140, 142		;
+		vect	144, 146		;
+		vect	150, 152		;
+		vect	154, 156		;
+		vect	160, 162		;
+		vect	164, 166		;
+		vect	170, 172		;
+		.list				;
+						;
+		. = 174				;
+dispreg:	.word	0			; software display register
+swreg:		.word	INSWR			; software switch register
+						;
+;_____________________________________________________________________________
+;
+		.sbttl "starting address(es)"
+
+		. = 200
+		mov	#$pwrdn, @#24		; prepare to service power down	routine
+		mov	#$devct, R0		; prepare to initialize	the stack
+2$:		clr	-(R0)			;
+		cmp	#$mail,	R0		;
+		bne	2$			;
+restrt:		jmp	begin			;
+						;
+		.nlist				;
+		vect	230, 232		;
+		vect	234, 236		;
+		vect	240, 242		;
+		vect	244, 246		;
+		vect	250, 252		;
+		vect	254, 256		;
+		vect	260, 262		;
+		vect	264, 266		;
+		vect	270, 272		;
+		vect	274, 276		;
+		vect	300, 302		;
+		vect	304, 306		;
+		vect	310, 312		;
+		vect	314, 316		;
+		vect	320, 322		;
+		vect	324, 326		;
+		vect	330, 332		;
+		vect	334, 336		;
+		vect	340, 342		;
+		vect	344, 346		;
+		vect	350, 352		;
+		vect	354, 356		;
+		vect	360, 362		;
+		vect	364, 366		;
+		vect	370, 372		;
+		vect	374, 376		;
+		.list
+;_____________________________________________________________________________
+;
+		. = 400
+		.sbttl "apt mailbox-etable"
+
+		.even				;
+$mail:						; apt mailbox
+$msgty:		.word	0			; amsgty - message type code
+$fatal:		.word	0			; afatal - fatal error number
+$testn:		.word	0			; atestn - test number
+$pass:		.word	0			; apass	 - pass count
+$devct:		.word	0			; adevct - device count
+$unit:		.word	0			; aunit	 - i/o unit number
+$msgad:		.word	0			; amsgad - message address
+$msglg:		.word	0			; amsglg - message length
+$etable:					;	apt environment	table
+$env:		.byte	0			; aenv	 - environment byte
+$envm:		.byte	0			; aenvm	 - environment mode bits
+$swreg:		.word	0			; aswreg - apt switch register
+$uswr:		.word	0			; auswr	 - user switches
+$cpuop:		.word	0			; acpuop - cpu type, options
+$etend:
+;_____________________________________________________________________________
+;
+		.sbttl "APT PARAMETER BLOCK"
+
+;
+; Setup apt parameter block as defined in the apt-pdp11 diagnostic interface spec.
+;
+$apthd:
+$hibts:		.word	0			; two high bits of 18 bit mailbox addr.
+$mbadr:		.word	$mail			; address of apt mailbox (bits 0-15)
+$tstm:		.word	3			; run time of longest test
+$pastm:		.word	5			; run time in secs. of 1st pass on 1 unit (quick verify)
+$unitm:		.word				; additional run time (secs) of a pass for each additional unit
+		.word $etend-$mail/2 		; length mailbox-etable(words)
+						;
+		. = $apthd			;
+count:		.blkw	1			;
+psword:		.blkw	1			;
+temp1:		.blkw	1			;
+temp2:		.blkw	1			;
+temp3:		.blkw	1			;
+temp4:		.blkw	1			;
+temp5:		.word   0			;
+temp6:		.word	0			;
+typcnt:		.byte	0			;
+$tpcnt:		.byte	0			;
+;_____________________________________________________________________________
+;
+s0:		.word	7			;
+s1:		.word	-7			;
+s2:		.word	s1			;
+s3:		.word	-6			;
+s4:		.word	-1			;
+s5:		.word	40000			;
+s6:		.word	s5			;
+s7:		.word	40000			;
+s8:		.word	-2			;
+s9:		.word	2			;
+s10:		.word	s9			;
+s11:		.word	2			;
+swr:		.word	177570			;
+display:	.word	177570			;
+ttyout:		.word	64			;
+$tpb:		.word	177566			;
+$tps:		.word	177564			;
+						;
+$crlf:		.asciz	<15><12>/   /		;
+power:		.asciz	<12><15>/POWER/		;
+		.even				;
+;_____________________________________________________________________________
+;
+		vect	534, 536		;
+		vect	540, 542		;
+		vect	544, 546		;
+		vect	550, 552		;
+		vect	554, 556		;
+		vect	560, 562		;
+		vect	564, 566		;
+		vect	570, 572		;
+		vect	574, 576		;
+;_____________________________________________________________________________
+;
+		.macro	$err, num, label	;
+		beq	.+10			;
+	.if	nb, <label>			;
+label:						;
+	.endc					; seen an error, go to the halt	routine
+		jsr	PC, $hlt		;
+		.word	num			;
+		.endm				;
+;_____________________________________________________________________________
+;
+		. = 600				;
+						;
+begin:		mov	#$testn, R5		; make R5 point to the location $testn
+		clr	@#count		 	; clear the counter
+		mov	#1, (R5)		; initialize test number
+		mov	#begin, SP		; ** stack at begin **
+		mov	@#4, -(SP)		; save error vector
+		mov	@#6, -(SP)		;
+		mov	#1$, 4			; set up time out vector
+		tst	@swr			; try to reference hardware swr
+		br	3$			; branch if no timeout trap occurs
+1$:		mov	#swreg, swr		; point	to software swr
+		mov	#dispreg, display	; point to software display reg
+		cmp	(SP)+, (SP)+		; restore stack
+3$:		mov	(SP)+, @#6		; restore error vector
+		mov	(SP)+, @#4		;
+		mtps	#0			; place #0 in PSW
+		bitb	#1, @#$env		; are we under APT ?
+		beq	2$			; if not then go to 2$
+		mov	#$swreg, swr		; use APT switch register
+2$:		mov	#1, @#temp1		; temp1=1
+		clr	@#temp2			; temp2=0
+		mov	#1, @#temp3		; temp3=1
+		clr	@#temp4			; temp4=0
+;_____________________________________________________________________________
+;
+; ASH instruction tests, tests 1-36
+;
+start:		scope1				;
+		mov	@#temp1, R0		;
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	2$		 	; if not then go to 2$
+		mov	@#temp2, R1		; otherwise execute the instruction
+		ash	R1, R0			; in mode 0 using R1
+		br	4$			;
+2$:		ash	temp2, R0	 	; shift R0 by the number specified by temp2
+4$:		mfps	@#psword		; save PSW
+		cmpb	@#temp4, @#psword	; is the PSW = temp4 ?
+                $err	1			; the ps is not equal to 0
+						;
+		inc	@#count			; increment the counter
+		cmp	@#temp3, R0		; is the result in R0 equal to temp3?
+		$err	2, 6$			; either incorrect R0 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$		 	; if not go to the hlt above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers been shifted left
+		bge	8$			; by 14. and right by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift temp3 left.
+		cmp	(R5), #20		; has the contents of registers been shifted left by 14.?
+		bne	reg1			;
+		jmp	negat			; if so go to negat and initiate right shift
+8$:		jsr	PC, tst37		; if so go and continue the rest of the program
+						;
+reg1:		scope3				;
+		mov	@#temp1, R1		; load R1 with the contents of temp1
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R2		; otherwise execute ash instruction in mode 0
+		ash	R2, R1			; using R1
+		br	4$			;
+2$:		ash	temp2, R1		; shift R1 by the number specified by temp2
+4$:		mfps	@#psword		; save PSW
+		cmpb	@#temp4, @#psword	; is the PSW = temp4 ?
+		$err	3			; the PSW is not equal to 0
+						;
+		inc	@#count			; increment the counter
+		cmp	@#temp3, R1		; is the result in R1 equal to temp3?
+		$err	4, 6$			; either incorrect R1 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the hlt above
+		inc	(R5)			;
+		scope3				;
+		cmp	(R5), #37		; has the contents of registers been shifted left
+		bge	8$			; by 14. and right by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift temp3 left
+		cmp	(R5), #20		; has the contents of registers been shifted left by 14.?
+		bne	reg2			;
+		jmp	negat			; if so go to negat and initiate right shift
+8$:		jsr	PC, tst37		; if so go and continue the rest of the program
+reg2:		scope1				;
+		mov	@#temp1, R2		; load R2 with the contents of temp1
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R3		; otherwise execute ash instruction in mode 0
+		ash	R3, R2			; using R2
+		br	4$			;
+2$:		ash	temp2, R2		; shift R2 by the number specified by temp2
+4$:		mfps	@#psword		; save PSW
+		cmpb	@#temp4, @#psword	; is the PSW = temp4 ?
+		$err	5			; the PSW is not equal to 0
+						;
+		inc	@#count			;
+		cmp	@#temp3, R2		; is the result in R2 equal to temp3?
+		$err	6, 6$			;
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the hlt above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers been shifted
+		bge	8$ 			; left by 14. and right by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shifted temp3 left
+		cmp	(R5), #20		; has the contents of registers been shifted left by 14.?
+		bne	reg3			;
+		jmp	negat			; if so go to negat and initiate right shift
+8$:		jsr	PC, tst37		; if so	go and continue	the rest of the	program
+						;
+reg3:		scope1				;
+		mov	@#temp1, R3		; load R3 with the contents of temp1
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R4		; otherwise execute ash instruction in mode 0
+		ash	R4, R3			; using	R3
+		br	4$			;
+2$:		ash	temp2, R3		; shift R3 by the number specified by temp2
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp4, @#psword	; is the PSW = temp4 ?
+		$err	7			; the PSW is not equal to 0.
+						;
+		inc	@#count			;
+		cmp	@#temp3, R3		; is the result in R3 equal to temp3?
+		$err	10, 6$			; either incorrect R3 or incorrect sequence
+						;
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the hlt above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers been shifted
+		bge	8$			; left by 14, and right by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift temp3 left?
+		cmp	(R5),#20		; has the contents of registers been shifted left by 14.?
+		bne	reg4			;
+		br	negat			; if so go to negat and initiate right shift
+8$:		jsr PC,tst37			; if so go and continue the rest of the program
+						;
+reg4:		scope3				;
+		mov	@#temp1, R4		; load R4 with the contents of temp1
+		mov	R5, R1			; save R5
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R5		; otherwise execute ash instruction in mode 0
+		ash	R5, R4			; using R4
+		br	4$			;
+2$:		ash	temp2, R4		; shift R4 by the number specified by temp2
+4$:		mfps	@#psword		; save PSW
+		cmpb	@#temp4, @#psword	; is ps = temp4 ?
+		$err	11			; the ps is not equal to 0
+						;
+		inc	@#count			;
+		cmp	@#temp3, R4		; is the result in R4 equal to temp3?
+		$err	12, 6$			;
+						;
+		mov	R1, R5			; restore R5
+		cmp	(R5), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the hlt above
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers been
+		bge	8$			; shifted left by 14. and right by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift temp3 left
+		cmp	(R5), #20		; has the contents of register been shifted by 14.?
+		bne	reg5			;
+		br	negat			; if so go to negat and initiate right shift
+8$:		jsr	PC, tst37		; if so go and continue the rest of the program
+						;
+reg5:		scope1				;
+		mov	R5, R1			; save R5
+		mov	@#temp1, R5		; load R5 with the contents of temp1
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp2, R0		; otherwise execute ash instruction in mode 0
+		ash	R0, R5			; using R5
+		br	4$			;
+2$:		ash	temp2, R5		; shift R5 by the number specified by temp2
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp4, @#psword	; is ps = temp4 ?
+		$err	13			; the PSW 1s not equal to 0.
+						;
+		inc	@#count			;
+		cmp	@#temp3, R5		; is the result in R5 equal to temp3?
+		$err	14, 6$			; either incorrect R5 or incorrect sequence
+						;
+		cmp	(R1), @#count		; is the test number equal to the counter?
+		bne	6$			; if not go to the hlt above
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+		scope1				;
+		cmp	(R5), #37		; has the contents of registers been shifted
+		bge	8$			; left by 14. and right by 14.?
+		inc	@#temp2			;
+		asl	temp3			; shift temp3 left
+		cmp	(R5), #20		; has the contents of registers been shifted left by 14.?
+		beq	negat			; if so go to negat and initiate right shift
+		br	10$			;
+8$:		jsr	PC, tst37		;
+10$:		jmp	start			; go back to start
+						;
+negat:		mov	#40000, @#temp1		; temp1=40000
+		mov	#177762, @#temp2	; temp2=177762
+		mov	#1, @#temp3		; temp3=1
+		jmp	start			;
+;_____________________________________________________________________________
+;
+tst37:		cmp	(R5), #37		; is it test 37?
+		bne	tst40			; if not then try test 40
+		clr	@#temp1			;
+		mov	#16., @#temp2		; shifted by 16
+		clr	@#temp3			; is=0
+		mov	#4, @#temp4		; and ps=4
+		rts	PC			;
+						;
+tst40:		cmp	(R5), #40		; is it test 40?
+		bne	tst41			; if not then try test 41
+		clr	@#temp2			; 0 shifted by 0=0 and ps=4
+		rts	PC			;
+						;
+tst41:		cmp	(R5), #41		; is it test 41?
+		bne	tst42			; if not then try test 42
+		mov	#-16., @#temp2		; 0 shifted by -16.=0 and ps=4
+		rts	PC			;
+						;
+tst42:		cmp	(R5), #42		; is it test 42?
+		bne	tst43			; if not then try test 43
+		mov	#100000, @#temp1	;
+		inc	@#temp2			; shifted  by -15
+		dec	@#temp3			; is=-1
+		mov	#10, @#temp4		; and ps=10
+		rts	PC			;
+						;
+tst43:		cmp	(R5), #43		; is it test 43?
+		bne	tst44			; if not then if not then try test 44
+		mov	#125252, @#temp1	;
+		mov	#-1, @#temp2		; shifted by -1
+		mov	#152525, @#temp3	; is=152525 and ps=10
+		rts	PC			;
+						;
+tst44:		cmp	(R5), #44		; is it test 44?
+		bne	tst45			; if  not then try test 45
+		mov	#1, @#temp2		; 125252 shifted by 1
+		mov	#52524, @#temp3		; is=52524
+		mov	#3, @#temp4		; and ps=3
+		rts	PC			;
+						;
+tst45:		cmp	(R5), #45		; is it test 45?
+		bne	tst46			; if  not then try test 46
+		mov	#-2, @#temp2		; 125252 shifted by -2
+		mov	#165252, @#temp3	; is=165252
+		mov	#11, @#temp4		; and ps=11
+		rts	PC			;
+						;
+tst46:		cmp	(R5), #46		; is it test 46?
+		bne	tst47			;if not then try test 47
+		mov	#-1, @#temp1		; -1
+		mov	#16., @#temp2		; shifted by 15.
+		clr	@#temp3			; is=0
+		mov	#7, @#temp4		; and ps=7
+		rts	PC			;
+						;
+tst47:		cmp	(R5), #47		; is it test 47?
+		bne	tst50			; if  not then try test 50
+		dec	@#temp2			; -1 shifted by 15
+		mov	#100000, @#temp3	; is=100000
+		mov	#11, @#temp4		; and ps=11
+		rts	 PC			;
+						;
+tst50:		cmp	 (R5), #50		; is it test 50
+		 bne	 ent51			; if not then try test 51
+		 mov	 #137777, @#temp1	; 137777 shifted by 15. is=100000
+		 mov	 #13, @#temp4		; and ps=13
+		 rts	 PC			;
+						;
+ent51:		cmp	 (R5), #51		; is it entering test 51?
+		$err	15			; test number goofed
+		tst	(SP)+			; restore stack pointer
+		mov	#-7, R4			;
+		mov	#s1, R2			;
+		mov	#s2, R3			;
+;_____________________________________________________________________________
+;
+; Test 51 - ash 125252 shifted by #5 = 52500 ps = 3
+;
+tst51:		scope1				;
+		mov	#125252, R1		; load R1 with 125252
+		ash	#5, R1			; shift R1 by #5
+		mfps	@#psword		; save ps
+		cmpb	#3, @#psword		; is the ps 3?
+		$err	16			; the ps is not equal to 3
+		cmp	#52500, R1		; is the result 52500?
+		$err	17, 1$			; R1 is not equal to 52500
+		cmp	(R5), #51		; is $testn = #51
+		bne	1$			; if not then go to hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 52  - ash 125252 shifted by @s2 = 177525 ps = 10
+;
+tst52:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@s2, R0			; shift R0 by @s2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	20			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	21, 1$			; R0 is not equal to 177525
+		cmp	(R5), #52		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 53 - ash 125252 shifted by @#s1 = 177525 ps = 10
+;
+tst53:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@#s1, R0		; shift R0 by @#s1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	22			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	23, 1$			; R0 is not equal to 177525
+		cmp	(R5), #53		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 54 - ash 125252 shifted by (2) = 177525 ps = 10
+;
+tst54:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	(R2), R0		; shift R0 by (R2)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	24			; the ps is not equal to 10
+		cmp	#177525,R0		; is the result 177525?
+		$err	25, 1$			; R0 is not equal to 177525
+		cmp	(R5), #54		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 55 - ash 125252 shifted by (2)+ = 177525 ps = 10
+;
+tst55:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	(R2)+, R0		; shift	R0 by (R2)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	26			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	27, 1$			; R0 is not equal to 177525
+		cmp	(R5), #55		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 56 - ash 125252 shifted by -(2) = 177525 ps = 10
+;
+tst56:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	-(R2), R0		; shift R0 by -(R2)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	30			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	31, 1$			; R0 is not equal to 177525
+		cmp	(R5), #56		; is $testn = #56
+		bne	1$			; if not then go to hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 57 - ash 125252 shifted by 2(3) = 177252 ps = 11
+;
+tst57:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	2(R3), R0		; shift R0 by 2(R3)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps = 11?
+		$err	32			; the ps is not equal to 11
+		cmp	#177252, R0		; is the result 177252?
+		$err	33, 1$			; R0 is not equal to 177252
+		cmp	(R5), #57		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 60 - ash 125252 shifted by @(3) = 177525 ps = 10
+;
+tst60:		scope1
+		mov	#125252, R0		; load R0 with 125252
+		ash	@(R3), R0		; shift R0 by @(R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	34			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	35, 1$			; R0 is not equal to 177525
+		cmp	(R5), #60		; is $testn = #60
+		bne	1$			; if not then go to hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 61 - ash 125252 shifted by @(3)+ = 177525 ps = 10
+;
+tst61:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@(R3)+, R0		; shift R0  by @(R3)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	36			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	37, 1$			;
+		cmp	(R5), #61		; is $testn = #61
+		bne	1$			; if not then go to hltabove
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 62 - ash 125252 shifted by @-(3) = 177525 ps = 10
+;
+tst62:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		ash	@-(R3), R0		; shift R0 by @-(R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	40			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	41, 1$			; R0 is not equal to 177525
+		cmp	(R5), #62		; is $testn = #62
+		bne	1$			; if not then go to hlt above
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; ASHC instruction tests - tests 63-157
+;
+		mov	#62, @#count		;
+		clr	@#temp1			; temp1=0
+		mov	#1, @#temp2		; temp2=1
+		clr	@#temp3			; temp3=0
+		clr	@#temp4			; temp4=0
+		mov	#1, @#temp5		; temp5=1
+		clr	@#temp6			; 0 1 shifted by 0=0 1, ps=0
+						;
+reg01:		scope3				;
+		mov	R5,R2			; save R5
+		mov	@#temp1, R0		; place the contents of temp1 in register 0
+		mov	@#temp2, R1		; place the contents of temp2 in register 1
+		clc				;
+		bit	#1, @#$pass		; is it an even pass  ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp3, R5		; otherwise execute ashc instruction in mode 0
+		ashc	R5, R0			; using R0
+		br	4$			;
+						;
+2$:		ashc	temp3, R0		; ashc register 0 by the contents of temp3
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp6, @#psword	; compare ps with the contents of tem?6
+		$err	42			; wrong ps
+		inc	@#count			;
+		cmp	@#temp4, R0		; is the result in R0 same as temp4?
+		$err	43			; wrong result in R0
+		cmp	@#temp5, R1		; is the result in R1 same as temp5?
+		$err	44			; wrong result in R1
+		mov	R2, R5			; restore R5
+		cmp	(R5), @#count		; is test number=counter?
+		$err	45			; no
+						;
+		inc	(R5)			;
+		cmp	(R5), #160		; have the first 159 test been executed?
+		bge	6$			; yes
+		inc	@#temp3			;
+		clc				;
+		rol	@#temp5			; rotate temp5 left by 1 place
+		rol	@#temp4			; introduce carry from temp4 in temp5
+		cmp	(R5), #121		; is it test 121?
+		bne	reg23			;
+		jsr	R4, ritsh		; if so then go and initiate right shift
+6$:		jsr	PC, tst160		;
+;_____________________________________________________________________________
+;
+reg23:		scope1				;
+		mov	@#temp1, R2		; place the contents of temp1 in register 2
+		mov	@#temp2, R3		; place the contents of temp2 in register 3
+		clc				;
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp3, R4		; otherwise execute ashc instruction in mode 0
+		ashc	R4, R2			; using R2
+		br	4$			;
+2$:		ashc	temp3, R2		; ashc register 2 by the contetns of temp3
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp6, @#psword	; compare ps with the contents of temp6
+		$err	46			; wrong ps
+		inc	@#count			;
+		cmp	@#temp4, R2		; is the result in R2 same as temp4?
+		$err	47			; wrong result in R2
+		cmp	@#temp5, R3		; is the result in R3 same as temp5?
+		$err	50			; wrong result in R1
+		cmp	(R5), @#count		; is test number=counter?
+		$err	51			;
+		inc	(R5)			;
+		cmp	(R5), #160		; have the first 159 test been executed?
+		bge	6$			; yes
+		inc	@#temp3			;
+		clc				;
+		rol	@#temp5			; rotate temp5 left by 1 place
+		rol	@#temp4			; introduce carry from temp5 in temp4
+		cmp	(R5), #121		; is it test 121?
+		bne	reg45			;
+		jsr	R4, ritsh		; if so then go and initiate right shift
+6$:     	jsr	PC, tst160		;
+						;
+reg45:		scope1				;
+		mov	R5, R1			; save R5
+		mov	@#temp1, R4		; place the contents of temp1 in register 4
+		mov	@#temp2, R5		; place the contents of temp2 in register 5
+		clc				;
+		bit	#1, @#$pass		; is it an even pass ?
+		bne	2$			; if not then go to 2$
+		mov	@#temp3, R0		; otherwise execute ashc instruction in mode 0
+		ashc	R0, R4			; using R4
+		br	4$			;
+						;
+2$:		ashc	temp3, R4		; ashc register	4 by the contents of temp3
+4$:		mfps	@#psword		; save ps
+		cmpb	@#temp6, @#psword	; compare ps with the contents of temp6
+		$err	52			; wrong ps
+		inc	@#count			;
+		cmp	@#temp4, R4		; is the result in R4 same as temp4?
+		$err	53			; wrong result in R4
+		cmp	@#temp5, R5		; is the result in R5 same as temp5?
+		$err	54			; wrong result in R5
+		cmp	(R1), @#count		; is test number=counter?
+		$err	55			;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+		cmp	(R5), #160		; have the first 159 test been executed?
+		bge	6$			; yes
+		inc	@#temp3			;
+		clc				;
+		rol	@#temp5			; rotate temp5 left by 1 place
+		rol	@#temp4			; introduce carry from temp5 in temp4
+		cmp	(R5), #121		; is it test 121?
+		bne	8$			;
+		jsr	R4, ritsh		; if so then go and initiate right shift
+6$:		jsr	PC, tst160		;
+8$:		jmp	reg01			;
+						;
+ritsh:		cmp	(R4)+, (R4)+		; make R4 point to the next reg tag
+		mov	#40000, @#temp1		; temp1=4000
+		clr	@#temp2			; temp2=0
+		mov	#-30., @#temp3		; temp3=-30
+		clr	@#temp4			; temp4=0
+		inc	@#temp5			; temp5=1
+		rts	R4			;
+;_____________________________________________________________________________
+;
+tst160:		cmp	(R5), #160		; is it test 160
+		bne	tst161			; if not then try test 161
+		clr	@#temp1			; 0 0 shifted by 0
+		clr	@#temp4			; is equal to 0 0
+		mov	#4, @#temp6		; and ps=4
+		rts	PC			;
+						;
+tst161:		cmp	(R5), #161		; is it test 161
+		bne	tst162			;
+		mov	#-32, @#temp3		; 0 0 shifted by -32=0 0, ps=4
+		rts	PC			;
+						;
+tst162:		cmp	(R5), #162		; is it test 162
+		bne	tst163			; if not then try test 163
+		mov	#32, @#temp3		; 0 0 shifted by 32=0 0, ps=4
+		rts	PC			;
+						;
+tst163:		cmp	(R5), #163		; is it test 163?
+		bne	tst164			; if not then try test 164
+		mov	#52525, @#temp1		; 52525 0
+		mov	#-16., @#temp3		; shifted by -16.
+		clr	@#temp4			;
+		mov	#52525, @#temp5		; is equal to 0 52525
+		clr	@#temp6			; and ps = 0
+		rts	PC			;
+						;
+tst164:		cmp	(R5), #164		; is it test 164?
+		bne	tst165			; if not then try test 165
+		mov	#125252, @#temp1	; 125252 0 shifted by -16.
+		dec	@#temp4			;
+		mov	#125252, @#temp5	; is equal to -1 125252
+		mov	#10, @#temp6		; and ps=10
+		rts	PC			;
+						;
+tst165:		cmp	(R5), #165		; is it test 165?
+		bne	tst166			; if not then try test 166
+		mov	#-1, @#temp1		; -1 0 shifted by -16
+		mov	#-1, @#temp5		; is equal to -1 -1, and ps=10
+		rts	PC			;
+						;
+tst166:		cmp	(R5), #166		; is it test 166?
+		bne	tst167			; if not then try test 167
+		mov	#100000, @#temp1	; 100000 0
+		mov	#-32., @#temp3		; shifted by -32 is equal to -1 -1
+		inc	@#temp6			; and ps=11
+		rts	PC			;
+						;
+tst167:		cmp	(R5), #167		; is it test  167?
+		bne	tst170			; if not then try test 170
+		clr	@#temp1			;
+		dec	@#temp2			; 0 -1
+		mov	#16., @#temp3		; shifted by 16.
+		clr	@#temp5			; is equal to -1 0
+		inc	@#temp6			; and ps=12
+		rts	PC			;
+						;
+tst170:		cmp	(R5), #170		; is it test 170?
+		bne	tst171			; if not then try test 171
+		mov	#125252, @#temp2	; 0 125252 shifted by 16
+		mov	#125252, @#temp4	; is equal to 125252 0, and ps=12
+		rts	PC			;
+						;
+tst171:		cmp	(R5), #171		; is it test 171?
+		bne	tst172			; if not then try test 172
+		dec	@#temp3			; 0 125252 shifted by 15
+		mov	#52525, @#temp4		; is equal to 52525 0
+		clr	@#temp6			; and ps=0
+		rts	PC			;
+						;
+tst172:		cmp	(R5), #172		; is it test 172?
+		bne	tst173			; if not then try test 173
+		mov	#52525, @#temp2		; 0 52525
+		inc	@#temp3			; shifted by 16. is equal to 52525 0, and ps=0
+		rts	PC			;
+						;
+tst173:		cmp	(R5), #173		; is it test 173?
+		bne	tst174			; if not then try test 174
+		mov	#-1, @#temp2		; 0 -1
+		dec	@#temp3			; shifted by 15.
+		mov	#77777, @#temp4		;
+		mov	#100000, @#temp5	; is equal to 77777 100000, and ps=0
+		rts	PC			;
+						;
+tst174:		cmp	(R5), #174		; is it test 174?
+		bne	tst175			; if not then try test 175
+		mov	#100000, @#temp1	;
+		dec	@#temp2			; 100000 -2 shifted by 15.
+		clr	@#temp5			; is equal to 77777 0
+		mov	#2, @#temp6		; and ps=2
+		rts	PC			;
+						;
+tst175:		cmp	(R5), #175		; is it test 175?
+		bne	ent176			; if not then try test 176
+		mov	#-1, @#temp1		;
+		clr	@#temp2			; -1 0
+		inc	@#temp3			; shifted by  16.
+		clr	@#temp4			; is equal to 0 0
+		mov	#7,@#temp6		; and ps=7
+		rts	PC			;
+						;
+ent176:		cmp	(R5), #176		; is the progrm entering test 176?
+		$err	56			; test number goofed
+		tst	(SP)+			; restore stack pointer
+;_____________________________________________________________________________
+;
+; Test 176 - 1 shifted by 8, = 400 ps = 0
+;
+tst176:		scope1				;
+		mov	#dummy, R1		; load R1 with dummy
+		mov	#1, R1			; load R1 with 1
+		clc				;
+		ashc	#8., R1			; shift R1,R1 by 8,
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is the ps 0?
+		$err	57			; the ps is not equal to 0
+		cmp	#400, R1		; is the result 400?
+		$err	60			; R1 is not equal to 400
+		cmp	(R5), #176		;
+		$err	61			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 177 - -1 shifted by 15, = 100000 ps = 11
+;
+tst177:		scope1				;
+		mov	#dummy, R3		; load R3 with dummy
+		mov	#-1, R3			; load R3 with -1
+		clc				;
+		ashc	#15., R3		; shift R3,R3 by 15.
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps = 11?
+		$err	62			; the ps is not equal to 11
+		cmp	#100000, R3		; is the result 100000?
+		$err	63			; R3 is not equal to 100000
+		cmp	(R5), #177		;
+		$err	64			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 200 - 52525 shifted by 0 = 52525 ps = 0
+
+tst200:		scope1				;
+		mov	R5, R1			; save R5
+		mov	#dummy, R5		; load R5 with dummy
+		mov	#52525, R5		; load R5 with 52525
+		clc				;
+		ashc	#0, R5			; shift R5,r5h by 0
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is the ps 0?
+		$err	65			; the ps is not equal to 0
+		cmp	#52525, R5		; is the result 52525?
+		$err	66			; R5 is not equal to 52525
+		mov	R1, R5			; restore R5
+		cmp	(R5), #200		;
+		$err	67			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 201 - 20010 shifted by -13, = 101 ps = 0
+;
+tst201:		scope1				;
+		mov	#dummy, R1		; load R1 with dummy
+		mov	#20010, R1		; load R1 with 20010
+		clc				;
+		ashc	#-13., R1		; shift R1,R1 by -13.
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is the ps 0?
+		$err	70			; the ps is not equal to 0
+		cmp	#101, R1		; is the result 101?
+		$err	71			; R1 is not equal to 101
+		cmp	(R5), #201		;
+		$err	72			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 202 - -1 shifted by 16. = 0 ps = 11
+;
+tst202:		scope1				;
+		mov	#dummy, R3		; load R3 with dummy
+		mov	#-1, R3			; load R3 with -1
+		clc				;
+		ashc	#16., R3		; shift R3,R3 by 16.
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps = 11?
+		$err	73			; the ps is not equal to 11
+		cmp	#0, R3			; is the result 0?
+		$err	74			;
+		cmp	(R5), #202		;
+		$err	75			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 203 - 1 shifted by -1 = 100000 ps = 1
+;
+tst203:		scope1				;
+		mov	R5, R1			; save R5
+		mov	#dummy, R5		; load R5 with dummy
+		mov	#1, R5			; load R5 with 1
+		clc				;
+		ashc	#-1, R5			; shift R5,r5h by  -1
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is the ps 1?
+		$err	76			; the ps is not	equal to 1
+		cmp	#100000, R5		; is the result 100000?
+		$err	77			; R5 is not equal to 100000
+		mov	R1, R5			; restore R5
+		cmp	(R5), #203		;
+		$err	100			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 204 - 125252 shifted by -16. = 125252 ps = 11
+;
+tst204:		scope1				;
+		mov	#dummy, R1		; load R1 with dummy
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	#-16., R1		; shift R1,R1 by -16.
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps = 11?
+		$err	101			; the ps is not equal to 11
+		cmp	#125252, R1		; is the result 125252?
+		$err	102			; R1 is not equal to 125252
+		cmp	(R5), #204		;
+		$err	103			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 205 - 125252 125252 shifted by 21. = 52500 000000 ps = 3
+;
+tst205:		scope1				;
+		mov	#125252, R2		; load R2 with 125252
+		mov	#125252, R3		; load R3 with 125252
+		clc				;
+		ashc	#21., R2		; shift R2,R3 by 21.
+		mfps	@#psword		; save ps
+		cmpb	#3, @#psword		; is the ps 3?
+		$err	104			; the ps is not equal to 3
+		cmp	#52500, R2		; is the result 52500?
+		$err	105			; R2 is not equal to 52500
+		cmp	#000000, R3		; is the result 000000?
+		$err	106			; R3 is not equal to 000000
+		cmp	(R5), #205		;
+		$err	107			; test is in wrong sequence
+		inc	(R5)			;
+		mov	#-7, R2			;
+		mov	#s1, R3			;
+		mov	#s2, R4			;
+;_____________________________________________________________________________
+;
+; Test 206 - 125252 125252 shifted by s1 = 177525 52525 ps = 10
+;
+tst206:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	s1, R0			; shift R0,R1 by s1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	110			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	111			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	112, 1$			;
+		cmp	(R5), #206		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 207 - 125252 125252 shifted by @s2 = 177525 52525 ps = 10
+;
+tst207:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	@s2, R0			; shift R0,R1 by @s2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	113			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	114			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	115, 1$			;
+		cmp	(R5), #207		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 210 - 125252 125252 shifted by @#s1 = 177525 52525 ps = 10
+;
+tst210:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	@#s1, R0		; shift R0,R1 by @#s1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	116			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	117			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	120, 1$			;
+		cmp	(R5), #210		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 211 - 125252 125252 shifted by (R3) = 177525 52525 ps = 10
+;
+tst211:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	(R3), R0		; shift R0,R1 by (R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	121			; the ps is not	equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	122			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	123, 1$			;
+		cmp	(R5), #211		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 212 - 125252 125252 shifted by (R3)+ = 177525 52525 ps = 10
+;
+tst212:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	(R3)+, R0		; shift R0,R1 by (R3)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	124			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	125			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	126, 1$			;
+		cmp	(R5), #212		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 213 - 125252 125252 shifted by -(R3) = 177525 52525 ps = 10
+;
+tst213:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	-(R3), R0		; shift R0,R1 by -(R3)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	127			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	130			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	131, 1$			;
+		cmp	(R5), #213		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 214 - 125252 125252 shifted by 2(R4) = 177252 125252 ps = 11
+;
+tst214:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc     			;
+		ashc	2(R4), R0		; shift R0,R1 by 2(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is the ps = 11?
+		$err	132			; the ps is not equal to 11
+		cmp	#177252, R0		; is the result 177252?
+		$err	133			; R0 is not equal to 177252
+		cmp	#125252, R1		; is the result 125252?
+		$err	134, 1$			;
+		cmp	(R5), #214		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 215 - 125252 125252 shifted by @(R4) = 177525 52525 ps = 10
+;
+tst215:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	@(R4), R0		; shift R0,R1 by @(R4)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	135			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	136			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	137, 1$			;
+		cmp	(R5), #215		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 216 - 125252 125252 shifted by @(R4)+ = 177525 52525 ps = 10
+
+tst216:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1 with 125252
+		clc				;
+		ashc	@(R4)+, R0		; shift R0,R1 by @(R4)+
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	140			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	141			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	142, 1$			;
+		cmp	(R5), #216		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 217 - 125252 125252 shifted by @-(R4) = 177525 52525 ps = 10
+;
+tst217:		scope1				;
+		mov	#125252, R0		; load R0 with 125252
+		mov	#125252, R1		; load R1, with 125252
+		clc				;
+		ashc	@-(R4), R0		; shift R0,R1 by @-(R4)
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is the ps 10?
+		$err	143			; the ps is not equal to 10
+		cmp	#177525, R0		; is the result 177525?
+		$err	144			; R0 is not equal to 177525
+		cmp	#52525, R1		; is the result 52525?
+		$err	145, 1$			;
+		cmp	(R5), #217		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; MUL instruction tests
+;
+; Test 220  - mul 1 * #0 = 0 0 ps = 4
+;
+tst220:		scope				;
+		mov	#1, R0			; load multiplicand with 1
+		mul	#0, R0			; multiply 1 * #0
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps =  4
+		$err	146			; ps is wrong
+		cmp	#0, R0			; is high order = 0
+		$err	147			; high order is wrong
+		cmp	#0, R1			; is low order = 0
+		$err	150, 1$			;
+		cmp	(R5), #220		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 221 - mul -1 * #1 = -1 -1 ps = 10
+;
+tst221:		scope				;
+		mov	#-1, R0			; load multiplicand with -1
+		mul	#1, R0			; multiply -1 * #1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword 		; is ps = 10
+		$err	151			; ps is wrong
+		cmp	#-1, R0			; is high order = -1
+		$err	152			; high order is wrong
+		cmp	#-1, R1			; is low order = -1
+		$err	153, 1$			;
+		cmp	(R5), #221		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 222 - mul 2*#2=04 ps=0
+;
+tst222:		scope   			;
+		mov	#2, R2			; load multiplicand with 2
+		mul	#2, R2			; multiply 2 * #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	154			; ps is wrong
+		cmp	#0, R2			; is high order = 0
+		$err	155			; high order is wrong
+		cmp	#4, R3			; is low order = 4
+		$err	156, 1$			;
+		cmp	(R5), #222		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 223 - mul 1000 * #200 = 1 0 ps = 1
+;
+tst223:		scope				;
+		mov	R5, R1			; save R5
+		mov	#1000, R4		; load multiplicand with 1000
+		mul	#200, R4		; multiply 1000 * #200
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps = 1
+		$err	157			; ps is wrong
+		cmp	#1, R4			; is high order = 1
+		$err	160			; high order is wrong
+		cmp	#0, R5			; is low order = 0
+		$err	161, 1$			;
+		cmp	(R1), #223		;
+		bne	1$			;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 224 - mul 2 * #77777 = 0 177776 ps = 1
+;
+tst224:		scope				;
+		mov	#2, R0			; load multiplicand with 2
+		mul	#77777, R0		; multiply 2 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps = 1
+		$err	162			; ps is wrong
+		cmp	#0, R0			; is high order = 0
+		$err	163			; high order is wrong
+		cmp	#177776, R1		; is low order = 177776
+		$err	164, 1$			;
+		cmp	(R5), #224		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 225 - mul 7777 * #10 = 0 77770 ps = 0
+;
+tst225:		scope				;
+		mov	#7777, R2		; load multiplicand with 7777
+		mul	#10, R2	 		; multiply 7777 * #10
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	165			; ps is wrong
+		cmp	#0, R2			; is high order = 0
+		$err	166			; high order is wrong
+		cmp	#77770, R3		; is low order = 77770
+		$err	167, 1$			;
+		cmp	(R5), #225		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 226 - mul 77777 # #77777 = 37777 1 ps = 1
+;
+tst226:		scope				;
+		mov	R5, R1			; save R5
+		mov	#77777, R4		; load multiplicand with 77777
+		mul	#77777, R4		; multiply 77777 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps = 1
+		$err	170			; ps is wrong
+		cmp	#37777, R4		; is high order = 37777
+		$err	171			; high order is wrong
+		cmp	#1, R5			; is low order = 1
+		$err	172, 1$			;
+		cmp	(R1), #226		;
+		bne	1$			;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 227 - mul -1 * #77777 = -1 100001 ps = 10
+;
+tst227:		scope				;
+		mov	#-1, R2			; load multiplicand with -1
+		mul	#77777, R2		; multiply -1 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps = 10
+		$err	173			; ps is wrong
+		cmp	#-1, R2			; is high order = -1
+		$err	174			; high order is wrong
+		cmp	#100001, R3		; is low order = 100001
+		$err	175, 1$			;
+		cmp	(R5), #227		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 230 - mul -2 * #77777 = -1 2 ps = 11
+;
+tst230:		scope				;
+		mov	#-2, R0			; load multiplicand with -2
+		mul	#77777, R0		; multiply -2 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	176			; ps is wrong
+		cmp	#-1, R0			; is high order = -1
+		$err	177			; high order is wrong
+		cmp	#2, R1			; is low order = 2
+		$err	200, 1$			;
+		cmp	(R5), #230		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 231 - mul 125252 # #2 = -1 52524 ps = 11
+;
+tst231:		scope				;
+		mov	#125252, R2		; load multiplicand with 125252
+		mul	#2, R2			; multiply 125252 * #2
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	201			; ps is wrong
+		cmp	#-1, R2			; is high order = -1
+		$err	202			; high order is wrong
+		cmp	#52524, R3		; is low order = 52524
+		$err	203, 1$			;
+		cmp	(R5), #231		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 232 - mul 125252 * #40000 = 165252 100000 ps = 11
+;
+tst232:		scope				;
+		mov	R5, R1			; save R5
+		mov	#125252, R4		; load multiplicand with 125252
+		mul	#40000, R4		; multiply 125252 * #40000
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	204			; ps is wrong
+		cmp	#165252, R4		; is high order = 165252
+		$err	205			; high order is wrong
+		cmp	#100000, R5		; is low order = 100000
+		$err	206, 1$			;
+		cmp	(R1), #232		;
+		bne	1$			;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 233 - mul 107070 * #107070 = 31222 26100 ps = 1
+;
+tst233:		scope				;
+		mov	#107070, R0		; load multiplicand with 107070
+		mul	#107070, R0		; multiply 107070 * #107070
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps = 1
+		$err	207			; ps is wrong
+		cmp	#31222, R0		; is high order = 31222
+		$err	210			; high order is wrong
+		cmp	#26100, R1		; is low order = 26100
+		$err	211, 1$			;
+		cmp	(R5), #233		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 234 - mul -1 * #1 = -1 -1 ps = 10
+;
+tst234:		scope				;
+		mov	#-1, R1			; load multiplicand with -1
+		mul	#1, R1			; multiply -1 * #1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps = 10
+		$err	212			; ps is wrong
+		cmp	#-1, R1			; is high order = -1
+		$err	213			; high order is wrong
+		cmp	#-1, R1			; is low order = -1
+		$err	214, 1$			;
+		cmp	(R5), #234		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 235 - mul -1 * #0 = 0 0 ps = 4
+;
+tst235:		scope				;
+		mov	#-1, R3			; load multiplicand with -1
+		mul	#0, R3			; multiply -1 * #0
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps = 4
+		$err	215			; ps is wrong
+		cmp	#0, R3			; is high order = 0
+		$err	216			; high order is wrong
+		cmp	#0, R3			; is low order = 0
+		$err	217, 1$			;
+		cmp	(R5), #235		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 236 - mul 77777 * #100000 = 100000 100000 ps = 11
+;
+tst236:		scope				;
+		mov	R5, R1			; save R5
+		mov	#77777, R5		; load multiplicand with 77777
+		mul	#100000, R5		; multiply 77777 * #100000
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	220			; ps is wrong
+		cmp	#100000, R5		; is high order = 100000
+		$err	221			; high order is wrong
+		cmp	#100000, R5		; is low order = 100000
+		$err	222, 1$			;
+		cmp	(R1), #236		;
+		bne	1$			;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 237 - mul -1 * #77777 = 100001 100001 ps = 10
+;
+tst237:		scope				;
+		mov	#-1, R1			; load multiplicand with -1
+		mul	#77777, R1		; multiply -1 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword 		; is ps = 10
+		$err	223			; ps is wrong
+		cmp	#100001, R1		; is high order = 100001
+		$err	224			; high order is wrong
+		cmp	#100001, R1		; is low order = 100001
+		$err	225, 1$			;
+		cmp	(R5), #237		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 240 - mul 77777 * #77777 #11 ps = 1
+;
+tst240:		scope				;
+		mov	#77777, R3		; load multiplicand with 77777
+		mul	#77777, R3		; multiply 77777 * #77777
+		mfps	@#psword		; save ps
+		cmpb	#1, @#psword		; is ps = 1
+		$err	226			; ps is wrong
+		cmp	#1, R3			; is high order = 1
+		$err	227			; high order is wrong
+		cmp	#1, R3			; is low order = 1
+		$err	230, 1$			;
+		cmp	(R5), #240		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 241 - mul 2 * #2 = 4 4 ps = 0
+;
+tst241:		scope				;
+		mov	R5, R1			; save R5
+		mov	#2, R5			; load multiplicand with 2
+		mul	#2, R5			; multiply 2 * #2
+		mfps	@#psword		; save	ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	231			; ps is wrong
+		cmp	#4, R5			; is high order = 4
+		$err	232			; high order is wrong
+		cmp	#4, R5			; is low order = 4
+		$err	233, 1$			;
+		cmp	(R1), #241		;
+		bne	1$			;
+		mov	R1, R5			; restore R5
+		inc	(R5)			;
+		mov	#40000, R2		;
+		mov	#s5, R3			;
+		mov	#s6, R4			;
+;_____________________________________________________________________________
+;
+; Test 242 - mul 125252 * s5 = 165252 100000 ps = 11
+;
+tst242:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	s5, R0			; multiply 125252 * s5
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	234			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	235			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	236, 1$			;
+		cmp	(R5), #242		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 243 - mul 125252 * @s6 = 165252 100000 ps = 11
+;
+tst243:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@s6, R0			; multiply 125252 * @s6
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps	= 11
+		$err	237			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	240			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	241, 1$			;
+		cmp	(R5), #243		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 244 - mul 125252 * @#s5 = 165252 100000 ps = 11
+;
+tst244:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@#s5, R0		; multiply 125252 * @#s5
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	242			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	243			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	244, 1$			;
+		cmp	(R5), #244		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 245 - mul 125252 * R2 = 165252 100000 ps = 11
+;
+tst245:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	R2, R0			; multiply 125252 *  R2
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	245			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	246			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	247, 1$			;
+		cmp	(R5), #245		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 246 - mul 125252 * (R3)+ = 165252 100000 ps = 11
+;
+tst246:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	(R3)+, R0		; multiply 125252 * (R3)+
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	250			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	251			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	252, 1$			;
+		cmp	(R5), #246		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 247 - mul 125252 * -(R3) = 165252 100000 ps = 11
+;
+tst247:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	-(R3), R0		; multiply 125252 * -(R3)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	253			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	254			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	255, 1$			;
+		cmp	(R5), #247		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 250 - mul 125252 * 2(R4) =165252 100000 ps = 11
+;
+tst250:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	2(R4), R0		; multiply 125252 * 2(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	256			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	257			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	260, 1$			;
+		cmp	(R5), #250		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 251 - mul 125252 * @(R4) = 165252 100000 ps = 11
+;
+tst251:		scope				;
+		mov	#125252, R0		; load multiplicand  with 125252
+		mul	@(R4), R0		; multiply 125252 *  @(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	261			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	262			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	263, 1$			;
+		cmp	(R5), #251		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 252 - mul 125252 * @(R4)+ = 165252 100000 ps = 11
+;
+tst252:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@(R4)+, R0		; multiply 125252 * @(R4)+
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	264			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	265			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	266, 1$			;
+		cmp	(R5), #252		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 253 - mul 125252 * @-(R4) = 165252 100000 ps = 11
+
+tst253:		scope				;
+		mov	#125252, R0		; load multiplicand with 125252
+		mul	@-(R4), R0		; multiply 125252 * @-(R4)
+		mfps	@#psword		; save ps
+		cmpb	#11, @#psword		; is ps = 11
+		$err	267			; ps is wrong
+		cmp	#165252, R0		; is high order = 165252
+		$err	270			; high order is wrong
+		cmp	#100000, R1		; is low order = 100000
+		$err	271, 1$			;
+		cmp	(R5), #253		;
+		bne	1$			;
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; DIV instruction tests
+;
+; Test 254  - div 0 4 / #2 = 2 rem = 0 ps = 0
+;
+tst254:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#4, R1			; load low order with 4
+		div	#2, R0			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	272			; ps is wrong
+		cmp	#2, R0			; is quotient = 2
+		$err	273			; quotient is wrong
+		cmp	#0, R1			; is remainder = 0
+		$err	274			;
+		cmp	(R5), #254		;
+		$err	275			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 255 - div -1 -9, / #3 = -3 rem = 0 ps = 10
+;
+tst255:		scope				;
+		mov	#-1, R2			; load high order w1th -1
+		mov	#-9., R3		; load low order with -9.
+		div	#3,R2			; divide by #3
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps = 10
+		$err	276			; ps is wrong
+		cmp	#-3, R2			; is quotient = -3
+		$err	277			; quotient is wrong
+		cmp	#0, R3			; is remainder = 0
+		$err	300			; wrong remainder
+		cmp	(R5), #255		;
+		$err	301			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 256 - div 0 9. / #2 = 4 rem = 1 ps = 0
+;
+tst256:		scope				;
+		mov	R5, R1			; save R5
+		mov	#0, R4			; load high order with 0
+		mov	#9., R5			; load low order with 9,
+		div	#2, R4			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	302			; ps is wrong
+		cmp	#4, R4			; is quotient = 4
+		$err	303			; quotient is wrong
+		cmp	#1, R5			; is remainder = 1
+		$err	304			; wrong remainder
+		mov	R1, R5			; restore R5
+		cmp	(R5), #256           	;
+		$err	305			; test is in wrong sequence
+		inc	(R5)                	;
+;_____________________________________________________________________________
+;
+; Test 257 - div -1 -9, / #2 = -4 rem = -1 ps = 10
+;
+tst257:		scope				;
+		mov	#-1, R0			; load high order with -1
+		mov	#-9., R1		; load low order with -9.
+		div	#2, R0			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps = 10
+		$err	306			; ps is wrong
+		cmp	#-4, R0			; is quotient = -4
+		$err	307			; quotient is wrong
+		cmp	#-1, R1			; is remainder = -1
+		$err	310			; wrong remainder
+		cmp	(R5), #257		;
+		$err	311			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 260 - div 0 2 / #-3 = 0 rem = 2 ps = 4
+;
+tst260:		scope				;
+		mov	#0, R2			; load high order with 0
+		mov	#2, R3			; load low order with 2
+		div	#-3, R2			; divide by #-3
+		mfps	@#psword		; save ps
+		cmpb	#4,@#psword		; is ps = 4
+		$err	312			; ps is wrong
+		cmp	#0, R2			; is quotient = 0
+		$err	313			; quotient is wrong
+		cmp	#2, R3			; is remainder = 2
+		$err	314			; wrong remainder
+		cmp	(R5), #260		;
+		$err	315			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 261 - div -1 -2 / #3 = 0 rem = -2 ps = 4
+;
+tst261:		scope				;
+		mov	R5, R1			; save R5
+		mov	#-1, R4			; load high order with -1
+		mov	#-2, R5			; load low order with -2
+		div	#3, R4			; divide by #3
+		mfps	@#psword		; save ps
+		cmpb	#4,@#psword		; is ps = 4
+		$err	316			; ps is wrong
+		cmp	#0, R4			; is quotient = 0
+		$err	317			; quotient is wrong
+		cmp	#-2, R5			; is remainder = -2
+		$err	320			; wrong remainder
+		mov	R1, R5			; restore R5
+		cmp	(R5), #261		;
+		$err	321			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 262 - div -1 -1 / #1 = -1 rem = 0 ps = 10
+;
+tst262:		scope				;
+		mov	#-1, R0			; load high order with -1
+		mov	#-1, R1			; load low order with -1
+		div	#1, R0			; divide by #1
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps = 10
+		$err	322			; ps is wrong
+		cmp	#-1, R0			; is quotient = -1
+		$err	323			; quotient is wrong
+		cmp	#0, R1			; is remainder = 0
+		$err	324			; wrong remainder
+		cmp	(R5), #262		;
+		$err	325			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 263 - div 0 0 / #1 = 0 rem = 0 ps = 4
+;
+tst263:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#0, R1			; load low order with 0
+		div	#1, R0			; divide by #1
+		mfps	@#psword		; save ps
+		cmpb	#4, @#psword		; is ps = 4
+		$err	326			; ps is wrong
+		cmp	#0, R0			; is quotient = 0
+		$err	327			; quotient is wrong
+		cmp	#0, R1			; is remainder = 0
+		$err	330			; wrong remainder
+		cmp	(R5), #263		;
+		$err	331			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 264 - div -1 125252 / #2 = 152525 rem = 0 ps = 10
+;
+tst264:		scope				;
+		mov	#-1, R2			; load high order with -1
+		mov	#125252, R3		; load low order with 125252
+		div	#2, R2			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#10, @#psword		; is ps = 10
+		$err	332			; ps is wrong
+		cmp	#152525, R2		; is quotient = 152525
+		$err	333			; quotient is wrong
+		cmp	#0, R3			; is remainder = 0
+		$err	334			; wrong remainder
+		cmp	(R5), #264		;
+		$err	335			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 265 - div -1 -1 / #-1 = 1 rem = 0 ps = 0
+;
+tst265:		scope				;
+		mov	R5, R1			; save R5
+		mov	#-1, R4			; load high order with -1
+		mov	#-1, R5			; load low order with -1
+		div	#-1, R4			; divide by #-1
+		mfps	@#psword		; save ps
+		cmpb	#0,@#psword		; is ps = 0
+		$err	336			; ps is wrong
+		cmp	#1, R4			; is quotient = 1
+		$err	337			; quotient is wrong
+		cmp	#0, R5			; is remainder = 0
+		$err	340			; wrong remainder
+		mov	R1, R5			; restore R5
+		cmp	(R5), #265		;
+		$err	341			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 266 - div 25253 1 / #125252 = 100000 rem = 1 ps = 10
+;
+tst266:		scope				;
+		mov	#25253, R0		; load high order with 25253
+		mov	#1, R1			; load low order with 1
+		div     #125252, R0		; d1vide by #125252
+		mfps    @#psword		; save ps
+		cmpb    #10, @#psword		; is ps = 10
+		$err	342			; ps is wrong
+		cmp	#100000, R0		; is quotient = 100000
+		$err	343			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	344			; wrong remainder
+		cmp	(R5), #266		;
+		$err	345			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 267 - div 37777 77777 / #77777 = 77777 rem = 77776 ps = 0
+;
+tst267:		scope				;
+		mov	#37777, R2		; load high order with 37777
+		mov	#77777, R3		; load low order with 77777
+		div	#77777, R2		; divide by #77777
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	346			; ps is wrong
+		cmp	#77777, R2		; is quotient = 77777
+		$err	347			; quotient is wrong
+		cmp	#77776, R3		; is remainder = 77776
+		$err	350			; wrong remainder
+		cmp	(R5), #267		;
+		$err	351			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 270 - div 0 100000 / #2 = 40000 rem = 0 ps = 0
+;
+tst270:		scope				;
+		mov	R5, R1			; save R5
+		mov	#0, R4			; load high order with 0
+		mov	#100000, R5		; load low order w1th 100000
+		div	#2, R4			; divide by #2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	352			; ps is wrong
+		cmp	#40000, R4		; is quotient = 40000
+		$err	353			; quotient is wrong
+		cmp	#0, R5			; is remainder = 0
+		$err	354			;
+		mov	R1, R5			; restore R5
+		cmp	(R5), #270		;
+		$err	355			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 271 - div 177777 77777 / #177776 = 40000 rem = 177777 ps = 0
+;
+tst271:		scope				;
+		mov	#177777, R0		; load high order with 177777
+		mov	#77777, R1		; load low order w1th 77777
+		div	#177776, R0		; divide by #177776
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	356			; ps is wrong
+		cmp	#40000, R0		; is quotient = 40000
+		$err	357			; quotient is wrong
+		cmp	#177777, R1		; is remainder = 177777
+		$err	360			;
+		cmp	(R5), #271		;
+		$err	361			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 272 - div 0 52525 / #52525 = 1 rem = 0 ps = 0
+;
+tst272:		scope				;
+		mov	#0, R2			; load high order with 0
+		mov	#52525, R3		; load low order with 52525
+		div	#52525, R2		; divide by #52525
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	362			; ps is wrong
+		cmp	#1, R2			; is quotient = 1
+		$err	363			; quotient is wrong
+		cmp	#0, R3			; is remainder = 0
+		$err	364			; wrong remainder
+		cmp	(R5), #272		;
+		$err	365			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 273 - div 0 77777 / #0 = dummy rem = dummy ps = 3
+;
+tst273:		scope				;
+		mov	R5, R1			; save R5
+		mov	#0, R4			; load high order with 0
+		mov	#77777, R5		; load low order w1th 77777
+		div	#0, R4			; divide by #0
+		mfps	@#psword		; save ps
+		bic	#14, @#psword		;
+		cmpb	#3, @#psword		; is ps = 3
+		$err	366			; ps is wrong
+		mov	R1, R5			; restore R5
+		cmp	(R5), #273		;
+		$err	367			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test:274 - div 77777 177777 / #2 = dummy rem = dummy ps = 2
+;
+tst274:		scope				;
+		mov	#77777, R0		; load high order with 77777
+		mov	#177777, R1		; load low order w1th 177777
+		div	#2, R0			; divide by #2
+		mfps	@#psword		; save ps
+		bic	#14, @#psword		;
+		cmpb	#2, @#psword		; is ps = 2
+		$err	370			; ps is wrong
+		cmp	(R5), #274		;
+		$err	371			;
+		inc	(R5)			;
+		mov	#2, R2			;
+		mov	#s9, R3			;
+		mov	#s10, R4		;
+;_____________________________________________________________________________
+;
+; Test 275 - div 0 52525 / s9 = 25252 rem = 1 ps = 0
+;
+tst275:		scope				;
+		mov	#0, R0			; load high order *ith 0
+		mov	#52525, R1		; load low order w1th 52525
+		div	s9, R0			; divide by s9
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	372			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	373			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	374			; wrong remainder
+		cmp	(R5),#275		;
+		$err	375			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test:276 div 0 52525 / @s10 = 25252 rem = 1 ps = 0
+;
+tst276:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	@s10, R0		; divide by @s10
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	376			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	377			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	400			; wrong remainder
+		cmp	(R5), #276		;
+		$err	401			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 277 - div 0 52525 / @#s9 = 25252 rem # 1 ps = 0
+;
+tst277:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order  with 52525
+		div	@#s9, R0		; divide by @#s9
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	402			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	403			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	404			; wrong remainder
+		cmp	(R5), #277		;
+		$err	405			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 300 - div 0 52525 / R2 = 25252 rem = 1 ps = 0
+;
+tst300:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	R2, R0			; divide by R2
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	406			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	407			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	410			; wrong remainder
+		cmp	(R5), #300		;
+		$err	411			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 301 - div 0 52525 / (3)+ = 25252 rem = 1 ps = 0
+;
+tst301:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order w1th 52525
+		div	(R3)+, R0		; divide by (R3)+
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	412			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	413			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	414			; wrong remainder
+		cmp	(R5), #301		;
+		$err	415			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 302 - div 0 52525 / -(3) = 25252 rem = 1 ps = 0
+;
+tst302:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	-(R3), R0		; divide by -(R3)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	416			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	417			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	420			; wrong remainder
+		cmp	(R5), #302		;
+		$err	421			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 303 - div 0 52525 / 2(4) = 25252 rem = 1 ps = 0
+;
+tst303:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	2(R4), R0		; divide by 2(R4)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	422			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	423			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	424			; wrong remainder
+		cmp	(R5), #303		;
+		$err	425			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 304 - div 0 52525 / @(4) = 25252 rem = 1 ps = 0
+
+tst304:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	@(R4), R0		; divide by @(R4)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	426			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	427			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	430			; wrong remainder
+		cmp	(R5), #304		;
+		$err	431			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 305  - div 0 52525 / @(4)+ = 25252 rem = 1 ps = 0
+
+tst305:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	@(4)+, R0		; divide by @(4)+
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps =  0
+		$err	432			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	433			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	434			; wrong remainder
+		cmp 	(R5), #305		;
+		$err	435			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+; Test 306 - div 0 52525 / @-(4) = 25252 rem = 1 ps = 0
+
+tst306:		scope				;
+		mov	#0, R0			; load high order with 0
+		mov	#52525, R1		; load low order with 52525
+		div	@-(4), R0		; divide by @-(4)
+		mfps	@#psword		; save ps
+		cmpb	#0, @#psword		; is ps = 0
+		$err	436			; ps is wrong
+		cmp	#25252, R0		; is quotient = 25252
+		$err	437			; quotient is wrong
+		cmp	#1, R1			; is remainder = 1
+		$err	440			; wrong remainder
+		cmp	(R5), #306		;
+		$err	441			; test is in wrong sequence
+		inc	(R5)			;
+;_____________________________________________________________________________
+;
+		.sbttl		"END OF PASS ROUTINE"
+;
+; - increment the pass number ($pass)
+; - type "END PASS"
+; - if theres a monitor go to it
+; - if there isn't jump to begin
+; - if it is desired to have a bell indicate the "end of pass" location
+; - $endmg can be changed to 7.
+;
+$eop:		scope				;
+		inc	$pass			; increment the pass number
+		bic	#100000, $pass		; don't allow a neg. number
+		dec	(PC)+			; loop?
+$eopct:		.word	1			;
+		bgt	$doagn		 	; yes
+						;
+		mov	(PC)+, @(PC)+		; restore counter
+$endct:		.word	400			;
+		.word	$eopct			;
+						;
+		type	,$endmg			; type "END PASS"
+$get42:		mov	@#42, R0		; get monitor address
+		beq	$doagn			; branch if no monitor
+		reset				; clear the world
+$endad:		jsr	PC, (R0)		; go to monitor
+		nop				; save room
+		nop				; for
+		nop				; ACT11
+$doagn:						;
+.if ne HOEP					;
+		bit	#1, @#$pass		; is it	an even	pass ?
+		bne	1$			;
+		halt				;
+1$:						;
+.endc						;
+		jmp	@#begin			; return
+						;
+$endmg:		.ascii	<15><12>/END PASS/	;
+$enull:		.byte	-1, -1, 0		; null character string
+		.even				;
+;_____________________________________________________________________________
+;
+		.sbttl "POWER FAIL ROUTINE"
+
+$pwrdn:		mov	#$pwrup, @#24		;
+		halt				;
+						;
+$pwrup:		mov	#begin, SP		; restore the SP
+		mov	#$pwrdn, @#24		;
+		type	,power			; go and type "power"
+		br	$doagn			;
+;_____________________________________________________________________________
+;
+; Halt routine - program comes here on encountering any error
+;
+$hlt:		mov	@(SP), @#$fatal		; place the error number at location $fatal
+		bit	#20000, @swr		; has the operator asked to supress error type outs
+		bne	6$			;
+		type	,$crlf			; go and type a cr, lf, followed by 3 spaces
+		mov	R0, -(SP)		; save R0
+		movb	#2, $tpcnt		; allow type outs of PC and error number
+		mov	2(SP), R0		; bring the return PC in R0
+		sub	#4, R0			;
+2$:		movb	#6, @#typcnt		; allow type out of 6 digits
+		clr	-(SP)			;
+4$:		clc				;
+		rol	R0			;
+		rol	(SP)			; bring the C-bit from R0 in (SP)
+		bis	#60, (SP)		; prepare to type it out
+		jsr	PC, $tpchr		; and go to out put a character
+		clr	(SP)			;
+		rol	R0			;
+		rol	(SP)			;
+		rol	R0			;
+		rol	(SP)			;
+		decb	typcnt			; has all the six characters been typed ?
+		bne	4$			; if not then repeat from 4$
+		tst	(SP)+			; restore stack pointer
+		mov	@2(SP), R0		; prepare to out put the error number
+		type	,$crlf+2		; go and type 3 spaces
+		decb	$tpcnt			; if both PC and error number has not been
+		bne	2$			; reported then repeat from 2$
+		mov	(SP)+, R0		; restore R0
+6$:		tstb	$env			; if we are not under apt. then goto 8$
+		beq	8$			;
+		inc	@#$msgty		; otherwise inform apt, about seeing the error
+		br	.			; and loop
+8$:		tst	@swr			; is it required to halt on error ?
+		bpl	10$			; if not then  go to 10$
+		halt				;
+						;
+10$:		add	#2, (SP)		; adjust the return address
+		rts	PC			; and return
+;_____________________________________________________________________________
+;
+; Type out routine - this routine is used to type ASCIZ messages
+;
+$type:		mov	R0, -(SP)		; save R0
+		mov	@2(SP), R0		; get the address of the assciz string
+2$:		movb	(R0)+, -(SP)		; push the character to be typed onto stack
+		bne	4$			; branch if it is not the terminator
+		tst	(SP)+			;
+		mov	(SP)+, R0		; otherwise restore the	stack and R0
+3$:		add	#2, (SP)		; adjust the return PC
+		rti				; and return
+						;
+4$:		jsr	PC, $tpchr		; go to type a character
+		tst	(SP)+			; restore the stack pointer
+		br	2$			; and return to 2$
+						;
+$tpchr:		bitb	#40, @#$envm		; has the console outputs been suppressed?
+		bne	4$			; if so then return from the subroutine	via 4$
+2$:		tstb	@$tps			; is the printer available?
+		bpl	2$			; if not then loop here
+		movb	2(SP),@$tpb		; out put the character
+4$:		rts	PC			;
+;_____________________________________________________________________________
+;
+		.end

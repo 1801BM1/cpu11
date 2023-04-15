@@ -1,0 +1,2299 @@
+; Originally was compiled by macy-11, an assembler running on the PDP-10.
+; The source is adapted to be translated by regular macro-11.
+;
+;			IDENTIFICATION
+;			--------------
+;
+;
+; Product Code:		 AC-8045d-MC
+; Product Name:		 CFKABD0 11/34	TRAPS TST
+; Product Date:		 03-Apr-77
+; Maintainer:		 Diagnostic Engineering
+;
+;
+; The information in this document is subject to change	without	notice
+; and should not be construed as a commitment by Digital Equipment
+; Corporation. Digital Equipment Corporation assumes no	responsibility
+; for any errors that may appear in this document.
+;
+; No responsibility is assumed for the use or reliability of software
+; on equipment that is not supplied by Digital or its affiliated companies
+;
+; Copyright (C)	1973, 1979 by Digital Equipment	Corporation
+; The following	are trademarks of Digital Equipment Corporation:
+;
+;	Digital		PDP		UNIBUS		MASSBUS
+;	DEC		DECUS		DECTAPE
+;_____________________________________________________________________________
+;
+;		act11 hooks
+;		aptmailbox-etable
+;		apt parameter block
+;
+; T1	test auto increment and decrement of SP for word and bytes
+; T2	test transfer of byte using SP
+; T3	test byte operation with sequential odd-even address
+; T4	test the cc bits
+; T5	test that a trap occurs on a reserved instruction
+; T6	test decrement of stack pointer on a trap operation
+; T7	test that proper PC is saved
+; T10	test that "old" cc and priority are placed on stack
+; T11	test that "new" status is correct
+; T12	test that a trap occurs for a "trap" instruction
+; T13	test decrement of stack pointer on a trap operation
+; T14	test that proper PC is saved
+; T15	test that "old" cc and priority are placed on stack
+; T16	test that "new" status is correct
+; T17	test that all combination of "trap" will cause a trap
+; T20	test that a trap occures on an "iot" instruction
+; T21	test decrement of stack pointer on a trap operation
+; T22	test that proper PC is saved
+; T23	test that "old" cc and priority are placed on stack
+; T24	test that "new" status is correct
+; T25	test that a trap occurs on an emt instruction
+; T26	test decrement of stack pointer on a trap operation
+; T27	test that proper PC is saved
+; T30	test that "old" cc and priority are placed on stack
+; T31	test that "new" status is correct
+; T32	test that all combination of emt will cause a trap
+; T33	test that a trap occures on an "trace-trt" instruction
+; T34	test decrement of stack pointer on a trap operation
+; T35	test that proper PC is saved
+; T36	test that "old" cc and priority are placed on stack
+; T37	test that "new" status is correct
+; T40	test that a trap occurs on an illegal instruction
+; T41	test decrement of stack pointer on a trap operation
+; T42	test that proper PC is saved
+; T43	test that "old" cc and priority are placed on stack
+; T44	test that "new" status is correct
+; T45	test that a trap occures on all illegal instructor
+; T46	test decrement of stack pointer on a trap operation
+; T47	test that proper PC is saved
+; T50	test that "old" cc and priority are placed on stack
+; T51	test that "new" status is correct
+; T52	test that a trap occures on an illegal address
+; T53	test decrement of stack pointer on a trap operation
+; T54	test that proper PC is saved
+; T55	test that "old" cc and priority are placed on stack
+; T56	test that "new" status is correct
+; T57	test that decrement SP to a value less than 400 traps
+; T60	test for decrement of SP on overflow trap
+; T61	test different types of overflow
+; T62	test that an 7 causes an overflow trap
+; T63	test that an iot causes an overflow trap
+; T64	test that an emt causes an overflow trap
+; T65	test that an trap causes an overflow trap
+; T66	test that an trt causes an overflow trap
+; T67	test that an illa causes an overflow trap
+; T70	test that an illb causes an overflow trap
+; T71	test for false overflow trap
+; T72	test that bit 4 psw will cause a trap to 14
+; T73	test stack pointer decrements
+; T74	test for proper PC on stack
+; T75	test that rtt pops T-bit
+; T76	test that rtt allows one inst. before trap
+; T77	test that rti does not allow 1 inst.
+; T100  does the processor trap when PC is odd?
+; T101	test trap on trap that trace bit traps are inhibited on trap inst
+; T102	test that the trace bit is saved in the stack
+; T103	test non-existent address traps
+; T104	test that a tty interrupt causes an overflow trap
+; T105	test that a pending interrupt occurs before trap
+; T106	test that a pending interrupt, interrupts between traps
+; T107	test that "reset" goes to outside world
+; T110	test that reset has no effect on the trace trap
+; T111	test that when tty interrupts it pops new status
+; T112	test the "wait" instruction
+; T113	test that all reserved instructions trap
+;
+; All instructions that are reserved should trap to location 10,
+; and the PC that points to the trapping instruction should be
+; placed on the stack
+;_____________________________________________________________________________
+;
+		HOEP	= 0			; halt on end-of-pass
+		MEMLIM	= 000000		; 0 for original, 100000 to limit
+		VM3FIX	= 0			; not 0 for VM3 test fixes
+;_____________________________________________________________________________
+;
+		.asect				;
+		. = 0				; loop on test
+
+		.title	CFKABD0 11/34 TRAPS TST
+		.nlist	cnd, mc, md
+		.list	me			;
+						;
+		tab	= R3			;
+		last	= R1			;
+		first	= R5			;
+		hlt	= halt			;
+		trt	= 3			;
+		itrap5	= 4			;
+		rtrap5	= 4			; reserved inst and illegal addresses
+		rtrap4	= 14			; for trace trap
+		rtrap3	= 30			; for emulator trap
+		rtrap2	= 20			; for iot trap
+		rtrap1	= 34			; for trap inst
+		ttcsr	= 177564		;
+		trcsr	= 177560		;
+		tps	= 177564		;
+		tpb	= 177566		;
+		bell	= 240			;
+		nop	= 240			;
+		status	= 177776		;
+		trapa	= 7			;
+		rtrap	= 10			;
+		illa	= 004700		;
+		illb	= 100			;
+		cc	= 177776		;
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		.	= offset		;
+	.if	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff					;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+; All unused locations from 4-776 contain a ".+2, halt"
+; sequence to catch illegal traps and interrupts
+; location 0 contains 0	to catch improperly loaded vectors
+;
+		.sbttl	"TRAP CATCHER"
+
+		.nlist				;
+		vect	0, 2			;
+		vect	4, 6			;
+		vect	10, 12			;
+		vect	14, 16			;
+		vect	20, 22			;
+		vect	24, 200			; for apt start	up
+		vect	30, 32			;
+		vect	34, 36			;
+		vect	40, 42			; hooks	required by act-11
+		vect	44, $apthd, $endad	; set loc.46 to	address	of $endad in .seop
+		.list				;
+;_____________________________________________________________________________
+;
+		.sbttl	"ACT11 HOOKS"
+
+		.nlist				;
+		vect	50, 52			; set loc.52 to	zero
+		vect	54, 56			;
+		vect	60, 62			;
+		vect	64, 66			;
+		vect	70, 72			;
+		vect	74, 76			;
+		vect	100, 102		;
+		vect	104, 106		;
+		vect	110, 112		;
+		vect	114, 116		;
+		vect	120, 122		;
+		vect	124, 126		;
+		vect	130, 132		;
+		vect	134, 136		;
+		vect	140, 142		;
+		vect	144, 146		;
+		vect	150, 152		;
+		vect	154, 156		;
+		vect	160, 162		;
+		vect	164, 166		;
+		vect	170, 172		;
+		vect	174, 176		;
+		.list				;
+;_____________________________________________________________________________
+;
+		.sbttl	"STARTING ADDRESS(ES)"
+
+		. = 200				;
+		jmp	begin			;
+		vect	204, 206		;
+						;
+		. = 210				;
+		clr	@#$pass			;
+		jmp	begin			;
+						;
+		vect	220, 222		;
+		vect	224, 226		;
+		vect	230, 232		;
+		vect	234, 236		;
+		vect	240, 242		;
+		vect	244, 246		;
+		vect	250, 252		;
+		vect	254, 256		;
+		vect	260, 262		;
+		vect	264, 266		;
+		vect	270, 272		;
+		vect	274, 276		;
+;_____________________________________________________________________________
+;
+		.sbttl	"APT MAILBOX-ETABLE"
+
+		. = 300
+$mail:						; apt mailbox
+$msgty:		.word	0			; amsgty	- message type code
+$fatal:		.word	0			; afatal	- fatal	error number
+$testn:		.word	0			; atestn	- test number
+$pass:		.word	0			; apass		- pass count
+$devct:		.word	0			; adevct	- device count
+$unit:		.word	0			; aunit		- i/o unit number
+$msgad:		.word	0			; amsgad	- message address
+$msglg:		.word	0			; amsglg	- message length
+$etable:					;		apt environment	table
+$env:		.byte	0			; aenv		- environment byte
+$envm:		.byte	0			; aenvm		- environment mode bits
+$swreg:		.word	0			; aswreg	- apt switch register
+$uswr:		.word	0			; auswr		- user switches
+$cpuop:		.word	0			; acpuop	- cpu type, options
+$etend:
+;_____________________________________________________________________________
+;
+; Setup apt parameter block as defined in the apt-pdp11 diagnostic interface spec,
+;
+$apthd:
+$hibts:		.word	0			; two high bits of 18 bit mailbox addr.
+$mbadr:		.word	$mail			; address of apt mailbox (bits 0-15)
+$tstm:		.word	2			; run tim of longest test
+$pastm:		.word	2			; run time in secs. of 1st pass on 1 unit (quick verify)
+$unitm:		.word	0			; additional run time (secs) of a pass for each additional unit
+		.word	$etend-$mail/2 		; length mailbox-etable(words)
+						;
+		vect	344, 346		;
+		vect	350, 352		;
+		vect	354, 356		;
+		vect	360, 362		;
+		vect	364, 366		;
+		vect	370, 372		;
+		vect	374, 376		;
+;_____________________________________________________________________________
+;
+		. = 500				;
+buff:		.word	0			;
+sr0:		.word	177572			;
+sr0h:		.word	177573			;
+sr1:		.word	177574			;
+sr2:		.word	177576			;
+ktvec:		.word	250			;
+ktsta:		.word	252			;
+						;
+adrtab:						;
+updr0:		.word	177600			; user page descriptor registers
+updr1:		.word	177602			;
+updr2:		.word	177604			;
+updr3:		.word	177606			;
+updr4:		.word	177610			;
+updr5:		.word	177612			;
+updr6:		.word	177614			;
+updr7:		.word	177616			;
+						;
+upar0:		.word	177640			; user page address registers
+upar1:		.word	177642			;
+upar2:		.word	177644			;
+upar3:		.word	177646			;
+upar4:		.word	177650			;
+upar5:		.word	177652			;
+upar6:		.word	177654			;
+upar7:		.word	177656			;
+						;
+kpdr0:		.word	172300			; kernel page descriptor registers
+kpdr1:		.word	172302			;
+kpdr2:		.word	172304			;
+kpdr3:		.word	172306			;
+kpdr4:		.word	172310			;
+kpdr5:		.word	172312			;
+kpdr6:		.word	172314			;
+kpdr7:		.word	172316			;
+						;
+kpar0:		.word	172340			; kernel page address registers
+kpar1:		.word	172342			;
+kpar2:		.word	172344			;
+kpar3:		.word	172346			;
+kpar4:		.word	172350			;
+						;
+kpar5:		.word	172352			;
+kpar6:		.word	172354			;
+kpar7:		.word	172356			;
+adrend:		.word	.-2			;
+;_____________________________________________________________________________
+;
+begin:		mov	#-1, @#passpt		; clear the iteration counter
+		mov	#msg1, R0		; get title adrs
+1$:		tstb	tps			; tty ready
+		bpl	1$			; no wait
+		movb	(R0)+, tpb		; print	character
+		bne	1$			; next if not done
+2$:		tstb	tps			;
+		bpl	2$			;
+						;
+restrt:		clr	$msgty			;
+		mov	#pwrdwn, 24		; set up the power down	vector
+		mov	#340, 26		; set up power down priority
+		clr	$testn			;
+		clr	$fatal			;
+		mov	#$msgty,R2		;
+;
+; Special case of odd; .even .byte and register 6 (SP)
+;
+		here = 0			;
+		jmp	tst1			;
+k1:		.word	0			;
+k2:		.word	0			;
+k3:		.word	0			;
+k4:		.word	0			;
+k5:		.word	0			;
+k6:		.word	0			;
+k7:		.word	052525			;
+k10:		.word	052400			;
+k11:		.word	0			;
+k12:		.word	0			;
+;_____________________________________________________________________________
+;
+		.macro	$err, num		;
+		mov	#num, @#$fatal 		;
+		inc	(R2)			;
+		halt				;
+		.endm				;
+;_____________________________________________________________________________
+;
+; Test 1 - test auto increment and decrement of SP for word and bytes
+;
+tst1:		inc	@#$testn		;
+		cmp	#1, @#$testn		;
+		bne	tst2-12			;
+		clr	SP			;
+		movb	(SP)+, here		; six should increment by two
+		cmp	SP, #2			;
+		beq	br1			;
+		$err	1			;
+						;
+br1:		mov	#1000, SP		;
+		movb	-(SP), #here		; should decrement by two
+		cmp	SP, #776		;
+		beq	br2			;
+		$err	2			;
+						;
+br2:		clr	SP			;
+		movb	(SP)+, (SP)+		; doubles auto increment of SP
+		cmp	SP, #4			;
+		beq	br3			;
+		$err	3			;
+						;
+br3:		clr	SP			;
+		clr	R4			;
+		cmpb	(SP)+, (R4)+		; test increment of SP
+		cmp	SP, #2			;
+		beq	br4			;
+		$err	4			;
+						;
+br4:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		; test increment of SP
+		cmp	SP, #2			;
+		beq	br5			;
+		$err	5			;
+						;
+br5:		clr	SP			;
+		clr	R4			;
+		cmpb	(SP)+, (R4)+		; test increment of R4
+		cmp	R4, #1			;
+		beq	br6			;
+		$err	6			;
+						;
+br6:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		; test increment of SP
+		cmp	SP, #2			;
+		beq	br7			;
+		$err	7			;
+						;
+br7:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		; test increment of R4
+						;
+		cmp	R4, #1			;
+		beq	br10			;
+		$err	10			;
+						;
+br10:		mov	#1000, SP		;
+		cmpb	-(SP), #here		; test decrement of SP
+		cmp	#776, SP		;
+		beq	tst2			;
+		$err	11			;
+;_____________________________________________________________________________
+;
+; Test 2 - test transfer of byte using SP
+;
+tst2:		inc	@#$testn		;
+		cmp	#2, @#$testn		;
+		bne	tst3-12			;
+		mov	#123456, k5		;
+		mov	#050505, k1		;
+		mov	#k1, R5			;
+		mov	#k5, SP			;
+		movb	(SP)+, (R5)+		; low byte of SP to R5
+		cmp	#050456, k1		;
+		beq	br11			;
+		$err	12			;
+						;
+br11:		mov	#123456, k5		;
+		mov	#050505, k1		;
+		mov	#k1, R5			;
+		mov	#k6, SP		 	;
+		movb	-(SP), (R5)+		; low .byte of SP to R5	(decrement)
+		cmp	k1, #050456		;
+		beq	br12			;
+		$err	13			;
+						;
+br12:		mov	#123456, k1		;
+		mov	#050505, k5		;
+		mov	#k1, R5			; (123456)
+		mov	#k5, SP			; (050505)
+		movb	(R5)+, (SP)+		; low of R5 to low of SP
+		cmp	#050456, k5		;
+		beq	br13			;
+		$err	14			;
+						;
+br13:		mov	#123456, k1		;
+		mov	#050505, k5		;
+		mov	#k1+1, R5		; 123456
+		mov	#k5, SP			; 050505
+		movb	(R5)+, (SP)+		; high of R5 to low of SP
+		cmp	k5, #050647		;
+		beq	br14			;
+		$err	15			;
+						;
+br14:		mov	#123456, k1		;
+		mov	#050505, k5		;
+		mov	#k1+1, R5		; R5=123456 - odd address
+		mov	#k5, SP			; SP=050505 - even address
+		movb	(SP)+, (R5)+		; low of SP to high of R5
+		cmp	#042456, k1		;
+		beq	tst3			;
+		$err	16			;
+;_____________________________________________________________________________
+;
+; Test 3 - test byte operation with sequential odd-even address
+;
+tst3:		inc	@#$testn		; update test number
+		cmp	#3, @#$testn		; sequence error?
+		bne	tst4-12			; br to error halt on seq error
+		cmpb	k7, k7+1		; same .word low to high
+		beq	br15			;
+		$err	17			;
+						;
+br15:		cmpb	k7+1, k7		; compare odd to .even same .word
+		beq	br16			;
+		$err	20			;
+						;
+br16:		cmpb	k10+1, k7		; sequential .bytes
+		beq	br17			;
+		$err	21			;
+						;
+br17:		cmpb	k10, k6			;
+		beq	br20			;
+		$err	22			;
+						;
+br20:		cmpb	k7+1, k10+1		;
+		beq	br21			;
+		$err	23			;
+						;
+br21:		cmpb	k10, k10+1		;
+		bne	br22			;
+		$err	24			;
+						;
+br22:		cmpb	k10+1, k10+1		;
+		beq	br23			;
+		$err	25			;
+						;
+br23:		cmpb	k10, k7+1		;
+		bne	tst4			;
+		$err	26			;
+;_____________________________________________________________________________
+;
+; Test 4 - test the cc bits
+;
+tst4:		inc	@#$testn		; update test number
+		cmp	#4, @#$testn		; sequence error?
+		bne	tst5-12			; br to error halt on seq error
+		scc				; set status
+		clr	status			; clear status
+		bcc	br33			;
+		$err	27			;
+						;
+br33:		bvc	br34			;
+		$err	30			;
+br34:		bne	br35			;
+		$err	31			;
+br35:		bpl	br36			;
+		$err	32			;
+						;
+br36:		ccc				; clear condition codes
+		bis	#17, status		; set status to ones
+		bcs	br37			;
+		$err	33			;
+br37:		bvs	br40			;
+		$err	34			;
+br40:		beq	br41			;
+		$err	35			;
+br41:	 	bmi	tst5			;
+		$err	36			;
+;_____________________________________________________________________________
+;
+; Test 5 - test that a trap occurs on a reserved instruction
+;
+tst5:		inc	@#$testn		;
+		cmp	#5, @#$testn		;
+		bne	reta			;
+		mov	#buff, SP		; stack pointer setup
+		mov	#retah, rtrap		; return location
+		trapa				; reserved instruction, should trap
+reta:		$err	37			;
+retah:						;
+;_____________________________________________________________________________
+;
+; Test 6 - test decrement of stack pointer on a trap operation
+;
+tst6:		inc	@#$testn		; update test number
+		cmp	#6, @#$testn		; sequence error?
+		bne	tst7-12		 	; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retb, rtrap		; return pointer
+		trapa				; reserved instruction
+retb:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst7			;
+		$err	40			;
+;_____________________________________________________________________________
+;
+; Test 7 - test that proper PC is saved
+;
+tst7:		inc	@#$testn		; update test number
+		cmp	#7, @#$testn		; sequence error?
+		bne	tst10-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retc, rtrap		; return from trap pointer
+instc:		trapa				; trap on this instruction
+retc:		cmp	#.,buff-4		; check for incremented PC
+		beq	tst10			;
+		$err	41			;
+;_____________________________________________________________________________
+;
+; test 10 - test that "old" cc and priority are placed on stack
+;
+tst10:		inc	@#$testn		; update test number
+		cmp	#10, @#$testn		; sequence error?
+		bne	tst11-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd, rtrap		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		trapa				; trap
+retd:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$			;
+		$err	42			;
+						;
+1$:		mov	#buff, SP		;
+		mov	#rete, rtrap	 	;
+		mov	#357, cc		; set priority
+		scc				; set cc
+		trapa				; trap
+rete:		cmp	buff-2, #357		; compares status  on stack
+		beq	tst11			;
+		$err	43			;
+;_____________________________________________________________________________
+;
+; Test 11 - test that "new" status is correct
+;
+tst11:		inc	@#$testn		; update test number
+		cmp	#11, @#$testn		; sequence error?
+		bne	stpp			; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf, rtrap		;
+		clr	rtrap+2			; clear future priority and cc
+		trapa				;
+retf:		bpl	1$			; test for "C" cleared
+		$err	44			;
+1$:		bne	2$			;
+		$err	45			;
+2$:		bvc	3$			;
+		$err	46			;
+3$:		bcc	4$			;
+		$err	47			;
+4$:		bit	#340, cc		; test priority
+		beq	5$			;
+		$err	50			;
+5$:		mov	#buff, SP		;
+		mov	#retg, rtrap		;
+		mov	#357, rtrap+2		; set new "cc" and priority
+		trapa				; trap here
+retg:		bmi	1$			;
+		$err	51			;
+1$:		beq	2$			;
+		$err	52			;
+2$:		bvs	3$			;
+		$err	53			;
+3$:	 	bcs	4$			;
+		$err	54			;
+4$:		mov	cc, SP			;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	stppa			;
+stpp:		$err	55			;
+stppa:		mov	#12, 10			;
+		clr	12			;
+;_____________________________________________________________________________
+;
+; Test 12 - test that a trap occurs for a "trap" instruction
+;
+tst12:		inc	@#$testn		;
+		cmp	#12, @#$testn		; sequence error?
+		bne	tst13-12		; br to error halt on  seq error
+		mov	#12, 10			;
+		clr	12			;
+		mov	#buff, SP		; stack pointer setup
+		mov	#reta1, rtrap1		; return location
+		trap				; reserved instruction, should trap
+		$err	56			;
+reta1:						;
+;_____________________________________________________________________________
+;
+; Test 13 - test decrement of stack pointer on a trap operation
+;
+tst13:		inc	@#$testn		; update test number
+		cmp	#13, @#$testn		; sequence error?
+		bne	tst14-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retr1, rtrap1		; return pointer
+		trap				; reserved instruction
+retr1:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst14			;
+		$err	57			;
+;_____________________________________________________________________________
+;
+; Test 14 - test that proper PC is saved
+;
+tst14:		inc	@#$testn		; update test number
+		cmp	#14, @#$testn		; sequence error?
+		bne	tst15-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retc1, rtrap1		; return from trap pointer
+		trap				; trap on this instruction
+retc1:		cmp	#., buff-4		; check incremented PC
+		beq	tst15			;
+		$err	60			;
+;_____________________________________________________________________________
+;
+; Test 15 - test that "old" cc and priority are placed on stack
+;
+tst15:		inc	@#$testn		; update test number
+		cmp	#15, @#$testn		; sequence error?
+		bne	tst16-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd1, rtrap1		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		trap				; trap
+						;
+retd1:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$			;
+		$err	61			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#rete1, rtrap1		; set up
+		mov	#357, cc		; set priority
+		trap				; set cc
+rete1:		cmp	buff-2, #357		; compares status on stack
+		beq	tst16			;
+		$err	62			;
+;_____________________________________________________________________________
+;
+; Test 16 - test that "new" status is correct
+;
+tst16:		inc	@#$testn		; update test number
+		cmp	#16, @#$testn		; sequence error?
+		bne	tst17-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf1, rtrap1		;
+		clr	rtrap1+2		; clear future priority and  cc
+		trap				;
+						;
+retf1:		bpl	1$			; test for "c" cleared
+		$err	63			;
+1$:		bne	2$			;
+		$err	64			;
+2$:		bvc	3$			;
+		$err	65			;
+3$:		bcc	4$			;
+		$err	66			;
+4$:		bit	#340, cc		; test priority
+		beq	5$			;
+		$err	67			;
+5$:		mov	#buff, SP		;
+		mov	#retg1, rtrap1		;
+		mov	#357, rtrap1+2		; set new "cc" and priority
+		trap				; trap here
+retg1:		bmi	1$			;
+		$err	70			;
+1$:		beq	2$			;
+		$err	71			;
+2$:		bvs	3$			;
+		$err	72			;
+3$:		bcs	4$			;
+		$err	73			;
+4$:		mov	cc, SP			;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst17			;
+		$err	74			;
+;_____________________________________________________________________________
+;
+; Test 17 - test that all combination of "trap" will cause a trap
+;
+tst17:		inc	@#$testn		; update test number
+		cmp	#17, @#$testn		; sequence error?
+		bne	br45			; br to error halt on seq error
+		mov	#trap,rb1		; initialize base trap instruction
+						;
+		mov	#ra1, 34		; return from trap to ra1
+rc1:		mov	#buff, SP		; set up stack pointer
+rb1:		trap				; trap inst will be modified to trap+377
+br45:   	$err	75			;
+						;
+ra1:		inc	rb1			; increment trap instruction
+		cmp	#104777, rb1		; trap+377 to upper limit
+		bhis	rc1			; have we tested all
+		mov	#36, 34			;
+		clr	36			;
+;_____________________________________________________________________________
+;
+; Test 20 - test that a trap occures on an "iot" instruction
+;
+tst20:		inc	@#$testn		; update test number
+		cmp	#20, @#$testn		; sequence error?
+		bne	tst21-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#reta2, rtrap2		; return location
+		iot				; reserve instruction, should trap
+		$err	76			;
+reta2:						;
+;_____________________________________________________________________________
+;
+; Test 21 - test decrement of stack pointer on a trap operation
+;
+tst21:		inc	@#$testn		; update test number
+		cmp	#21, @#$testn		; sequence error?
+		bne	tst22-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retb2, rtrap2		; return pointer
+		iot				; reserved instruction
+						;
+retb2:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst22			;
+		$err	77			;
+;_____________________________________________________________________________
+;
+; Test 22 - test that proper PC is saved
+;
+tst22:		inc	@#$testn		; update test number
+		cmp	#22, @#$testn		; sequence error?
+		bne	tst23-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retc2, rtrap2		; return from trap pointer
+		iot				; trap on this instruction
+retc2:		cmp	#., buff-4		; check for incremented PC
+		beq	tst23			;
+		$err	100			;
+;_____________________________________________________________________________
+;
+; Test 23 - test that "old" cc and priority are placed on stack
+;
+tst23:		inc	@#$testn		; update test number
+		cmp	#23, @#$testn		; sequence error?
+		bne	tst24-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd2, rtrap2		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		iot				; trap
+retd2:		cmp	buff-2,#0		; test that old status went to stack
+		beq	1$			;
+		$err	101			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#rete2, rtrap2		; set up
+		mov	#357, cc		; set priority
+		scc				; set cc
+		iot				; trap
+rete2:		cmp	buff-2,#357		; compares status on stack
+		beq	tst24			;
+		$err	102			;
+;_____________________________________________________________________________
+;
+; Test 24 - test that "new" status is correct
+;
+tst24:		inc	@#$testn		; update test number
+		cmp	#24, @#$testn		; sequence error?
+		bne	br46			; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf2, rtrap2		;
+		clr	rtrap2+2		; clear future priority and cc
+		iot				;
+						;
+retf2:		bpl	1$			; test for "c" cleared
+		$err	103			;
+1$:		bne	2$			;
+		$err	104			;
+2$:		bvc	3$			;
+		$err	105			;
+3$:		bcc	4$			;
+		$err	106			;
+4$:		bit	#340, cc		; test priority
+		beq	5$			;
+		$err	107			;
+5$:		mov	#buff, SP		;
+		mov	#retg2, rtrap2		;
+		mov	#357, rtrap2+2		; set new "cc" and priority
+		iot				; trap here
+						;
+retg2:		bmi	1$			;
+		$err	110			;
+1$:		beq	2$			;
+		$err	111			;
+2$:		bvs	3$			;
+		$err	112			;
+3$:		bcs	4$			;
+		$err	113			;
+4$:		mov	cc, SP			;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	br46a			;
+br46:		$err	114			;
+						;
+br46a:		mov	#22, 20			; .+2
+		clr	22			; halt
+;_____________________________________________________________________________
+;
+; Test 25 - test that a trap occurs on an emt instruction
+;
+tst25:		inc	@#$testn		; update test number
+		cmp	#25, @#$testn		; sequence error?
+		bne	tst26-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#reta3, rtrap3		; return location
+		emt				; reserve instruction, should trap
+		$err	115			;
+reta3:						;
+;_____________________________________________________________________________
+;
+; Test 26 - test decrement of stack pointer on a trap operation
+;
+tst26:		inc	@#$testn		; update test number
+		cmp	#26, @#$testn		; sequence error?
+		bne	tst27-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retb3, rtrap3		; return pointer
+		emt				; reserved instruction
+retb3:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst27			;
+		$err	116			;
+;_____________________________________________________________________________
+;
+; Test 27 - test that proper PC is saved
+;
+tst27:		inc	@#$testn		; update test number
+		cmp	#27, @#$testn		; sequence error?
+		bne	tst30-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retc3, rtrap3		; return from trap pointer
+		emt				; trap on this instriction
+retc3:		cmp	#., buff-4		; check for incremented PC
+		beq	tst30			;
+		$err	117			;
+;_____________________________________________________________________________
+;
+; Test 30 - test that "old" cc and priority are placed on stack
+;
+tst30:		inc	@#$testn		; update test number
+		cmp	#30, @#$testn		; sequence error?
+		bne	tst31-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd3, rtrap3		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		emt				; trap
+retd3:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$			;
+		$err	120			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#rete3, rtrap3		; set up
+		mov	#357, cc		; set priority
+		scc				; set cc
+		emt				; trap
+rete3:		cmp	buff-2, #357		; compares status on stack
+		beq	tst31			;
+		$err	121			;
+;_____________________________________________________________________________
+;
+; Test 31 - test that "new" status is correct
+;
+tst31:		inc	@#$testn		; update test number
+		cmp	#31, @#$testn		; sequence error?
+		bne	tst32-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf3, rtrap3		;
+		clr	rtrap3+2		; clear future priority and cc
+		emt				;
+						;
+retf3:		bpl	1$			; test for "c" cleared
+		$err	122			;
+1$:		bne	2$			;
+		$err	123			;
+2$:		bvc	3$			;
+		$err	124			;
+3$:		bcc	4$			;
+		$err	125			;
+4$:		bit	#340, cc		; test priority
+		beq	5$			;
+		$err	126			;
+5$:		mov	#buff, SP		;
+		mov	#retg3, rtrap3		;
+		mov	#357, rtrap3+2		; set new "cc" and priority
+		emt				; trap hfre
+retg3:		bmi	1$			;
+		$err	127			;
+1$:		beq	2$			;
+		$err	130			;
+2$:		bvs	3$			;
+		$err	131			;
+3$:		bcs	4$			;
+		$err	132			;
+4$:		ccc				;
+		cmp	#340, cc		;
+		beq	tst32			;
+		$err	133			;
+;_____________________________________________________________________________
+;
+; Test 32 - test that all combination of emt will cause a trap
+;
+tst32:		inc	@#$testn		; update test number
+		cmp	#32, @#$testn		; sequence error?
+		bne	br47			; br to error halt on seq error
+		mov	#emt, rb		; initialize base emt instruction
+		mov	#ra, 30			; return from trap to   ra
+rc:		mov	#buff, SP		; set up stack pointer
+rb:		emt				; trap inst. will be modified to emt+377
+br47:		$err	134			;
+						;
+ra:		inc	rb			; increment trap instruction
+		cmp	#104377, rb		; emt+377 to emt?
+		bhis	rc			; have we tested all?
+		mov	#32, 30			; /.+
+		clr	32			; halt
+;_____________________________________________________________________________
+;
+; Test 33 - test that a trap occures on an "trace-tpt" instruction
+;
+tst33:		inc	@#$testn		; update test number
+		cmp	#33, @#$testn		; sequence error?
+		bne	tst34-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#reta4, rtrap4		; return location
+		trt				; reserved instruction, should trap
+		$err	135			;
+reta4:						;
+;_____________________________________________________________________________
+;
+; Test 34 - test decrement of stack pointer on a trap operation
+;
+tst34:		inc	@#$testn		; update test number
+		cmp	#34, @#$testn		; sequence error?
+		bne	tst35-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retb4, rtrap4		; return pointer
+		trt				; reserved instruction
+retb4:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst35			;
+		$err	136			;
+;_____________________________________________________________________________
+;
+; Test 35 - test that proper PC is saved
+;
+tst35:		inc	@#$testn		; update test number
+		cmp	#35, @#$testn		; sequence error?
+		bne	tst36-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retc4, rtrap4		; return from trap pointer
+		trt				; trap on this instruction
+retc4:		cmp	#., buff-4		; check for incremented PC
+		beq	tst36			;
+		$err	137			;
+;_____________________________________________________________________________
+;
+; Test 36 - test that "old" cc and priority are placed on stack
+;
+tst36:		inc	@#$testn		; update test number
+		cmp	#36, @#$testn		; sequence error?
+		bne	tst37-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd4, rtrap4		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		trt				; trap
+retd4:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$ 			; test for all zeros
+		$err	140			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#rete4, rtrap4		; set up
+		mov	#357, cc		; set priority
+		scc				; set-set cc
+		trt				; trap
+rete4:		cmp	buff-2, #357		; compares status on stack
+		beq	tst37			;
+		$err	141			;
+;_____________________________________________________________________________
+;
+; Test 37 - test that "new" status is correct
+;
+tst37:		inc	@#$testn		; update test number
+		cmp	#37, @#$testn		; sequence error?
+		bne	br51			; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf4, rtrap4		;
+		clr	rtrap4+2		; clear future priority and cc
+		trt				;
+						;
+retf4:		bpl	1$  			; test for "c" cleared
+		$err	142			;
+1$:		bne	2$			;
+		$err	143			;
+2$:		bvc	3$			;
+		$err	144			;
+3$:		bcc	4$			;
+		$err	145			;
+4$:		bit	#340, cc		; test priority
+		beq	5$			;
+		$err	146			;
+5$:		mov	#buff, SP		;
+		mov	#retg4, rtrap4		;
+		mov	#357, rtrap4+2		; set new "cc" and priority
+		trt				; trap here
+						;
+retg4:		bmi	1$			;
+		$err	147			;
+1$:		beq	2$			;
+		$err	150			;
+2$:		bvs	3$			;
+		$err	151			;
+3$:		bcs	4$			;
+		$err	152			;
+4$:		mov	cc, SP			;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	br51a			;
+br51:		$err	153			;
+br51a:		mov	#16, 14			;
+		clr	16			;
+;_____________________________________________________________________________
+;
+; PDP-11 illegal and address instruction test, all instructions that are
+; reserved should trap to location 4, and the PC that points to the trapping
+; instruction should be placed on the stack
+;_____________________________________________________________________________
+;
+; Test 40 - test that a trap occurs on an illegal instruction
+;
+tst40:		inc	@#$testn		; update test number
+		cmp	#40, @#$testn		; sequence error?
+		bne	tst41-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#reta5, rtrap5		; return location
+		jmp	R0			; illegal instruction, should trap
+		$err	154			;
+reta5:						;
+;_____________________________________________________________________________
+;
+; Test 41 - test decrement of stack pointer on a trap operation
+;
+tst41:		inc	@#$testn		; update test number
+		cmp	#41, @#$testn		; sequence error?
+		bne	tst42-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retb5, rtrap5		; return pointer
+		jmp	R0			; reserved instruction
+retb5:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst42			;
+		$err	155			;
+;_____________________________________________________________________________
+;
+; Test 42 - test that proper PC is saved
+;
+tst42:		inc	@#$testn		; update test number
+		cmp	#42, @#$testn		; sequence error?
+		bne	tst43-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retc5, rtrap5		; return from trap pointer
+		jmp	R0			; trap on this instruction
+retc5:		cmp	#., buff-4		; check for incremented PC
+		beq	tst43			;
+		$err	156			;
+;_____________________________________________________________________________
+;
+; Test 43 - test that "old" cc and priority are placed on stack
+;
+tst43:		inc	@#$testn		; update test number
+		cmp	#43, @#$testn		; sequence error?
+		bne	tst44-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd5, rtrap5		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		jmp	R0			; trap
+						;
+retd5:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$			;
+		$err	157			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#rete5, rtrap5		; set up
+		mov	#357, cc		; set priority
+		scc				; set cc
+		jmp	R0			; trap
+						;
+rete5:		cmp	buff-2, #357		; compares status on stack
+		beq	tst44			;
+		$err	160			;
+;_____________________________________________________________________________
+;
+; Test 44 - test that "new" status is correct
+;
+tst44:		inc	@#$testn		; update test number
+		cmp	#44, @#$testn		; sequence error?
+		bne	tst45-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf5, rtrap5		;
+		clr	rtrap5+2		; clear future priority and cc
+		jmp	R0			;
+						;
+retf5:		bpl	1$			; test for "C" cleared
+		$err	161			;
+1$:		bne	2$			;
+		$err	162			;
+2$:		bvc	3$			;
+		$err	163			;
+3$:		bcc	4$			;
+		$err	164			;
+4$:		bit	#357, cc		; test priority
+		beq	5$			;
+		$err	165			;
+5$:		mov	#buff, SP		;
+		mov	#retg5, rtrap5		;
+		mov	#357, rtrap5+2		; set new "cc" and priority
+		jmp	R0			; trap here
+						;
+retg5:		bmi	1$			;
+		$err	166			;
+1$:		beq	2$			;
+		$err	167			;
+2$:		bvs	3$			;
+		$err	170			;
+3$:		bcs	4$			;
+		$err	171			;
+4$:		mov	cc, SP			;
+		cmp	#357, SP		;
+		beq	tst45			;
+		$err	172			;
+;_____________________________________________________________________________
+;
+; Test 45 - test that a trap occures on all illegal instrucion
+;
+tst45:		inc	@#$testn		; update test number
+		cmp	#45, @#$testn		; sequence error?
+		bne	tst46-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#reth5, rtrap5		; return location
+		jsr	R0, R0			; reserved instruction, should trap
+		$err	173			;
+reth5:						;
+;_____________________________________________________________________________
+;
+; Test 46 - test decrement of stack pointer on a trap operation
+;
+tst46:		inc	@#$testn		; update test number
+		cmp	#46, @#$testn		; sequence error?
+		bne	tst47-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retj, rtrap5		; return pointer
+		jsr	R0, R0			; reserved instruction
+retj:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst47			;
+		$err	174			;
+;_____________________________________________________________________________
+;
+; Test 47 - test that proper PC is saved
+;
+tst47:		inc	@#$testn		; update test number
+		cmp	#47, @#$testn		; sequence error?
+		bne	tst50-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retk, rtrap5		; return from trap pointer
+instk:		jsr	R0, R0			; trap on this instruction
+retk:		cmp	#instk+2, buff-4	; check for incremened PC
+		beq	tst50			;
+		$err	175			;
+;_____________________________________________________________________________
+;
+; Test 50 - test that "old" cc and priority are placed on stack
+;
+tst50:		inc	@#$testn		; update test number
+		cmp	#50, @#$testn		; sequence error?
+		bne	tst51-12		; br to error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retl, rtrap5		; set up
+		clr	cc			; clear cc and priority
+		ccc				;
+		jsr	R0, R0			; trap
+retl:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$			;
+		$err	176			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#retm, rtrap5		; set up
+		mov	#357, cc		; set priority
+		scc				; set cc
+		jsr	R0, R0			; trap
+retm:		cmp	buff-2, #357		; compares status  on stack
+		beq	tst51			;
+		$err	177			;
+;_____________________________________________________________________________
+;
+; Test 51 - test that "new" status is correct
+;
+tst51:		inc	@#$testn		; update test number
+		cmp	#51, @#$testn		; sequence error?
+		bne	tst52-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retn, rtrap5		;
+		clr	rtrap5+2		; clear future priority and cc
+		jsr	R0,R0			;
+						;
+retn:		bpl	1$              	; test for "c" cleared
+		$err	200			;
+1$:		bne	2$			;
+		$err	201			;
+2$:		bvc	3$			;
+		$err	202			;
+3$:		bcc	4$			;
+		$err	203			;
+4$:		mov	cc, R0			; temp storage
+		beq	5$			;
+		$err	204			;
+5$:		mov	#buff, SP		;
+		mov	#reto, rtrap5		;
+		mov	#357, rtrap5+2		; set new "cc" and priority
+		jsr	R0, R0			; trap here
+						;
+reto:		bmi	1$			;
+		$err	205			;
+1$:		beq	2$			;
+		$err	206			;
+2$:		bvs	3$			;
+		$err	207			;
+3$:		bcs	4$			;
+		$err	210			;
+4$:		mov	cc, R0			;
+		cmp	#357, R0		;
+		beq	tst52			;
+		$err	211			;
+;_____________________________________________________________________________
+;
+; Test 52 - test that a trap occures on an illegal address
+;
+tst52:		inc	@#$testn		; update test number
+		cmp	#52, @#$testn		; sequence error?
+		bne	tst53-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retp, rtrap5		; return location
+		tst	1			; illegal address instruction, should trap
+		$err	212			;
+retp:						;
+;_____________________________________________________________________________
+;
+; Test 53 - test decrement of stack pointer on a trap operation
+;
+tst53:		inc	@#$testn		; update test number
+		cmp	#53, @#$testn		; sequence error?
+		bne	tst54-12		; br to error halt on seq error
+		mov	#buff, SP		; stack pointer setup
+		mov	#retq, rtrap5		; return pointer
+		tst	1			; reserved instruction
+retq:		cmp	SP,#buff-4		; test decrement of SP
+		beq	tst54			;
+		$err	213			;
+;_____________________________________________________________________________
+;
+; Test 54 - test that proper PC is saved
+;
+tst54:		inc	@#$testn		; update test number
+		cmp	#54, @#$testn		; sequence error?
+		bne	tst55-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retr, rtrap5		; return from trap pointer
+		tst	1			; trap on this instruction
+retr:		cmp	#., buff-4		; check for incremented PC
+		beq	tst55			;
+		$err	214			;
+;_____________________________________________________________________________
+;
+; Test 55 - test that "old" cc and priority are placed on stack
+;
+tst55:		inc	@#$testn		; update test number
+		cmp	#55, @#$testn		; sequence  error?
+		bne	tst56-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#rets, rtrap5		; set up
+		clr	cc			; clear	cc and priority
+		ccc				;
+		tst	1			; trap
+						;
+rets:		cmp	buff-2, #0		; test that old status went to stack
+		beq	1$			;
+		$err	215			;
+						;
+1$:		mov	#buff, SP		; set up
+		mov	#rett, rtrap5		; set up
+		mov	#357, cc		; set priority
+		scc				; set cc
+		tst	1			; trap
+rett:		cmp	buff-2, #357		; compares status on stack
+		beq	tst56			;
+		$err	216			;
+;_____________________________________________________________________________
+;
+; Test 56 - test that "new" status is correct
+;
+tst56:		inc	@#$testn		; update test number
+		cmp	#56, @#$testn		; sequence error?
+		bne	tst57-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retu, rtrap5		;
+		clr	rtrap5+2		; clear future priority and cc
+		tst	1			; trap here
+						;
+retu:		bpl	1$			; test for "c" cleared
+		$err	217			;
+1$:		bne	2$			;
+		$err	220			;
+2$:		bvc	3$			;
+		$err	221			;
+3$:		bcc	4$			;
+		$err	222			;
+4$:		bit	#357, cc		; test priority for zero
+		beq	5$			;
+		$err	223			;
+5$:		mov	#buff, SP		;
+		mov	#retv, rtrap5		;
+		mov	#357, rtrap5+2		; set new "cc" and priority
+		tst	1			; trace here
+						;
+retv:		bmi	1$			;
+		$err	224			;
+1$:		beq	2$			;
+		$err	225			;
+2$:	 	bvs	3$			;
+		$err	226			;
+3$:		bcs	4$			;
+		$err	227			;
+4$:		mov	cc, R0			;
+		cmp	#357, R0		;
+		beq	tst57			;
+		$err	230			;
+;_____________________________________________________________________________
+;
+; Test 57 - test that decrement SP to a value less than 400 traps
+;
+tst57:		inc	@#$testn		; update test number
+		cmp	#57, @#$testn		; sequence error?
+		bne	tst60-12		; br to error halt on seq error
+		mov	#150, SP		; SP = 150
+		mov	#tdec1, 4		; stack overflow trap pointer
+		tst	-(SP)			; with SP = 150 should trap
+		$err	231			;
+tdec1:						;
+;_____________________________________________________________________________
+;
+; Test 60 - test for decrement of SP on overflow trap
+;
+tst60:		inc	@#$testn		; update test number
+		cmp	#60, @#$testn		; sequence error?
+		bne	tst61-12		; br to error halt on seq error
+		mov	#150, SP		; SP = 150
+		mov	#tdec2, 4		; trap pointer
+		tst	-(SP)			; with SP = 150 should trap
+tdec2:		cmp	SP, #142		; did SP decrement
+		beq	tst61			;
+		$err	232			;
+;_____________________________________________________________________________
+;
+; Test 61 - test different types of overflow
+;
+tst61:		inc	@#$testn		; update test number
+		cmp	#61, @#$testn		; sequence error?
+		bne	tst62-12		; br to error halt on seq error
+		mov	#150, SP		;
+		clr	146			; status word of loc 10
+		mov	#tdec3, 4		; return to loc 4
+		inc	-(SP)			;
+tdec3:		tst	146			;
+		bne	1$			;
+		$err	233			;
+						;
+1$:		mov	#1000, R5		;
+		mov	#400, SP		;
+		mov	#tdec4, 4		;
+		cmpb	-(SP), -(R5)		;
+		$err	234			;
+						;
+tdec4:		mov	#400, SP		;
+		mov	#tdec7, 4		;
+		bitb	-(R5), -(SP)		;
+tdec6:		$err	235			;
+tdec7:						;
+;_____________________________________________________________________________
+;
+; Test 62 - test that an 7 causes an overflow trap
+;
+tst62:		inc	@#$testn		; update test number
+		cmp	#62, @#$testn		; sequence error?
+		bne	vdec2			; br to error halt on seq error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec2, 10		; set up 7 vector
+		mov	#vdec1, 4		; set up overflow vector
+		.word	7			; this trap should cause overflow
+vdec2:		$err	236			;
+vdec1:		mov	#10+2, 10		;
+;_____________________________________________________________________________
+;
+; Test 63 - test that an iot causes an overflow trap
+;
+tst63:		inc	@#$testn		; update test number
+		cmp	#63, @#$testn 		; sequence error?
+		bne	vdec4			; br to error halt on seq error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec4, 20		; set up iot vector
+		mov	#vdec3, 4		; set up overflow vector
+		iot				; this trap should cause overflow
+vdec4:		$err	237			;
+vdec3:		mov	#20+2, 20		;
+;_____________________________________________________________________________
+;
+; Test 64 - test that an emt causes an overflow trap
+;
+tst64:		inc	@#$testn		; update test number
+		cmp	#64, @#$testn		; sequence error?
+		bne	vdec6			; br to error halt on seq error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec6, 30		; set up emt vector
+		mov	#vdec5, 4		; set up overflow vector
+		emt				; this trap should cause overflow
+vdec6:  	$err	240			;
+vdec5: 		mov	#30+2, 30		;
+;_____________________________________________________________________________
+;
+; Test 65 - test that an trap causes an overflow trap
+;
+tst65:		inc	@#$testn		; update test number
+		cmp	#65, @#$testn		; sequence error?
+		bne	vdec8			; br to error halt on seq   error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec8, 34		; set up trap vector
+		mov	#vdec7, 4		; set up overflow vector
+		trap				; this trap should cause overflow
+vdec8:		$err	241			;
+vdec7:		mov	#34+2, 34		;
+;_____________________________________________________________________________
+;
+; Test 66 - test that an trt causes an overflow trap
+;
+tst66:		inc	@#$testn		; update test number
+		cmp	#66, @#$testn		; sequence error?
+		bne	vdec10			; br to error halt on   seq error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec10, 14		; set up trt vector
+		mov	#vdec9, 4		; set up overflow vector
+		trt				; this trap should cause overflow
+vdec10:		$err	242			;
+vdec9:		mov	#14+2, 14		;
+;_____________________________________________________________________________
+;
+; Test 67 - test that an illa causes an overflow trap
+;
+tst67:		inc	@#$testn		; update test number
+		cmp	#67, @#$testn		; sequence error?
+		bne	vdec11			; br to error halt on seq error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec11, 4		; set up illa vector
+		mov	#vdec12, 4		; set up overflow vector
+		illa				; this trap should cause overflow
+vdec11:		$err	243			;
+						;
+vdec12:		mov	#4+2, 4			;
+		cmp	SP, #370		; stack pushed four words?
+		beq	tst70			;
+		$err	244			;
+;_____________________________________________________________________________
+;
+; Test 70 - test that an illb causes an overflow trap
+;
+tst70:		inc	@#$testn		; update test number
+		cmp	#70, @#$testn		; sequence error?
+		bne	vdec13			; br to error halt on seq  error
+		mov	#400, SP		; set up stack to overflow
+		mov	#vdec13, 4		; set up illb vector
+		mov	#vdec14, 4		; set up overflow vector
+		illb				; this trap should cause overflow
+vdec13:		$err	245			;
+vdec14:		mov	#4+2, 4			;
+;_____________________________________________________________________________
+;
+; Test 71 - test for false overflow trap
+;
+tst71:		inc	@#$testn		; update test number
+		cmp	#71, @#$testn		; sequence error?
+		bne	fover			; br to error halt on seq error
+		mov	#fover, 4		; set up  overflow pointer
+		mov	#1002, SP		;
+		tst	-(SP)			; should not overflow
+		mov	#2002, SP		;
+		tst	-(SP)			; should not overflow
+		mov	#4002, SP		;
+		tst	-(SP)			; should not overflow
+		mov	#10002, SP		;
+		tst	-(SP)			;
+		mov	#20000, SP		; should  not overflow
+		tst	-(SP)			;
+		br	stp			;
+fover:		$err	246			;
+						;
+stp:		mov	#6, 4			;
+		clr	6			;
+;_____________________________________________________________________________
+;
+; Test 72 - test that bit 4 psw will cause a trap to 14
+;
+tst72:		inc	@#$testn		; update test number
+		cmp	#72, @#$testn		; sequence error?
+		bne	tst73-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retat, rtrap4		; set up to trap to 14
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+		nop				; trap here
+		$err	247			;
+retat:						;
+;_____________________________________________________________________________
+;
+; Test 73 - test stack pointer decrements
+;
+tst73:		inc	@#$testn		; update test number
+		cmp	#73, @#$testn		; sequence error?
+		bne	tst74-12		; br to error halt on  seq error
+		mov	#buff, SP		;
+		mov	#retbt, rtrap4		;
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+		nop				; trap here
+		$err	250			;
+						;
+retbt:		cmp	SP, #buff-4		;
+		beq	tst74			;
+		$err	251			;
+;_____________________________________________________________________________
+;
+; Test 74 - test for proper PC on stack
+;
+tst74:		inc	@#$testn		; update test number
+		cmp	#74, @#$testn		; sequence error?
+		bne	tst75-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#retct, rtrap4		;
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+						; trap here
+retct:		cmp	#.,buff-4		;
+		beq	tst75			;
+		$err	252			;
+;_____________________________________________________________________________
+;
+; Test 75 - test that rtt pops T-bit
+;
+tst75:		inc	@#$testn		; update test number
+		cmp	#75, @#$testn		; sequence error?
+		bne	tst76-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		clr	R1			; clear R1
+		mov	#20, -(SP)		;
+		mov	#rtt1, -(SP)		;
+		mov	#rtt2, 14		;
+		rtt				;
+						;
+rtt1:		nop				;
+		beq	tst76			;
+		$err	253			;
+rtt2:
+;_____________________________________________________________________________
+;
+; Test 76 - test that rtt allows one inst. before trap
+;
+tst76:		inc	@#$testn		; update test number
+		cmp	#76, @#$testn		; sequence error?
+		bne	tst77-12		; br to error halt on seq error
+		mov	#177777, R5		;
+rtt5:		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#rtt3, -(SP)		;
+		mov	#rtt4, 14		;
+		clr	R1			; clear R0
+		rtt				; set T-bit
+						;
+rtt3:		inc	R1			;
+		inc	R5			;
+		beq	rtt5			; do this test no more
+		$err	254			; than 2 times
+						;
+rtt4:		dec	R1			; see if rtt allows 1 inst.
+		beq	rtt6			;
+		inc	R5			; do this test no more
+		beq	rtt5			; than two times
+		$err	255			;
+rtt6:
+;_____________________________________________________________________________
+;
+; Test 77 - test that rti does not allow 1 inst.
+;
+tst77:		inc	@#$testn		; update test number
+		cmp	#77, @#$testn		; sequence error?
+		bne	tst100-12		; br to error halt on seq error
+		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#rti1, -(SP)		;
+		mov	#rti2, 14		;
+		clr	R1			;
+		rti				; set T-bit
+rti1:		inc	R1			; rti should not allow this
+		$err	256			;
+						;
+rti2:		tst	R1			; rti should not allow
+		beq	tst100			; 1 inst. before trap
+		$err	257			;
+;_____________________________________________________________________________
+;
+; Test 100 - does the processor trap when PC is odd?
+;
+tst100:		inc	@#$testn		; update test number
+		cmp	#100, @#$testn		; sequence error?
+		bne	tst101-12		; br to error halt on seq error
+		mov	#buff,SP		; set up stack pointer
+		mov	#r7tr1,4		; return from trap
+		mov	#1,PC			; PC equals one
+		$err	260			;
+						;
+r7tr1:		cmp	#1, buff-4		;
+		beq	1$			;
+		$err	261			;
+						;
+1$:		mov	#buff, SP		; stack pointer
+		mov	#r7tr2, 4		;
+		inc	PC			; PC becomes odd
+r7tr2a:		$err	262			;
+						;
+r7tr2:		cmp	#r7tr2a+1, buff-4	;
+		beq	1$			;
+		$err	263			;
+						;
+1$:		mov	#buff, SP		;
+		mov	#r7tr3, 4		;
+br60:		dec	PC			; make PC odd
+		$err	264			;
+						;
+r7tr3:		cmp	#br60+1, buff-4		; check value of PC on stack
+		beq	1$			;
+		$err	265			;
+						;
+1$:		mov	#buff, SP		;
+		mov	#r7tr4, 4		;
+		sec				; carry equals a 1
+		rol	PC			; PC becomes odd
+						;
+tr4a:		$err	266			;
+r7tr4:		mov	#6, 4			; reset up a halt for trap
+		cmp	#<2*tr4a+1>, buff-4	; check for value on stack
+		beq	tst101			;
+		$err	267			;
+;_____________________________________________________________________________
+;
+; Test 101 - test trap on trap that trace bit traps are inhibited on trap inst
+;
+tst101:		inc	@#$testn		; update test number
+		cmp	#101, @#$testn		; sequence error?
+		bne	br70			; br to error halt on seq error
+						;
+		mov	#buff, SP		;
+		mov	#trace, 14		; trace trap
+		clr	#16			;
+		clr	#22			;
+		mov	#tont1, 20		; iot trap
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rtt				;
+		iot				; trap, new cc have trace reset
+trace:		$err	270			;
+br70:		$err	271			;
+tont1:		mov	#16, 14			;
+		mov	#22, 20			;
+;_____________________________________________________________________________
+;
+; Test 102 - test that the trace bit is saved in the stack
+;
+tst102:		inc	@#$testn		; update test number
+		cmp	#102, @#$testn		; sequence error?
+		bne	stp3			; br to error halt on seq error
+		mov	#buff, SP		; set up stack pointer
+		mov	#trc1, 14		; trace trap return
+		clr	16			;
+		mov	#20, -(SP)		; set the T-bit
+		mov	#trc1, -(SP)		;
+		rti				;
+trc1:		bit	buff-2, #20		; check for T-bit on stack
+		bne	stp3d			;
+stp3:   	$err	272			;
+stp3d:		mov	#16, 14			;
+;_____________________________________________________________________________
+;
+; This routine test that no legal address traps.
+; And that an illegal address traps to location 4
+;_____________________________________________________________________________
+;
+; Test 103 - test non-existent address traps
+;
+tst103:		inc	@#$testn		; update test number
+		cmp	#103, @#$testn		; sequence error?
+		bne	auto1			; br to error halt on  seq error
+		br	adall			; this routine tests memory
+						; until it does a nxm trap
+tsl:		.word	0			;
+corh:		.word	0			;
+						;
+adall:						;
+.if ne MEMLIM					;
+		mov	#MEMLIM-2, R0		;
+.iff						;
+		clr	R0			;
+.endc						;
+		clr	6			;
+		mov	#atrap, 4		; set up address trap entrance
+nor:		mov	#buff, SP		;
+		tstb	(R0)+			; if outside of core, trap to 4
+		cmp	R0, #160000		; is pointer in side corf.
+		blos	nor			; test the rest of core
+auto:		$err	273			;
+						;
+						; return here on an address trap
+atrap:		mov	R0, corh		; move the first nxm location in corh
+						; this routine does nxm traps until it
+						; finds an existant memory location
+.if ne MEMLIM					;
+		mov	#MEMLIM+2, R0		;
+.iff						;
+		mov	#160001, R0		; set up the highest mem location
+.endc						;
+						;
+ctrap:		mov	#btrap, 4		; set up the vector
+		mov	#buff, SP		;
+		tstb	-(R0)			; does it exist?
+dtrap:		inc	R0			; if yes increment it
+		cmp	R0, corh		; is it the same location?
+		beq	trapb			;
+		$err	274			;
+						;
+btrap:		tst	status			;
+		beq 	1$			;
+		$err	275			;
+1$:		cmp	buff-4, #dtrap		;
+		beq	ctrap			;
+auto1:		$err	276			;
+;_____________________________________________________________________________
+;
+trapb:		mov	#6, 4			; this routine will figure out
+		clr	6			; if you have a dl11w
+		clr	profte			;
+		mov	#buff, SP		; set up the stack pointer
+		mov	#dl11w, 4		; set up the trap vector
+		tst	tps			; test the punch status register
+		br	dl11w1			; branch if it exists
+profte:		.word	0			;
+dl11w:		inc	profte			; increment if no dl11w
+dl11w1:		mov	#6, 4			;
+;_____________________________________________________________________________
+;
+; Test 104 - test that a tty interrupt causes an overflow trap
+;
+tst104:		inc	@#$testn		; update test number
+		cmp	#104, @#$testn		; sequence error?
+		bne	tdec8			; br to error halt on seq error
+		tst	profte			;
+		bne	r7trx			;
+		reset				;
+		mov	#340, status		; lock out interrupt
+		mov	#400, SP		; set up stack to overflow
+		mov	#tdec77, 4		; set up overflow trap
+		mov	#tdec8, 64		; set up interrupt vector
+		mov	#100, ttcsr		; set interrupt enable
+		clr	status			; allow interrupt to occur
+		mov	#277, @#$fatal		; move to mailbox # ******* 277 #***###
+		inc	(R2)			; set msgtyp to fatal error
+		halt				; no interrupt occurred
+						; to scope replace halt w/ 240
+						; and replace next inst w/ 746
+tdec8:		$err	300			;
+tdec77:		clr	ttcsr			; clear interrupt enable
+		mov	#6, 4			;
+		clr	6			;
+r7trx:						;
+;_____________________________________________________________________________
+;
+; Test 105 - test that a pending interrupt occurs before trap
+;
+tst105:		inc	@#$testn		; update test number
+		cmp	#105, @#$testn		; sequence error?
+		bne	br71			; br to error halt on seq error
+		tst	profte			;
+		bne	nodl			;
+		mov	#buff, SP		;
+		mov	#340, status		; set to a high priority level
+		mov	#tr0, 64		;
+		mov	#100, ttcsr		; interrupt for tty punch/printer
+		mov	#br71, 34		; trap vector
+		mov	#tr2, 64		; tty vector
+		mov	#340, 36		; if trap traps, move 340 to priority
+		clr	status			; should interrupt at end of clr inst
+		trap				; tty interrupt should override trap
+tr0:		$err	301			;
+br71:		$err	302			;
+tr2:		clr	36			;
+		bic	#100, ttcsr		;
+nodl:
+;_____________________________________________________________________________
+;
+; Test 106 - test that a pending interrupt, interrupts between traps
+;
+tst106:		inc	@#$testn		; update test number
+		cmp	#106, @#$testn		; sequence error?
+		bne	tr5			; br to error halt on seq error
+		tst	profte			;
+		bne	nodl1			;
+		mov	#buff, SP		;
+		mov	#340, status		;
+		mov	#100, ttcsr		;
+		mov	#tr3, 34		; trap
+		mov	#tr4, 64		; tty output
+		mov	#tr5, 20		; iot
+		mov	#340, 22		; iot priority
+		trap				; the act of trapping lower priority
+tr3:		iot				; interrupt should occur in place of iot trap
+tr5:		$err	303			;
+						;
+tr4:		clr	22			; clr iot priority
+		mov	#36, 34			;
+		mov	#66, 64			;
+		mov	#22, 20			;
+nodl1:						;
+;_____________________________________________________________________________
+;
+; Test 107 - test that "reset" goes to outside world
+;
+tst107:		inc	@#$testn		; update test number
+		cmp	#107, @#$testn		; sequence error?
+		bne	tst110-12		; br to error halt on seq error
+		tst	profte			;
+		bne	nodl2			;
+.if ne VM3FIX					;
+		mtps	#340			; disable interupts
+.endc						;
+		mov	#100, ttcsr		; set interrupt enable
+		mov	#100, trcsr		; set interrupt enable
+		reset				; should clear interrupt enable
+.if ne VM3FIX					;
+		mtps	#0			; enable interupts
+.endc						;
+						;
+		bit	#100, ttcsr		; test for clear
+		beq	1$			;
+		$err	304			;
+						;
+1$:		bit	#100, trcsr		; test for clear
+		beq	tst110			;
+		$err	305			;
+nodl2:						;
+;_____________________________________________________________________________
+;
+; Test 110 - test that reset has no effect on the trace trap
+;
+tst110:		inc	@#$testn		; update test number
+		cmp	#110, @#$testn 		; sequence error?
+		bne	reset3			; br to error halt on seq frror
+		mov	#buff, SP		; set stack
+		mov	#reset2, 14		; set up trace vector
+		mov	#20, -(SP)		; set the T-bit on stack
+		mov	#1$, -(SP)		; move new PC on stack
+		rtt				;
+						;
+1$:		reset				; should have no effect
+		reset				; no effect
+reset3:		$err	306			;
+reset2:		clr	status			; clear track
+		clr	16			; trace	status
+		mov	#16, 14			;
+;_____________________________________________________________________________
+;
+; Test 111 - test that when tty interrupts it pops new status
+;
+tst111:		inc	@#$testn		; update test number
+		cmp	#111, @#$testn		; sequence error?
+		bne	tty11			; br to error halt on seq error
+		tst	profte			;
+		bne	nodl3			;
+		reset				;
+		mov	#buff, SP		; set up stack
+		mov	#tty3, 64		; interrupt vector
+		clr	status			; drop processor priority
+		mov	#357, 66		; high priority on interrupt
+		com	ttcsr			; should set interrupt enable & interrupt
+						;
+tty3:		cmp	status, #357		;
+		beq	1$			;
+		$err	307			;
+1$:		reset				; clr nterrupt enable
+		mov	#buff, SP		; stack set up
+		mov	#tty4, 64		; interrupt vector
+		clr	66			; clr new status
+		mov	#157, status		; processor status
+		com	ttcsr			; set interrupt enable
+tty4:		tst	status			;
+		beq	ttt37			;
+tty11:		$err	310			;
+ttt37:		clr	ttcsr			;
+nodl3:						;
+;_____________________________________________________________________________
+;
+; Test 112 - test the "wait" instruction
+;
+tst112:		inc	@#$testn		; update test number
+		cmp	#112, @#$testn		; sequence error?
+		bne	stp4			; br to error halt on seq error
+		bic	#100, tps		; clear interrupt enable
+		mov	#buff, SP		; set up the stack
+		mov	#wate, 64		; set up the interrupt vector
+		clr	66			;
+wate1:		tstb	tps			; wait for ready
+		bpl	wate1			; to be up
+		mov	#15, tpb		; do a carriage return
+wate2:		tstb	tps			; wait for ready to come up
+		bpl	wate2			;
+		mov	#15, tpb		; do another carriage return
+		bis	#100, tps		; set the interrupt enable
+		clr	status			; clear the psw
+wate3:		wait				; wait for the interrupt
+		$err	311			;
+						; and replace next inst w/ 736
+wate:		tst	status			; is the psw correct?
+		beq	1$			;
+		$err	312			;
+						;
+1$:		cmp	buff-4, #wate3+2	; is the old PC saved
+		beq	stp4e			;
+stp4:		$err	313			;
+stp4e:		mov	#66, 64			;
+		jsr	PC, clrall		; clear all kt11-d registers
+		mov	#77406, @kpdr0		; map kernel 0 to bank 0, rw, 4k
+		jsr	PC, kern7		; map kernel PAR/PDR 7 to ext bank
+		mov	#int25, @ktvec		; setup return vector
+		clr	@ktsta			;
+		mov	#20000, R4		; use R4 to reference NR kernel 1
+		inc	@sr0			; turn on kt11-d
+adr25:		tst	(R4)+			; reference NR kernel 1
+adr25a:		halt				; should have aborted already
+		clr	@sr0			; turn off kt11-d
+		br	don25			;
+int25:		mov	@sr0, R1		; save contents of sr0
+		dec	@sr0			; turn off kt11-d
+		cmp	#100003, R1		; check saved contents of sr0
+		beq	.+4			;
+		hlt				; sr0 incorrect after NR abort
+						; (see saved contents in R1)
+		cmp	#adr25, @sr2		; ck sr2
+		beq	.+4			;
+		hlt				; sr2 incorrect-should contain address
+						; of last fetch before the abort
+		clr	@sr2			; try to write into sr2
+		cmp	#adr25, @sr2		; sr2 should be read only
+		beq	.+4			;
+		hlt				; sr2 not read only
+		cmp	#77506, @kpdr0		;
+		beq	.+4			;
+		hlt				; kernel PDR 0 incorrect
+						; W-bit should have been set by the stack write
+		tst	@kpdr1			;
+		beq	.+4			;
+		hlt				; kernel PDR 1 incorrect
+		cmp	(SP), #adr25a		; check value pushed on stack
+		beq	.+4			;
+		hlt				; incorrect value on stack
+		cmp	(SP)+, (SP)+		; restore stack
+						;
+don25:		clr	@ktsta			; change trap vector to cause a
+		mov	ktsta, @ktvec		; halt on a false trap
+		jsr	PC, rwall		; map all pages	RW, 4k, bank 0
+		mov	#4, @kpdr1		; map kernel 1 NR, 1 page
+		jsr	PC, kern7		; map kernel PAR/PDR 7 to ext bank
+		mov	#ret33, @ktvec		; setup	abort return
+		clr	@ktsta			;
+		inc	@sr0			; turn on kt11-d
+		tst	@#30000			; reference nr kernel 1 - should abort
+		hlt				; no NR abort
+						;
+ret33:		cmp	#140003,@sr0		; check sr0
+		beq	.+4			;
+		hlt				; sr0 incorrect - should show kernel
+						; page 1, and both NL + PL errors set
+		clr	@sr0			;
+		mov	ktsta, @ktvec		; restore trap catcher
+		jsr	PC, clrall		; clear all kt11-d registers
+		jsr	PC, kern7		; map kernel PAR/PDR 7 to ext bank
+		mov	#77406, @kpdr0		; map kernel 0 rw,rk,bank0
+		mov	#77402, @kpdr1		; map kernel 1 nam,ksz k,bank0
+		mov	#int40, @ktvec		; setup	return vector
+		clr	@ktsta			;
+		inc	@sr0			; turn on kt11-d
+						;
+adr40:		mov	@#37776, @#37776	; reference kernel 1 - 1st abort
+		clr	@sr0			; turn off kt11-d
+		hlt				; reference to kernel 1
+		br	done40			; didn't abort
+						;
+int40:		bic	#1, @sr0		; turn off kt11-d
+		cmp	#20002, @sr0		; check sr0
+		beq	.+4			;
+		hlt				; sr0 incorrect after nam abort
+		mov	#int40a, @ktvec		; setup new return vector
+		cmp	(SP)+, (SP)+		; restore stack pointer
+		mov	#37776, R2		; setup R2 to reference kernel 1
+		bis	#1, @sr0		; turn on kt11-d
+		mov	(R2)+, -(R2)		; reference kernel 1 - 2nd abort
+adr40a:		clr	@sr0			; turn off kt11-d
+		hlt				; 2nd reference to kernel 1
+		br	done40			; didn't abort
+int40a:		bic	#1, @sr0		; turn off kt11-d
+		cmp	#20002, @sr0		; check sr0
+		beq	.+4             	;
+		hlt				; sr0 incorrect after 2nd nam abort
+		cmp	#adr40, @sr2		; check sr2
+		beq	.+4			;
+		hlt				; sr2 doesn't contain value from 1st abort
+		cmp	(SP), #adr40a		; check address pushed on stack
+		beq	.+4			;
+		hlt				; incorrect address on stack
+						;
+		cmp	(SP)+, (SP)+		; restore stack pointer
+		mov	#int40b, @ktvec		; change return address
+		clr	@sr0			; clear nam error bit-should
+						; "unlock" error tracking
+		mov	#37776, R2		; setup R2 to reference kernel 1
+		inc	@sr0			; turn on kt11-d
+adr40b:		mov	(R2)+, -(R2)		; 3rd nam reference, error bit was cleared
+adr40c:		clr	@sr0			; turn off kt11-d
+		hlt				; 3rd reference to kernel 1
+		br	done40			; didn't abort
+int40b:	 	bic	#1, @sr0		; turn off kt11-d
+		cmp	#20002, @sr0		; check sr0
+		beq	.+4			;
+		hlt				; sr0 incorrect
+		cmp	#adr40b, @sr2		; check sr2
+		beq	.+4			;
+		hlt				; sr2 incorrect - should contain
+						; last fetch address before abort
+		cmp	#adr40c, (SP)		; check stack
+		beq	.+4			;
+		hlt				; PC on stack incorrect
+		cmp	(SP)+, (SP)+		; restore stack pointer
+done40:		clr	@sr0			; clear error bit
+		clr	@ktsta			; change trap return to cause a halt
+		mov	ktsta, @ktvec		; on a false interrupt
+;_____________________________________________________________________________
+;
+; Test 113 - test that all reserved instructions trap
+;
+tsth3:		inc	@#$testn		;
+		cmp	#113, @#$testn		; sequence error?
+		bne	ret4			;
+		bic	#100, tps		;
+		mov	#trap244, @#244		; set up to see if
+		mov	@#10, tensave		; this processor has the
+		mov	#trap10, @#10		; floating point option
+		.word	170007			; an illegal FPP instruction
+		 br	around			; the following
+						; if fpp in--
+trap244:	mov	@#fpp, finish		; reset end of table pointer
+		rti				; and return
+						;
+trap10:		rti				; leave the table alone
+						; and return
+tensave:	.word	0			; a place to store contents of 10
+						;
+around:						;
+.if ne VM3FIX					;
+		mov	@#fin2, finish		; make test shorter for simulation
+.endc						;
+		mov	#246, @#244		; restore the trap vector
+		mov	tensave, @#10		; restore the illegal inst, vector
+		mov	#table, tab		; table pointer
+gin1:		mov	(tab)+, first		; first or current instruction
+		mov	(tab)+, last		; last instruction or group
+		cmp	first, finish		; tested all
+		beq	gin3			; yes branch
+		mov	first, inst		; set up inst
+						;
+gin2:		inc	inst			;
+		mov	#ret, 10		; set up return from trap
+		mov	#buff, SP		; set up stack pointer
+		clr	cc			; clear priority
+		jmp	inst			; execute reserved instruction
+;_____________________________________________________________________________
+;
+gin3:		inc	@#$pass			;
+		incb	passpt			; should print this pass?
+		bne	act			; no
+		bitb	#40, $envm		; will apt allow printing?
+		bne	act			; no
+		cmp	@#42, #$endad		;
+		beq	act			;
+		mov	#msg, R0		; get msg addr,
+wait:		tstb	@#tps			; tty ready
+		bpl	wait			; no wait
+		movb	(R0)+, @#tpb		; print	character
+		bne	wait			; next if not done.
+wait1:		tstb	@#tps 			;
+		bpl	wait1	 		;
+		reset	  	 		;
+		mov	#177761, passpt		; do it about 15 decimal times
+act:		mov	@#42, R0		; check ACT
+		beq	goagin			; keep going
+		reset				;
+$endad:		jsr	PC, (R0)		; ACT hooks
+		nop				;
+		nop				;
+		nop				;
+goagin:						;
+.if ne HOEP					;
+		halt				;
+.endc						;
+		mov	#12, 10			;
+		clr	12			;
+		jmp	restrt			; do next pass
+passpt:		.word	-1			;
+;_____________________________________________________________________________
+;
+; Trapping should send you here
+;
+ret:		cmp	SP, #buff-4		; test decrement of SP
+		beq	ret1			;
+		$err	314			;
+ret1:		cmp	buff-4, #inst+2		; loc of inst unincremented
+		beq	ret2			;
+		$err	315			;
+						;
+ret2:		tst	buff-2			;
+		beq	ret3			;
+ret4:		$err	316			;
+						;
+ret3:		cmp	inst, last		;
+		beq	gin1			; set up new group
+		jmp	gin2			; finish old group
+						; end of instruction group
+;_____________________________________________________________________________
+;
+table:		.word	6, 77	 	 	; end of operate
+		.word	207, 227		; rts, rt1, jmp
+fin2:		.word	6777, 7777		;
+		.word	75037, 76777		;
+fpp:		.word	167777, 177777		; fpp instructions
+finish:		.				; end flag
+						;
+inst:		halt				; will continue	reserved inst
+		halt				; should trap to loc 10
+		halt				; loc 10 should send you to
+		halt				; ret
+		halt				;
+;_____________________________________________________________________________
+;
+pwrdwn:		mov	#pwrup, 24		;
+		halt				;
+						;
+pwrup:		mov	#pwrdwn, 24		;
+		mov	#buff, SP		;
+		bitb	#40, $envm		; will apt allow printing?
+		bne	pfres			; no
+		mov	#msgpwf, R0		; get msg addr.
+pwait:		tstb	@#tps			; tty ready
+		bpl	pwait			; no wait
+		movb	(R0)+, @#tpb		; print character
+		bne	pwait			; next if not done.
+						;
+pwait1:		tstb	@#tps			;
+		bpl	pwait1			;
+pfres:		jmp	restrt			;
+
+msg:		.asciz	<15><12>.CFKABD0 11/34 TRAPS TST DONE  .
+msgpwf: 	.asciz	<15><12>/POWER FAILED!/
+msg1:		.asciz	<15><12>.CFKABD0 11/34 TRAPS TST .
+;_____________________________________________________________________________
+;
+clrall:		clr	@sr0			;
+		clr	R0              	;
+		mov	#32., R1		; count of registers to be cleared
+clrlp:		clr	@adrtab(R0)		; clear registers thru address table
+		tst	(R0)+			; move pointer
+		sob	R1, clrlp		; loop till done
+		rts	PC			;
+;_____________________________________________________________________________
+;
+; Subroutine to make all pages RW, bank 0, 4KW, up
+;
+rwall:		clr	@sr0			;
+		mov	#adrtab, R1		; R1 points to address table
+rwl1:		mov	#10, R0			; R0 is counter
+rwl2:		clr	@20(R1)			; clear PAR
+		mov	#77406, @(R1)+		; set PDR RW, 4KW
+		sob	R0, rwl2		;
+		add	#20, R1			;
+		cmp	R1, #adrend		; pointer to next group
+		blt	rwl1			;
+		rts	PC			;
+						;
+kern7:		mov	#7600, @kpar7		; map kernel PAR/PDR 7
+		mov	#77406, @kpdr7		; to external bank
+		rts	PC			;
+;_____________________________________________________________________________
+;
+	 .end

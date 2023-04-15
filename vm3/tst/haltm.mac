@@ -1,0 +1,700 @@
+;_____________________________________________________________________________
+;
+; 1801BM3 halt mode test
+;
+;  - entry halt mode on halt instruction
+;  - entry halt mode on halt request
+;  - entry halt mode on double error in kernel mode
+;  - leave halt mode with rti
+;  - leave halt mode with rtt
+;  - jsr/rts in halt mode, check SP usage
+;  - halt instruction in halt mode
+;  - bus error in halt mode
+;  - timer interrupts in halt mode
+;  - memory mapping in halt mode
+;  - HPAR2 test
+;  - instruction prefetch bus error abort test
+;  - instruction prefetch MMU-exceptions test
+;
+		.title	haltm			;
+		.list	meb			;
+						;
+		HMCSR	= 177710		;
+		RXCSR	= 177560		;
+		RXDAT	= 177562		;
+		TXCSR	= 177564		;
+		TXDAT	= 177566		;
+						;
+		KPDR0	= 172300		; Kernel PDR0
+		KPDR1	= 172302		; Kernel PDR1
+		KPDR2	= 172304		; Kernel PDR2
+		KPDR3	= 172306		; Kernel PDR3
+		KPDR4	= 172310		; Kernel PDR4
+		KPDR5	= 172312		; Kernel PDR5
+		KPDR6	= 172314		; Kernel PDR6
+		KPDR7	= 172316		; Kernel PDR7
+						;
+		KPAR0	= 172340		; Kernel PAR0
+		KPAR1	= 172342		; Kernel PAR1
+		KPAR2	= 172344		; Kernel PAR2
+		KPAR3	= 172346		; Kernel PAR3
+		KPAR4	= 172350		; Kernel PAR4
+		KPAR5	= 172352		; Kernel PAR5
+		KPAR6	= 172354		; Kernel PAR6
+		KPAR7	= 172356		; Kernel PAR7
+						;
+		HPAR2	= 172512		; Halt PAR2
+		SR3	= 172516		; MMU Status 3
+		SR0	= 177572		; MMU Status 0
+		SR1	= 177574		; MMU Status 1
+		SR2	= 177576		; MMU Status 2
+					        ;
+		UPDR0	= 177600		; User PDR0
+		UPDR1	= 177602		; User PDR1
+		UPDR2	= 177604		; User PDR2
+		UPDR3	= 177606		; User PDR3
+		UPDR4	= 177610		; User PDR4
+		UPDR5	= 177612		; User PDR5
+		UPDR6	= 177614		; User PDR6
+		UPDR7	= 177616		; User PDR7
+						;
+		UPAR0	= 177640		; User PAR0
+		UPAR1	= 177642		; User PAR1
+		UPAR2	= 177644		; User PAR2
+		UPAR3	= 177646		; User PAR3
+		UPAR4	= 177650		; User PAR4
+		UPAR5	= 177652		; User PAR5
+		UPAR6	= 177654		; User PAR6
+		UPAR7	= 177656		; User PAR7
+						;
+		TXSIZE	= 128.			;
+						;
+		HSP	= 100000		; real stack area (before mapping)
+		MSP	= 20000			; mapped stack area (after mapping)
+						;
+		memlim	= 100000		; test memory limit
+		toreta	= 100000		; return address on timeout
+		trap4	= 4			; bus error exception
+		trap250	= 250			; MMU exception
+						;
+		pg	= 20000			;
+		m0	= 104210		;
+		m1	= 063146		;
+		m2	= 125252		;
+		m3	= 114631		;
+;_____________________________________________________________________________
+;
+		.macro	.print	ARG		;
+		mov	R0,-(SP)		;
+		mov	ARG, R0			;
+		jsr	PC, print		;
+		mov	(SP)+,R0		;
+		.endm				;
+						;
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		.	= offset		;
+	.if	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff					;
+		.word	340			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+		.asect				; interrupts 0-376
+		. = 0				;
+						;
+		jmp	@$hmjmp			;
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20			;
+		vect	24, entry		; initial start vector
+		vect	30			; for boot mode 0
+		vect	34			;
+		vect	40			;
+		vect	44			;
+		vect	50			;
+		vect	54			;
+		vect	60			; rx console
+		vect	64			; tx console
+		vect	70			;
+		vect	74			;
+		vect	100, isr50		;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+		vect	200			;
+		vect	204			;
+		vect	210			;
+		vect	214			;
+		vect	220			;
+		vect	224			;
+		vect	230			;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+;_____________________________________________________________________________
+;
+		.rept	100.			;
+		.word	0			;
+		.endr				;
+$stack		=.				;
+tebuf:		.blkw	8.			;
+$testn:		.word	0			;
+$hmjmp:		.word	0			;
+$ticks:		.word	0			;
+						;
+$txbeg:		.word	0			;
+$txend:		.word	0			;
+$txbuf:		.blkb	TXSIZE			;
+		.even				;
+;_____________________________________________________________________________
+;
+isr50:		inc	$ticks			;
+		rti				;
+						;
+putch:		tstb	@#TXCSR			;
+		bpl	putch			;
+		movb	R0, @#TXDAT		;
+		rts	PC			;
+						;
+print:		mov	R1, -(SP)		;
+		mov	R0, R1			;
+1$:		movb	(R1)+, R0		;
+		beq	2$			;
+		jsr	PC, putch		;
+		br	1$			;
+2$:		mov	(SP)+, R1		;
+		rts	PC			;
+						;
+;_____________________________________________________________________________
+;
+entry:		mov	#$stack, SP		;
+		mov	#$txbuf, $txend		;
+		mov	#$txbuf, $txbeg		;
+		mov	#000, @#RXCSR		;
+		mov	#000, @#TXCSR		;
+		mtps	#340			;
+		mov	#0, @#$testn		;
+		mov	#$testn, R2		;
+;_____________________________________________________________________________
+;
+; Test 1 - entry halt mode with halt instruction
+;
+tst1:		inc	(R2)			;
+		cmp	#1, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		clr	R0			;
+		clr	R1			;
+		ccc				;
+		halt				;
+						;
+2$:		mov	#0, @#HMCSR		; enable testbench stop
+		mov	@#HSP-4, R0		;
+		mov	@#HSP-2, R1		;
+		mov	#3$, @#HSP-4		;
+		rti				;
+						;
+3$:		cmp	#2$, R0			;
+		beq	4$			;
+		halt				;
+4$:		cmp	#340, R1		;
+		beq	tst2			;
+;_____________________________________________________________________________
+;
+; Test 2 - entry halt mode with halt interrupt request
+;
+tst2:		inc	(R2)			;
+		cmp	#2, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		clr	R0			;
+		clr	R1			;
+		ccc				;
+		sec				;
+		mov	#100001, @#HMCSR	;
+5$:		br	.			;
+						;
+2$:		mov	#0, @#HMCSR		; enable testbench stop
+		mov	@#HSP-4, R0		;
+		mov	@#HSP-2, R1		;
+		mov	#3$, @#HSP-4		;
+		rtt				; return with rtt
+						;
+3$:		cmp	#5$, R0			;
+		beq	4$			;
+		halt				;
+4$:		cmp	#351, R1		;
+		beq	tst3			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 3 - entry halt mode with double exception
+;
+tst3:   	inc	(R2)			;
+		cmp	#3, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#357, @#36		; inherit PSW from trap vector
+		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		clr	R0			;
+		clr	R1			;
+		mov	#memlim+10, SP		;
+		ccc				;
+		sec				;
+		trap	0			; double exception on stack
+5$:		br	.			;
+						;
+2$:		mov	#0, @#HMCSR		; enable testbench stop
+		mov	@#HSP-4, R0		;
+		mov	@#HSP-2, R1		;
+		mov	#3$, @#HSP-4		;
+		rti				;
+						;
+3$:		mov	#$stack, SP		;
+		cmp	#5$, R0			;
+		beq	4$			;
+		halt				;
+4$:		cmp	#357, R1		; we see PSW fetched first
+		beq	tst4			; from trap vector before
+		halt				; bus timeout exception on stack
+;_____________________________________________________________________________
+;
+; Test 4 - test jsr/rts and SP usage in halt mode
+;
+tst4:   	inc	(R2)			;
+		cmp	#4, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		clr	R0			;
+		clr	R1			;
+		clr	R3			;
+		clr	R4			;
+		ccc				;
+		sec				;
+		halt				;
+5$:		br	.			;
+						;
+2$:		mov	#0, @#HMCSR		; enable testbench stop
+		jsr	PC, 4$			;
+3$:		mov	@#HSP-4, R0		;
+		mov	@#HSP-2, R1		;
+		mov	#6$, @#HSP-4		;
+		rti				;
+						;
+4$:		mov	SP, R3			;
+		mov	@#HSP-6, R4		;
+		rts	PC			;
+						;
+6$:		cmp	#5$, R0			;
+		beq	10$			;
+		halt				;
+10$:		cmp	#341, R1		;
+		beq	11$			;
+		halt				;
+11$:		cmp	SP, R3			;
+		beq	12$			;
+		halt				;
+12$:		cmp	#3$, R4			;
+		beq	tst5			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 5 - halt instruction in halt mode
+;
+tst5:   	inc	(R2)			;
+		cmp	#5, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		clr	R0			;
+		clr	R1			;
+		ccc				;
+		sec				;
+		halt				;
+		br	.			;
+						;
+2$:		mov	#0, @#HMCSR		; enable testbench stop
+		mov	#3$, $hmjmp		;
+		halt				; in halt mode
+5$:		br	.			; stack should be reset
+						; to 100000
+3$:		mov	@#HSP-4, R0		;
+		mov	#4$, @#HSP-4		;
+		rti				;
+						;
+4$:		cmp	#5$, R0			;
+		beq	tst6			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 6 - bus error in halt mode, it takes vector 4 and does not push to stack
+;
+tst6:   	inc	(R2)			;
+		cmp	#6, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		mov	#1000, @#HPAR2		; point to 100000
+		clr	R0			;
+		clr	R1			;
+		halt				;
+5$:		br	.			;
+						;
+2$:		mov	#0, @#HMCSR		; enable testbench stop
+		mov	@#trap4, R0		;
+		mov	#3$, @#trap4		;
+		mov	@#memlim, R1		; bus exception here
+		br	.			;
+						;
+3$:		mov	R0, @#trap4		; restore trap 4 vector
+		mov	@#HSP-4, R0		;
+		mov	#4$, @#HSP-4		;
+		rti				;
+						;
+4$:		cmp	#5$, R0			; stack was not updated
+		beq	tst7			; on bus error exception
+		halt				; it kept return from halt
+;_____________________________________________________________________________
+;
+; Test 7 - timer interrupt in halt mode
+;
+tst7:   	inc	(R2)			;
+		cmp	#7, (R2)		;
+		beq	1$			;
+		halt				;
+;
+;Timer interrupt loads 100 to R10, then saves PSW, PC and jumps by vector 100.
+;
+;1$:		mov	#100000, @#HMCSR	; disable testbench stop
+;		mov	#2$, $hmjmp		; on halt mode
+;		mov	#1000, HPAR2		; point to 100000
+;		clr	R0			;
+;		clr	R1			;
+;		halt				;
+;5$:		br	.			;
+;						;
+;2$:		mov	#2, @#HMCSR		; enable testbench stop
+;		mov	@#trap4, R0		;
+;		mtps	#340			;
+;		mov	#3$, @#trap4		;
+;		mov	#0, @#HMCSR		; timer interrupt
+;		br	.			;
+;						;
+;3$:		mov	R0, @#trap4		; restore trap 4 vector
+;		mov	@#HSP-4, R0		;
+;		mov	#4$, @#HSP-4		;
+;		rti				;
+;						;
+;4$:		cmp	#5$, R0			; stack was not updated
+;		beq	tst8			; on bus error exception
+;		halt				; it kept return from halt
+1$:		jmp	tst10			;
+;_____________________________________________________________________________
+;
+; Memory mapping in halt mode
+;
+tst10:	   	inc	(R2)			;
+		cmp	#10, (R2)		;
+		beq	1$			;
+		halt				;
+						;
+1$:		mov	#pg, R0			;
+		mov	#m0, -100(R0)		;
+		mov	#m1, -200(R0)		;
+		mov	#m2, -300(R0)		;
+		mov	#m3, -400(R0)		;
+		mov	#100000, @#HMCSR	; disable testbench stop
+		mov	#2$, $hmjmp		; on halt mode
+		halt				;
+						;
+2$:		mov	#0, @#HMCSR		;
+		clr	R0			;
+		mov	#4, R1			;
+3$:		add	#pg, R0			;
+		cmp	#m0, -100(R0)		;
+		bne	10$			;
+		cmp	#m1, -200(R0)		;
+		bne	10$			;
+		cmp	#m2, -300(R0)		;
+		bne	10$			;
+		cmp	#m3, -400(R0)		;
+		bne	10$			;
+		sob	R1, 3$			;
+						;
+		mov	#memlim, R0		;
+		mov	#pg/100-4, @#HPAR2	;
+		cmp	#m3, (R0)		;
+		bne	10$			;
+		mov	#pg/100-3, @#HPAR2	;
+		cmp	#m2, (R0)		;
+		bne	10$			;
+		mov	#pg/100-2, @#HPAR2	;
+		cmp	#m1, (R0)		;
+		bne	10$			;
+		mov	#pg/100-1, @#HPAR2	;
+		cmp	#m0, (R0)		;
+		bne	10$			;
+		mov	#12$, @#HSP-4		;
+		rti				;
+						;
+10$:		mov	#11$, @#HSP-4		;
+		rti				;
+11$:		halt				;
+12$:						;
+;_____________________________________________________________________________
+;
+; Prefetch tests - generating and not generating exceptions on bus timeout
+;
+tst20:		mov	#$stack, SP		;
+		mov	#memlim-4, R5		; test non-executing
+						; instruction prefetch
+		mov	#1$, @#trap4		; just read data from
+		mov	4(R5), R0		; non-existing memory
+		halt				; expect bus timeout trap
+						;
+1$:		mov	#fail, @#trap4		; instruction rts PC
+		mov	cmd1, 2(R5)		; return, no prefetch
+		jsr	PC, 2(R5)		; exception
+						;
+		mov	cmd2+0, 0(R5)		; double operand instruction
+		mov	#2$, 2(R5)		; mov #ret, PC
+		jmp	(R5)			; no exception
+		halt				; prefetch bug was discovered
+						; with this test (late timeout)
+2$:		mov	#3$, @#trap4		;
+		mov	cmd3, 2(R5)		; "mov (R0)+, (R0)+"
+		mov	#tebuf, R0		; command must be executed
+		mov	#12345, 0(R0)		; before exception taken
+		clr	2(R0)			;
+		jmp	2(R5)			;
+						;
+3$:		cmp	(SP)+, #toreta		; check exception
+		bne	4$			; return address
+		cmp	#tebuf+4, R0		;
+		bne	4$			;
+		cmp	#12345, -(R0)		;
+		beq	5$			;
+4$:		halt				;
+						;
+5$:		mov	#6$, @#trap4		;
+		mov	cmd4, 2(R5)		; destination in unary
+		mov	#tebuf, R0		; command causes exception
+		jmp	2(R5)			;
+						;
+6$:		mov	#7$, @#trap4		;
+		mov	cmd5, 2(R5)		; destination in binary
+		jmp	2(R5)			; command register-memory
+7$:		cmp	(SP)+, #toreta		; causes exception
+		bne	4$			;
+						;
+		mov	#10$, @#trap4		;
+		mov	#tebuf, R0		;
+		mov	cmd6, 2(R5)		; destination in binary
+		jmp	2(R5)			; command memory-memory
+10$:		cmp	(SP)+, #toreta		; source is handled first
+		bne	4$			; then throw exception
+		cmp	#tebuf+2, R0		;
+		bne	4$			;
+						;
+						;
+		mov	#11$, @#trap4		;
+		mov	cmd7, 2(R5)		; source in binary
+		jmp	2(R5)			; command memory-memory
+11$:		cmp	(SP)+, #toreta		; causes exception
+		bne	4$			;
+		cmp	#tebuf+2, R0		;
+		bne	4$			;
+						;
+		mov	#12$, @#trap4		;
+		mov	cmd8, 2(R5)		; source in binary
+		jmp	2(R5)			; command memory-memory
+12$:		cmp	(SP)+, #toreta		; 3-words
+		bne	4$			; causes exception
+						;
+;_____________________________________________________________________________
+;
+; Prefetch tests - generating and not generating exceptions on MMU errors
+;
+tst21:		mov	#$stack, SP		;
+		jsr	PC, mmu21		;
+		mov	#memlim-4, R5		; test non-executing
+						; instruction prefetch
+		mov	#1$, @#trap250		; just read data from
+		mov	4(R5), R0		; non-existing memory
+		halt				; expect MMU trap
+						;
+1$:		bic	#160000, @#sr0		;
+		mov	#fail, @#trap250	; instruction rts PC
+		mov	cmd1, 2(R5)		; return, no prefetch
+		jsr	PC, 2(R5)		; exception
+						;
+		mov	cmd2+0, 0(R5)		; double operand instruction
+		mov	#2$, 2(R5)		; mov #ret, PC
+		jmp	(R5)			; no exception
+		halt				; prefetch bug was discovered
+						; with this test (late timeout)
+2$:		mov	#3$, @#trap250		;
+		mov	cmd3, 2(R5)		; "mov (R0)+, (R0)+"
+		mov	#tebuf, R0		; command must be executed
+		mov	#12345, 0(R0)		; before exception taken
+		clr	2(0)			;
+		jmp	2(R5)			;
+						;
+3$:		bic	#160000, @#sr0		;
+		cmp	(SP)+, #toreta		; check exception
+		bne	4$			; return address
+		cmp	#tebuf+4, R0		;
+		bne	4$			;
+		cmp	#12345, -(R0)		;
+		beq	5$			;
+4$:		halt				;
+						;
+5$:		mov	#6$, @#trap250		; vm3 bug: timeout instead of MMU
+		mov	#6$, @#trap4		;
+		mov	cmd4, 2(R5)		; destination in unary
+		mov	#tebuf, R0		; command causes exception
+		jmp	2(R5)			;
+						;
+6$:    		bic	#160000, @#sr0		;
+		mov	#7$, @#trap250		; vm3 bug: timeout instead of MMU
+		mov	#7$, @#trap4		;
+		mov	cmd5, 2(R5)		; destination in binary
+		jmp	2(R5)			; command register-memory
+7$:		cmp	(SP)+, #toreta+2	; causes exception
+		bne	4$			;
+						;
+		mov	#10$, @#trap250		;
+		mov	#10$, @#trap4		; vm3 bug: timeout instead of MMU
+		mov	#tebuf, R0		;
+		mov	cmd6, 2(R5)		; destination in binary
+		jmp	2(R5)			; command memory-memory
+10$:		bic	#160000, @#sr0		;
+		cmp	(SP)+, #toreta+2	; source is handled first
+		bne	4$			; then throw exception
+		cmp	#tebuf+2, R0		;
+		bne	4$			;
+						;
+						;
+		mov	#11$, @#trap250		;
+		mov	#11$, @#trap4		; vm3 bug: timeout instead of MMU
+		mov	cmd7, 2(R5)		; source in binary
+		jmp	2(R5)			; command memory-memory
+11$:		bic	#160000, @#sr0		;
+		cmp	(SP)+, #toreta+2	; causes exception
+		bne	4$			;
+		cmp	#tebuf+2, R0		;
+		bne	4$			;
+						;
+		mov	#12$, @#trap250		;
+		mov	#12$, @#trap4		;
+		mov	cmd8, 2(R5)		; source in binary
+		jmp	2(R5)			; command memory-memory
+12$:		bic	#160000, @#sr0		;
+		cmp	(SP)+, #toreta+2	; 3-words
+		bne	4$			; causes exception
+;_____________________________________________________________________________
+;
+		mov	#0, @#sr0		;
+		jmp	done			;
+						;
+cmd1:		rts	PC			;
+cmd2:		mov	#0, PC			;
+cmd3:		mov	(R0)+, (R0)+		;
+cmd4:		clr	@#tebuf			;
+cmd5:		mov	R0, @#tebuf		;
+cmd6:		mov	(R0)+, tebuf		;
+cmd7:		mov	tebuf, (R0)+		;
+cmd8:		mov	@#tebuf+0, @#tebuf+2	;
+fail:		halt				;
+;_____________________________________________________________________________
+;
+mmu21:		mtps	#340			; kernel mode, ints disabled
+		mov	#0, KPAR0		; map kernel page 0 to 0-4k
+		mov	#200, KPAR1		; map kernel page 1 to 4-8k
+		mov	#400, KPAR2		; map kernel page 2 to 8-12k
+		mov	#600, KPAR3		; map kernel page 3 to 12-16k
+		mov	#1000, KPAR4		; map kernel page 4 to 16-20k
+		mov	#1200, KPAR5		; map kernel page 4 to 16-20k
+		mov	#1400, KPAR6		; map kernel page 4 to 16-20k
+		mov	#7600, KPAR7		; map kernel page 7 to the i/o page
+		mov	#77406, R0		; make all kernel i-space pages resident
+						; read/write. length 200 blocks
+		mov	#10, R2			; set loop counter to 8
+		mov	#KPDR0, R1		; put address of first pdr in R1
+1$:		mov	R0, (R1)+		; load pdr with 77406
+		sob	R2, 1$			; loop to 2$ until all pdrs loaded
+						;
+		mov	#0, KPDR4		; make kernel space page 4 non-resident
+		mov	#0, KPAR4		; point to existing memoty (vm3 bug
+		mov	#0, @#sr3		; causes bus timeout instead of MMU
+		mov	#1, @#sr0		; trap on prefetch)
+		rts	PC			;
+;_____________________________________________________________________________
+;
+done:		.print	#mes1			;
+		mov	#0, @#HMCSR		;
+		halt				;
+
+mes1:	.asciz	<15><12><15><12>" 1801BM3 HALT MODE TEST PASSED"<12><15>
+;_____________________________________________________________________________
+;
+		.end

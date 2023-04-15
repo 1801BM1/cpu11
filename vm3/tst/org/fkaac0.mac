@@ -1,0 +1,6771 @@
+; Originally	was compiled with MACY-11, an assembler	running	on the PDP-10.
+; The source is	modifiedd to be	translated with	regular	MACRO-11.
+;
+;			IDENTIFICATION
+;			--------------
+; Product code:		AC-8041C-MC
+; Product name:		CFKAACO	11/34 Basic Instrauction Test
+; Date:			Jan-81
+; Maintainer:		Diagnostic Engineering
+;
+; The information in this document is subject to change	without	notice
+; and should not be construed as a commitment by Digital Equipment
+; Corporation. Digital Equipment Corporation assumes no	responsibility
+; for any errors that may appear in this document.
+;
+; No responsibility is assumed for the use or reliability of software
+; on equipment that is not supplied by Digital or its affiliated companies
+;
+; Copyright (C)	1975, 1978 by Digital Equipment	Corporation
+; The following	are trademarks of Digital Equipment Corporation:
+;
+;	Digital		PDP		UNIBUS		MASSBUS
+;	DEC		DECUS		DECTAPE
+;_____________________________________________________________________________
+;
+; *************************************
+; * Summary of operating instructions *
+; *************************************
+;
+; The following	procedure can be used to run this diagnostic
+; in a standard	configuration with at least 4KW	of memory
+; and a	teletype. If the program does not run successfully
+; consult the following	document for assistance.
+;
+; Operating procedures:
+;	1. Load	the program using normal procedures
+;	2. Start the program at	location 200
+;	3. program should print	the title within the
+;	   1st second and end pass repeatably thereafter
+;	   at approx. 10 sec. intervals	until
+;	   externally halted.
+;	4. if the program does not run as described above,
+;	   consult the full operating intructions which	follow.
+;_____________________________________________________________________________
+;
+; 1.0	General	program	information
+; 1.1	Program	purpose
+;
+;	This diagnostic	program	is designed to be a comprehensive check	of
+;	the PDP-11/34 basic instruction	set. The program exercises all of
+;	the processor logic and	microcode for all instructions except the trap
+;	and memory management instructions. The	program	does not test
+;	instructions or	hardware related to the	trap or	interrupt mechanisms
+;	of the 11/34 (e.g. rtt,	rt1, wait, reset, trap,	emt).
+;
+; 1.2	System requirements
+; 1.2.1	Hardware
+;
+;	PDP-11/34 processor
+;	8K memory — the program uses locations 0 - 26520
+;
+; 1.2.2	Software
+;
+;	This program is	written	to be run as a stand-alone program. However,
+;	the program is designed	to run under automated product test system (APT)
+;	in all three modes. The	program	can also be run	under the ACT-11 monitor
+;
+; 1.3	Related	documents and standards
+;
+;	PDP-11/34 microcode listing
+;	PDP-11/34 electrical schematics
+;	Diagnostic engineering project plan for	11/34
+;	Diagnostic engineering standards and conventions programming practices
+;		document no. 175-003-009-00
+;	APT interface specification, revision 9.
+;
+; 1.4	Diagnostic hierarchy prerequisites
+;
+;	None
+;
+; 1.5	Failure	assumptions
+;
+;	None
+;
+; 2.0	Operating instructions
+;
+; 2.1	Loading	and starting procedures
+; 2.1.1	Loading
+;
+;	Use normal procedures for loading absolute binary tapes.
+;
+; 2.1.2	Normal start
+;
+;	This is	the procedure for normal program running (i.e.,	starting with
+;	test 1 and executing entire diagnostic).
+;
+;	load address = 200
+;	start
+;
+; 2.1.3	Subtest	start
+;
+;	This is	the procedure for starting at a	subtest	other than 1.
+;	1. Load	$testn (in mailbox section) with the number of subtest minus
+;	one (in	octal) for example, to start at	subtest	100,
+;	   $testn=77.
+;	2. Load	starting address of subtest in loc. 216
+;	3. Load	address	= 204
+;	4. Start
+;
+; 2.2	Special	environments
+;
+;	This program is	written	to comply with all the requirements of the APT
+;	interface specification. it will run under APT in either quick verify,
+;	program	or run-time modes.
+;
+;	This program is	written	to comply with all of the requirements of
+;	programs to run	under the ACT-11 monitor.
+;
+; 2.3	Program	options
+;
+;	This program is	intended to be a basic processor test. It is intended
+;	to be the lowest level diagnostic run. It provides for no selectable
+;	options.
+;
+;	In order that the test be runnable on a	processor without a teletype,
+;	it is possible to suppress the end of pass message. If no teletype is
+;	available, alter the byte $envm, which is located in the APT mailbox.
+;	Setting	$emvm to 40(8) will suppress all console output.
+;
+;	The exact location of this byte	can be found in	the symbol table
+;	at the end of the listing.
+;
+; 2.4	Execution times
+;
+;	The diagnostic completes the first pass	in less	than 1 sec. Subsequent
+;	passes require approximately 10	secs. each. The	program	will run
+;	continuously until externally halted.
+;
+; 3.0	Error information
+; 3.1	Error types
+;
+;	There are two basic types of errors in the diagnostic.
+;
+; 3.1.1	Functional errors
+;
+;	These are errors which represent a malfunction of an instruction or
+;	sequence of instruction. (e.g.<	the proper condition code not set
+;	or improper result of an arithmetic or logical operation).
+;
+; 3.1.2	Sequence errors
+;
+;	The result of a	tests being executed out of sequence. (e.g. wild
+;	machine	or improper branch or jump).
+;
+; 3.2	Error reporting	procedures
+;
+;	The diagnostic responds	to the detection of all	errors by storing
+;	certain	information in memory and halting the processor	the information
+;	stored in memory can be	used by	the operator to	identify the error
+;	detected.
+;
+;	Certain	failures will cause the	proessor to hang. This type of failure
+;	is indicated if	the program does not print its end of pass indication
+;	within a reasonable amount of time. (first message should appear within
+;	1 sec.)
+;
+; 3.3	Error descriptor information
+;
+;	The diagnostic mailbox holds the error information necessary
+;	to identify the	detected error.	this information has been designed
+;	for compliance with the	apt to diagnostic interface specification.
+;	It is the primary medium for identifying errors.
+;
+; 3.2.1	$msgtyp
+;
+;	This location is incremented from zero to one before the program comes
+;	to a programmed	halt. If this location is not one, then	the diagnostic
+;	has come to an unprogrammed halt. Check	the stack and PC for a clue
+;	to the cause. Suspect a	trap.
+;
+; 3.2.2	$fatal
+;
+;	This location is loaded	with a number before a halt is executed	each
+;	programmed halt	has a unique number associated with it which can
+;	be used	to identify the	error which has	been detected.
+;
+; 3.2.3	$pass
+;
+;	This location is incremented for every complete	pass of	the diagnostic.
+;	Monitoring this	location will indicate whether or not the program is
+;	hung. It will also indicate the	number of successful passes completed
+;	before the error halt. A high pass count might indicate	that the error
+;	halt is	associated with	an intermittant	fault.
+;
+; 3.2.4	$testn
+;
+;	This location is incremented in	each new subtest. This should indicate
+;	the test being executed	when the error was detected. This location is
+;	also used to detect a sequence error.
+;
+; 3.4	Error identification
+;
+;	Because	of the overhead	associated with	each halt in an	APT
+;	compatible program the sequence	check code will	share the error	halt
+;	of functional error within each	subtest. To determine which error
+;	is being reported, locations $fatal and	$testn are used	together.
+;	When an	error halt occurs, check, $fatal to determine the number
+;	of the error detected. Now, check that the test	number where this
+;	error is detected corresponds to the value in $testn. If these agree
+;	the error was a	functional error as described in the listings.
+;	If these numbers do not	agree, then a sequence error was detected.
+;	In this	case $testn will contain one more than the number of the last
+;	test successfully completed. sequence errors which share the error
+;	halts of functional errors will	always be reported by the last halt
+;	in the subtest in which	they were discovered.
+;
+; 4.0	Progress report
+;
+;	At the end of each successful pass (the	equivalent of 400 (8) program
+;	passes.	except the first pass which is only one	program	pass)
+;	the program increments the location $pass which	is in the apt mailbox.
+;	This location will always contain the number of	successful passes
+;	completed. $pass is reset with every restart from loc. 200.
+;
+;	Additionally. the title	and end	pass message is	printed	on the console
+;	teletype after the first pass. the end pass message is repeated	every
+;	subsequent pass	(400 program loops) thereafter.	If no teletype is
+;	available, the console output must be suppressed. (see section 2.3).
+;
+; 5.0	Trouble	shooting
+;
+;	When the program discovers a fault it will halt. To determine
+;	the cause of the halt, the diagnostic provides error information.
+;	This information is stored in the apt mailbox and is the primary
+;	source of error	identification.	Upon finding an	error, the following
+;	procedure should aid in	isolating the fault.
+;
+; 5.1	Check the mailbox
+;
+;	1. $msgty	This location should contain a 1. If the processor
+;			halts and this location	is zero, then the processor
+;			has come to an unexpected halt.	First suspect a	trap.
+;			Check the PC and if a trap check SP and	the stack
+;			for the	location of the	failing	instruction.
+;
+;	2. $fatal	This location is used to hold the number of the	error
+;			which has been detected. each error being checked
+;			by the diagnostic is assigned a	unique number which
+;			is stored in $fatal when that error is detected.
+;			When an	error is detected, check the listing to	see
+;			that the error number stored in	$fatal is one which
+;			is detected in the test	whose number is	in $testn.
+;			if there is a disagreement then	the error being
+;			reported is a sequence error. $testn contains one
+;			more than the last test	which was successfully
+;			completed.
+;
+;	3. $testn	This location is used to indicate the number of	the
+;			test which was being executed when the fault was
+;			detected. $testn is used in conjuction with $fatal
+;			to distinguish between sequence	and functonal errors.
+;			(see 2.	this section)
+;
+;	4. $pass	This location is used to indicate the number of
+;			successful passes which	the diagnostic has completed.
+;			this will give an indication that the diagnostic has
+;			not just been hung in a	loop if	not teletype is
+;			available to report the	printed	progress reports.
+;			If an error has	been detected $pass will show whether
+;			it was a hard error discovered during the first	try
+;			or whether it was intermittant or deverloped during
+;			the running of the diagnostic.
+;
+; 5.2	Scoping
+;
+;	While this diagnostic is primarily intended to be a fault detection
+;	program, provisions are	made to	assist a technician who	might want
+;	to use the program as a	trouble	shooting test.
+;
+;	The procedure for scoping a subtest involves modifying several
+;	memory locations in the	test itself. the philosophy is to provide
+;	a scoping loop which will include the code where the error was detected
+;	the loop is set	up so that the loop will not be	terminated should
+;	the error intermittantly disappear.
+;
+;	The procedure is as follows:
+;
+;	1. Determine which error is to be scoped. use $fatal and $testn
+;	   for this (see above)
+;	2. Locate the error routine in the listing.
+;	3. Clear the right byte	of the conditional branch instruction
+;	   associated with the error. (this is marked with <===='s in the
+;	   listing.)
+;	4. Replace the instruction following <mov #xxx,-(R2)> with the
+;	   scoping branch provided in the listing comments.
+;	5. Restart the program.	the program may	be restarted from the
+;	   beginning or	from the subtest (see 2.0).
+;
+; 6.0	Listing
+;_____________________________________________________________________________
+;
+;		act11 hooks
+;		aptmailbox-etable
+;		apt parameter block
+;
+; T1	check branches on Z bit
+;
+; Data path tests
+; T2	test of	zeroes in the data path
+; T3	test of	pattern	125252 in data path
+; T4	test of	pattern	052525 in data path
+; T5	test of	all ones in data path
+;
+; B-register test
+; T6	shift bit 0 to bit 1
+; T7	shift carry into bit 0
+; T10	left shift from	bit 0 to C-bit
+; T11	shift bit 15 to	bit 14
+; T12	right shift from bit 15	to C-bit
+;
+; Scratch pad tests
+; T13	test if	R0 can hold all	zeroes
+; T14	test if	R0 can hold ones and zeroes
+; T15	test if	R0 can hold zeroes and ones
+; T16	test if	R0 can hold all	ones
+; T17	test if	R1 can hold a one in all bits
+; T20	test if	R1 can hold a zero in all bits
+; T21	test if	R2 can hold a one in all bits
+; T22	test if	R2 can hold a zero in all bits
+; T23	test if	R3 can hold a one in all bits
+; T24	test if	R3 can hold a zero in all bits
+; T25	test if	R4 cam hold a one in all bits
+; T26	test if	R4 can hold a zero in all bits
+; T27	test if	R5 can hold a one in all bits
+; T30	test if	R5 can hold a zero in all bits
+; T31	test if	SP can hold a one in all bits
+; T32	test if	SP can hold a zero in all bits
+;
+; PSW tests
+; T33	test if	PSW will hold zeroes
+; T34	test if	PSW will hold ones and	zeroes
+; T35	test if	PSW (except T-bit) will	hold zeroes and	ones
+; T36	test if	PSW (except T-bit) will	hold all ones
+;
+; Condition code test
+; T37	test branches around Z-bit
+; T40	test branches around N-bit
+; T41	test branches around V-bit
+; T42	test branches around C-bit
+;
+; Microcode tests
+; T43	test mode 0 using sop  inst.
+; T44	test remainder of sop insts in mode 0
+; T45	test mode 0 even byte  using sop  inst
+; T46	test mode 1 using sop  inst.
+; T47	test mode 1 even byte  using sop  inst
+; T50	test mode 1 odd	byte using sop inst
+; T51	test mode 2 using sop  inst.
+; T52	test mode 2 even byte  using sop inst.
+; T53	test mode 2 odd	byte using sop inst.
+; T54	test mode 0 using  negate  instruction
+; T55	test mode 1 using  negate inst.
+; T56	test mode 2 using  negate  instruction
+; T57	test mode 3 using  sop inst.
+; T60	test mode 3 even byte using sop	inst.
+; T61	test mode 3 odd	byte using sop inst.
+; T62	test mode 3 using negate instruction
+; T63	test mode 4 using sop insts
+; T64	test mode 5 using sop insts
+; T65	test mode 6 using sop insts
+; T66	test mode 7 using sop inst.
+; T67	test mode 4 with negate	instruction
+; T70	test mode 5 with negate	instruction
+; T71	test mode 6 with negate
+; T72	test mode 7 w/ negate
+; T73	test sop instructions modes 2,3,6,7 with register 7
+; T74	test mode 0 sop	non-modifying
+; T75	test mode 0 even byte w/ sop non-modifying
+; T76	test mode 1 sop	non-modifying
+; T77	test mode 1 byte inst. non-modifying
+; T100	test mode 2 with sop non-modifying
+; T101	test mode 2 - byte w/ sop non-modifying
+; T102	test mode 3 w/ sop non-modifying  insts
+; T103	test mode 3 - bytes w/ sop non-modifying insts.
+; T104	test mode 4 w/ sop  non-modifying insts
+; T105	test mode 5 w/ sop non-modifying  insts
+; T106	test mode 6 w/ sop non-modifying  insts
+; T107	test mode 7 w/ sop non-modifying insts.
+; T110	test mode 0 double-operand (dop) insts.
+; T1ll	test mov mode 0	to mode	0
+; T112	test sub mode 0,0
+; T113	test all the dop instructions w/ source	mode 0,0
+; T114	test mode o,x double-operand instructions
+; T115	test dop non-modifying inst. w/	source mode 0,0
+; T116	test mode o,x double-operand non-modifying insts.
+; T117	test mode 1 w/ dop inst.
+; T120	test mode 1 - even byte	w/ dop insts.
+; T121	test mode 1 - even byte	w/ dop non-modifying inst.
+; T122	test mov instruction mode 1,0 even byte
+; T123	test mode 1-odd	byte w/	dop insts.
+; T124	test mode 2 w/ dop insts.
+; T125	test mode 2 - even byte	w/ dop inst.
+; T126	test mode 2 - odd byte w/ oop inst.
+; T127	test mode 3 w/ dop insts.
+; T130	test mode 3 - even byte	w/ dop insts.
+; T131	test mode 3 - odd byte w/ dop insts.
+; T132	test dest. mode	0-byte w/ dop non-modifying mst
+; T133	test dest. mode	i w/ dop non-modifying inst
+; T134	test dest, mode	2 w/ dop non-modifying inst.
+; T135	test dest. mode	2-byte,	w/dop non-modifying  inst
+; T136	test dest. mode	3-bytes	w/dop non-modifying inst.
+; T137	test dest. mode	4 w/dop	non-modifying inst.
+; T140	test dest. mode	4-byte w/ dop non-modifying inst.
+; T141	test dest mode 5 w/dop non-modifying inst.
+; T142	test dest. mode	6 w/dop	non-modifying inst.
+; T143	test dest mode 7 w/dop non-modifying inst.
+; T144	test mov destination mode 1
+; T145	test mov destination mode 2
+; T146	test mov-byte destination mode 2
+; T147	test mov(b) destination	mode 3
+; T150	test mov destination mode 4
+; T151	test movb destination mode 4
+; T152	test mov destination mode 5
+; T153	test mov destination mode 6
+; T154	test mov destination mode 7
+; T155	test mode 4 w/ dop insts.
+; T156	test mode 5 w/ oop insts.
+; T157	test mode 6 w/ oop insts.
+; T160	test mode 7 w/ dqp insts.
+; T161	test rotate instructions of mode 0
+; T162	test rotate instructions w/ mode 1
+; T163	test rotate instructions w/ mode 2
+; T164	test rotate instructions /w mode 3
+; T165	test mode 4 w/ rotate instructions
+; T166	test mode 5 w/ rotate instructions
+; T167	test mode 6 w/ rotate instructions
+; T170	test mode 7 w/ rotate instructions
+; T171	test mode 0 w/ swab inst.
+; T172	test mode 1 w/ swab inst
+; Ti73	test mode 2 w/ swab inst
+; T174	test mode 3 w/swab inst.
+; T175	test mode 4 w/	swab inst
+; T176	test mode 5 w/ swab inst.
+; T177	test mode 6 w/ swab inst.
+; T200	test mode 7 w/ swab inst.
+; T201	test the jmp instruction in all	modes
+; T202	test jsrt instruction w/ all modes
+; T203	test rts instruction
+; T205	test bit inshuction
+; T206	test bic instruction
+; T207	test bis instruction
+; T210	test inc instruction
+; T211	test dec instruction
+; T212	test clr instruction
+; T213	test tst instruction
+; T214	test swab instruction
+; T215	test add instruction
+; T216	test adc instruction
+; T217	test neg instruction
+; T220	test cmp instruction
+; T221	test com instruction
+; T222	test sub instruction
+; T223	test sbc instruction
+; T224	test rol instruction
+; T225	test ror instruction
+; T226	test asl instruction
+; T227	test asr instruction
+; T230	test the sxt instruction
+; T231	test the xor instruction
+; T232	test sob instruction
+; T233	test mark instruction
+; T234	test mtps instruction
+; T235	test mtps mode 2
+; T236	test mtps mode 3
+; T237	test mtps mode 4
+; T240	test mtps mode 5
+; T241	test mtps mode 6
+; T242	test mtps mode 7
+; T243	test mfps instruction
+; T244	test mfps mode 2
+; T245	test mfps mode 3
+; T246	test mfps mode 4
+; T247	test mfps mode 5
+; T250	test mfps mode 6
+; T251	test mfps mode 7
+; T252	test that reset	does not clear PSW
+; T253	test user mode SP can hold a one in every position
+; T254	test independence of user and kernel mode  SP's
+; T255	test mfpi with SP in mode 0
+; T256	test mtpi with SP in mode 0
+; T257	test the branch	ROM
+; T260	dual register addressing test
+; T261	test byte instruction on PSW
+; T262	test that jmp instruction does not affect condition codes
+; T263	test set cc and	clear cc instructions
+; T264	end of pass sequence
+;_____________________________________________________________________________
+;
+		HOEP	= 0			; halt on end-of-pass
+;_____________________________________________________________________________
+;
+		.asect
+		. = 0
+
+		.title	CFKAAC0 11/34 BSC INST TST
+		.nlist	CND, MC, MD
+		.list	ME
+
+		stbot	= 500
+		scope	= nop
+		PS	= 177776
+		TPS	= 177564
+		TPB	= 177566
+		USRM	= 140000
+		PUSRM	= 30000
+
+		.sbttl	"ACT-11 HOOKS"
+
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		.	= offset		;
+	.if	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff					;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+; all unused locations from 4-776 contain a ".+2, halt"
+; sequence to catch illegal traps and interrupts
+; location 0 contains 0	to catch improperly loaded vectors
+;
+		.sbttl	"TRAP CATCHER"
+
+		.nlist				;
+		vect	0, 2			;
+		vect	4, t04			;
+		vect	10, t010		;
+		vect	14, t014		;
+		vect	20, 22			;
+		vect	24, 200			; for apt start	up
+		vect	30, t030		;
+		vect	34, t034		;
+		vect	40, 42			; hooks	required by act-11
+		vect	44, $apthd, $endad	; set loc.46 to	address	of $endad in .seop
+		.list				;
+;_____________________________________________________________________________
+;
+		.sbttl	"ACT11 HOOKS"
+
+		.nlist				;
+		vect	50, 52			; set loc.52 to	zero
+		vect	54, 56			;
+		vect	60, 62			;
+		vect	64, 66			;
+		vect	70, 72			;
+		vect	74, 76			;
+		vect	100, 102		;
+		vect	104, 106		;
+		vect	110, 112		;
+		vect	114, t0114		;
+		vect	120, 122		;
+		vect	124, 126		;
+		vect	130, 132		;
+		vect	134, 136		;
+		vect	140, 142		;
+		vect	144, 146		;
+		vect	150, 152		;
+		vect	154, 156		;
+		vect	160, 162		;
+		vect	164, 166		;
+		vect	170, 172		;
+		vect	174, 176		;
+		.list				;
+;_____________________________________________________________________________
+;
+; Set up starting address
+;
+		. = 200				;
+		jmp	start			;
+		mov	#stbot, SP		; set stack pointer
+		mov	#$testn, R2		; set mailbox pointer
+		jmp	@(PC)+			; jump to subtest
+		.word	0			; addr. of subtest goes here
+;_____________________________________________________________________________
+;
+		vect	220, 222		;
+		vect	224, 226		;
+		vect	230, 232		;
+		vect	234, 236		;
+		vect	240, 242		;
+		vect	244, t0244		;
+		vect	250, t0250		;
+		vect	254, 256		;
+		vect	260, 262		;
+		vect	264, 266		;
+		vect	270, 272		;
+		vect	274, 276		;
+						;
+		.sbttl	"APT MAILBOX-ETABLE"	;
+;_____________________________________________________________________________
+;
+	        . = 300				;
+$mail:		     				; APT mailbox
+$msgty:		.word	0			; message type code
+$fatal:		.word	0			; afatal	- fatal error number
+$testn:		.word	0			; atestn	- test number
+$pass:		.word	0			; apass		- pass count
+$devct:		.word	0			; adevct	- device count
+$unit:		.word	0			; aunit		- I/O unit number
+$msgad:		.word	0			; amsgad	- message address
+$msglg:		.word	0			; amsglg	- message length
+$etable:					;		APT environment table
+$env:		.byte	0			; aenv		- environment byte
+$envm:		.byte	0			; aenvm		- environment mode bits
+$swreg:		.word	0			; aswreg	- APT switch register
+$uswr:		.word	0			; auswr		- user switches
+$cpuop:		.word	0			; acpuop	- cpu type, options
+						; CPU type, options
+						; bits 15-11=cpuop type
+						; 11/04=01, 11/05=02,
+						; 11/20=03, 11/40=04,
+						; 11/45=05, 11/70=06,
+						; pdq=07, q=10
+						; bit 10 - real	time clock
+						; bit 9	 - floating point processor
+						; bit 8	 - memory management
+$etend:						;
+		.sbttl	"APT PARAMETER BLOCK"	;
+;_____________________________________________________________________________
+;
+; Setup	APT parameter block as defihed in the APT PDP-11 diagnostic
+; interface spec.
+;
+$apthd:
+$hibts:		.word	0			; two high bits	of 18 bit mailbox addr.
+$mbadr:		.word	$mail			; address of APT mailbox (bits 0-15)
+$tstm:		.word	10			; run time of longest test
+$pastm:		.word	10			; run time in secs. of 1st pass	on 1 unit
+						; (quick verify)
+$unitm:		.word	0			; additional run tim (secs) of a pass
+						; for each additional unit
+		.word	$ETEND-$MAIL/2		; length mailbox - etable (words)
+;_____________________________________________________________________________
+;
+; Data table for use in	addressing mode	tests
+;
+		vect	344, 346		;
+		vect	350, 352		;
+		vect	354, 356		;
+		vect	360, 362		;
+		vect	364, 366		;
+						;
+		.	= 370			;
+		.word	0, 0, 0, 0, 0, 0	;
+		.word	1, 1, -1		;
+		.	= 500			;
+						;
+		$error	= $fatal		;
+		$tstnm	= $testn		;
+						;
+start:		mov	#pwrdn, @#24		; set up for power fail
+		mov	#0, @#$pass		; clear pass count
+		mov	#-1, @#passpt		; set print counter
+restrt:		mov	#stbot, SP		; initialize stack pointer
+		mov	#$testn, R2		; set up pointer to message type
+		mov	#0, @#$tstnm		; clear test number
+		mov	#0, @#$error		; clear error number
+		mov	#0, @#$msgty		; clear message type (for APT)
+;_____________________________________________________________________________
+;
+; Test 1 - Check branches on Z-bit
+;
+tst1:		inc	(R2)			; update test number
+		cmp	#1, (R2)		; sequence error?
+		bne	tst2-10			; br to	error halt on seq error
+		ccc				; clear all condition codes
+		beq	br1			; should branch
+		br	br2			; bad branch of Z-bit
+						;
+br1:		mov     #1, -(R2)		; move to mailbox
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				; should have branched:	Z=0
+						;
+br2:		bne	br3			;
+		mov	#2, -(R2)		; move to mailbox
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				;
+						;
+br3:		sez				;
+		bne	br4			;
+		br	br5			;
+						;
+br4:		mov	#3, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+br5:		beq	tst2			;
+		mov	#4, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+		.sbttl	"DATA PATH TESTS"
+;
+; The data path tests are used to verify that various data patterns can be
+; successfully moved through the data paths. Move and compare mode 2, 3
+; instructions are used to pass and test various data patterns in the
+; data paths.
+;
+; The test exercisez the internal data paths, the Unibus data transcievers,
+; and AMUX control for ALU and UBUS inputs.
+;
+; If these tests fail, examine the target location (loc 0) to see which
+; bits of the data path are failing. If this provides inconclusive data,
+; try to check mode 3 IR decode by running just the microcode and IR decode
+; tests for the move and compare instructions.
+;_____________________________________________________________________________
+;
+; Test 2 - Test of zeroes in the data path
+;
+tst2:		inc	(R2)			; update test number
+		cmp	#2, (R2)		; sequence error?
+		bne	tst3-10			; br to error halt on   seq error
+		mov	#0, @#0			; move zeroes thru address lines,
+						; data lines and internal paths
+		tst	@#0			; successful?
+		beq	tst3			;
+		mov	#5, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 3 - Test of pattern 125252 in the data path
+;
+tst3:		inc	(R2)			; update test number
+		cmp	#3, (R2)		; sequence error?
+		bne	tst4-10			; br to error halt on seq error
+		mov	#125252, @#0		; move alternating ones	and
+						; zeroes thru data paths
+		cmp	#125252, @#0		; successful
+		beq	tst4			;
+		mov	#6, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 4 - Test of pattern 052525 in the data path
+;
+tst4:		inc	(R2)			; update test number
+		cmp	#4, (R2)		; sequence error?
+		bne	tst5-10			; br to error halt on seq error
+		mov	#052525, @#0		; move alternating zeroes and ones
+		cmp	#052525, @#0		; successful?
+		beq	tst5			;
+		mov	#7, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 5 - Test of all ones in the data path
+;
+tst5:		inc	(R2)			; update test number
+		cmp	#5, (R2)		; sequence error?
+		bne	tst6-10			; br to error halt on seq error
+		mov	#177777, @#0		;
+		cmp	#177777, @#0		;
+		beq	tst6			;
+		mov	#10, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+		.sbttl	"B-register test
+;
+; The B-register shifting logic tests are used to test that the B-register
+; can hold various data patterns and that the associated logic supports the
+; shifting functions within the B-register and C-bit. A one is shifted
+; through every	bit in the B-register and C-bit	in both directions.
+;
+; The B-register itself is tested inits ability as a buffer and as a shift
+; register. data is also passed through the data path and ALU.
+;
+; If these tests fail, examine the target location (loc 0) to see which
+; bits of the B-register may be failing. If this provides inconclusive data,
+; try to check mode 3 IR decode by running just the microcode and IR decode
+; tests for the particular instructions.
+;_____________________________________________________________________________
+;
+; Test 6 - Shift bit 0 to bit 1
+;
+tst6:		inc	(R2)			; update test number
+		cmp	#6, (R2)		; sequence error?
+		bne	tst7-10			; br to error halt on seq error
+		clc				; clear carry bit
+		mov	#1, @#0			;
+		rol	@#0			;
+		cmp	#2, @#0			;
+		beq	tst7			;
+		mov	#11, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 7 - Shift carry into bit 0
+;
+tst7:		inc	(R2)			; update test number
+		cmp	#7, (R2)		; sequence error?
+		bne	tst10-10		; br to error halt on seq error
+		mov	#0, @#0			; clear.location
+		sec				; set carry
+		rol	@#0			; rotate carry bit to bit 0
+		bcc	tst10			; test bug
+		mov	#12, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+		cmp	#1, @#0			; bit 0 set
+		beq 	tst10			;
+		mov	#13,-(R2)	 	;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 10 - Left shift from bit 0 to C-bit
+;
+
+tst10:		inc	(R2)			; update test number
+		cmp	#10, (R2)		; sequence error?
+		bne	tst11-10		; bh to error halt on seq error
+		mov	#1,@#0			; set bit 0
+		mov	#-21, R0		; set bit counter
+		clc				; clear C-bit
+shl:		inc	R0			; increment bit counter
+		beq	shle			; br to error halt if bit is lost
+		rol	@#0			; shift left one position
+		bcc	shl			; branch if C-bit not set
+		beq	tst11			;
+shle:		mov	#14, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 11 - Shift bit 15 to bit 14
+;
+tst11:		inc	(R2)			; update test number
+		cmp	#11, (R2)		; sequence error?
+		bne	tst12-10		;
+		mov	#100000, @#0		;
+		clc				;
+		ror	@#0			; shift bit 15 to bit 14
+		cmp	#40000, @#0		; successful
+		beq	tst12			;
+		mov	#15, -(R2)		;
+		inc	-(R2)			;
+		halt				; bit 14 not set
+;_____________________________________________________________________________
+;
+; Test 12 - Right shift from bit 15 to C-bit
+;
+tst12:		inc	(R2)			; update test number
+		cmp	#12, (R2)		;
+		bne	tst13-10		;
+		mov	#100000, @#0		;
+		mov	#-21, R0		; set bit counter
+		clc				; clear C-bit
+shr:		inc	R0			;
+		beq	shre			;
+		ror	@#0			;
+		bcc	shr			;
+		beq	tst13			;
+shre:		mov	#16, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+		.sbttl	"SCRATCH PAD TESTS"
+;
+; The scratch pad tests are used to verify that various data patterns can be
+; successfully held in the scratch pad circuitry. Move and compare instructions
+; are used to test that R0 can hold various data patterns. Each data pattern is
+; moved and tested in a small loop convenient for scoping. The successful
+; completion of these tests should verify the circuitry external to the scratch
+; pad itself.
+;
+; The remainder of the general registers are tested by moving a bit into bit 0
+; of the register and shifting it left one bit at a time into the carry bit.
+; The result is then checked to insure that no bits were picked. The procedure
+; is then repeated under opposite conditions. The general register and the
+; carry	bit are	set to all ones, and a zero is shifted left from bit 0 into
+; the carry bit. The result is then checked to insure that no zeroes were
+; picked.
+;
+; At this point all of the general registers have been exercised as well as
+; register 11. Registers 10 and 12 have been accessed by the instructions.
+; Registers 13, 14,and 17 will be tested later in the microcode tests.
+;
+; If the pattern tests with register 0 fail check the resultant data for
+; a clue to a fault in the external circuitry. If the pattern tests with R0
+; are successful but the tests with the other registers fail, suspect
+; the register select lines and then the scratch pad itself.
+;_____________________________________________________________________________
+;
+; Test 13 - Test if R0 can hold all zeroes
+;
+tst13:		inc	(R2)			; update test number
+		cmp	#13, (R2)		; sequence error?
+		bne	tst14-10		;
+		mov	#0, R0			; move zeroes to R0
+		tst	R0			; successful?
+		beq	tst14			;
+		mov	#17, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 14 - Test if R0 can hold ones and zeroes
+;
+tst14:		inc	(R2)			;
+		cmp	#14, (R2)		; sequence error?
+		bne	tst15-10		;
+		mov	#125252, R0		;
+		cmp	R0, #125252		;
+		beq	tst15			; successful?
+		mov	#20, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 15 - Test if R0 can hold zeroes and ones
+;
+tst15:		inc	(R2)			;
+		cmp	#15, (R2)		; sequence error?
+		bne	tst16-10		;
+		mov	#52525, R0		;
+		cmp	R0, #52525		;
+		beq	tst16			; successful?
+		mov	#21, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 16 - Test if R0 can hold all ones
+;
+tst16:		inc	(R2)			;
+		cmp	#16, (R2)		; sequence error?
+		bne	tst17-10		;
+		mov	#177777, R0		; move all ones to R0
+		cmp	R0, #177777		; successful?
+		beq	tst17			;
+		mov	#22, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 17 - Test if R1 can hold a one in all bits
+;
+tst17:		inc	(R2)			; update test number
+		cmp	#17, (R2)		; sequence error?
+		bne	tst20-10		; br to error halt on seq error
+		mov	#1, R1			; set bit 0
+		mov	#-21, R0		; set bit counter
+		clc				; clear C-bit
+reg1:		inc	R0			; increment bit counter
+		beq	reg1e			; br to error halt if bit is lost
+		rol	R1			; rotate 1 position
+		bcc	reg1			; all done
+		beq	tst20			;
+reg1e:		mov	#23, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 20 - Test if R1 can hold a zero in all bits
+;
+tst20:		inc	(R2)			; update test number
+		cmp	#20, (R2)		; sequence error?
+		bne	tst21-10		;
+		mov	#-2, R1			; set all ones in R1 except for bit 0
+		mov	#-21, R0		; set bit counter
+		sec				; set C-bit
+reg1a:		inc	R0			; increment counter
+		beq	r1err			;
+		rol	R1			; rotate 1 position
+		bcs	reg1a			; continue until C-bit is clear
+		cmp	#-1, R1			; check data in	R1
+		beq	tst21			;
+r1err:		mov	#24, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 21 - Test if R2 can hold a one in all bits
+;
+tst21:	    	inc	(R2)			;
+		cmp	#21, (R2)		; sequence error?
+		bne	reg2a-14		;
+		mov	#1, R2			; set bit 0
+		mov	#-21, R0		; set bit counter
+		clc				; clear	C-bit
+reg2:		inc	R0			; increment bit	counter
+		beq	reg2a-14		;
+		rol	R2			;
+		bcc	reg2			;
+		beq	reg2a			;
+						;
+		mov	#$testn, R2		; restore pointer
+		mov	#25, -(R2)		;
+		inc	-(R2)			;
+		halt				; failure with R2
+reg2a:		mov	#$testn, R2		; restore pointer
+;_____________________________________________________________________________
+;
+; Test 22 - Test if R2 can hold a zero in all bits
+;
+tst22:		inc	(R2)			; update test number
+		cmp	#22, (R2)		; sequence error?
+		bne	tst23-10		;
+		mov	#-2, R2			; set all ones in R2 except for	bit 0
+		mov	#-21, R0		; set bit counter
+		sec				; set C-bit
+reg2b:		inc	R0			; increment bit counter
+		beq	r2err			;
+		rol	R2			;
+		bcs	reg2b			; continue until C-bit is clear
+		cmp	#-1, R2			;
+		beq	reg2c			;
+		mov	#$testn, R2		; restore pointer
+						;
+r2err:		mov	#26, -(R2)		;
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				; failure with R2
+reg2c:		mov	#$testn, R2		; restore pointer
+;_____________________________________________________________________________
+;
+; Test 23 - Test if R3 can hold a one in all bits
+;
+tst23:		inc	(R2)			; update test number
+		cmp	#23, (R2)		; sequence error?
+		bne	tst24-10		;
+		mov	#1, R3			; set bit 0
+		mov	#-21, R0		; set bit counter
+		clc				; clear C-bit
+reg3:		inc	R0			;
+		beq	reg3e			;
+		rol	R3			; rotate 1 position
+		bcc	reg3			; all done
+		beq	tst24			;
+						;
+reg3e:		mov	#27, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 24 - Test if R3 can hold a zero in all bits
+;
+tst24:		inc	(R2)			; update test number
+		cmp	#24, (R2)		; sequence error?
+		bne	tst25-10		; br to error halt on seq error
+		mov	#-2, R3			; set all ones in R3 except for bit 0
+		mov	#-21, R0		; set bit counter
+		sec				;
+reg3a:		inc	R0			; increment bit counter
+		beq	r3err			; br to error halt if count=0
+		rol	R3			; rotate 1 position
+		bcs	reg3a			; continue until C-bit is clear
+		cmp	#-1, R3			; check data
+		beq	tst25			;
+r3err:		mov	#30, -(R2)		;
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 25 - Test if R4 can hold a one in all bits
+;
+tst25:		inc	(R2)			;
+		cmp	#25, (R2)		; sequence error?
+		bne	tst26-10		;
+		mov	#1, R4			;
+		mov	#-21, R0		;
+		clc				;
+reg4:		inc	R0			;
+		beq	reg4e			;
+		rol	R4			;
+		bcc	reg4			;
+		beq	tst26			;
+reg4e:		mov	#31, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 26 - Test if R4 can hold a zero in all bits
+;
+tst26:		inc	(R2)			;
+		cmp	#26, (R2)		; sequence error?
+		bne	tst27-10		;
+		mov	#-2, R4			; set all ones in R4 except for bit 0
+		mov	#-21, R0		; set bit counter
+		sec				;
+reg4a:		inc	R0			; increment bit counter
+		beq	r4err			; br to error halt if count=0
+		rol	R4			; rotate 1 position
+		bcs	reg4a			; continue until C-bit is clear
+		cmp	#-1, R4			; check data
+		beq	tst27			;
+r4err:		mov	#32, -(R2)		;
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 27 - Test if R4 can hold a one in all bits
+;
+tst27:		inc	(R2)			;
+		cmp	#27, (R2)		; sequence error?
+		bne	tst30-10		;
+		mov	#1, R5			;
+		mov	#-21, R0		;
+		clc				;
+reg5:		inc	R0			;
+		beq	reg5e			;
+		rol	R5			;
+		bcc	reg5			;
+		beq	tst30			;
+reg5e:		mov	#33, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 30 - Test if R5 can hold a zero in all bits
+;
+tst30:		inc	(R2)			;
+		cmp	#30, (R2)		; sequence error?
+		bne	tst31-10		;
+		mov	#-2, R5			; set all ones in R5 except for bit 0
+		mov	#-21, R0		; set bit counter
+		sec				;
+reg5a:		inc	R0			; increment bit counter
+		beq	r5err			; br to error halt if count=0
+		rol	R5			; rotate 1 position
+		bcs	reg5a			; continue until C-bit is clear
+		cmp	#-1, R5			; check data
+		beq	tst31			;
+r5err:		mov	#34, -(R2)		;
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 31 - Test if R6 can hold a one in all bits
+;
+tst31:		inc	(R2)			; update test number
+		cmp	#31, (R2)		; sequence error?
+		bne	tst32-10		; br to error halt on seq error
+		mov	#1, SP			; set bit 0
+		mov	#-21, R0		; set bit counter
+		clc				; clear	C-bit
+reg6:		inc	R0			; increment bit counter
+		beq	reg6e			;
+		rol	SP			; rotate 1 position
+		bcc	reg6			; all done
+		beq	tst32			;
+reg6e:		mov	#35, -(R2)		;
+		inc	-(R2)			;
+		halt				; failure with SP
+;_____________________________________________________________________________
+;
+; Test 32 - Test if R6 can hold a zero in all bits
+;
+tst32:		inc	(R2)			; update test number
+		cmp	#32, (R2)		; sequence error?
+		bne	tst33-10		;
+		mov	#-2, SP			; set all ones in SP except for bit 0
+		mov	#-21, R0		; set bit counter
+		sec				; set C-bit
+reg6a:		inc	R0			; increment bit count
+		beq	r6err			;
+		rol	SP			; rotate 1 position
+		bcs	reg6a		 	; continue until C-bit is clear
+		cmp	#-1, SP			; check data
+		beq	tst33		 	;
+r6err:		mov	#36, -(R2)		;
+		inc	-(R2)			;
+		halt				; failure with SP
+;_____________________________________________________________________________
+;
+		.sbttl	"PSW TESTS"
+;
+; The PSW tests are used to verify that various data patterns can be
+; successfully held in the PSW and that the PSW addressing logic is
+; functioning. Move and compare instructions are used to test that the PSW
+; can hold various data patterns. Each data pattern is moved and tested
+; in a small loop convenient for scoping.
+;
+; The PSW register itself is tested as well as the address select circuitry.
+; The AMUX inpouts to the PSW mux are tested. The CC inputs are tested later
+; in the microcode tests. Setting of the T-bit by the test patterns is
+; purposely avoided. Testing of the T-bit trap circuitry is left for the
+; trap test.
+;_____________________________________________________________________________
+;
+; Test 33 - Test if PSW will hold zeroes
+;
+tst33:		inc	(R2)			; update test number
+		cmp	#33, (R2)		;
+		bne	tst34-10		;
+		mov     #stbot, SP		;
+		mov	#0, @#ps		; set PSW to zero
+		tst	@#ps			; successful ?
+		beq	tst34			;
+		mov	#37, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 34 - Test if PSW will hold ones and zeroes
+;
+tst34:		inc	(R2)			; update test number
+		cmp	#34, (R2)		;
+		bne	tst35-10		;
+		mov	#252, @#ps		;
+		cmp	@#ps, #252		;
+		beq	tst35			;
+		mov	#40, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 35 - Test if PSW (except T-bit) will hold zeroes and ones
+;
+tst35:		inc	(R2)			; update test number
+		cmp	#35, (R2)		;
+		bne	tst36-10		;
+		mov	#105, @#ps		;
+		cmp	@#ps, #105		;
+		beq	tst36			;
+		mov	#41, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 36 - Test if PSW (except T-bit) will hold all ones
+;
+tst36:		inc	(R2)			; update test number
+		cmp	#36, (R2)		; sequence error?
+		bne	tst37-10		;
+		mov	#357, @#ps		; move ones to PSW
+		cmp	@#ps, #357		; successful
+		beq	tst37			;
+		mov	#42, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+		.sbttl	"CONDITION CODE TEST"
+;
+; This test checks the conditional branches involving the Z-bit. The Z-bit is
+; set with all other CC bits zero and both conditions beq and bne are tested
+; for proper execution. Then the Z-bit is set with all other CC bits clear
+; and both conditions are tested again for proper operation.
+;
+; This test checks the operation of the set and clear condition code
+; instructions and checks the circuitry external to the conditional
+; branch ROM. The branch microcode for altering the PC and for leaving
+; the PC unaltered is tested. Only those ROM addresses specifically
+; used in the test are verified here.
+;_____________________________________________________________________________
+;
+; Test 37 - Test branches around Z-bit
+;
+tst37:		inc	(R2)			; update test number
+		cmp	#37, (R2)		; sequence error?
+		bne	tst40-10		;
+						; first with Z-bit on
+		ccc				; CC=0100: just Z-bit
+		sez				;
+		bne	brz1			; check opposite condition
+		beq	brz2			;
+brz1:		mov	#43, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						; check with Z-bit off
+brz2:		scc				; CC=1011: all but Z-bit
+		clz				;
+		beq	brz3			;
+		bne	tst40			;
+brz3:		mov	#44, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test checks the conditional branches involving the N-bit. The N-bit is
+; set with all other CC bits zero and both conditions bmi and bpl are tested
+; for proper execution. Then the N-bit is set with all other CC bits clear
+; and both conditions are tested again for proper operation.
+;
+; This test checks the operation of the set and clear condition code
+; instructions and checks the circuitry external to the conditional
+; branch ROM. The branch microcode for altering the PC and for leaving
+; the PC unaltered is tested. Only those ROM addresses specifically
+; used in the test are verified here.
+;_____________________________________________________________________________
+;
+; Test 40 - Test branches around N-bit
+;
+tst40:		inc	(R2)			; update test number
+		cmp	#40, (R2)		;
+		bne	tst41-10		;
+						; first with N-bit on
+		ccc				; CC=1000: just N-bit
+		sen				;
+		bpl	brn1			; check opposite condition
+		bmi	brn2			;
+brn1:		mov	#45, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						; check	with N-bit off
+brn2:		scc				; cc=0111
+		cln				;
+		bmi	brn3			; check opposite condition
+		bpl	tst41			;
+brn3:		mov	#46, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test checks the conditional branches involving the V-bit. The V-bit is
+; set with all other CC bits zero and both conditions bvs and bvc are tested
+; for proper execution. Then the V-bit is set with all other CC bits clear
+; and both conditions are tested again for proper operation.
+;
+; This test checks the operation of the set and clear condition code
+; instructions and checks the circuitry external to the conditional
+; branch ROM. The branch microcode for altering the PC and for leaving
+; the PC unaltered is tested. Only those ROM addresses specifically
+; used in the test are verified here.
+;_____________________________________________________________________________
+;
+; Test 41 - Test branches around V-bit
+;
+tst41:		inc	(R2)			; update test number
+		cmp	#41, (R2)		;
+		bne	tst42-10		;
+						; first	with V-bit on
+		ccc				; CC=0010: just V-bit
+		sev				;
+		bvc	brv1			; check opposite condition
+		bvs	brv2			;
+brv1:		mov	#47, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+brv2:		scc				; check	with V-bit off
+		clv				; CC=1101: all but V-bit
+		bvs	brv3			; check opposite condition
+		bvc	tst42			;
+brv3:		mov	#50, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test checks the conditional branches involving the C-bit. The C-bit is
+; set with all other CC bits zero and both conditions bcs and bcc are tested
+; for proper execution. Then the C-bit is set with all other CC bits clear
+; and both conditions are tested again for proper operation.
+;
+; This test checks the operation of the set and clear condition code
+; instructions and checks the circuitry external to the conditional
+; branch ROM. The branch microcode for altering the PC and for leaving
+; the PC unaltered is tested. Only those ROM addresses specifically
+; used in the test are verified here.
+;_____________________________________________________________________________
+;
+; Test 42 - Test branches around C-bit
+;
+tst42:		inc	(R2)			; update test number
+		cmp	#42, (R2)	 	; sequence error?
+		bne	tst43-10		;
+						; first with C-bit on
+		ccc				; CC=0001: just C-bit
+		sec				;
+		bcc	brc1			; check opposite condition
+		bcs	brc2			;
+brc1:		mov	#51, -(R2)		;
+		inc	-(R2)			;
+		halt	 			;
+						; check with C-bit off
+brc2:		scc				; CC=1110
+		clc				;
+		bcs	brc3			; check opposite condition
+		bmi	tst43			;
+brc3:		mov	#52, -(R2)		;
+		inc	-(R2)			; set msgtyp to fatal error
+		halt				;
+;_____________________________________________________________________________
+;
+		.sbttl	"MICROCODE TESTS"
+;
+; The microcode tests are used to verify th emicroprogram flow. The goal
+; of these tests is to exercise every possible branch in the microprogram
+; flow
+;
+; The test exercises every branch in the microcode by testing at least
+; one instruction from eery class of instruction in all possible modes.
+; For example, to test the single operant instructions, at least one
+; single operand instruction is verified in all unique addressing modes.
+; Byte modes are also tested. As each new mode is introduced the same
+; instruction is tried and tested in a small loop convenient for scoping.
+; The test is set up using only instructions and addressing modes which
+; have been previously verified.
+;
+; If these tests fail, check the results for a clue to tyhe fault.
+;_____________________________________________________________________________
+;
+; Test 43 - Test mode 0 using sop instruction
+;
+tst43:		inc	(R2)			; update test number
+		cmp	#43, (R2)		;
+		bne	tst44-10		;
+		clr	R0			; try the clear inst.
+		beq	sop0a			;
+		mov	#53, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop0a:		inc	R0			; try the increment inst.
+		com	R0			; try complement
+		inc	R0			;
+		bmi	sop0b			;
+		mov	#54, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+sop0b:		com	R0			; try complement inst.
+		beq	tst44 			;
+		mov	#55, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test introduces the remaining sop instrucions and tests them in mode 0.
+; The purpose is to provide a baseline of instructions for use in the subsequent
+; tests. Since the microcode for these instructions is identical to that already
+; tested, any trouble shooting efforts should be aimed at the actual IR decode
+; and ALU functioning.
+;_____________________________________________________________________________
+;
+; Test 44 - Test remainder of sop insts in mode 0
+;
+tst44:		inc	(R2)			; update test number
+		cmp	#44, (R2)	 	; sequence error?
+		bne	tst45-10		;
+		clr	R0			; initialize
+		dec	R0			; try decrement inst.
+		bmi	sop0c			;
+		mov	#56, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop0c:		sec				; initialize carry
+		adc	R0			; try add carry inst
+		bne	sop0d			;
+		sec				; initialize carry
+		sbc	R0			; try subtract-carry inst
+		bpl	sop0d			;
+		com	R0			;
+		inc	R0			;
+		dec	R0			;
+		beq	tst45			;
+sop0d:		mov	#57, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test introduces the byte control logic of the processor. The mode 0
+; byte microcode is tested. The method and sequence of testing is the same
+; as that used in the sop mode 0 tests.
+;_____________________________________________________________________________
+;
+; Test 45 - Test mode 0 even byte using sop instructions
+;
+tst45:		inc	(R2)			; update test humber
+		cmp	#45, (R2)		;
+		bne	tst46-10		;
+		clrb	R0			; try clearing even byte of register
+		beq	sopb0a			;
+		mov	#60, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb0a:		comb	R0			;
+		bpl	sopb0b			;
+		incb	R0			; try incrementing even byte of register
+		beq	tst46			;
+sopb0b:		mov	#61, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test uses the clr instruction to introduce and test single operand
+; mode 1 instructions. Again, the clr instruction is used to introduce
+; the microcode and to test that the proper condition codes are set.
+; Other	sop instructions are used to manipulate common data to verify
+; that the correct data is produced.
+;_____________________________________________________________________________
+;
+; Test 46 - Test mode 1 using sop instructions
+;
+tst46:		inc	(R2)			; update test number
+		cmp	#46, (R2)		; sequence error?
+		bne	tst47-10		; br to error halt on seq error
+		clr	R0			; initialize R0
+		clr	(R0)			; try clear inst w/mode	1
+		beq	sop1a			;
+		mov	#62, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop1a:		dec	(R0)			; try decrement inst w/mode 1
+		bpl	sop1b			;
+		sec				; initialize carry
+		adc	(R0)			; try add-carry w/mode 1
+		beq	tst47			;
+sop1b:		mov	#63, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the byte instruction microcode for mode 1 single operand
+; instructions.
+;
+; This is the first place the sign extend logic is exercised and verified.
+;_____________________________________________________________________________
+;
+; Test 47 - Test mode 1 even byte using sop instructions
+;
+tst47:		inc	(R2)			; update test number
+		cmp	#47, (R2)		; sequence error?
+		bne	tst50-10		; br to error halt on seq error
+		clr	R0			; initialize R0
+		clr	(R0)			; initialize loc. 0
+		com	(R0)			;
+		clrb	(R0)			; try to clear byte 0
+		beq	sopb1a			;
+		mov	#64, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb1a:		inc	(R0)			; increment to test word
+		bpl	sopb1b			;
+		comb	(R0)			; complement: odd byte = 376
+		incb	(R0)			; inc: odd byte	= 377
+		bpl	sopb1b			;
+		incb	(R0)			; increment odd byte=o
+		beq	tst50			;
+sopb1b:		mov	#65, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies that single operand byte instructions will function
+; correctly for	odd bytes.
+;
+; This is the first time that address line 0 has been exercised. Checks
+; are made that the proper byte is modified and the condition codes are
+; checked. It is also verified that the unaddressed byte is not altered
+; by the instruction.
+;_____________________________________________________________________________
+;
+; Test 50 - Test mode 1 odd byte using sop instructions
+;
+tst50:		inc	(R2)			; update test number
+		cmp	#50, (R2)		; sequence error?
+		bne	tst51-10		; br to error halt on seq error
+		clr	R0			; initialize R0
+		clr	(R0)			; initialize loc.0
+		com	(R0)			;
+		inc	R0			; R0 = odd byte
+		clrb	(R0)			; try to	clear byte 1
+		beq	sopb1c 			;
+		mov	#66, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb1c:		dec	R0			; R0 = word addr.
+		inc	(R0)			; increment to test word
+		inc	R0			; R0 = odd byte
+		comb	(R0)			; try to complement byte 1
+		incb	(R0)			;
+		bpl	sopb1d			;
+		incb	(R0)			;
+		beq	tst51			;
+						;
+sopb1d:		mov	#67, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 2 single-operand instructions. Previously tested
+; instructions are used to set a pointer in R0 to loc. 400. Loc. 400 is
+; initialized to -1 before a clr mode 2 is executed.
+;
+; Then R0 is decremented by two to again point to 400 before each of
+; several mode 2 instructions are used to verify the data results of
+; the test. This procedure also verifies the proper incrementing of the
+; register.
+;_____________________________________________________________________________
+;
+; Test 51 - Test mode 2 using sop instructions
+;
+tst51:		inc	(R2)			; update test number
+		cmp	#51, (R2)		; sequence error?
+		bne	tst52-10		; br to error halt on seq error
+		clr	R0			; set R0=400
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			; clear 400
+		com	(R0)			; initialize: 400=-1
+		clr	(R0)+			; try clearing with mode 2
+		beq	sop2a			;
+		mov	#70, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop2a:		dec	R0			; reset R0
+		dec	R0			;
+		com	(R0)+			; try complementing with mode 2
+		bpl	sop2b			;
+		dec	R0			; reset R0
+		dec	R0			;
+		inc	(R0)+			; try incrementing with mode 2
+		beq	tst52			;
+						;
+sop2b:		mov	#71, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 2 single-operand instructions which address even
+; bytes. R0 is set to 400 and used to initialize location 400 to -1. CLRB
+; instruction is then executed on byte 400 with mode 2.
+;
+; R0 is then decremented before each of several mode 2 instructions which
+; are used to verify the data results of the test. This procedure also
+; verifies the proper incrementing of the register.
+;_____________________________________________________________________________
+;
+; Test 52 - Test mode 2 even byte using sop instructions
+;
+tst52:		inc	(R2)			; update test number
+		cmp	#52, (R2)		;
+		bne	tst53-10		;
+		clr	R0			; set R0=400
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			;
+		com	(R0)			; initialize: 400=-1
+		clrb	(R0)+			; try to cleat 400 w/mode 2
+		beq	sopb2a			;
+		mov	#72, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb2a:		dec	R0			; result R0=400
+		inc	(R0)			; inc 400 to test word
+		comb	(R0)			;
+		incb	(R0)+			; try to inc even byte
+		bpl	sopb2b			;
+		dec	R0			;
+		incb	(R0)+			;
+		beq	tst53			;
+						;
+sopb2b:		mov	#73, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test follows the same procedure described in the previous test. Here,
+; the byte instruction is used to address an odd byte.
+;_____________________________________________________________________________
+;
+; Test 53 - Test mode 2 odd byte using sop instructions
+;
+tst53:		inc	(R2)			; update test number
+		cmp	#53, (R2)		; sequence error?
+		bne	tst54-10		; br to error halt on seq error
+		clr	R0			; set R0=400
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		inc	R0			;
+		clrb	(R0)+			;
+		beq	sopb2c			;
+		mov	#74, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb2c:		dec	R0			;
+		dec	R0			;
+		inc	(R0)+			; increment word
+		dec	R0			; point to odd byte
+		comb	(R0)			; complement odd byte
+		incb	(R0)+			; try to increment odd byte
+		bpl	sopb2d			;
+		dec	R0			; reset R0 to odd byte
+		incb	(R0)+			; try to increment odd byte
+		beq	tst54			;
+						;
+sopb2d:		mov	#75, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These tests check the negate instruction in all modes. Previously tested,
+; single-operand instructions are used to test the negate instruction.
+;_____________________________________________________________________________
+;
+; Test 54 - Test mode 0 using negate instruction
+;
+tst54:		inc	(R2)			; update test number
+		cmp	#54, (R2)		;
+		bne	tst55-10		;
+		clr	R0			; set R0=0
+		inc	R0			;
+		neg	R0			;
+		bpl	neg00			;
+		beq	neg00			;
+		bvs	neg00			;
+		bcs	neg01			;
+neg00:		mov	#76, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg01:		inc	R0			; test data result
+		beq	neg02			;
+		mov	#77, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg02:		comb	R0			; R0=377
+		negb	R0			; R0=1
+		bmi	neg03			;
+		beq 	neg03			;
+		bvs	neg03			;
+		bcs	neg04			;
+neg03:		mov	#100, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg04:		dec     R0			; test data result
+		beq	tst55			;
+		mov	#101, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 55 - Test mode 1 using negate instruction
+;
+tst55:		inc	(R2)			; update test number
+		cmp	#55, (R2)		;
+		bne	tst56-10		;
+		clr	R0			;
+		clr	(R0)			;
+		inc	(R0)			;
+		neg	(R0)			;
+		bpl	neg10			;
+		beq	neg10			;
+		bvs	neg10			;
+		bcs	neg11			;
+neg10:		mov	#102, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg11:		inc	@#0			; test data result
+		beq	neg12			;
+		mov	#103, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg12:		comb	(R0)			; R0=377
+		negb	(R0)			; R0=1
+		bmi	neg13			;
+		beq 	neg13			;
+		bvs	neg13			;
+		bcs	neg14			;
+neg13:		mov	#104, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg14:		dec     @#0			; test data result
+		beq	tst56			;
+		mov	#105, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 56 - Test mode 2 using negate instruction
+;
+tst56:		inc	(R2)			; update test number
+		cmp	#56, (R2)		; sequence error?
+		bne	tst57-10		;
+		clr	R0			;
+		clr	(R0)			;
+		inc	(R0)			;
+		neg	(R0)+			;
+		bpl	neg20			;
+		beq	neg20			;
+		bvs	neg20			;
+		bcs	neg21			;
+neg20:		mov	#106, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg21:		decb	R0			;
+		decb	R0			;
+		negb	(R0)+			;
+		negb	(R0)+			;
+		decb	-(R0)			;
+		dec	R0			;
+		beq	neg22			;
+		mov	#107, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg22:		dec	@#0			;
+		beq	tst57			;
+		mov	#110, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 single operand instructions. It uses location 0
+; as its target data. A table located at loc. 400 thru 402 is used to supply
+; the address of location 0 to the instructions under test.
+;
+; R0 is set to 400, the start of the address table, and	a clr instruction is
+; executed with mode 3 to clear loc. 0. Then R0 is decremented by two and
+; two other mode 3 instructions operate on loc. 0 to verify the data results
+; of the test. The proper incrementing $of the register is also verified
+; in this manner.
+;
+; If a failure is detected be sure to verify that the table $(loc. 400-402)
+; has the proper values (0).
+;_____________________________________________________________________________
+;
+; Test 57 - Test mode 3 using sop instruction
+;
+tst57:		inc	(R2)			; update test number
+		cmp	#57, (R2)		; sequence error?
+		bne	tst60-10		; br to error halt on seq error
+		clr	R0			; set R0=400
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			; clear loc 400
+		clr	@(R0)+			; try to clear loc 0 using mode	3
+		beq	sop3a			;
+		mov	#111, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop3a:		dec	R0			; reset R0=400
+		dec	R0			;
+		com	@(R0)+			; try to complement loc	0 of mode 3
+		bpl	sop3b			;
+		inc	@(R0)+			; try to increment loc 0 w/mode 3
+		beq	tst60			;
+						;
+sop3b:		mov	#112, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 single operand byte instructions which address
+; even bytes. Again, the target location 0 is used and the same table at 400
+; is employed.
+;
+; After pointing R4 to the table (400) and setting location 0 to -1, a clrb
+; instruction is used to clear byte 0.
+;
+; Several other mode 3 instructions are then used with the table to verify
+; the data results and the proper incrementing	of the register.
+;
+; If a failure is detected, be sure that the table (location 400-402) has
+; the proper values (0).
+;_____________________________________________________________________________
+;
+; Test 60 - Test mode 3 even byte using sop instruction
+;
+tst60:		inc	(R2)			; update test humber
+		cmp	#60, (R2)		; sequence error?
+		bne	tst61-10		; br to error halt on seq error
+		clr	R4			; set R4=400
+		comb	R4			;
+		inc	R4			;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		clrb	@(R4)+			;
+		beq	sopb3a			;
+		mov	#113, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb3a:		dec	R4		 	; reset pointer R4=400
+		dec	R4			;
+		inc	@(R4)+			; try incrementing word loc.0=177401
+		bpl	sopb3b			;
+		negb	@(R4)+			;
+		bpl	sopb3b			;
+		dec	R4			;
+		dec	R4			;
+		incb	@(R4)+			;
+		beq	tst61			;
+						;
+sopb3b:		mov	#114, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 single operand byte instructions which address
+; odd bytes. The target is byte 1. A table at loc. 400-406 is used. R0 serves
+; as teh tabl epointer.
+;
+; RAfter pointing R4 to the table (400) and setting location 0 to -1, a clrb
+; instruction is used to clear byte 0.
+;
+; Several other mode 3 instructions are then used with the table to verify
+; the data results and the proper incrementing	of the register.
+;
+; If a failure is detected, be sure that the table (location 400-402) has
+; the proper values (0).
+;_____________________________________________________________________________
+;
+; Test 61 - Test mode 3 odd byte using sop instruction
+;
+tst61:		inc	(R2)			; update test number
+		cmp	#61, (R2)		;
+		bne	tst62-10		;
+		clr	R0			;
+		comb	R0			;
+		inc	R0			;
+		clr	@(R0)+			;
+		com	@(R0)+			;
+		clrb	@(R0)+			; try to clear odd byte loc. 0=377 R0=406
+		beq	sopb3c			;
+		mov	#115, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopb3c:		dec	R0			;
+		dec	R0			;
+		dec	R0			;
+		dec	R0			;
+		inc	@(R0)+			;
+		negb	@(R0)+			; try to negate odd byte loc. 0=177400 R0=406
+		bpl	sopb3d			;
+		incb	@(R0)+			; try to increment odd byte loc.0=0 R0=410
+		beq	tst62			;
+						;
+sopb3d:		mov	#116, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 62 - Test mode 3 using negate instruction
+;
+tst62:		inc	(R2)			; update test number
+		cmp	#62, (R2)		;
+		bne	tst63-10		;
+		clr	R0			; R0=400
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			; loc. 400=0
+		clr	R4			;
+		clr	(R4)			;
+		inc	(R4)			;
+		neg	@(R0)+			; try negate loc. o=-i R0=402
+		bpl	neg30			;
+		beq	neg30			;
+		bvs	neg30			;
+		bcs	neg31			;
+neg30:		mov	#117, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg31:		inc	(R4)			; loc. 0=0
+		beq	neg32			;
+		mov	#120, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg32:		comb	@#1			;
+		inc	@#0			;
+		negb	@(R0)+			;
+		bmi	neg33			;
+		mov	#121, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg33:		negb	@(R0)+			;
+		bpl	neg34			;
+		mov	#122, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg34:		comb	@#1			; loc. 0=177377
+		incb	@#1			;
+		inc	(R4)			;
+		beq	tst63			;
+		mov	#123, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 4 single operand instructions. R0 is set to 400.
+; A clr instruction is executed in mode 4 to clear loc. 376. R0 is reset
+; to 400 and a com instruction using mode 4 complements loc. 376.
+;
+; Two inc instructions and a mode 4 instruction are executed to complete
+; the test.
+;_____________________________________________________________________________
+;
+; Test 63 - Test mode 4 using sop instruction
+;
+tst63:		inc	(R2)			; update test number
+		cmp	#63, (R2)		; sequence error?
+		bne	tst64-10		;
+		clr	R0			;
+		comb	R0			;
+		inc	R0			;
+		clr	-(R0)			; try to clear using mode 4
+		beq	sop4a			;
+		mov	#124, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop4a:		inc	R0			; reset R0
+		inc	R0			;
+		com	-(R0)			; try to complement using mode 4
+		bpl	sop4b			;
+		inc	R0			;
+		inc	R0			;
+		inc	-(R0)			;
+		beq	tst64			;
+						;
+sop4b:		mov	#125, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 5 single operand instructions. It uses location 0
+; as its target data. A table located a loc. 372 thru 374 is used to supply
+; the address of location 0 to the instructions under test.
+;
+; R0 is et to 376, (the start gp the address table) +2, and a clr instruction
+; is executed with mode 3 to clear loc. 0. Then R0 is incremented by two and
+; two other mode 3 instructions operate on loc. 0 to verify the data results
+; of the test. The proper decrementing of the register is also verified in
+; this manner.
+;
+; If a failure is detected be sure to verify that the table (loc. 372 thru
+; 374) has the proper values (0).
+;_____________________________________________________________________________
+;
+; Test 64 - Test mode 5 using sop instruction
+;
+tst64:		inc	(R2)			; update test number
+		cmp	#64, (R2)		; sequence error?
+		bne	tst65-10		;
+		clr	R0			; set R0=376
+		clr	(R0)+			;
+		negb	R0			;
+		clr	@-(R0)			; try to clear loc 0 w/mode 5
+		beq	sop5a			;
+		mov	#126, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop5a:		inc	R0			; reset R0
+		inc	R0			;
+		com	@-(R0)			; try complement loc. 0	w/mode 5
+		bpl	sop5b			;
+		inc	@-(R0)			;
+		beq	tst65			;
+sop5b:		mov	#127, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 6 single operand instructions. It uses location 0
+; as its target data. R0 is set to 400 using previously tested instructions
+; and a mode 6 clr instruction is executed on loc. 0 using R0 and a -400
+; offset. com and inc instructions are then used to verify the data.
+;_____________________________________________________________________________
+;
+; Test 65 - Test mode 6 using sop instruction
+;
+tst65:		inc	(R2)			; update test number
+		cmp	#65, (R2)		; sequence error?
+		bne	tst66-10		;
+		clr	R0		 	; set R0=400
+		comb	R0			;
+		inc	R0			;
+		clr	-400(R0)		; try to clear location 0 w/mode 6
+		beq	sop6a			;
+		mov	#130, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop6a:		com	-400(R0)		; try to complement location 0 w/mode 6
+		bpl	sop6b			;
+		inc	-400(R0)		; try to increment location 0 w/mode 6
+		beq	tst66			;
+						;
+sop6b:		mov	#131, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 7 single operand instructions. It uses the pointer
+; to loc. 0 which is stored at loc. 402.
+;
+; R0 is set to 400 and a mode 7 clr instruction is executed with a +2 offset
+; to clear loc. 0.
+;
+; Several other mode 7 instructions are then used on the common location
+; to verify the	data results.
+;_____________________________________________________________________________
+;
+; Test 66 - Test mode 7 using sop instruction
+;
+tst66:		inc	(R2)			; update test number
+		cmp	#66, (R2)		; sequence error?
+		bne	tst67-10		;
+		clr	R0		 	; set R0=400
+		comb	R0			;
+		inc	R0			;
+		inc	(R0)			;
+		clr	@2(R0)			; try to clear loc. 0 w/mode 7
+		beq	sop7a			;
+		mov	#132, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sop7a:		com	@2(R0)			; try to complement loc. 0 w/mode 7
+		bpl	sop7b			;
+		inc	@2(R0)			; try to increment loc. 0 w/mode 7
+		beq	tst67			;
+						;
+sop7b:		mov	#133, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 67 - Test mode 4 with negate instruction
+;
+tst67:		inc	(R2)			; update test number
+		cmp	#67, (R2)		; sequence error?
+		bne	tst70-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)+			;
+		neg	-(R0)			;
+		bmi	neg40			;
+		beq	neg40			;
+		bvs	neg40			;
+		bcs	neg41			;
+						;
+neg40:		mov	#134, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg41:		neg	R0			;
+		beq	neg42			;
+		mov	#135, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg42:		dec	(R0)			;
+		beq	tst70			;
+		mov	#136, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 70 - Test mode 5 with negate instruction
+;
+tst70:		inc	(R2)			; update test number
+		cmp	#70, (R2)		; sequence error?
+		bne	tst71-10		;
+		clr	R0			;
+		clr	(R0)			;
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			;
+		clr	R4			;
+		dec	(R4)			; loc. 0=177777
+		neg	@-(R0)			; try negates loc. 0=1
+		bmi	neg50			;
+		beq	neg50			;
+		bvs	neg50			;
+		bcs	neg51			;
+						;
+neg50:		mov	#137, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg51:		dec	(R4)			;
+		beq	neg52			;
+		mov	#140, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg52:		comb	R0			;
+		dec	R0			;
+		beq	tst71			;
+		mov	#141, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 71 - Test mode 6 with negate instruction
+;
+tst71:		inc	(R2)			; update test number
+		cmp	#71, (R2)		; sequence error?
+		bne	tst72-10		;
+		clr	R0			;
+		clr	R4			;
+		comb	R0			;
+		clr	(R4)			;
+		clrb	(R4)+			;
+		comb	(R4)			;
+		neg	-377(R0)		;
+		bmi	neg60			;
+		beq	neg60			;
+		bvs	neg60			;
+		bcs	neg61			;
+						;
+neg60:		mov	#142, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg61:		decb	(R4)			;
+		beq	tst72			;
+		mov	#143, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 72 - Test mode 7 with negate instruction
+;
+tst72:		inc	(R2)			; update test number
+		cmp	#72, (R2)		; sequence error?
+		bne	tst73-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		comb	R0			;
+		negb	@5(R0)			;
+		bmi	neg70			;
+		beq	neg70			;
+		bvs	neg70			;
+		bcs	neg71			;
+						;
+neg70:		mov	#144, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg71:		comb	R0			;
+		comb	(R0)+			;
+		decb	(R0)			;
+		neg	0			;
+		beq	tst73			;
+		mov	#145, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies program counter addressing with sop instructions. clr
+; mode 77 is used to clear the location following the instruction (sopx).
+; The n single operand instructions with modes 37, 67, and 77 using indirect
+; pointer sopxad are used to verify the data results of these instructions.
+;_____________________________________________________________________________
+;
+; Test 73 - Test sop instructions modes 2, 3, 6, 7 with register 7
+;
+tst73:		inc	(R2)			; update test number
+		cmp	#73, (R2)		; sequence error?
+		bne	sopb			;
+		clr	(PC)+			;
+sopx:		.word	-1			;
+		beq	sopa			;
+		mov	#146, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopa:		inc	@#sopx			;
+		neg	sopx			;
+		bpl	sopb			;
+		inc	@sopxad			;
+		beq	tst74			;
+						;
+sopb:		mov	#147, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sopxad:		.word	sopx			;
+;_____________________________________________________________________________
+;
+; This test verifies single operand non-modifying instructions using mode 0.
+; R0 is set to zero and the condition codes are set to the complement of that
+; expected by the instruction. A tst instruction is executed and conditional
+; branches are used to test the condition codes.
+;_____________________________________________________________________________
+;
+; Test 74 - Test mode 0 sop non-modifying
+;
+tst74:		inc	(R2)			; update test number
+		cmp	#74, (R2)		; sequence error?
+		bne	tst75-10		;
+		clr	R0			;
+		scc				;
+		clz				;
+		tst	R0			; try tst w/mode 0
+		bvs	snm0a			;
+		bmi	snm0a			;
+		bcs	snm0a			;
+		beq	tst75			;
+						;
+snm0a:		mov	#150, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies single operand non-modifying byte instructions with
+; mode 0. R0 is set to 377 and complement of the expected condition codes
+; is loaded in PSW. A tstb instruction is executed and the results are
+; checked with several conditional branch instructions.
+;
+; This verifies that the proper byte was tested.
+;_____________________________________________________________________________
+;
+; Test 75 - Test mode 0 even byte with sop non-modifying
+;
+tst75:		inc	(R2)			; update test number
+		cmp	#75, (R2)		; sequence error?
+		bne	tst76-10		;
+		clr	R0			;
+		comb	R0			;
+		scc				;
+		cln				;
+		tstb	R0			; try tst even byte
+		bvs	snmb0a			;
+		blos	snmb0a			;
+		bmi	tst76			;
+
+snmb0a:		mov	#151, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies single operand instructions with mode 1. R0 is used to
+; point to and clear loc. 0. The complement of the expected condition codes
+; are loaded in the PSW. A tst instruction is then executed on loc. 0 using
+; R0 and conditional branches test the results.
+;_____________________________________________________________________________
+;
+; Test 76 - Test mode 1 sop non-modifying
+;
+tst76:		inc	(R2)			; update test number
+		cmp	#76, (R2)		; sequence error?
+		bne	tst77-10		;
+		clr	R0			;
+		clr	(R0)			;
+		scc				;
+		clz				;
+		tst	(R0)			;
+		bvs	snm1a			;
+		bcs	snm1a			;
+		bmi	snm1a			;
+		beq	tst77			;
+						;
+snm1a:		mov	#152, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test sets location 0 to 377 and then uses R0 to test the even byte
+; and the odd byte using sop byte instructions with mode 1. Again, conditional
+; branches are used to verify the setting of the proper	condition code bits.
+;_____________________________________________________________________________
+;
+; Test 77 - Test mode 1 byte instructions sop non-modifying
+;
+tst77:		inc	(R2)			; update test number
+		cmp	#77, (R2)		; sequence error?
+		bne	tst100-10		;
+		clr	R0			;
+		clr	(R0)			;
+		comb	(R0)			;
+		scc				;
+		cln				;
+		tstb	(R0)			; try tst on even byte
+		bvs	snmb1a			;
+		blos	snmb1a			;
+		bmi	snmb1b			;
+						;
+snmb1a:		mov	#153, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snmb1b:		clr	R0			;
+		inc	R0			;
+		scc			 	;
+		clz				;
+		tstb	(R0)			; try to tst an odd byte
+		bvs	snmb1c			;
+		bcs	snmb1c			;
+		bmi	snmb1c			;
+		beq	tst100			;
+						;
+snmb1c:		mov	#154, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the single-operand non-modifying instructions using
+; mode 2. It uses the identical procedure employed in the mode 1 tests.
+; Additionally, the register is checked to assure that that it is incremented
+; properly.
+;_____________________________________________________________________________
+;
+; Test 100 - Test mode 2 with sop non-modifying
+;
+tst100:		inc	(R2)			;
+		cmp	#100, (R2)		;
+		bne	tst101-10		;
+		clr	R0			;
+		clr	(R0)			;
+		scc				;
+		clz				;
+		tst	(R0)+			;
+		bvs	snm2a			;
+		bcs	snm2a			;
+		bmi	snm2a			;
+		beq	snm2b			;
+						;
+snm2a:		mov	#155, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snm2b:		dec     R0			; reset R0
+		dec	R0			;
+		beq	tst101			;
+		mov	#156, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 2 single operand non-modifying byte instructions
+; it uses R0 to point to loc. 0. With location 0 set to 377, the even and odd
+; byte is tested with tstb instructions to verify the correct cc are set.
+; The register is checked for proper incrementing.
+;_____________________________________________________________________________
+;
+; Test 101 - Test mode 2 byte with sop non-modifying instructions
+;
+tst101:		inc	(R2)			;
+		cmp	#101, (R2)		;
+		bne	tst102-10		;
+		clr	R0			;
+		clr	(R0)			;
+		comb	(R0)			;
+		scc				;
+		cln				;
+		tstb	(R0)+			;
+		bvs	snmb2a			;
+		blos	snmb2a			;
+		bmi	snmb2b			;
+						;
+snmb2a:		mov	#157, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snmb2b:		dec	R0			;
+		beq	snmb2c			;
+		mov	#160, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snmb2c:		inc	R0			;
+		scc				;
+		clz				;
+		tstb	(R0)+			;
+		bvs	snmb2d			;
+		bcs	snmb2d			;
+		bmi	snmb2d			;
+		beq	snmb2e			;
+						;
+snmb2d:		mov	#161, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snmb2e:		dec	R0			;
+		dec	R0			;
+		beq	tst102			;
+		mov	#162, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 single operand non-modifying instructions.
+; A pointer in a table at loc. 376 is used to test location 0. The cc's
+; and the register are checked following the tst mode 3 instruction.
+;_____________________________________________________________________________
+;
+; Test 102 - Test mode 3 with sop non-modifying instructions
+;
+tst102:		inc	(R2)			;
+		cmp	#102, (R2)		;
+		bne	tst103-10		;
+		clr	R0			;
+		clr	(R0)			;
+		comb	R0			;
+		dec	R0			;
+		scc				;
+		clz				;
+		tst	@(R0)+			;
+		bvs	snm3a			;
+		bcs	snm3a			;
+		bmi	snm3a			;
+		beq	snm3b			;
+						;
+snm3a:		mov	#163, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snm3b:		dec	R0			;
+		comb	R0			;
+		beq	tst103			;
+		mov	#164, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies sop non-modifying byte instructions mode 3 loc. 0 is
+; set to 377. Table at loc. 402-404 is used to test byte 0 and byte 1. The
+; register is checked for proper incrementing and the cc's are verified.
+;
+; The table at loc. 402-404 shoudl contain 0 and 1 before after the test
+; is run.
+;_____________________________________________________________________________
+;
+; Test 103 - Test mode 3 - bytes with sop non-modifying instructions
+;
+tst103:		inc	(R2)			; update test number
+		cmp	#103, (R2)		; sequence error?
+		bne	tst104-10	 	; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		comb	(R0)			;
+		comb	R0			;
+		inc	R0			;
+		tst	(R0)+			;
+		scc				;
+		cln				;
+		tstb	@(R0)+			;
+		bvs	snmb3a			;
+		blos	snmb3a			;
+		bmi	snmb3b			;
+						;
+snmb3a:		mov	#165, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snmb3b:		scc				;
+		clz				;
+		tstb	@(R0)+			; try tst of odd byte
+		bvs	snmb3c			; check
+		bcs	snmb3c			;
+		bmi	snmb3c			;
+		beq	snmb3d			;
+						;
+snmb3c:		mov	#166, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snmb3d:		tst	(R0)+			;
+		tst	(R0)			;
+		bmi	tst104			;
+		mov	#167, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 4 sop	non-modifying instructions. loc. 0 is set to
+; -1 and the cc's are set to the complement of the expected results. R0 and set
+; to 2 and a tst mode 4 is executed. The cc*s are checked with conditional
+; branch instructions and the register is checked for proper decrementing.
+;_____________________________________________________________________________
+;
+; Test 104 - Test mode 4 with sop non-modifying instructions
+;
+tst104:		inc	(R2)			; update test number
+		cmp	#104, (R2)		; sequence error?
+		bne	tst105-10	 	; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)+			;
+		scc				;
+		clz				;
+		tst	-(R0)			;
+		bvs	snm4a			; check cc=oioo
+		blos	snm4a			;
+		bmi	snm4b			;
+						;
+snm4a:		mov	#170, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snm4b:		tst	R0			;
+		beq	tst105			;
+		mov	#171, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 5 sop non-modifying instructions. It uses a pointer
+; at loc. 376 to test loc. 0. R0 is set to 400, a tst mode 5 instruction is
+; executed and the cc*s checked. R0 is checked to insure proper	decrementing.
+;_____________________________________________________________________________
+;
+; Test 105 - Test mode 5 with sop non-modifying instructions
+;
+tst105:		inc	(R2)			; update test number
+		cmp	#105, (R2)		; sequence error?
+		bne	tst106-10	 	; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		comb	R0			;
+		inc	R0			;
+		scc				;
+		cln				;
+		tst	@-(R0)			;
+		bvs	snm5a			;
+		blos	snm5a			;
+		bmi	snm5b			;
+						;
+snm5a:		mov	#172, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snm5b:		inc	R0			;
+		comb	R0			;
+		beq	tst106			;
+		mov	#173, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 6 sop non-modifying instructions. R0 is set to 377
+; and a	mode 6 tst instruction is executed using R0 and an offset of -377.
+; The cc's are checked as well as R0 to insure it was not altered.
+;_____________________________________________________________________________
+;
+; Test 106 - Test mode 6 with sop non-modifying instructions
+;
+tst106:		inc	(R2)			; update test number
+		cmp	#106, (R2)		; sequence error?
+		bne	tst107-10		; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		comb	R0			;
+		scc				;
+		cln				;
+		tst	-377(R0)		;
+		bvs	snm6a			;
+		blos	snm6a			;
+		bmi	snm6b			;
+						;
+snm6a:		mov	#174, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snm6b:		comb	R0			;
+		beq	tst107			;
+		mov	#175, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 7 sop non-modifying instructions. It uses a pointer
+; to loc. 0 stored at loc. 400 to tst loc 0. R0 is set to 377 and loc. 0 is
+; tested thru the pointer at 400 using R0 and an offset of 1.
+;_____________________________________________________________________________
+;
+; Test 107 - Test mode 7 with sop non-modifying instructions
+;
+tst107:		inc	(R2)			; update test number
+		cmp	#107, (R2)		; sequence error?
+		bne	tst110-10		; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		comb	R0			;
+		scc				;
+		cln				;
+		tst	@1(R0)			;
+		bvs	snm7a			;
+		blos	snm7a			;
+		bmi	snm7b			;
+						;
+snm7a:		mov	#176, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+snm7b:		comb	R0			;
+		beq	tst110			;
+		mov	#177, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 0 double operand instructions. It sets data in R0
+; and	R4 and uses the	add instruction	to test	the dop microcode.
+;_____________________________________________________________________________
+;
+; Test 110 - Test mode 0 double-operand (dop) instructions
+;
+tst110:		inc	(R2)			; update test number
+		cmp	#110, (R2)		; sequence error?
+		bne	tst111-10		; br to error halt on seq error
+		clr	R0			;
+		com	R0			;
+		clr	R4			;
+		add	R0, R4			;
+		inc	R4			;
+		beq	tst111			;
+		mov	#200, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the move instruction with mode 0 to mode 0. This test is
+; necessary because this particular instruction utilizes unique microcode.
+;_____________________________________________________________________________
+;
+; Test 111 - mov mode 0 to mode 0
+;
+tst111:		inc	(R2)			; update test number
+		cmp	#111, (R2)		; sequence error?
+		bne	tst112-10		; br to error halt on seq error
+		clr	R0			;
+		clr	R4			;
+		com	R0			;
+		mov	R0, R4			;
+		inc	R4			;
+		beq	tst112			;
+		mov	#201, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the substract instruction with mode 0 to mode 0. This
+; test is necessary because this particular instruction utilizes unique
+; microcode.
+;_____________________________________________________________________________
+;
+; Test 112 - test sub mode 0 to mode 0
+;
+tst112:		inc	(R2)			; update test number
+		cmp	#112, (R2)		; sequence error?
+		bne	tst113-10		; br to error halt on seq error
+		clr	R0			;
+		clr	R4			;
+		inc	R4			;
+		sub	R4, R0			;
+		bpl	sub0			;
+		beq	sub0			;
+		bvs	sub0			;
+		bcs	sub0a			;
+						;
+sub0:		mov	#202, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sub0a:		inc	R0			;
+		beq	tst113			;
+		mov	#203, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test quickly verifies the remaining dop modifying instructions
+; with mode 0, 0 to provide a baseline for subsequent tests.
+; Single operand instructions are used to set up data in R0 and R4 before
+; each of the several dop modifying instructions are used and verified.
+;_____________________________________________________________________________
+;
+; Test 113 - testall the dop instructions with source mode 0, 0
+;
+tst113:		inc	(R2)			; update test number
+		cmp	#113, (R2)		; sequence error?
+		bne	tst114-10		; br to error halt on seq error
+		clr	R0			;
+		mov	R0, R4			;
+		beq	dop0a			;
+		mov	#204, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop0a:		inc	R0			;
+		com	R0			;
+		com	R4			;
+		bic	R0, R4			;
+		dec	R4			;
+		beq	dop0b			;
+		mov	#205, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop0b:		bis	R0, R4			;
+		inc	R4			;
+		inc	R4			;
+		beq 	dop0c			;
+		mov	#206, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop0c:		clr	R0			;
+		comb	R0			;
+		clr	R4			;
+		com	R4			;
+		bic	R0, R4			;
+		add	R0, R4			;
+		inc	R4			;
+		beq	dop0d			;
+		mov	#207, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop0d:		sub	R0, R4			;
+		negb	R4			;
+		inc	R4			;
+		beq	tst114			;
+		mov	#210, -(R2)		;
+		inc	-(R2)		 	;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 0,x double operand instructions. It sets data in R0
+; and location 0 and operates upon it using dop instructions.
+;_____________________________________________________________________________
+;
+; Test 114 - test mode 0,x double opernad instructions
+;
+tst114:		inc	(R2)			; update test number
+		cmp	#114, (R2)		; sequence error?
+		bne	tst115-10		; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		comb	(R0)			;
+		inc	(R0)+			;
+		neg	R0			;
+		add	R0, @#0			;
+		bmi	dop03a			;
+		beq	dop03a			;
+		bvs	dop03a			;
+		bcs	dop03b			;
+						;
+dop03a:		mov	#211, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop03b:		comb	@#0			;
+		dec	@#0			;
+		beq	tst115			;
+		mov	#212, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 0,0 dop non-modifying instructions. R0 and R4 are
+; preset to 0 and 1 respectively. Compare instructions are then executed and
+; checked. First R4 is compared to R0 then R0 to R4.
+;_____________________________________________________________________________
+;
+; Test 115 - test dop non-modifying instructions with source mode 0,0
+;
+tst115:		inc	(R2)			; update test number
+		cmp	#115, (R2)		; sequence error?
+		bne	tst116-10		; br to error halt on seq error
+		clr	R0			;
+		clr	R4			;
+		inc	R4			;
+		cmp	R4, R0			;
+		bgt	dnm1			;
+		mov	#213, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm1:		cmp	R0, R4			;
+		blt	dnm2			;
+		mov	#214, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm2:		inc	R0			;
+		cmp	R4, R0			;
+		beq	dnm3			;
+		mov	#215, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm3:		clr	R0			;
+		com	R0			;
+		clr	R4			;
+		bit	R0, R4			;
+		beq	dnm4			;
+		mov	#216, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm4:		dec	R4			;
+		bit	R0, R4			;
+		bmi	tst116			;
+		mov	#217, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 0, X double operand non-modifying instructions.
+; It sets data in R0 and location 0 and compares them using dopnm instructions.
+;_____________________________________________________________________________
+;
+; Test 116 - test mode 0,X dop non-modifying instructions
+;
+tst116:		inc	(R2)			;
+		cmp	#116, (R2)		;
+		bne	tst117-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		inc	R0			;
+		cmp	R0, @#0			;
+		bmi	dnm03a			;
+		beq	dnm03a			;
+		bvs	dnm03a			;
+		bcs	dnm03b			;
+						;
+dnm03a:		mov	#220, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm03b:		dec	R0			;
+		bne	dnm03c			;
+		inc	(R0)			;
+		beq	tst117			;
+						;
+dnm03c:		mov	#221, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 1 dop instructions. R0 is set to -1 and loc 0 to 1.
+; R4 is	then cleared and used to point to loc 0. In the	add mode 1 instruction,
+; loc 0 is added to R0 and the results verified.
+;_____________________________________________________________________________
+;
+; Test 117 - test mode 1 w/dop instructions
+;
+tst117:		inc	(R2)			;
+		cmp	#117, (R2)		;
+		bne	tst120-10		;
+		clr	R0			;
+		com	R0			;
+		clr	R4			;
+		clr	(R4)			;
+		inc	(R4)			;
+		add	(R4), R0		;
+		beq	tst120			;
+		mov	#222, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 1 dop byte instructions which address even bytes.
+; loc. 0 is set to -1 and R4 is cleared. Then R4 is set to -1 using a bisb
+; thru R0 with mode 1.
+;_____________________________________________________________________________
+;
+; Test 120 - test mode 1 even byte w/dop instructions
+;
+tst120:		inc	(R2)			;
+		cmp	#120, (R2)		;
+		bne	tst121-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		clr	R4			;
+		bisb	(R0), R4		;
+		comb	R4			;
+		beq	tst121			;
+		mov	#223, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 1 dop now-modifying instructions which address
+; even bytes. loc. 0 is set to -1 and R0 is cleared and used as the addressing
+; register. R4 is set to 377 and mode 1, 0 cmpb instruction is used the results
+; verified.
+;_____________________________________________________________________________
+;
+; Test 121 - test mode 1 even byte w/dop instructions
+;
+tst121:		inc	(R2)			;
+		cmp	#121, (R2)		;
+		bne	tst122-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		clr	R4			;
+		comb	R4			;
+		cmpb	(R0), R4		;
+		beq	tst122			;
+		mov	#224, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 1,0 movb instructions which address even bytes.
+; loc.	0 is set to 177400, R0 is cleared and R4 is set to -1. movb are used
+; to move byte 0 to R4. This verifies that the proper byte was selected and
+; that the sign-x-tend  function with mode 0.
+;
+; Then loc. 0 is complemented and the same procedure exercises the logic
+; for complementary data.
+;
+; This test exercises unique microcode.
+;_____________________________________________________________________________
+;
+; Test 122 - test mov instruction mode 1,0 even byte
+;
+tst122:		inc	(R2)			;
+		cmp	#122, (R2)		;
+		bne	tst123-10		;
+		clr	R0			;
+		clr	(R0)			;
+		comb	(R0)			;
+		com	(R0)			;
+		clr	R4			;
+		com	R4			;
+		movb	(R0), R4		;
+		tst	R4			; check sigh of word
+		beq	dop1			;
+		mov	#225, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop1:		com	(R0)			;
+		movb	(R0), R4		;
+		bmi	tst123			;
+		mov	#226, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 1 dop instructions which reference odd bytes.
+; loc. 0 is set to 177400. R0 is set to 0 and R4 is set to 1. The bisb
+; instruction uses the data in byte 1 to set byte 0. Tthe result is checked
+; by incrementing the word (loc. 0) to zero.
+;_____________________________________________________________________________
+;
+; Test 123 - test mode 1-odd byte w/dop instructions
+;
+tst123:		inc	(R2)			;
+		cmp	#123, (R2)		;
+		bne	tst124-10		;
+		clr	R0			;
+		clr	(R0)			;
+		clr	R4			;
+		inc	R4			;
+		comb	(R4)  			;
+		bisb	(R4), (R0)		;
+		inc	(R0)			;
+		beq	tst124			;
+		mov	#227, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 2 dop instructions. loc. 0 is set to -1. R0 is
+; cleared and used as the mode 2 addressing register to move loc. 0 to PC.
+; The data results are verified and the incrementing of the register;is checked.
+;_____________________________________________________________________________
+;
+; Test 124 - test mode 2 w/dop instructions
+;
+tst124:		inc	(R2)			;
+		cmp	#124, (R2)		;
+		bne	tst125-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		mov	(R0)+, R4		;
+		inc	R4			;
+		beq	dop2			;
+		mov	#230, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dop2:		dec	R0			;
+		dec	R0			;
+		beq	tst125			;
+		mov	#231, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 2 dop	byte instructions which	address even bytes.
+; loc. 0 is set to -1. R0 is cleared and used as the addressing register in
+; a test which tries to clear byte 1 using byte 0 data and a bicb. Unique
+; in this test is use of the same addressing register for both source and
+; destination. the source and destination is checked to insure proper
+; functioning.
+;_____________________________________________________________________________
+;
+; Test 125 - test mode 2 - even byte w/dop instructions
+;
+tst125:		inc	(R2)			;
+		cmp	#125, (R2)		;
+		bne	tst126-10		;
+		clr	R0			;
+		mov	R0, (R0)		;
+		com	(R0)			;
+		bicb	(R0)+, (R0)		;
+		tstb	@#1			;
+		beq	dopb2a			;
+		mov	#232, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dopb2a:		comb	@#0			;
+		beq	tst126			;
+		mov	#233, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode_2 gop byte instructions which reference odd bytes.
+; R0 is set to 1, loc. 0 is set to 177400 and R4 is cleared. A mode 2 movb
+; uses R0 to move byte 1 to R4. An increment is used to check that the proper
+; byte was moved and sign x-tended.
+;_____________________________________________________________________________
+;
+; Test 126 - test mode 2 - odd byte w/dop instructions
+;
+tst126:		inc	(R2)			;
+		cmp	#126, (R2)		;
+		bne	tst127-10		;
+		clr	R0			;
+		clr	R4			;
+		clr	(R0)			;
+		com	(R0)			;
+		comb	(R0)+			;
+		movb	(R0)+, R4		;
+		inc	R4			;
+		beq	dopb2b			;
+		mov	#234, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dopb2b:		tst	-(R0)			;
+		tst	R0			;
+		beq	tst127			;
+		mov	#235, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 double-operand instructions. loc 0 is loaded
+; with alternating zeroes and ones, and R0 is loaded with alternating ones
+; and zeroes. A mode 3 bis is used to set R0 to to -1 by using loc. 0 as
+; the source to	bis the	zeroes in R0. The result is tested by incrementing
+; R0 and checking for zero.
+;_____________________________________________________________________________
+;
+; Test 127 - test mode 3 w/dop instructions
+;
+tst127:		inc	(R2)			;
+		cmp	#127, (R2)		;
+		bne	tst130-10		;
+		mov	#052525, @#0		; move 52525 to loc. 0
+		mov	#125252, R0		; set alt. one and zero in R0
+		bis	@#0, R0			; try to set all other bits w/ mode 3
+		inc	R0			; test result
+		beq	tst130			;
+		mov	#236, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 double operand byte instructions which address
+; even bytes. Byte 0 is set to alternating 1's and 0's. Byte 1, {alternating
+; 0's and 1's. R0 is cleared and a bisb is used to set the low byte of R0
+; to 252.
+;_____________________________________________________________________________
+;
+; Test 130 - test mode 3 - even byte w/dop instructions
+;
+tst130:		inc	(R2)			;
+		cmp	#130, (R2)		;
+		bne	tst131-10		;
+		mov	#52652, @#0		;
+		clr	R0			;
+		bisb	@#0, R0			;
+		cmp	#252, R0		;
+		beq	tst131			;
+		mov	#237, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 double operand byte instructions which address
+; odd bytes. The same procedure used in previous test is used here. This
+; time byte 1 is used as the source byte. The expected result is: R0 = 125.
+;_____________________________________________________________________________
+;
+; Test 131 - test mode 3 - odd byte w/dop instructions
+;
+tst131:		inc	(R2)			;
+		cmp	#131, (R2)		;
+		bne	tst132-10		;
+		mov	#52652, @#0		;
+		clr	R0			;
+		bisb	@#1, R0			;
+		cmp	#125, R0		;
+		beq	tst132			;
+		mov	#240, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 132 - test dest mode 0 w/dop non-modifying instructions
+;
+tst132:		inc	(R2)			;
+		cmp	#132, (R2)		; sequence error?
+		bne	tst133-10		;
+		clr	R0			;
+		comb	R0			;
+		+sec!sev			; set C and V bits
+		bitb	#200, R0		; try dopnm dest. mode 0-byte
+		beq	dnmb0a			;
+		bvs	dnmb0a			;
+		bcc	dnmb0a			;
+		bmi	dnmb0b			;
+dnmb0a:		mov	#241, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb0b:		comb	R0			;
+		beq	tst133			;
+		mov	#242, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 133 - test dest mode 1 w/dop non-modifying instructions
+;
+tst133:		inc	(R2)			;
+		cmp	#133, (R2)		; sequence error?
+		bne	tst134-10		;
+		clr	R0			;
+		clr	(R0)			;
+		clc				;
+		bit	#177777, (R0)		;
+		bmi	dnm1a			;
+		bvs	dnm1a			;
+		bcs	dnm1a			;
+		beq	dnm1b			;
+dnm1a:		mov	#243, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm1b:		tst	(R0)			;
+		beq	tst134			;
+		mov	#244, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 134 - test dest mode 2 w/dop non-modifying instructions
+;
+tst134:		inc	(R2)			;
+		cmp	#134, (R2)		; sequence error?
+		bne	tst135-10		;
+		clr	R0			;
+		clr	(R0)			;
+		bis	#125252, (R0)		;
+		bit	#77777, (R0)+		;
+		bvs	dnm2a			;
+		beq	dnm2a			;
+		bpl	dnm2b			;
+dnm2a:		mov	#245, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm2b:		dec	R0			;
+		dec	R0			;
+		beq	dnm2d			;
+dnm2c:		mov	#246, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm2d:		cmp	#125252, (R0)		;
+		beq	tst135			;
+		mov	#247, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 135 - test dest mode 2-byte, w/dop non-modifying instructions
+;
+tst135:		inc	(R2)			;
+		cmp	#135, (R2)		;
+		bne	tst136-10		;
+		clr	R0			;
+		clr	(R0)			;
+		bis	#52652, (R0)		;
+		+sec!sev			; set C and V bits
+		bitb	#201, (R0)+		;
+		beq	dnmb2a			;
+		bcc	dnmb2a			;
+		bvs	dnmb2a			;
+		bmi	dnmb2b			;
+dnmb2a:		mov	#250, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb2b:		dec	R0			;
+		beq	dnmb2c			;
+		mov	#251, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb2c:		inc	R0			;
+		bitb	#201, (R0)+		;
+		beq	dnmb2d			;
+		bvs	dnmb2d			;
+		bpl	dnmb2e			;
+dnmb2d:		mov	#252, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb2e:		dec	R0			;
+		dec	R0			;
+		beq	dnmb2f			;
+		mov	#253, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb2f:		cmp	#52652, (R0)		;
+		beq	tst136			;
+		mov	#254, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 136 - test dest mode 3-bytes, w/dop non-modifying instructions
+;
+tst136:		inc	(R2)			; update test number
+		cmp	#136, (R2)		; sequence error?
+		bne	tst137-10		; br to error halt on seq error
+		clr	R0			;
+		clr	(R0)			;
+		bis	#125125, (R0)		;
+		comb	R0			;
+		inc	R0			;
+		clr	(R0)			;
+		+sec!sev			;
+		bitb	#201, @(R0)+		;
+		beq	dnmb3a			;
+		bvs	dnmb3a			;
+		bcc	dnmb3a			;
+		bpl	dnmb3b			;
+dnmb3a:		mov	#255, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb3b:		cmp 	#402, R0		;
+		beq	dnmb3c			;
+		mov	#256, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb3c:		inc	R0			;
+		inc	R0			;
+		bitb	#201, @(R0)+		; try dopnm dest mode 3-byte(odd)
+		beq	dnmb3d			;
+		bvs	dnmb3d			;
+		bmi	dnmb3e			;
+dnmb3d:		mov	#257 ,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb3e:	 	clr	R4			;
+		cmp	#125125, (R4)		;
+		beq	tst137			;
+		mov	#260, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 137 - test dest mode 4 w/dop non-modifying instructions
+;
+tst137:		inc	(R2)			;
+		cmp	#137, (R2)		;
+		bne	tst140-10		;
+		clr	R0			;
+		clr	(R0)			;
+		bis	#125252, (R0)		;
+		bis	#2, R0			;
+		scc				; set all cond. code bits
+		bit	#20000, -(R0)		;
+		bmi	dnm4a			;
+		bvs	dnm4a			;
+		bcc	dnm4a			;
+		bne	dnm4b			;
+dnm4a:		mov	#261, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm4b:		tst	R0			;
+		beq	dnm4c			;
+		mov	#262, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm4c:		cmp	#125252, @#0		;
+		beq	tst140			;
+		mov	#263, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 140 - test dest mode 4-byte w/dop non-modifying instructions
+;
+tst140:		inc	(R2)			;
+		cmp	#140, (R2)		;
+		bne	tst141-10		;
+		clr	R0			;
+		clr	(R0)			;
+		bis	#52652, (R0)		;
+		bis	#2, R0			;
+		ccc				;
+		bitb	#201, -(R0)		;
+		bvs	dnmb4a			;
+		beq	dnmb4a			;
+		bcs	dnmb4a			;
+		bne	dnmb4b			;
+dnmb4a:		mov	#264, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb4b:		cmp	#1, R0			;
+		beq	dnmb4c			;
+		mov	#265, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb4c:		bitb	#201, -(R0)		;
+		beq	dnmb4d			;
+		bmi	dnmb4e			;
+dnmb4d:		mov	#266, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb4e:		tst	R0			;
+		beq	dnmb4f			;
+		mov	#267, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnmb4f:		cmp 	#52652, (R0)		;
+		beq	tst141			;
+		mov	#270, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 141 - test dest mode 5-byte w/dop non-modifying instructions
+;
+tst141:		inc	(R2)			;
+		cmp	#141, (R2)		;
+		bne	tst142-10		;
+		clr	R0			;
+		clr	(R0)			;
+		bis	#100000, (R0)		;
+		bis	#402, R0		;
+		scc				;
+		bit	#100000, @-(R0)		;
+		bvs	dnm5a			;
+		bcc	dnm5a			;
+		beq	dnm5a  			;
+		bmi	dnm5b			;
+dnm5a:		mov	#271, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm5b:		cmp	#400, R0		;
+		beq	dnm5c			;
+		mov	#272, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+dnm5c:		cmp	#100000, @#0		;
+		beq	tst142			;
+		mov	#273, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 142 - test dest mode 6 w/dop non-modifying instructions
+;
+tst142:		inc	(R2)			;
+		cmp	 #142, (R2)		;
+		bne	 tst143-10		;
+		clr	 R0			;
+		clr	 (R0)			;
+		bis	#1, (R0)		;
+		com	R0			;
+		bit	#1, 1(R0)		;
+		beq	dnm6a			;
+		bvs	dnm6a			;
+		bcc	dnm6a			;
+		bpl	dnm6b			;
+dnm6a:		mov	#274, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm6b:		cmp	#-1, R0			;
+		beq	dnm6c			;
+		mov	#275, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm6c:		cmp	#1, @#0			;
+		beq	tst143			;
+		mov	#276, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 143 - test dest mode 7 w/dop non-modifying instructions
+;
+tst143:		inc	(R2)			;
+		cmp	#143, (R2)		;
+		bne	tst144-10		;
+		clr	R0			;
+		clr	(R0)			;
+		bis	#125125, (R0)		;
+		bis	#1, R0			;
+		bitb	#125, @403(R0)		;
+		bvs	dnm7a			;
+		bmi	dnm7a			;
+		bcs	dnm7a			;
+		beq	dnm7b			;
+dnm7a:		mov	#277, -(R2)		;
+		inc	 -(R2)			;
+		halt				;
+						;
+dnm7b:		cmp	#1, R0			;
+		beq	dnm7c			;
+		mov	#300, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dnm7c:		cmp	#125125, @#0		;
+		beq	tst144			;
+		mov	#301, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mov destination mode 1 instruction. Data is set in R0
+; using sop instructions and then moved to loc. 0 using mov src mode 0, dest.
+; mode 1.
+;_____________________________________________________________________________
+;
+; Test 144 - test mov destination mode 1
+;
+tst144:		inc	(R2)			;
+		cmp	#144, (R2)		;
+		bne	tst145-10		;
+		clr	R0		 	;
+		clr	(R0)			;
+		com	R0			;
+		clr	R4			;
+		mov	R0, (R4)		;
+		bvs	mdm1a			;
+		beq	mdm1a			;
+		bmi	mdm1b			;
+mdm1a:		mov	#302, -(R2)		;
+		inc	 -(R2)			;
+		halt				;
+						;
+mdm1b:		tst	R4			;
+		beq	tst145			;
+		mov	#303, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mov destination mode 2 instruction. Data is set in R0
+; using	sop instructions and then moved to location 0 using mov	src mode 0,
+; dest. mode 1.
+;_____________________________________________________________________________
+;
+; Test 145 - test mov destination mode 2
+;
+tst145:		inc	(R2)			;
+		cmp	#145, (R2)		;
+		bne	tst146-10		;
+		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		.word	010020			; mov	R0, (R0)+
+		bmi	mdm2a			;
+		bvs	mdm2a			;
+		beq	mdm2b          		;
+mdm2a:		mov	#304, -(R2)		;
+		inc	 -(R2)			;
+		halt				;
+						;
+mdm2b:		dec	R0			;
+		dec	R0			;
+		beq	mdm2d			;
+mdm2c:		mov	#305, -(R2)		;
+		inc	 -(R2)			;
+		halt				;
+						;
+mdm2d:		tst	@#0			;
+		beq	tst146			;
+		mov	#306, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies destination mode 2 w/movb insts. Two different movb
+; instructions are used to move a test pattern first to byte 0 then to byte 1.
+;_____________________________________________________________________________
+;
+; Test 143 - test mov-byte destination mode 2
+;
+tst146:		inc	(R2)			;
+		cmp	#146, (R2)		;
+		bne	tst147-10		;
+		clr	R0			;
+		clr	(R0)			;
+		movb	#125, (R0)+		;
+		bvs	mbdm2a			;
+		beq	mbdm2a			;
+		bpl	mbdm2b			;
+mbdm2a:		mov	#307, -(R2)		;
+		inc	 -(R2)			;
+		halt				;
+						;
+mbdm2b:		cmp	#1, R0			;
+		beq	mbdm2c			;
+		mov	#310, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm2c:		movb	#252, (R0)+		;
+		bvs	mbdm2d			;
+		beq	mbdm2d			;
+		bmi	mbdm2e			;
+mbdm2d:		mov	#311, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm2e:		cmp	#2, R0			;
+		beq	mbdm2f			;
+		mov	#312, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm2f:		cmp	#125125, @#0		;
+		beq	tst147			;
+		mov	#313, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mov destination mode 3. R0 is used to pick up an address
+; at loc. 400. loc 400 points to loc. 0 the effective dest. addr.. also. movb
+; instructions are used w/ even and odd bytes to check mov bytes intsruction
+; and mode 37 destinations.
+;_____________________________________________________________________________
+;
+; Test 147 - test mov(b) destination mode 3
+;
+tst147:		inc	(R2)			;
+		cmp	#147, (R2)		;
+		bne	tst150-10		;
+		mov	#400, R0		;
+		clr	(R0)			;
+		clr	@#0			;
+		mov	#125252, @(R0)+	 	;
+		bvs	mdm3a			;
+		beq	mdm3a			;
+		bmi	mdm3b			;
+mdm3a:		mov	#314, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm3b:		cmp	#402, R0		;
+		beq	mdm3c			;
+		mov	#315, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm3c:		cmp	#125252, @#0		;
+		beq	mdm3d			;
+		mov	#316, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm3d:		movb	#125, @#0		;
+		cmp	#125125, @#0		;
+		beq	mdm3e			;
+		mov	#317, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm3e:		movb	#525, @#1		;
+		cmp	#52525, @#0		;
+		beq	tst150			;
+		mov	#320, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mov destination mode 4 instruction. sop instructions
+; on R0	are used to clear target location 0. R4 is used as the mode 4
+; addressing register, and conditional branches are used to verify the data.
+;_____________________________________________________________________________
+;
+; Test 150 - test mov destination mode 4
+;
+tst150:		inc	(R2)			;
+		cmp	#150, (R2)		;
+		bne	tst151-10		;
+		clr	R0			;
+		clr	(R0)			;
+		mov	#2, R4			;
+		mov	#12345, -(R4)		;
+		bvs	mdm4a			;
+		beq	mdm4a			;
+		bpl	mdm4b			;
+mdm4a:		mov	#321, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm4b:		tst	R4			;
+		beq	mdm4c			;
+		mov	#322, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm4c:		cmp	#12345, (R0)		;
+		beq	tst151			;
+		mov	#323, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the movb destination mode 4 instruction on both odd and
+; even bytes. sop instructions on R4 are used to clear target location 0.
+; R0 is used as the mode 4 addressing register, and cmp and conditional branch
+; instructions are used to verify the data.
+;_____________________________________________________________________________
+;
+; Test 151 - test movb destination mode 4
+;
+tst151: 	inc	(R2)			;
+		cmp	#151, (R2)		;
+		bne	tst152-10		;
+		clr	R4			;
+		clr	(R4)			;
+		mov	#2, R0			;
+		movb	#125125, -(R0) 		;
+		cmp	R0, #1			;
+		beq	mbdm4a			;
+		mov	#324, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm4a:		cmp	(R4), #52400		;
+		beq	mbdm4b			;
+		mov	#325, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm4b:		movb	#125125, -(R0)		;
+		bvs	mbdm4c			;
+		beq	mbdm4c			;
+		bpl	mbdm4d			;
+mbdm4c:		mov	#326, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm4d:		tst	R0			;
+		beq	mbdm4e			;
+		mov	#327, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mbdm4e:		cmp	(R4), #52525		;
+		beq	tst152			;
+		mov	#330, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mov destination mode 5 and the movb destination
+; mode 5 - even byte instructions. R4 ia s pointer to target location 0 and R0
+; is setup to point to lication 376 for the mov, and location 404 for the movb
+; instructions. cmp instructions are used to verify proper addressing and data.
+;_____________________________________________________________________________
+;
+; Test 152 - test mov destination mode 5
+;
+tst152: 	inc	(R2)			;
+		cmp	#152, (R2)		;
+		bne	tst153-10		;
+		clr	R4			;
+		clr	(R4)			;
+		mov	#400, R0		;
+		mov	#4321, @-(R0)		;
+		bvs	mdm5a			;
+		beq	mdm5a			;
+		bpl	mdm5b			;
+mdm5a:		mov	#331, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm5b:		cmp	#376, R0		;
+		beq	mdm5c			;
+		mov	#332, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm5c:		cmp	#4321, (R4)		;
+		beq	mdm5d			;
+		mov	#333, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm5d:		mov	#406, R0		;
+		movb	#377, @-(R0)		;
+		cmp	#404, R0		;
+		beq	mdm5e			;
+		mov	#334, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm5e:		cmp	#177721, (R4)		;
+		beq 	tst153			;
+		mov	#335, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mov destination mode 6 and movb - even byte
+; destination mode 6 instructions. R0 is used to setup target loc 0 for both
+; tests. Patterns of ones and zeroes are moved into loc 0 by mode 6 instructions,
+; and cmp instructions are used to verify proper addressing and data.
+;_____________________________________________________________________________
+;
+; Test 153 - test mov destination mode 6
+;
+tst153: 	inc	(R2)			;
+		cmp	#153, (R2)		;
+		bne	tst154-10		;
+		clr	R0			;
+		clr	(R0)			;
+		inc	R0			;
+		mov	#052525, -1(R0)		;
+		bvs	mdm6a			;
+		beq	mdm6a			;
+		bpl	mdm6b			;
+mdm6a:		mov	#336, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm6b:		cmp	#1, R0			;
+		beq	mdm6c			;
+		mov	#337, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm6c:		cmp	#52525, @#0		;
+		beq	mdm6d			;
+		mov	#340, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm6d:		mov	#2, R0			;
+		movb	#377, -1(R0)		;
+		cmp	#2, R0			;
+		beq	mdm6e			;
+		mov	#341, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm6e:		cmp	#177525, @#0		;
+		beq	tst154			;
+		mov	#342, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mov destination mode 7 and movb - odd byte destination
+; mode 7 instructions. R4 points to target loc.0 and R0 is used as the mode 7
+; addressing register. cmp instructions are used to verify proper addressing
+; and data.
+;_____________________________________________________________________________
+;
+; Test 154 - test mov destination mode 7
+;
+tst154: 	inc	(R2)			;
+		cmp	#154, (R2)		;
+		bne	tst155-10		;
+		clr	R4			;
+		clr	(R4)			;
+		mov	#403, R0		;
+		mov	#70707, @-1(R0)		;
+		bvs	mdm7a			;
+		beq	mdm7a			;
+		bpl	mdm7b			;
+mdm7a:		mov	#343, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm7b:		cmp	#403, R0		;
+		beq	mdm7c			;
+		mov	#344, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+mdm7c:		cmp	#70707, @#0		;
+		beq	mdm7d			;
+		mov	#345,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm7d:		movb	#107070, @1(R0)		;
+		cmp	#403, R0		;
+		beq	mdm7e			;
+		mov	#346,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mdm7e:		cmp	#34307, @#0		;
+		beq	tst155			;
+		mov	#347, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 4 double operand instructions. The test uses mode 4
+; addressing with register 0 to move thru a  table of operands. The table of
+; operands and the work location is stored following the test code. A series
+; of 5 dop instructions utilizes the data in the table to cycle the work
+; location thru a set of value. The data has been chosen to insure that no
+; single error will go undetected. Word and byte instruction accessing both
+; even	and  odd addresses are used in the test. the listing shows the
+; expected intermediate result as each instruction is executed.
+;_____________________________________________________________________________
+;
+; Test 155 - test mode 4 w/ dop instructions
+;
+tst155: 	inc	(R2)			;
+		cmp	#155, (R2)		;
+		bne	dop4			;
+		mov	#tbl1, R0		; initialize R0
+		mov	-(R0), @#tbl1		;
+		add	-(R0), @#tbl1		;
+		bicb	-(R0), @#tbl1		; tbl1=000252
+		bisb	-(R0), @#tbl1+1		; tbll=125252
+		cmp	-(R0), @#tbl1		; check result
+		beq	tst156			;
+dop4:		mov	#350, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+		.word	125252			;
+		.word	52652			;
+		.word	53125			;
+		.word	125252			;
+tbl1:		.word	0			;
+;_____________________________________________________________________________
+;
+; This test verifies mode 5 double operand instructions. The test uses an
+; address table	stored following the test code. This table is simply a table
+; of address pointers which address the data table used in the previous test.
+; The test is identical to the previous test except the data is referenced
+; using this address table and mode 5 addressing. (see previous test).
+;_____________________________________________________________________________
+;
+; Test 156 - test mode 5 w/ dop instructions
+;
+tst156: 	inc	(R2)			;
+		cmp	#156, (R2)		;
+		bne	dop5			;
+		mov	#tbl2+2, R0		;
+		mov	@-(R0), @#tbl1		;
+		add	@-(R0), @#tbl1		;
+		bicb	@-(R0), @#tbl1		;
+		bisb	@-(R0), @#tbl1+1	;
+		cmp	@-(R0), @#tbl1		;
+		beq	tst157			;
+dop5:		mov	#351, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+		.word	tbl1-10			;
+		.word	tbl1-6			;
+		.word	tbl1-5			;
+		.word	tbl1-4			;
+tbl2:		.word	tbl1-2			;
+;_____________________________________________________________________________
+;
+; This test verifies mode 6 double operand instructions. It uses the same data
+; as that used in the mode 4 tests. This time the data is accessed using mode 6.
+; R0 is set to point to the middle of the table. the table is accessed from
+; bottom to top by varying the offset in the mode 6 instructions. The data
+; results are identical	to those expected in the mode 4 tests.
+;_____________________________________________________________________________
+;
+; Test 157 - test mode 6 w/ dop instructions
+;
+tst157:	 	inc	(R2)			;
+		cmp	#157, (R2)		;
+		bne	tst160-10		;
+		mov	#tbl1-4, R0		;
+		mov	2(R0), @#tbl1		;
+		add	0(R0), @#tbl1		;
+		bicb	-1(R0), @#tbl1		;
+		bisb	-2(R0), @#tbl1+1	;
+		cmp	-4(R0), @#tbl1		;
+		beq	tst160			;
+		mov	#352, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 7 double operand instructions. This test uses the
+; same address table and data table used by the mode 5 tests. this time the
+; data is accessed using mode 7. R0 is set to point to the middle of the
+; address table in the mode 5 test. The table is accessed from bottom to top
+; by varying the offset in the mode 7 instructions. the data results are
+; identical to those expected in the mode 5 tests.
+;_____________________________________________________________________________
+;
+; Test 160 - test mode 7 w/ dop instructions
+;
+tst160:		inc	(R2)			;
+		cmp	#160, (R2)		;
+		bne	tst161-10		;
+		mov	#tbl2-4,R0		;
+		mov	@4(R0), @#tbl1		;
+		add	@2(R0), @#tbl1		;
+		bicb	@0(R0), @#tbl1		;
+		bisb	@-2(R0), @#tbl1+1	;
+		cmp	@-4(R0), @#tbl1		;
+		beq	tst161			;
+		mov	#353, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the rotate mode 0 instructions. R0 is loaded with a data
+; pattern, the C-bit is	loaded,	and an rol instruction is executed with mode 0.
+; The operation is checked by testing the resulting data and the state of
+; the C and V bits. Next, the same procedure is executed to test mode 0 byte
+; instructions.
+;_____________________________________________________________________________
+;
+; Test 161 - test rotate instructions of mode 0
+;
+tst161:		inc	(R2)			;
+		cmp	#161, (R2)		;
+		bne	tst162-10		;
+		mov	#125252, R0		;
+		sec				;
+		rol	R0			;
+		bvc	rot0a			;
+		bcc	rot0a			;
+		cmp	#052525, R0		;
+		beq	rot0b			;
+rot0a:		mov	#354, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rot0b:		mov	#125252, R0		;
+		sec				;
+		rolb	R0			;
+		bvc	rot0c			;
+		bcc	rot0c			;
+		cmp	#125125, R0		;
+		beq	tst162			;
+rot0c:		mov	#355, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the rotate mode 1 instructions. The data to be rotated
+; is in loc 0. R0 is used as the addressing register. The C-bit is loaded and
+; an rol is executed.;the results are checked by comparing the data results
+; and testing the C and V bits. This procedure is then repeated twice more
+; to test the byte rotates. First on byte 0, then on byte 1.
+;_____________________________________________________________________________
+;
+; Test 162 - test rotate instructions of mode 1
+;
+tst162:		inc	(R2)			;
+		cmp	#162, (R2)		;
+		bne	tst163-10		;
+		clr	R0			;
+		mov	#52525, (R0)		;
+		clc				;
+		rol	(R0)			;
+		bvc	rot1a			;
+		bcs	rot1a			;
+		cmp	@#0, #125252		;
+		beq	rot1b			;
+rot1a:		mov	#356, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rot1b:		sec				;
+		mov	#125252, (R0)		;
+		rolb	(R0)			;
+		bvc	rot1c			;
+		bcc	rot1c			;
+		cmp	#125125, @#0		;
+		beq	rot1d			;
+rot1c:		mov	#357, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rot1d:		mov	#125252, (R0)		;
+		clr	R0			;
+		inc	R0			;
+		sec				;
+		rolb	(R0)			;
+		bvc	rot1e			;
+		bcc	rot1e			;
+		cmp	#052652, @#0		;
+		beq	tst163			;
+rot1e:		mov	#360, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the rotate mode 2 instructions. The same procedure as
+; in the other rotate tests are used. R0 is used as the addressing register.
+; and is checked for proper increamenting. Byte instructions are also checked.
+;_____________________________________________________________________________
+;
+; Test 163 - test rotate instructions of mode 2
+;
+tst163:		inc	(R2)			;
+		cmp	#163, (R2)		;
+		bne	tst164-10		;
+		clr	R0			;
+		mov	#173737, (R0)		;
+		clc				;
+		rol	(R0)+			;
+		bcc	rot2a			;
+		cmp	#167676, @#0		;
+		bne	rot2a			;
+		dec	R0			;
+		dec	R0			;
+		beq	rot2b			;
+rot2a:		mov	#361, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rot2b:		clr	R0			;
+		mov	#4040, (R0)		;
+		clc				;
+		rolb	(R0)+			;
+		bcs	rot2c			;
+		cmp	#4100, @#0		;
+		bne	rot2c			;
+		dec	R0			;
+		beq	rot2d			;
+rot2c:		mov	#362, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rot2d:		clr	R0			;
+		mov	#4040, (R0)		;
+		inc	R0			;
+		sec				;
+		rolb	(R0)+			;
+		bcs	rot2e			;
+		cmp	#10440, @#0		;
+		bne	rot2e			;
+		dec	R0			;
+		dec	R0 			;
+		beq	tst164			;
+rot2e:		mov	#363, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 rotate instructions. This test uses the same
+; procedures as in the other rotate tests. The data i sstored in loc. 0 and is
+; addressed using mode 37. Byte addressing is also checked for even and odd
+; bytes.
+;_____________________________________________________________________________
+;
+; Test 164 - test rotate instructions with mode 3
+;
+tst164:		inc	(R2)			;
+		cmp	#164, (R2)		;
+		bne	tst165-10		;
+		mov	#52525, @#0		;
+		sec				;
+		rol	@#0			;
+		bcs	rot3a			;
+		cmp	#125253, @#0		;
+		beq	rot3b			;
+rot3a:		mov	#364, -(R2)		;
+		inc 	-(R2)			;
+		halt				;
+						;
+rot3b:		mov	#125252, @#0		;
+		clc				;
+		rolb	@#0			;
+		bcc	rot3c			;
+		cmp	@#0, #125124		;
+		beq	rot3d			;
+rot3c:		mov	#365, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rot3d:		mov	#125252, @#0		;
+		sec				;
+		rolb	@#1			;
+		bcc	rot3e			;
+		cmp	#052652, @#0		;
+		beq	tst165			;
+rot3e:		mov	#366, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 4 rotate instructions. The data is stored in loc. 0.
+; R0 is set to 2 and the carry is set. An rol mode 4 is used to rotate loc. 0
+; using R0. The data is checked, and the C and V bits are tested. The proper
+; decrementing of R0 is verified.
+;_____________________________________________________________________________
+;
+; Test 165 - test mode 4 with rotate instructions
+;
+tst165:		inc	(R2)			;
+		cmp	#165, (R2)		;
+		bne	tst166-10		;
+		mov	#070707, @#0		;
+		mov	#2, R0			;
+		sec				;
+		rol	-(R0)			;
+		bcs	rot4			;
+		cmp	#161617, @#0		;
+		bne	rot4			;
+		tst	R0			;
+		beq	tst166			;
+rot4:		mov	#367, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 5 rotate instructions. The data is stored in a work
+; location (rotx) at the end of the rtest code. Loc. 0 is loaded with the address
+; of the data (rotx). R0 is set to 2. The carry is cleared and a mode 5 rol is
+; executed  using R0 as an addressing register. The data is checked, the C and V
+; bits tested, and R0 checked for proper decrementing.
+;_____________________________________________________________________________
+;
+; Test 166 - test mode 5 with rotate instructions
+;
+tst166:		inc	(R2)			;
+		cmp	#166, (R2)		;
+		bne	rot5			;
+		mov	#rotx, @#0		;
+		mov	#2, R0			;
+		mov	#107070, rotx		;
+		clc				;
+		rol	@-(R0)			;
+		bcc	rot5			;
+		cmp	#016160, @#rotx		;
+		bne	rot5			;
+		tst	R0			;
+		beq	tst167			;
+rot5:		mov	#370, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rotx:		.word	0			;
+;_____________________________________________________________________________
+;
+; This test verifies mode 6 rotate instructions. It uses the same procedure as
+; the above test except the rotate instruction uses mode 6 addressing with
+; register 7. The data is still operated on in loc. rotx (see previous test).
+;_____________________________________________________________________________
+;
+; Test 167 - test mode 6 with rotate instructions
+;
+tst167:		inc	(R2)			;
+		cmp	#167, (R2)		;
+		bne	tst170-10		;
+		mov	#125252, @#rotx		;
+		sec				;
+		rol	rotx			;
+		bcc	rot6			;
+		cmp	#52525, @#rotx		;
+		beq	tst170			;
+rot6:		mov	#371, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 7 rotate instructions. The data is set in loc. rotx,
+; (see previous test). the rol instruction addresses it indirectly using
+; mode 7 and indirect address location (rotxad) following the test code.
+;_____________________________________________________________________________
+;
+; Test 170 - test mode 7 with rotate instructions
+;
+tst170:		inc	(R2)			;
+		cmp	#170, (R2)		;
+		bne	rot7			;
+		mov	#52525, @#rotx		;
+		mov	#rotx, @#rotxad		;
+		clc				;
+		rol	@rotxad			;
+		bcs	rot7			;
+		cmp	@#rotx, #125252		;
+		beq	tst171			;
+rot7:		mov	#372, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rotxad:		.word	0			;
+;_____________________________________________________________________________
+;
+; This test verifies mode 0 swab instruction. R0 is set to 177400. A swab
+; mode 0 is executed and the conditional branch is used to check the sign of
+; the result. Also, a comparison is made to cjeck the data results.
+;_____________________________________________________________________________
+;
+; Test 171 - test mode 0 with swab instructions
+;
+tst171:		inc	(R2)			;
+		cmp	#171, (R2)		;
+		bne	tst172-10		;
+		mov	#177400, R0		;
+		swab	R0			; try swab mode 0
+		bmi	sb0			;
+		mov	#373, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb0:		cmp	#377, R0		;
+		beq	tst172			;
+		mov	#374, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 1 swab instruction. the test pattern is moved to
+; loc 0. R0 is cleared and used as the addressing register in the mode 1 swab.
+; The data results are checked with a compare.
+;_____________________________________________________________________________
+;
+; Test 172 - test mode 1 with swab instructions
+;
+tst172:		inc	(R2)			;
+		cmp	#172, (R2)		;
+		bne	tst173-10		;
+		mov	#125652, @#0		;
+		clr	R0			;
+		swab	(R0)			;
+		cmp	#125253, @#0		;
+		beq	tst173			;
+		mov	#375, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 2 swab instruction. The test pattern is moved to
+; loc 0. R0 is cleared and used as the mode 2 addressing register. The results
+; are checked with a compare. R0 is checked for proper decrementing.
+;_____________________________________________________________________________
+;
+; Test 173 - test mode 2 with swab instructions
+;
+tst173:		inc	(R2)			;
+		cmp	#173, (R2)		;
+		bne	tst174-10		;
+		mov	#125152, @#0		;
+		clr	R0			;
+		swab	(R0)+			;
+		cmp	#65252, @#0		;
+		beq	sb2 			;
+		mov	#376, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb2:		sub	#2, R0			;
+		beq	tst174			;
+		mov	#377, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 3 swab instruction. The test pattern is moved to
+; loc 0. a mode 3 swab instruction is executed using PC as the addressing
+; register. A compare verifies the data results.
+;_____________________________________________________________________________
+;
+; Test 174 - test mode 3 with swab instructions
+;
+tst174:		inc	(R2)		 	;
+		cmp	#174, (R2)		;
+		bne	tst175-10		;
+		mov	#377, @#0		;
+		swab	@#0			;
+		cmp	#177400, @#0		;
+		beq	tst175			;
+		mov	#400, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 4 swab instructions. The data is moved to loc 0.
+; R0 is set to 2 and used as the mode 4 addressing register. The data is
+; checked with a compare and R0 is checked for proper decrementing.
+;_____________________________________________________________________________
+;
+; Test 175 - test mode 4 with swab instructions
+;
+tst175:		inc	(R2)			;
+		cmp	#175, (R2)		;
+		bne	tst176-10		;
+		mov	#125652, @#0		;
+		mov	#2, R0			;
+		swab	-(R0)			;
+		cmp	#125253, @#0		;
+		beq	sb4			;
+		mov	#401, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb4:		tst	R0			;
+		beq	tst176			;
+		mov	#402, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies mode 5 swab instructions. The test uses two locations
+; following the test code. sb5x holds the data, sb5xad is a pointer to the
+; data location. The data is moved to loc sb5x and R0 is set to two plus the
+; address of sb5xad. Following the mode 5 swab sb5x is checked for the proper
+; data. R0 is checked to see that it was decremented properly.
+;_____________________________________________________________________________
+;
+; Test 176 - test mode 5 with swab instructions
+;
+tst176:		inc	(R2)			;
+		cmp	#176, (R2)		;
+		bne	sb5			;
+		mov	#sb5xad+2, R0		;
+		mov	#125125, sb5x		;
+		swab	@-(R0)			;
+		cmp	#52652, sb5x		;
+		beq	sb5a			;
+		mov	#403, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb5a:		cmp	R0, #sb5xad		;
+		beq	tst177			;
+sb5:		mov	#404, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb5x:		.word	0			;
+sb5xad:		.word	sb5x			;
+;_____________________________________________________________________________
+;
+; This test verifies mode 6 swab instruction. This test uses a work location
+; (sb6x) following the test code. Test data is loaded in to the work location.
+; R0, the addressing register is loaded with 6 less then the address of the
+; work location. The mode 6 swab is executed with a+6 offset. The data is
+; verrified with compare.
+;_____________________________________________________________________________
+;
+; Test 177 - test mode 6 with swab instructions
+;
+tst177:		inc	(R2)			;
+		cmp	#177, (R2)		;
+		bne	sb6			;
+		mov	#125125, sb6x		;
+		mov	#sb6x-6, R0		;
+		swab	6(R0)			;
+		cmp	#52652, 6(R0)		;
+		beq	tst200			;
+sb6:		mov	#405, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb6x:		.word	0			;
+;_____________________________________________________________________________
+;
+; This test verifies mode 7 swab instruction. This test uses two locations
+; following the test code: a work location (sb7x) and a pointer to the work
+; location (sb7xad). Data is moved to the work location. R0 is loaded with
+; 72 less than the address of the address pointer. The data is swab'ed using
+; a mode 7 instruction with an offset of +72. The data is verified with a
+; compare.
+;_____________________________________________________________________________
+;
+; Test 200 - test mode 7 w/ swab inst.
+;
+tst200:		inc	(R2)			;
+		cmp	#200, (R2)		;
+		bne	sb7			;
+		mov	#177400, sb7x		; move pattern to work location
+		mov	#sb7xad-72, R0		; move offset pointer to R0
+		swab	@72(R0)			; try swab mode 7
+		cmp	@72(R0), #377		; check results
+		beq tst201                      ;
+sb7:		mov	#406, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sb7x:		.word	0			; work location
+sb7xad:		.word	sb7x			; pointer to work location
+;_____________________________________________________________________________
+;
+; This test verifies all legal modes of the jmp instruction. Because of the
+; nature of the instruction under test, this test utilizes several different
+; techniques. The code is not executed in a linear fashion. The different modes
+; are executed in order from 1-7. However, the code is arranged so that control
+; leap frogs thru the test code. The order of appearance of the code is:
+;	jmp mode 1
+;	jmp mode 3
+;	jmp mode 2
+;	jmp mode 4
+;	jmp mode 6
+;	jmp mode 5
+;	jmp mode 7
+;
+; An internal sequence test (jmpseq) is used to insure that the jumps are
+; occurring in the programmed sequence. The test is made up of several blocks
+; of code. Eeach code begins with a label which indicates the mode being executed
+; in that block. A simple procedure is followed in each block. For example the
+; code beginning at jmp3 will first compare the results of the previous mode 2
+; jump. (any register changes are verified and the sequence check is made). Then
+; the registers are setup for a mode 3 jump to the next test block (here, jmp4),
+; the sequence checker is updated and the jump is executed.
+;
+; If a failure occurs, the sequence checker will assist in determining just which
+; mode failed. If the sequence is correct then the error detected was a mode
+; failure (e.g. failure of the register to be incremented in mode 2 jump.)
+;_____________________________________________________________________________
+;
+; Test 201 - test the jmp instruction in all modes
+;
+tst201:		inc	(R2)			;
+		cmp	#201, (R2)		;
+		bne	jmpck+6			;
+		clr	jmpseq			; establish a sequence checker
+		mov	#jmp2, R0		; set R0=jump target
+		jmp	(R0)			; try jmp mode 1
+jmp3:		cmp	#.+2, R0		; check result of mode  2 jump
+		beq	jmp3a			;
+		mov	#407, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp3a:		cmp	jmpseq, #1		; make sure jmps are in	sequence: jmpseq=1?
+		beq	jmp3b			;
+		mov	#410, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp3b:		mov	#ijmp4, R0		; point R0 to indirect jmp addr.
+		inc	jmpseq			; update sequence  checker
+		jmp	@(R0)+			; try jmp mode 3
+ijmp4:		jmp4				; address indirect jump
+jmp2:		tst	jmpseq			; check that jmps  are in sequence: jmpseq=0?
+		beq	jmp2a			;
+		mov	#411, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp2a:		inc	jmpseq			; update sequence checker
+		mov	#jmp3, R0	 	; set R0=jump target
+		.word	000120			; jmp	(R0)+
+jmp4:		cmp	#ijmp4+2, R0		; check result of register in mode 3 jump
+		beq	jmp4a			;
+		mov	#412, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp4a:		cmp	#2, jmpseq		; check jump sequence: jmpseq=2?
+		beq	jmp4b 			;
+		mov	#413, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp4b:		mov	#jmp5+2, R0		; set up pointer to jump target
+		inc	jmpseq			; update sequence checker
+		jmp	-(R0)			; try jump mode 4 to "jmp4"
+jmp6:		cmp	#4, jmpseq		; check that jumps are in sequence: jmpseq=4?
+		beq	jmp6a			;
+		mov	#414, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp6a:		mov	#jmp7+376, R0		; set up offset pointer to jump target
+		inc	jmpseq			; update jump sequence
+		jmp	-376(R0)		; try mode 6 jump
+jmp5:		cmp	#3, jmpseq		; check that jumps are in sequence:  jmpseq=3?
+		beq	jmp5a			;
+		mov	#415, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp5a:		mov	#ijmp5+2, R0		; set up pointer to indirect jump addr.
+		inc	jmpseq			; update jump sequence
+		jmp	@-(R0)			; try jump mode 5 to "jmp6"
+ijmp5:		.word	jmp6			; indirect address pointer
+jmp7:		cmp	#5, jmpseq		; check jumps in sequence: jmpseq=5?
+		beq	jmp7a			;
+		mov	#416, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmp7a:		mov	#ijmp+10, R0		; set up offset pointer to indirect addr.
+		inc	jmpseq			; update jump sequence
+		jmp	@-10(R0)		; try mode 7 jump
+ijmp:		.word	jmpck			; indirect address
+jmpck:		cmp	jmpseq, #6		; check jumps in sequence:  jmpseq
+		beq	tst202			;
+		mov	#417, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jmpseq:		.word	0			;
+;_____________________________________________________________________________
+;
+; This test verifies all legal modes of the jsr instruction. The concept of
+; leap frogging and sequence checking (jsrseq) is identical to that used in
+; jmp test (see previous test). Each block of code verifies the previous jsr
+; by checking the sequence, checking that the PC was saved in the specified
+; register, checking that the SP was decremented, checking that the register
+; was saved on the stack, and finally checking that any mode address register
+; alterations (e.g. increment register in mode 2) were successful. R1 is used
+; as the register in all jsr instructions.
+;
+; If a failure occurs, the sequence checker will assist in determining just
+; which	mode failed. If	the sequence is	correct then the error detected was
+; a functional failure (e.g., incorrect register saved).
+;_____________________________________________________________________________
+;
+; Test 202 - test jsr instruction w/ all modes
+;
+tst202:		inc	(R2)			;
+		cmp	#202, (R2)		;
+		bne	jsr0			;
+		br	jsr1			;
+jsr0:		jmp	@#jsrck1		;
+jsr1:		mov	#stbot, SP		; set stack pointer
+		mov	#jsr2, R0		; set target address
+		clr	@#jsrseq		; initialize sequence checker
+		clr	R1			; initialize R1
+		com	R1			;
+		jsr	R1, (R0)		; try jsr mode 1
+jsr1a:          mov	#420, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr3:		cmp	#1, @#jsrseq		; check sequence: jsrseq=1?
+		bne	jsr3a			; branch if out of sequence
+		cmp	R1, #jsr4		; proper PC saved?
+		bne	jsr3a			; branch if PC wrong
+		cmp	#stbot-2,SP		; stack pointer decremented?
+		bne	jsr3a			; branch if SP wrong
+		cmp	#125252, (SP)		; reg saved on stack?
+		bne	jsr3a			; branch if reg. not saved
+		cmp	#jsr3+2, R0		; mode 2 increment correct?
+		beq	jsr3b			;
+jsr3a:		mov	#421, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr3b:		inc	@#jsrseq		; update sequence checker
+		jsr	R1, @#jsr4		; try jsr mode 4
+						;
+jsr2:		tst	@#jsrseq		; check sequence: jsrseq=0?
+		bne	jsr2a			; branch if out of sequence
+		cmp	R1, #jsr1a		; proper PC saved?
+		bne	jsr2a			; branch if PC wrong
+		cmp	#stbot-2, SP		; SP decrement?
+		bne	jsr2a			; branch if SP is incorrect
+		cmp	(SP), #-1		; register saved?
+		beq	jsr2b			;
+jsr2a:		mov	#422, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr2b:		mov	#stbot, SP		; initialize SP
+		mov	#125252, R1		; initialize R1
+		inc	@#jsrseq		; update sequence checker
+		mov	#jsr3, R0		; set target  address
+		.word	004120			; jsr	R1, (R0)+
+						;
+jsr4:		cmp	#2, @#jsrseq		; check sequence: jsrseq=2?
+		bne	jsr4a			; branch if out of sequence
+		cmp	#jsr2, R1		; proper PC saved?
+		beq	jsr4b			;
+jsr4a:		mov	#423, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr4b:		inc	@#jsrseq		; update sequence checker
+		mov	#jsr5+2, R0		; set target address
+		jsr	R1, -(R0)		; try jsr mode 4
+jsr6:		cmp	#4, jsrseq		; check sequence: jsrseq=4?
+		bne	jsr6a			; branch if out of sequence
+		cmp	#jsr7, R1		; proper PC saved?
+		bne	jsr6a			; branch if PC wrong
+		cmp	#jsr6ad, R0		; mode 5 register correct?
+		beq	jsr6b			;
+jsr6a:		mov	#424, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr6b:		inc	@#jsrseq		; update sequence checker
+		jsr	R1, jsr7		; try jsr mode 6
+jsr5:		cmp	#3, jsrseq 		; check sequence: jsrseq=3?
+		bne	jsr5a			; branch if out of sequence
+		cmp	#jsr6, R1		; proper PC saved?
+		bne	jsr5a			;
+		cmp	#jsr5, R0		; check mode 4 register
+		beq	jsr5b			;
+jsr5a:		mov	#425, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr5b:		inc	@#jsrseq		; update sequence checker
+		mov	#jsr6ad+2, R0		; point	R0 to target address
+		jsr	R1, @-(R0)		; try jsr mode 5
+jsr7:		cmp	#5, @#jsrseq		;
+		bne	jsr7a			;
+		cmp	#jsr5, R1		; proper PC saved?
+		beq	jsr7b			;
+jsr7a:		mov	#426, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+jsr7b:		inc	@#jsrseq		; update sequence checker
+		jsr	R1, @jsrckad		; try jsr mode 7
+jsr6ad:		.word	jsr6			; mode 5 target address
+jsrckad:	.word	jsrck			; mode 7 target address
+jsrseq:		.word	0			; sequence checker
+jsrck:		cmp	#6, jsrseq 		; check sequence: jsrseqs6?
+		bne	jsrck1			; branch if out of sequence
+		cmp 	#jsr6ad, R1		; proper PC saved?
+		beq	tst203			;
+jsrck1:		mov	#427, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the rts instruction. The stack pointer is initialized
+; and a test pattern stored on stack. R0 is loaded with return address. An rts
+; is executed, and, at the target address, a check is made that ro was properly
+; restored from the stack.
+;_____________________________________________________________________________
+;
+; Test 203 - test rts instruction
+;
+tst203:		inc	(R2)			;
+		cmp	#203,(R2)		;
+		bne tst204-10			;
+		mov	#stbot,SP		;
+		mov	#52525,-(SP)		;
+		mov	#rts1,R0		;
+		rts	R0			;
+		mov	#430, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rts1:		cmp	#52525, R0		;
+		beq	tst204			;
+		mov	#431, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next four tests verify the functioning of a group of four instructions.
+; The group consists of the instructions: ;mov, bic, bit, and bis. These
+; instructions are similar in the way they effect the c and v bits. They all
+; leave the V-bit clear and the C-bit unaffected.
+;
+; The test procedure is as follows: the N, Z, and V bits are loaded with the
+; complement of the expected results, the C-bit is loaded with the desired
+; result. the instruction is executed with different data patterns and the
+; results are verified with a series of conditional branch instructions.
+; The data is chosen to product all possible combinations of the C and V bits.
+;_____________________________________________________________________________
+;
+; Test 204 - test mov instruction
+;
+tst204:		inc	(R2)			;
+		cmp	#204, (R2)		;
+		bne	tst205-10		;
+		scc				;
+		+cln!clc			;
+		mov	#100000, R0		;
+		blos	mov1			;
+		bvs	mov1			;
+		bmi	mov2			;
+mov1:		mov	#432, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mov2:		scc				;
+		clz				;
+		mov	#0, R0			;
+		bhi	mov3			;
+		bvs	mov3			;
+		bpl	tst205			;
+mov3:		mov	#433, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 205 - test bit instruction
+;
+tst205:		inc	(R2)			;
+		cmp	#205, (R2)		;
+		bne	tst206-10		;
+		mov	#100001, R0		;
+		scc				;
+		+cln!clc			;
+		bit	#100000, R0		;
+		blos	bit1			;
+		bvs	bit1			;
+		bmi	bit2			;
+bit1:		mov	#434, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+bit2:		scc				;
+		clz				;
+		bit	#77776, R0		;
+		bhi	bit3			;
+		bvs	bit3			;
+		bpl	tst206			;
+bit3:		mov	#435, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 206 - test bic instruction
+;
+tst206:		inc	(R2)			;
+		cmp	#206, (R2)		;
+		bne	tst207-10		;
+		mov	#177777, R0		;
+		scc				;
+		+cln!clc			;
+		bic	#77777, R0		;
+		blos	bic1			;
+		bvs	bic1			;
+		bmi	bic2			;
+bic1:		mov	#436, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+bic2:		scc				;
+		clz				;
+		bic	#100000, R0		;
+		bhi	bic3			;
+		bvs	bic3			;
+		bpl	tst207			;
+bic3:		mov	#437, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 207 - test bis instruction
+;
+tst207:		inc	(R2)			;
+		cmp	#207, (R2)		;
+		bne	tst210-10		;
+		clr	R0			;
+		scc				;
+		+cln!clc			;
+		bis	#0, R0			;
+		bcs	bis1			;
+		bvs	bis1			;
+		bmi	bis1			;
+		beq	bis2			;
+bis1:		mov	#440, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+bis2:		scc				;
+		cln				;
+		bis	#177777, R0		;
+		bcc	bis3			;
+		bvs	bis3			;
+		beq	bis3			;
+		bmi	tst210			;
+bis3:		mov	#441, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next two tests verify the functioning of the inc and dec instructions.
+; These instructions both effect the C and V bits the same, the C-bit is left
+; unchanged and	the V-bit is dependent upon the data results. The same procedure
+; is used. the condition code bits are initialized, the	instruction is executed
+; and the results are verified with a series of conditional branch instructions.
+; This procedure is repeated with several data patterns to produce different
+; combinations of the C and V bits.
+;_____________________________________________________________________________
+;
+; Test 210 - test inc instruction
+;
+tst210:		inc	(R2)			;
+		cmp	#210, (R2)		;
+		bne	tst211-10		;
+		mov	#077777,R0		;
+		ccc				;
+		sez				;
+		inc	R0			;
+		blos	inc1			;
+		bpl	inc1			;
+		bvs	inc2			;
+inc1:		mov	#442, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+inc2:		bis	#77777, R0		;
+		sec				;
+		clz				;
+		inc	R0			;
+		bmi	inc3			;
+		bvs	inc3			;
+		bcc	inc3			;
+		beq	inc4			;
+inc3:		mov	#443, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+inc4:		scc				;
+		clc				;
+		inc	R0			;
+		blos	inc5			;
+		bmi	inc5			;
+		bpl	tst211			;
+inc5:		mov	#444, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 211 - test dec instruction
+;
+tst211:		inc	(R2)			;
+		cmp	#211, (R2)		;
+		bne	tst212-10		;
+		mov	#2, R0			;
+		scc				;
+		dec	R0			;
+		bmi	dec1			;
+		beq	dec1			;
+		bvs	dec1			;
+		bcs	dec2			;
+dec1:		mov	#445, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dec2:		sec				;
+		clz				;
+		dec	R0			;
+		bhi	dec3			;
+		bmi	dec3			;
+		bvc	dec4			;
+dec3:		mov	#446, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dec4:		scc				;
+		+cln!clc			;
+		dec	R0			;
+		blos	dec5			;
+		bvs	dec5			;
+		bmi	dec6			;
+dec5:		mov	#447, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+dec6:		bic	#77777, R0		;
+		scc				;
+		+cln!clv			;
+		dec	R0			;
+		bmi	dec7			;
+		beq	dec7            	;
+		bvc	dec7			;
+		bcs	tst212			;
+dec7:		mov	#450, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next three tests verify the functioning of the clr, tst, and swab
+; instructions. These three instructions all leave the C and V bits cleared.
+; Again, the condition	codes are preset, The instruction executed and the
+; results checked with conditional branch instructions. The procedure is
+; repeated to produce other combinations of condition codes.
+;_____________________________________________________________________________
+;
+; Test 212 - test clr instruction
+;
+tst212:		inc	(R2)			;
+		cmp	#212,(R2)		;
+		bne	tst213-10		;
+		scc				;
+		clz				;
+		clr	R0			;
+		bmi	clr1			;
+		bvs	clr1			;
+		bcs	clr1			;
+		beq	tst213			;
+clr1:		mov	#451, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 213 - test tst instruction
+;
+tst213:		inc	(R2)			;
+		cmp	#213, (R2)		;
+		bne	tst214-10		;
+		scc				;
+		clz				;
+		tst	R0			;
+		bmi	test1			;
+		bvs	test1			;
+		bcs	test1			;
+		beq	test2			;
+test1:		mov	#452, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+test2:		dec	R0			;
+		scc				;
+		cln				;
+		tst	R0			;
+		blos	test3			;
+		bvs	test3			;
+		bmi	tst214			;
+test3:		mov	#453, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 214 - test swab instruction
+;
+tst214:		inc	(R2)			;
+		cmp	#214, (R2)		;
+		bne	tst215-10		;
+		mov	#170000, R0		;
+		scc				;
+		cln                     	;
+		swab	R0			;
+		blos	swb1			;
+		bvs	swb1			;
+		bmi	swb2			;
+swb1:		mov	#454, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+swb2:		scc				;
+		clz				;
+		swab	R0			;
+		bvs	swb3			;
+		bcs	swb3			;
+		bmi	swb3			;
+		beq	tst215			;
+swb3:		mov	#455, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next two tests verify the functioning of the add and adc instructions.
+; Both	of these instructions handle the C and V bits identically. The procedure
+; is to preset the condition codes, execute the instruction with a particular
+; set of data, and then check the results by executing a series of conditional
+; branches. These procedure is repeated several times with different data to
+; produce every combination of C and V bits.
+;_____________________________________________________________________________
+;
+; Test 215 - test add instruction
+;
+tst215:		inc	(R2)			;
+		cmp	#215, (R2)		;
+		bne	tst216-10		;
+		mov	#40000, R0		;
+		scc				;
+		add	#30000, R0		;
+		blos	add1			;
+		bvs	add1			;
+		bpl	add2			;
+add1:		mov	#456, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+add2:		sez				;
+		add	#10000, R0		;
+		blos	add3			;
+		bvc	add3			;
+		bmi	add4			;
+add3:		mov	#457, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+add4:		ccc				;
+		sen				;
+		add	#100000, R0		;
+		bhi	add5			;
+		bvc	add5			;
+		bpl	add6			;
+add5:		mov	#460, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+add6:		add	#177777, R0	 	;
+		blos	add7			;
+		bvs	add7			;
+		bmi	add8			;
+add7:		mov	#461, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+add8:		scc				;
+		+clc!clz			;
+		add	#1,R0			;
+		bvs	add9			;
+		bcc	add9			;
+		bmi	add9			;
+		beq	tst216			;
+add9:		mov	#462, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 216 - test adc instruction
+;
+tst216:		inc	(R2)			;
+		cmp	#216, (R2)		;
+		bne	tst217-10		;
+		mov	#077777, R0     	;
+		scc				;
+		+cln!clv                	;
+		adc	R0			;
+		blos	adc1			;
+		bvc	adc1			;
+		bmi	adc2			;
+adc1:		mov	#463, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+adc2:		bis	#77777, R0		;
+		scc				;
+		clz				;
+		adc	R0			;
+		bhi	adc3			;
+		bvs	adc3			;
+		bpl	adc4			;
+adc3:		mov	#464, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+adc4:		scc				;
+		+clz!clc			;
+		adc	R0			;
+		bvs	adc5			;
+		bcs	adc5			;
+		bmi	adc5			;
+		beq	tst217			;
+adc5:		mov	#465, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next three tests verify the functioning of the neg, cmp, and com
+; instructions. each of these instructions generate the C and V bits identically.
+; The condition codes are preset, the instructions executed, and the results
+; checked with a series of conditional branch instructions. This procedure is
+; repeated several times with different data in order to generate different
+; combinations of the C and V bits.
+;_____________________________________________________________________________
+;
+; Test 217 - test neg instruction
+;
+tst217:		inc	(R2)			;
+		cmp	#217, (R2)		;
+		bne	tst220-10		;
+		mov	#1, R0			;
+		scc				;
+		+cln!clc			;
+		neg	R0			;
+		bcc	neg1			;
+		bvs	neg1			;
+		beq	neg1			;
+		bmi	neg2			;
+neg1:		mov	#466, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg2:		bic	#77777, R0		;
+		ccc				;
+		sez				;
+		neg	R0			;
+		bvc	neg3			;
+		bcc	neg3			;
+		beq	neg3			;
+		bmi	neg4			;
+neg3:		mov	#467, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+neg4:		clr	R0			;
+		scc				;
+		clz				;
+		neg	R0			;
+		bvs	neg5			;
+		bcs	neg5			;
+		bne	neg5			;
+		bpl	tst220			;
+neg5:		mov	#470, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 220 - test cmp instruction
+;
+tst220:		inc	(R2)			;
+		cmp	#220, (R2)		;
+		bne	tst221-10		;
+		mov	#5, R0                  ;
+		ccc				;
+		+sen!sec                	;
+		cmp	#5, R0			;
+		bhi	cmp1            	;
+		bvs	cmp1			;
+		bpl	cmp2			;
+cmp1:		mov	#471, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+cmp2:		mov	#100000, R0		;
+		scc				;
+		clv				;
+		cmp	R0, #77777		;
+		blos	cmp3			;
+		bvc	cmp3			;
+		bpl	cmp4			;
+cmp3:		mov	#472, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+cmp4:		bis	#40000, R0		;
+		ccc				;
+		sez				;
+		cmp	#40000,R0	 	;
+		bvc	cmp5			;
+		bcc	cmp5			;
+		beq	cmp5			;
+		bmi	cmp6			;
+cmp5:		mov	#473, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+cmp6:		bic	#40000, R0		;
+		scc				;
+		cmp	#-1, R0			;
+		blos	cmp7			;
+		bvs	cmp7			;
+		bpl	tst221			;
+cmp7:		mov	#474, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 221 - test com instruction
+;
+tst221:		inc	(R2)			;
+		cmp	#221, (R2)		;
+		bne	tst222-10		;
+		mov	#-1, R0			;
+		ccc				;
+		+sec!sez			;
+		com	R0			;
+		bhi	com1			;
+		bvs	com1			;
+		bpl	tst222			;
+com1:		mov	#475, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+;_____________________________________________________________________________
+;
+; These next two tests verify the functioning of the sub and sbc instructions.
+; Both of these instructions handle the C and V bits identically. The procedure
+; is to preset the condition codes, execute the instruction with a particular
+; set of data, and then check the results by executing a series of conditional
+; branches. This procedure is repeated several times with different data
+; patterns to provide every combination of the C and V bits.
+;_____________________________________________________________________________
+;
+; Test 222 - test sub instruction
+;
+tst222:		inc	(R2)			;
+		cmp	#222, (R2)		;
+		bne	tst223-10		;
+		mov	#125252, R0		;
+		ccc				;
+		+sen!sec                	;
+		sub	#125252, R0		;
+		bhi	sub1			;
+		bvs	sub1			;
+		bpl	sub2			;
+sub1:		mov	#476, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sub2:		bis	#100000, R0		;
+		scc				;
+		clv				;
+		sub	#77777, R0		;
+		blos	sub3			;
+		bvc	sub3			;
+		bpl	sub4			;
+sub3:		mov	#477, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sub4:		com	R0			;
+		scc				;
+		sub	#100000, R0		;
+		blos	sub5			;
+		bvs	sub5			;
+		bpl	sub6			;
+sub5:		mov	#500, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sub6:		ccc				;
+		sez				;
+		sub	#140000, R0		;
+		bvc	sub7			;
+		bcc	sub7			;
+		beq	sub7			;
+		bmi	tst223			;
+sub7:		mov	#501, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 223 - test sbc instruction
+;
+tst223:		inc	(R2)			;
+		cmp	#223, (R2)		;
+		bne	tst224-10		;
+		mov	#1, R0			;
+		scc				;
+		clz                     	;
+		sbc	R0			;
+		bcs	sbc1			;
+		bvs	sbc1			;
+		bmi	sbc1			;
+		beq	sbc2			;
+sbc1:		mov	#502, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sbc2:		scc				;
+		+clz!clc			;
+		sbc	R0			;
+		bcs	sbc3			;
+		bvs	sbc3			;
+		bmi	sbc3			;
+		beq	sbc4			;
+sbc3:		mov	#503, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sbc4:		scc				;
+		cln				;
+		sbc	R0			;
+		bcc	sbc5			;
+		bvs	sbc5			;
+		beq	sbc5			;
+		bmi	sbc6			;
+sbc5:		mov	#504, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sbc6:		bic	#77777, R0		;
+		scc				;
+		clv				;
+		sbc	R0			;
+		blos	sbc7			;
+		bvc	sbc7			;
+		bpl	tst224			;
+sbc7:		mov	#505, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next four tests verify the functioning of the rol, ror, asl and asr
+; instructions.	Special	data patterns are loaded and rotated several times for
+; each test. The condition codes are preset before each rotation and the
+; condition codes are checked after each rotation. The final check in each
+; test is to verify the commulative data result. The data patterns have
+; been selected to produce all combinations of the C and V bits.
+;_____________________________________________________________________________
+;
+; Test 224 - test rol instruction
+;
+tst224:		inc	(R2)			;
+		cmp	#224, (R2)	 	;
+		bne	tst225-10	 	;
+		mov	#144000, R0	 	;
+		ccc			 	;
+		+sez!sev			;
+		rol	R0			;
+		bcc	rol1			;
+		bvs	rol1			;
+		beq	rol1			;
+		bmi	rol2			;
+rol1:		mov	#506, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rol2:		scc				;
+		+clv!clc			;
+		rol	R0			;
+		bcc	rol3			;
+		bvc	rol3			;
+		beq	rol3			;
+		bpl	rol4			;
+rol3:		mov	#507, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rol4:		scc				;
+		cln				;
+		rol	R0			;
+		blos	rol5			;
+		bvs	rol5			;
+		bpl	rol6			;
+rol5:		mov	#510, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+rol6:		ccc				;
+		+sez!sec			;
+		rol	R0			;
+		blos	rol7			;
+		bvc	rol7			;
+		bpl	rol7			;
+		cmp	#100003, R0		;
+		beq	tst225			;
+rol7:		mov	#511, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 225 - test ror instruction
+;
+tst225:		inc	(R2)			;
+		cmp	#225, (R2)		;
+		bne	tst226-10		;
+		mov	#23, R0			;
+		scc				;
+		cln                     	;
+		ror	R0			;
+		bvs	ror1			;
+		bcc	ror1			;
+		beq	ror1			;
+		bmi	ror2			;
+ror1:		mov	#512, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+ror2:		ccc				;
+		+sen!sez			;
+		ror	R0			;
+		bvc	ror3			;
+		bcc	ror3			;
+		beq	ror3			;
+		bpl	ror4			;
+ror3:		mov	#513, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+ror4:		scc				;
+		clc				;
+		ror	R0			;
+		blos	ror5			;
+		bvs	ror5			;
+		beq	ror5			;
+		bpl	ror6			;
+ror5:		mov	#514, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+ror6:		ccc				;
+		+sec!sez			;
+		ror	R0			;
+		blos	ror7			;
+		bvc	ror7			;
+		bmi	tst226			;
+ror7:		mov	#515, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 226 - test asl instruction
+;
+tst226:		inc	(R2)			;
+		cmp	#226, (R2)		;
+		bne	tst227-10		;
+		mov	#144000,R0		;
+		ccc				;
+		+sen!sec			;
+		asl	 R0			;
+		bcc	 asl1			;
+		bvs	 asl1			;
+		beq	 asl1			;
+		bmi	 asl2			;
+asl1:		mov	#516, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+asl2:		scc				;
+		+clv!clc			;
+		asl	R0			;
+		bcc	asl3    		;
+		bvc	asl3			;
+		beq	asl3			;
+		bpl	asl4			;
+asl3:		mov	#517, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+asl4:		scc				;
+		cln				;
+		asl	R0			;
+		blos	asl5			;
+		bvs	asl5			;
+		bpl	asl6			;
+asl5:		mov	#520, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+asl6:		ccc				;
+		+sez!sec			;
+		asl	R0			;
+		bcs	asl7			;
+		beq	asl7			;
+		bvc	asl7			;
+		bpl	asl7			;
+		cmp	#100000, R0		;
+		beq	tst227			;
+asl7:		mov	#521, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 227 - test asr instruction
+;
+tst227:		inc	(R2)			;
+		cmp	#227, (R2)		;
+		bne	tst230-10		;
+		mov	#100023, R0		;
+		scc				;
+		cln				;
+		asr	R0			;
+		bvs	asr1			;
+		bcc	asr1			;
+		beq	asr1			;
+		bmi	asr2			;
+asr1:		mov	#522, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+asr2:		bic	#100000, R0		;
+		scc				;
+		+clv!clc			;
+		asr	R0			;
+		bvc	asr3			;
+		bcc	asr3			;
+		beq	asr3			;
+		bpl	asr4			;
+asr3:		mov	#523, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+asr4:		scc				;
+		asr	R0			;
+		blos	asr5			;
+		bvs	asr5			;
+		beq	asr5			;
+		bpl	asr6			;
+asr5:		mov	#524, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+asr6:		bis	#100000, R0		;
+		ccc				;
+		+sez!sec			;
+		asr	R0			;
+		blos	asr7			;
+		bvc	asr7			;
+		bpl	asr7			;
+		beq	asr7			;
+		cmp	#144001, R0		;
+		beq	tst230			;
+asr7:		mov	#525, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the sxt instruction. Condition codes are preset in each
+; of the two possible cases. With the N-bit set, the test checks for all ones
+; in the destination. with the N-bit clear, The destination should contain all
+; zeroes. The data is verified by conditional branches.
+;_____________________________________________________________________________
+;
+; Test 230 - test the sxt instruction
+;
+tst230:		inc	(R2)			;
+		cmp	#230, (R2)		;
+		bne	tst231-10		;
+		clr	R0			;
+		scc				;
+		clz				;
+		sxt	R0			; try sxt
+		bpl	sxt0			; test cc=1001
+		beq	sxt0			;
+		bvs	sxt0			;
+		bcc	sxt0			;
+		cmp	#-1, R0			; check data result
+		beq	sxt1			;
+sxt0:		mov	#526, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sxt1:		clr	R0			;
+		clr	(R0)			;
+		com	(R0)			;
+		ccc				;
+		+sez!sev			;
+		sxt	(R0)			;
+		bne	sxt2			;
+		bcs	sxt2			;
+		bvs	sxt2			;
+		bmi	sxt2			;
+		tst	(R0)			;
+		beq	tst231			;
+sxt2:		mov	#527, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the xor instruction. Unique patterns of ones and zeroes
+; are moved to data registers R0 and R1. After the first xor instruction
+; R0=36146. An xor is then executed with this new value and the contents of R1
+; to reproduce the original value of R0=31525.
+;_____________________________________________________________________________
+;
+; Test 231 - test the xor instruction
+;
+tst231:		inc	(R2)			;
+		cmp	#231, (R2)		;
+		bne	tst232-10		;
+		mov	#7463, R0		;
+		mov	#31525, R1		;
+		scc				;
+		clc				;
+		xor	R1, R0			; try xor
+		blos	xor1			;
+		bvs	xor1			;
+		beq	xor1			;
+		bmi	xor1			;
+		cmp	#36146, R0		; data result correct?
+		beq	xor2			;
+xor1:		mov	#530, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+xor2:		mov	R1, R4			;
+		sec				;
+		clc				;
+		xor	R4, R0			;
+		blos	xor3			;
+		bvs	xor3			;
+		beq	xor3			;
+		bmi	xor3			;
+		cmp	#7463, R0		;
+		beq	tst232			;
+xor3:		mov	#531, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the sob instruction. R4 is used as a counter while R0 is
+; the address register. Conditional branches are used to verify proper transfer
+; of control while R4 is checked to insure proper decrementing of R0.
+;_____________________________________________________________________________
+;
+; Test 232 - test sob instruction
+;
+tst232:		inc	(R2)			;
+		cmp	#232, (R2)		;
+		bne	tst233-10		;
+		mov	#525, R0		;
+		mov	R0, R4			;
+		scc				;
+sob1:		bhi	sob2			;
+		bpl	sob2			;
+		bvs	sob3			;
+sob2:		mov	#532, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+sob3:		dec	R4			;
+		scc				;
+		sob	R0,sob1			;
+		bhi	sob4			;
+		bpl	sob4    		;
+		bvc	sob4			;
+		tst	R4			;
+		beq	tst233			;
+sob4:		mov	#533, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the mark instruction. The effects of the mark instruction
+; are simulated by the program instructions. The contents of R5 and the stack
+; pointer are checked after each of the two routines in the test.
+;_____________________________________________________________________________
+;
+; Test 233 - test mark instruction
+;
+tst233:		inc	(R2)			;
+		cmp	#233, (R2)		;
+		bne	tst234-10		;
+		mov	#stbot, SP		;
+		mov	#125252, -(SP)		; put R5 value on stack
+		sub	#74,SP			; effectively put 36 arguments on stack
+		mov	#mrk1, R5		; set new PC in	R5
+		mov	#6436, -(SP)		; put mark 36 inst. on stack
+		scc				; set cc=1111
+		jmp	@#400			; xfer contl to	mark 36	inst. on stack
+		mov	#534, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mrk1:		bhi	mrk2			; test cc unaffected
+		bpl	mrk2			;
+		bvc	mrk2			;
+		cmp	R5, #125252		; check R5 restored from stack
+		bne	mrk2			;
+		cmp	#stbot, SP		; check stack pointer readjusted correctly.
+		beq	mrk3			;
+mrk2:		mov	#535, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mrk3:		mov	#52525, -(SP)		;
+		mov	#6400, -(SP)		; put mark 0 inst. on stack
+		mov	SP,R5			; set addr. of mark inst. in R5
+		jsr	PC, @#mrk4		; do jsr
+		jmp	@#mrk5			;
+mrk4:		rts	R5			; do rts with R5 to mark inst  on stack
+		mov	#536, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mrk5:		cmp	#stbot, SP		; stack adjusted correctly
+		bne	mrk6			;
+		cmp	#52525, R5		; check if R5 restored from stack
+		beq	tst234			;
+mrk6:		mov	#537, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next seven tests verify the mtps instruction in all modes. The PSW is
+; defined by an equate statement before the first mtps test. In each test
+; a pattern of ones and zeroes is set in a data register and moved to the PSW.
+; The data in the PSW, and the data register address, are checked to verify
+; proper execution of the instruction.
+;_____________________________________________________________________________
+;
+; Test 234 - test mtps instruction
+;
+tst234:		inc	(R2)			;
+		cmp	#234, (R2)		;
+		bne	tst235-10		;
+		mov	#377, R0		;
+		ccc				;
+		mtps	R0			;
+		cmp	#357, ps		;
+		beq	mtps1			;
+		mov	#540, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps1:		clr	R0			;
+		clr	(R0)			;
+		scc				;
+		mtps	(R0)			; try mtps mode 1
+		bmi	mtps1a			; check ps
+		bvs	mtps1a			;
+		bcs	mtps1a			;
+		bne	tst235			;
+mtps1a:		mov	#541, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 235 - test mtps mode 2
+;
+tst235:		inc	(R2)			;
+		cmp	#235, (R2)		;
+		bne	tst236-10		;
+		clr	R0			;
+		mov	#-1, (R0)	 	;
+		clr	@#ps			;
+		mtps	(R0)+			;
+		cmp	#357, @#ps		;
+		beq	mtps2			;
+		mov	#542, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps2:		cmp	#1, R0			; check dest. register.
+		beq	tst236			;
+		mov	#543, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 236 - test mtps mode 3
+;
+tst236:		inc	(R2)			;
+		cmp	#236,(R2)		;
+		bne	tst237-10		;
+		mov	#402, R0		;
+		clr	(R0)			;
+		mov	#52652, @#0		;
+		clr	@#ps			;
+		mtps	@(R0)+			; try mtps w/mode 3
+		cmp	#252, @#ps		; check dest. data
+		beq	mtps3			;
+		mov	#544, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps3:		cmp	#404, R0		; check mode 3 register.
+		beq	tst237			;
+		mov	#545, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 237 - test mtps mode 4
+;
+tst237:		inc	(R2)			;
+		cmp	#237, (R2)		;
+		bne	tst240-10		;
+		mov	#1,R0			;
+		mov	#125125,@#0		;
+		clr	@#ps			; ps=0
+		mtps	-(R0)			; try mtps w/mode 4
+		cmp	#105, @#ps		; check dest.  data
+		beq	mtps4			;
+		mov	#546, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps4:		tst	R0			; check mode 4 register
+		beq	tst240			;
+		mov	#547, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 240 - test mtps mode 5
+;
+tst240:		inc	(R2)			;
+		cmp	#240, (R2)		;
+		bne	tst241-10		;
+		mov	#404, R0		;
+		mov	#177400, @#0		;
+		scc				;
+		mtps	@-(R0)			; try mtps w/mode 5
+		tst	@#ps			; check dest. data.
+		beq	mtps5			;
+		mov	#550, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps5:		cmp	#402, R0		; check mode 5 register
+		beq	tst241			;
+		mov	#551, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 241 - test mtps mode 6
+;
+tst241:		inc	(R2)			;
+		cmp	#241, (R2)		;
+		bne tst242-10			;
+		mov	#52652, @#0		;
+		mov	#406, R0		;
+		clr	@#ps			;
+		mtps	-406(R0)		; try mtps w/mode 6
+		cmp	#252, @#ps		; check dest. data
+		beq	mtps6			;
+		mov	#552, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps6:	 	cmp	#406, R0		; check mode 6 register
+		beq	tst242			;
+		mov	#553, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 242 - test mtps mode 7
+;
+tst242:		inc	(R2)			;
+		cmp	#242, (R2)		;
+		bne tst243-10			;
+		mov	#52652, @#0		;
+		mov	#410, R0		;
+		clr	@#ps			;
+		mtps	@-2(R0)			; try mtps w/mode 7
+		cmp	#105, @#ps		; check dest. data
+		beq	mtps7			;
+		mov	#554, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtps7:		cmp	#410, R0		; check mode 7 register
+		beq	tst243			;
+		mov	#555, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; These next seven tests verify the mfps instruction in all modes. In each test,
+; a pattern of ones and zeroes is moved to the PSW, and an mfps instruction moves
+; the data to a location setup by R0, either directly or indirectly. Conditional
+; branches are used to check proper addressing and data.
+;_____________________________________________________________________________
+;
+; Test 243 - test mfps instruction
+;
+tst243:		inc	(R2)			;
+		cmp	#243, (R2)		;
+		bne	tst244-10		;
+		mov	#377, @#ps		;
+		mfps	R0			;
+		cmp	#177757, R0		;
+		beq	mfps1			;
+		mov	#556, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps1:		clr	R0			;
+		mov	#-1, @#0		;
+		clr	@#ps			;
+		mfps	(R0)			;
+		tstb	@#0			;
+		beq	tst244			;
+		mov	#557, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 244 - test mfps mode 2
+;
+tst244:		inc (R2)			;
+		cmp	#244, (R2)		;
+		bne	tst245-10		;
+		clr	R0			;
+		clr	(R0)			;
+		mov	#377, @#ps		;
+		mfps	(R0)+			; try mfps w/mode 2
+		bcc	mfps2a			;
+		bvs	mfps2a			;
+		beq	mfps2a			;
+		bmi	mfps2b          	;
+mfps2a:		mov	#560, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps2b:		cmp	#357, @#0		; check dest. data
+		beq	mfps2c			;
+		mov	#561, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps2c:		cmp	#1, R0			; check mode Z register
+		beq	tst245			;
+		mov	#562, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 245 - test mfps mode 3
+;
+tst245:		inc	(R2)			;
+		cmp	#245, (R2)		;
+		bne	tst246-10		;
+		mov	#406, R0		;
+		clr	@#0			;
+		mov	#252, @#ps		;
+		mfps	@(R0)+			; try mfps with mode 3
+		bcs	mfps3a			;
+		bvs	mfps3a			;
+		beq	mfps3a			;
+		bmi	mfps3b			;
+mfps3a:		mov	#563, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps3b:		cmp	#125000, @#0		; check dest. data
+		beq	mfps3c			;
+		mov	#564, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps3c:		cmp	R0, #410		; check mode 3 register.
+		beq	tst246			;
+		mov	#565, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 246 - test mfps mode 4
+;
+tst246:		inc	(R2)			;
+		cmp	#246, (R2)		;
+		bne	tst247-10		;
+		mov	#2, R0			;
+		clr	@#0			;
+		mov	#125, @#ps		;
+		mfps	-(R0)			;try mfps w/mode 4
+		bcc	mfps4a			;
+		bvs	mfps4a			;
+		beq	mfps4a			;
+		bpl	mfps4b			;
+mfps4a:		mov	#566, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps4b:		cmp	#42400, @#0		;
+		beq	mfps4c			;
+		mov	#567, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps4c:		cmp	R0, #1			; check mode 4 register
+		beq	tst247			;
+		mov	#570, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 247 - test mfps mode 5
+;
+tst247:		inc	(R2)			;
+		cmp	#247, (R2)		;
+		bne	tst250-10		;
+		mov	#410, R0		;
+		mov	#-1, @#0		;
+		clr	@#ps			;
+		mfps	@-(R0)			;
+		bcs	mfps5a			;
+		bvs	mfps5a			;
+		bmi	mfps5a			;
+		beq	mfps5b			;
+mfps5a:		mov	#571, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps5b:		cmp	#377, @#0		;
+		beq	mfps5c			;
+		mov	#572, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps5c:		cmp	R0, #406		;
+		beq	tst250			;
+		mov	#573, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 250 - test mfps mode 6
+;
+tst250:		inc	(R2)			;
+		cmp	#250, (R2)		;
+		bne	tst251-10		;
+		mov	#401, R0		;
+		clr	@#0			;
+		mov	#252, @#ps		;
+		mfps	-401(R0)		;
+		bvs	mfps6a			;
+		bcs	mfps6a			;
+		beq	mfps6a			;
+		bmi	mfps6b			;
+mfps6a:		mov	#574, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps6b:		cmp	#252, @#0		;
+		beq	mfps6c			;
+		mov	#575, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps6c:		cmp	#401, R0		;
+		beq	tst251			;
+		mov	#576, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; Test 251 - test mfps mode 7
+;
+tst251:		inc	(R2)			;
+		cmp	#251, (R2)		;
+		bne	tst252-10		;
+		mov	#777, R0		;
+		clr	@#0			;
+		mov	#125, @#ps		;
+		mfps	@-371(R0)		;
+		bvs	mfps7a			;
+		bcc	mfps7a			;
+		beq	mfps7a			;
+		bpl	mfps7b			;
+mfps7a:		mov	#577, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps7b:		cmp	#42400, @#0		;
+		beq	mfps7c			;
+		mov	#600, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfps7c:		cmp	#777, R0		;
+		beq	tst252			;
+		mov	#601, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies that reset does not clear the PSW. The PSW is loaded with
+; ones, areset is issued, and the contents of the PSW are checked to verify
+; that they have not changed. This test is executed only once every 256 (decimal)
+; passes.
+;_____________________________________________________________________________
+;
+; Test 252 - test that reset does not clear PSW
+;
+tst252:		inc	(R2)			;
+		cmp	#252, (R2)		;
+		bne	tst253-10		;
+		cmpb	@#passpt, #377		;
+		bne	rest			;
+		mov	#357, @#ps		;
+		reset				;
+		cmp	#357, @#ps		;
+		beq	tst253			;
+		mov	#602, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+rest:						;
+;_____________________________________________________________________________
+;
+; The following test checks the independent functioning of basic data path
+; components with user mode set.
+;_____________________________________________________________________________
+;
+; Test 253 - test user mode SP can hold a one in every position
+;
+tst253:		inc	(R2)			;
+		cmp	#253, (R2)		;
+		bne	tst254-10		;
+		bis	#usrm, ps		;
+		mov	#1, SP			;
+		clc				;
+usp1:		rol	SP			;
+		bcc	usp1			;
+		beq	usp1a			;
+		bic	#usrm, ps		;
+		mov	#603, -(R2)		;
+		inc	 -(R2)			;
+		halt				;
+ usp1a:
+;_____________________________________________________________________________
+;
+; This test checks the independent functioning of the user and kernel mode
+; SP's.	SP is setup and	addressed in each of the two modes to verify that
+; the two SP^s are independent of each other.
+;_____________________________________________________________________________
+;
+; Test 254 - test independence of user and kernel mode SP's
+;
+tst254:		inc	(R2)			;
+		cmp	#254, (R2)		;
+		bne	usp4-14			;
+		bis	#usrm, ps		;
+		mov	#-1, SP			;
+		cmp	#-1, SP			;
+		beq	usp2			;
+		bic	#usrm, ps		;
+		mov	#604, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+usp2:		bic	#usrm, ps		;
+		cmp	#-1, SP			;
+		bne	usp3			;
+		mov	#605, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+usp3:		clr	SP			;
+		bis	#usrm, ps		;
+		cmp	#-1, SP			;
+		beq	usp4			;
+		mov	#606, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+usp4:		mov	#stbot, SP		;
+		bic	#usrm, ps		;
+		mov	#stbot, SP		;
+;_____________________________________________________________________________
+;
+; These next two tests verify mfpi and mtpi instructions with SP in mode 0
+;_____________________________________________________________________________
+;
+; Test 255 - test mpfi with SP in mode 0
+;
+tst255:		inc	(R2)			;
+		cmp	#255, (R2)		;
+		bne	tst256-10		;
+		mov	#stbot, SP		;
+		mov	#usrm, ps		;
+		mov	#ustbot, SP		;
+		mfpi	SP			;
+		cmp	#140000, ps		;
+		beq	mfpi0			;
+		bic	#usrm, ps		;
+		mov	#607, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mfpi0:		cmp	#stbot, ustbot-2	;
+		beq	mfpi0a			;
+		bic	#usrm, ps		;
+		mov	#610, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+mfpi0a:						;
+;_____________________________________________________________________________
+;
+; Test 256 - test mtfi with SP in mode 0
+;
+tst256:		inc	(R2)			;
+		cmp	#256, (R2)		;
+		bne	tst257-10		;
+		clr	ps			;
+		clr	SP			;
+		mov	#usrm, ps		;
+		mov	#ustbot, SP		;
+		mov	#stbot, -(SP)		;
+		mtpi   SP			;
+		cmp	#usrm, ps		;
+		beq	mtpi0			;
+		bic	#usrm, ps		;
+		mov	#611, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+mtpi0:		clr	ps			;
+		cmp	SP, #stbot		;
+		beq	tst257			;
+		mov	#612, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the contents of the branch ROM. The test executes every
+; possible branch with every possible condition code combination.
+;
+; The routine uses two tables. The branch table holds all the possible branch
+; instructions, the other table (yntab) holds bit maps for each branch. A one
+; in the bit map indicates that the corresponding branch instruction should
+; branch for the condition code setting which corresponds to the bit position
+; within the map. For example if the left most bit is a one then the
+; corresponding branch instruction should branch when the condition codes
+; are 0.
+;
+; The routine consists of nested loops. The outer loop sets up all the possible
+; branch instructions. the inner loop sets up every possible condition code
+; for each branch.
+;
+; The bit map is used to set the address location in two jump mode 3
+; instructions.	The addresses are changed to allow the program to continue
+; or jump to an	error routine depending	upon whether it handled the branch
+; instruction correctly.
+;
+; At any error halt, location, brh, holds the branch instruction under test
+; and location, cc, holds the value of the condition codes at the time the
+; branch was executed.
+;_____________________________________________________________________________
+;
+; Test 257 - test the branch ROM
+;
+tst257:		inc	(R2)			;
+		cmp	#257, (R2)		;
+		bne	er			;
+						;
+setup:		mov	#brtab, R0		; initialize branch table pointer
+		mov	#yntab, R4		; initialize yes/no branch map pointer
+		mov	#15., brct		; initialize branch table count
+setbr:		mov	(R0)+, brh		; get next branch inst.
+		mov	(R4)+, R1		; get next branch map
+		mov	#-1, cc			; initialize condition code value
+		mov	#16., R3		; initialize condition code count
+						;
+setcc:		inc	cc			; set for next cc value
+		bit	#100000, R1		;
+		mov	@#177776, R5		;
+		bic	#177773, R5		;
+		jmp	.+4(R5)			;
+		jmp     set2br			;
+		mov	#cont, nbr		; set to continue if no branch
+		mov	#er, ybr	 	; set to report error if branch
+		jmp     around			; go around opposite condition
+						;
+set2br:		mov	#er, nbr		; set to report error if no branch
+		mov	#cont, ybr		; set to continue if branch
+around:		rol	R1			; update bit map
+		mov	(PC)+, @(PC)+		; set condition code
+						;
+cc:		.word	0, 177776		; new cc value goes here
+brh:		.word	0			; branch inst goes here
+		jmp	@(PC)+			; this jump if no branch
+nbr:		.word	0			; where to go if no branch occurs
+		jmp	@(PC)+			; this jump if branch occurs
+ybr:		.word	0			; where to go if branch occurs
+						;
+er:		mov	#$testn, R2		;
+		mov	#613, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+brct:		.word	0			;
+cont:		dec	R3			;
+		mov	@#177776, R5		; simulate a jne
+		bic	#177773, R5		; (jump not equal)
+		jmp	.+4(R5)			;
+		jmp	setcc			;
+		dec	brct			;
+		mov	@#177776, R5		; simulate a jne
+		bic	#177773, R5		; (jump not equal)
+		jmp	.+4(R5)			;
+		jmp	setbr			;
+;_____________________________________________________________________________
+;
+; The following test verifies that no dual addressing of the general
+; registers occurs. All	registers are cleared, and a unique bit	is set
+; in each. cmp instructions check that only one	bit is set in each
+; register
+;_____________________________________________________________________________
+;
+; Test 260 - dual register addressing test
+;
+tst260:		inc	(R2)			;
+		cmp	#260, (R2)		;
+		bne	daerr			;
+bitclr:		clr	R0			; initialize all registers
+		clr	R1			;
+		clr	R2			;
+		clr	R3			;
+		clr	R4			;
+		clr	R5			;
+		clr	SP			;
+						;
+bitset:		bis	#1, R0			;
+		bis	#2, R1			;
+		bis	#4, R2			;
+		bis	#10, R3			;
+		bis	#20, R4			;
+		bis	#40, R5			;
+		bis	#100, SP		;
+						;
+bitchk:		cmp	#100, SP		;
+		bne	daerr			;
+		cmp	#40, R5			;
+		bne	daerr			;
+		cmp	#20, R4			;
+		bne	daerr			;
+		cmp	#10, R3			;
+		bne	daerr			;
+		cmp	#4, R2			;
+		bne	daerr			;
+		cmp	#2, R1			;
+		bne	daerr			;
+		cmp	#1, R0			;
+		beq	bitcon			;
+						;
+daerr:		mov	#614, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+bitcon:		mov	#$testn, R2		;
+		mov	#stbot, SP		; reset stack
+;_____________________________________________________________________________
+;
+; This test verifies that the upper byte of the PSW is hot affected
+; when the priority level or cc's are changed. All bits are initially set
+; in the PSW, And the low byte is cleared. a bit instruction verifies the data.
+;_____________________________________________________________________________
+;
+; Test 261 - test byte instruction on PSW
+;
+tst261:		inc	(R2)			;
+		cmp	#261, (R2)		;
+		bne	bterr			;
+		bis	#170357, @#ps		; set all possible bits in PSW
+		clrb	@#ps			; clr pr level and cc's
+		mov	@#ps, R0		; copy contents of PSW
+		bit	#170000, R0		; test that upper byte is unaffected
+		bne	btcon			; continue if ok
+bterr:		clr	@#ps			; return to kernel mode
+		mov	#615, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+btcon:		clr	@#ps			; return to kernel mode
+;_____________________________________________________________________________
+;
+; This test verifies that a jmp instruction does not alter the condition codes
+; in the PSW. The cc's are preset, the jmp is executed, and conditional branches
+; verify the state of the cc's.
+;_____________________________________________________________________________
+;
+; Test 262 - test that jump instruction does not affect condition codes
+;
+tst262:		inc	(R2)			;
+		cmp	#262, (R2)		;
+		bne	tst263-10		;
+		scc				;
+		+cln!clv			;
+		jmp	jmpt			; jump to test PSW
+jmpt:		bmi	jmperr			;
+		bne	jmperr			;
+		bvs	jmperr			;
+		bcs	tst263			;
+jmperr:		mov	#616, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+; This test verifies the set and clear condition code instructions. The test
+; consists of two routines, one to test all clear cc instructions, and the
+; second to test all set cc instructions. All possible combinations of
+; condition codes are tested, including nop's.
+;
+; To test the clear cc instructions, all condition codes are initially set.
+; The instruction is executed, and the PSW is checked to verify the proper
+; combination of condition codes.
+;
+; To test the set cc instructions, the condition codes are initially cleared,
+; and only the required bits are set by the set cc instruction.	The contents
+; of the PSW are checked to verify that only the required bits were set.
+;_____________________________________________________________________________
+;
+; Test 263 - test set cc and clear cc instructions
+;
+tst263:		inc	(R2)			;
+		cmp	#263, (R2)		;
+		bne	ccerr			;
+		mov	#240, cc1		; initialize clr cc instruction codes
+		mov	#17, cc2		; initialize octal map
+		mov	#261, sc3		; initialize set cc instruction codes
+		mov	#1, sc4			; initialize octal map
+clrcd:		scc				; set all condition codes
+cc1:		.word	0			; condition code instruction
+		mov	@#ps, R4		; copy the PSW
+		bic	#177760, R4		; isolate condition codes
+		cmp	(PC)+, R4		; check that proper cc's were cleared
+cc2:		.word	0			; octal representation of cc's
+		beq	con1			;
+		mov	#617, -(R2)		;
+		inc	-(R2)			;
+		halt				; clear cc instruction failed
+						;
+con1:		dec	cc2			; set next octal map of ccs
+		inc	cc1			; get next clear cc instruction
+		cmp	cc1, #257		;
+		ble	clrcd			; go test next instruction if not found
+		cmp	cc1, #260		; check for nop=260
+		bne	setcd			; go test set cc instructions
+		mov	#17, cc2		; set octal map to test nop
+		br	clrcd			; go test nop
+setcd:		ccc				; clear all condition codes
+sc3:		.word	0			; condition code instruction
+		mov	@#ps, R4		; copy the PSW
+		bic	#177760, R4		; isolate condition codes
+		cmp	(PC)+, R4		; check that proper cc's were cleared
+sc4:		.word	0			; octal representation of cc's
+		beq con2			;
+ccerr:		mov	#620, -(R2)		;
+		inc	-(R2)			;
+		halt				; set cc instruction failed
+con2:		inc	sc4			; prepare next set cc instruction
+		inc	sc3			;
+		cmp	sc3, #277		;
+		ble	setcd			;
+;_____________________________________________________________________________
+;
+; Test 264 - End of pass sequence
+;
+tst264:		inc 	(R2)			; update test number
+		cmp	#264, (R2)		; sequbnce error?
+		bne	eop1			; br to error halt on seq error
+		incb	passpt			; should print this pass?
+		bne	goagin			; no
+		inc	@#$pass			;
+		bitb	#40, $envm		; will APT allow printing?
+		bne	act			;
+		cmp	@#42, #$endad		; under ACT auto accept?
+		beq	act			;
+		cmp	@#$pass, #1		; is this 1st pass?
+		bne	1$			;
+		mov	#title, R0		; then print title
+		jsr	PC, @#wait		;
+						;
+1$:		mov	#msg, R0		; now print end pass
+		jsr	PC, @#wait		;
+		mov	#buff, R0		;
+		movb	#377, -(R0)		;
+		movb	#0, -(R0)		;
+		movb	#0, -(R0)		;
+		movb	#0, -(R0)		;
+		jsr	PC, @#build		; go build ascii number
+		movb	#0, -(R0)		;
+		movb	#0, -(R0)		;
+		movb	#0, -(R0)		;
+		jsr	PC, @#wait		;
+		br	act			; service ACT
+						;
+wait:		tstb	@#tps			;
+		bpl	wait			;
+		cmpb	(R0), #377		; check for terminator
+		beq	1$			;
+		movb	(R0)+, @#tpb		; not term, print char
+		br	wait			; get next character
+1$:		rts	PC			; char string done, return
+						;
+build:		mov	@#$pass, @#octpss	; routine to conv octal to ascii
+1$:		mov	#60, @#ascpss		; move zero, ascii format
+		asr	@#octpss		; move lowest bit into carry
+		bcc	2$			;
+		add	#1, @#ascpss		; and add value to zero
+		clc				;
+2$:		asr	@#octpss		; repeat for 2nd bit
+		bcc	3$			;
+		add	#2, @#ascpss		;
+		clc				;
+3$:		asr	@#octpss		; repeat for 3rd bit
+		bcc	4$			;
+		add	#4, @#ascpss		;
+		clc				;
+4$:		movb	@#ascpss, -(R0)		;
+		tst	@#octpss		;
+		bne	1$			; repeat until octpss=0
+		rts	PC			; then return
+						;
+act:		mov	@#42, R0		; checkact
+		beq	goagin			; keep going
+		reset				;
+$endad:		jsr	PC, (R0)		; act hooks
+		nop				;
+		nop				;
+		nop				;
+						;
+goagin:						;
+.if ne HOEP					;
+		halt				; halt on end-of-pass
+.iff						;
+		jmp	restrt			; do next pass
+.endc						;
+						;
+eop1:		mov	#621, -(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+passpt:		.word	-1			;
+octpss:		.word	0			; passcount, octal, stored here
+ascpss:		.word	0			; passcount, ascii, built here
+
+title:		.ascii	<15><12><0><0><0><0><0><0>.CFKAAC0 11/34 BSC INST TST.
+		.ascii	<0><0><0><0><0><0><0><377>
+		.even
+msg:		.ascii	<15><12><0><0><0><0><0><0>.END PASS .
+		.ascii	<0><0><0><0><0><0><377>
+		.even
+;_____________________________________________________________________________
+;
+; These are a unit insert no code between them
+;
+psnum:		.word	0, 0, 0			;
+		.word	0, 0, 0			;
+		.word	0, 0, 0			;
+buff:		.word	0			;
+;_____________________________________________________________________________
+;
+brtab:		br	.+6			;
+		bne	.+6			;
+		beq	.+6			;
+		bge	.+6			;
+		blt	.+6			;
+		bgt	.+6			;
+		ble	.+6			;
+		bpl	.+6			;
+		bmi	.+6			;
+		bhi	.+6			;
+		blos	.+6			;
+		bvc	.+6			;
+		bvs	.+6			;
+		bcc	.+6		 	; same as bhis
+		bcs	.+6		    	; same as blo
+						;
+		.radix	2			;
+yntab:		.word	1111111111111111	; br
+		.word	1111000011110000	; bne: Z=0
+		.word	0000111100001111	; beq: Z=1
+		.word	1100110000110011	; bge: (N xor V)=0
+		.word	0011001111001100	; blt: (N xor V)=1
+		.word	1100000000110000	; bgt: (Z+(N xor V))=0
+		.word	0011111111001111	; ble: (Z+(N xor V))=1
+		.word	1111111100000000	; bpl: N=0
+		.word	0000000011111111	; bmi: N=1
+		.word	1010000010100000	; bhi: (C+Z)=0
+		.word	0101111101011111	; blos: (C+Z)=1
+		.word	1100110011001100	; bvc: V=0
+		.word	0011001100110011	; bvs: V=1
+		.word	1010101010101010	; bcc: C=0
+		.word	0101010101010101	; bcs: C=1
+						;
+		.radix	8			;
+;_____________________________________________________________________________
+;
+pwrdn:		mov	#pwrup, @#24		; set up for a power up
+		halt				;
+						;
+pwrup:		mov	#pwrdn, @#24		; set up for a power fail
+		mov	#stbot, SP		; set up stack pointer
+		bitb 	#40, $envm		; should print?
+		bne	pwr2			; if not: br
+		mov	#pfmes, R0		; get power fail messg.
+wate:		tstb	@#tps			; tty ready?
+		bpl	wate			; if not: br
+		movb	(R0)+, @#tpb		; print next char.
+		bne	wate			; if not done: br
+pwr2:		jmp	@#start			; start program again
+
+pfmes:		.asciz <12><15>.POWER FAILURE.<12><15>
+		.even				;
+		.blkw	6			;
+ustbot:						;
+;_____________________________________________________________________________
+;
+; The following are special CPU trap handlers to trap and report special traps.
+;
+t04:		mov	#622,-(R2)		;
+		inc	-(R2)			;
+		halt			 	;
+						;
+t010:		mov	#623,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+t014:		mov	#624,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+t030:		mov	#625,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+t034:		mov	#626,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+t0114:		mov	#627,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+t0244:		mov	#630,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+						;
+t0250:		mov	#631,-(R2)		;
+		inc	-(R2)			;
+		halt				;
+;_____________________________________________________________________________
+;
+		.end
+
+
