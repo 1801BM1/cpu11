@@ -22,6 +22,7 @@ int8_t cl_match = -1;
 int8_t cl_speed = -1;
 int8_t cl_table = -1;
 int8_t cl_mterm = -1;
+int8_t cl_count = -1;
 const char *cl_fname;
 
 enum opt_type cl_opt = PLM_OPT_NONE;
@@ -845,6 +846,44 @@ void mc_test_qmc(enum plm_type type, enum opt_type opt, const char *text)
 	}
 }
 
+static void
+mc_test_count(enum plm_type type, enum opt_type opt, const char *text)
+{
+	static struct plm tpl;
+	uint64_t start, qm, qv;
+	uint32_t op, om, max, i, n;
+	int ret;
+
+	printf("Minterm table output match counting, wait...\n");
+	ret = plm_init(&tpl, type);
+	if (ret)
+		exit(-1);
+	ret = plm_opt(&tpl, opt);
+	if (ret)
+		exit(-1);
+
+	max = 1ul << tpl.in_nb;	/* input value limit */
+	qv = cl_qv < 0 ? 0 : (uint64_t)cl_qv;
+	qm = cl_qm < 0 ? (1ull << tpl.out_nb) - 1 : (uint64_t)cl_qm;
+	op = cl_op < 0 ? 0 : (uint32_t)cl_op;
+	om = cl_om < 0 ? 0 : (uint32_t)cl_om;
+
+	n = 0;
+	start = mc_query_ms();
+	for (i = 0; i < max; i++) {
+		if ((i & om) == op) {
+			uint64_t sop;
+
+			sop = plm_get(&tpl, i);
+			if ((sop & qm) == qv)
+				n++;
+		}
+	}
+	start = mc_query_ms() - start;
+	printf("Elapsed %s: %" PRIu64 ".%03" PRIu64 " (%u/0x%X\n)",
+	       text, start / 1000, start % 1000, n, n);
+}
+
 static int mc_param_hex(char *s)
 {
 	int r = 0;
@@ -858,6 +897,8 @@ static int mc_param_hex(char *s)
 
 		if (!c)
 			break;
+		if (c == '_' || c == '-')
+			continue;
 		if (c >= '0' && c <= '9') {
 			c -= '0';
 			r = (r << 4) + c;
@@ -892,6 +933,8 @@ static int64_t mc_param_oct(char *s, int64_t limit)
 
 		if (!c)
 			break;
+		if (c == '_' || c == '-')
+			continue;
 		if (c >= '0' && c <= '7') {
 			c -= '0';
 			r = (r << 3) + c;
@@ -966,6 +1009,10 @@ static int mc_proc_param(const char *p)
 	}
 	if (!strcmp(b, "--table")) {
 		cl_table = 1;
+		return 0;
+	}
+	if (!strcmp(b, "--count")) {
+		cl_count = 1;
 		return 0;
 	}
 	if (!strcmp(b, "--32")) {
@@ -1109,7 +1156,7 @@ static void mc_cmd_line(int argc, char *argv[])
 			exit(-1);
 	}
 	/* Default action is compliance check */
-	if (cl_speed < 0 && cl_match < 0 &&
+	if (cl_speed < 0 && cl_match < 0 && cl_count < 0 &&
 	    cl_table < 0 && cl_mterm < 0 && cl_qmc < 0)
 		cl_match = 1;
 	/* Default matrix is VM1A main PLM */
@@ -1223,6 +1270,10 @@ int main(int argc, char *argv[])
 	}
 	if (cl_table > 0) {
 		mc_test_table(cl_type, cl_opt, cl_text);
+		exit(-1);
+	}
+	if (cl_count > 0) {
+		mc_test_count(cl_type, cl_opt, cl_text);
 		exit(-1);
 	}
 	if (cl_mterm > 0 && cl_match < 0) {

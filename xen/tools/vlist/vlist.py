@@ -1173,12 +1173,12 @@ def proc_vm3(verb):
                 if re.fullmatch(r"~M\d{1,2}", l):
                     seta |= 1 << int(l[2:])
                     continue
-                if l == "PLR_LAT":
+                if l == "~PLR_LAT":
                     continue
             if nodes[0] == 1:
-                if l == "~PLM_STB":
+                if l == "~PLM_EN":
                     continue
-            print("Net %s has unrecognized attachment %s" % (vlink, t))
+            print("Net %s has unrecognized attachment %s, %s, %d" % (vlink, t, l, nodes[0]))
             exit(-1)
 
         if seta & clra:
@@ -1203,8 +1203,8 @@ def proc_vm3(verb):
         if vcmp is None:
             print("No pull-up component found in net %s" % vnet.name)
             exit(-1)
-        if netlist[vcmp.pins[2]].name != "PLR_LAT":
-            print("PLR_LAT on tranceiving component found in net %s" % vnet.name)
+        if netlist[vcmp.pins[2]].name != "~PLR_LAT":
+            print("No PLR_LAT on tranceiving component found in net %s" % vnet.name)
             exit(-1)
         pnet = netlist[vcmp.pins[1]]
         if verb:
@@ -1214,8 +1214,8 @@ def proc_vm3(verb):
         if vcmp is None:
             print("No tranceiving component found in net %s" % vnet.name)
             exit(-1)
-        if netlist[vcmp.pins[3]].name != "PLR_INP":
-            print("No PLR_INP on tranceiving component found in net %s" % vnet.name)
+        if netlist[vcmp.pins[3]].name != "PLR_LAT":
+            print("No PLR_LAT on tranceiving component found in net %s" % vnet.name)
             exit(-1)
         pnet = netlist[vcmp.pins[1]]
         if pnet.name != ("P%d" % i):
@@ -1227,7 +1227,7 @@ def proc_vm3(verb):
             nodes = pnet.nodes[t]
             vcmp = cmplist[t]
             l = netlist[vcmp.pins[3]].name
-            if l == "PLR_INP" or l == pnet.name:
+            if l == "PLR_LAT" or l == pnet.name:
                 continue
             if re.fullmatch(r"PL\d{1,2}", l):
                 plm[int(l[2:])].append(i)

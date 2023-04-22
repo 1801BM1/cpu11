@@ -857,8 +857,8 @@ endfunction
 assign p[61]  = cmp({ins, fpp, ir}, {1'b0, 1'bx, 16'bxxxxxxxxxxxxxxxx});   // Interrupt
 assign p[34]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000xx0xxxxx1});
 assign p[44]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000x0xxxxx1x});
-assign p[59]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000xxx00xxxx});
 assign p[56]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxx0xxx01xxxxxxxx});
+assign p[59]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000xxx00xxxx});
 assign p[71]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bx111xx0xxx000xxx});
 assign p[97]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'b0000xx0xx1xxxxxx});
 
@@ -973,8 +973,8 @@ assign p[109] = cmp({ins, fpp, ir}, {1'b1, 1'bx, 16'b0000x0000x000100});
 //
 // assign p[34]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000xx0xxxxx1});
 // assign p[44]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000x0xxxxx1x});
-// assign p[59]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000xxx00xxxx});
 // assign p[56]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxx0xxx01xxxxxxxx});
+// assign p[59]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxx000xxx00xxxx});
 // assign p[61]  = cmp({ins, fpp, ir}, {1'b0, 1'bx, 16'bxxxxxxxxxxxxxxxx});
 // assign p[66]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bxxxxxxx111xxxxxx});
 // assign p[71]  = cmp({ins, fpp, ir}, {1'bx, 1'bx, 16'bx111xx0xxx000xxx});
@@ -1136,8 +1136,7 @@ module vm3_pli
 (
    input  [11:0] rq,
    output [10:0] ro,
-   output [3:0] ri,
-   input dis
+   output [3:0] ri
 );
 wire [10:0] p;
 
@@ -1171,8 +1170,7 @@ assign ri[1] = p[2] | p[3] | p[5] | p[7] | p[10];
 assign ri[2] = p[0] | p[1] | p[3] | p[7] | p[8];
 assign ri[3] = p[0] | p[4] | p[6] | p[7] | p[8] | p[10];
 
-assign ro[3:0] = p[3:0];
-assign ro[10:4] = dis ? 7'b0000000 : p[10:4];
+assign ro[10:0] = p[10:0];
 endmodule
 
 //______________________________________________________________________________

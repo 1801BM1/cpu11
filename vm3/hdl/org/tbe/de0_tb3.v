@@ -58,8 +58,8 @@ integer i, i0;
 reg         clk;        // processor clock
 reg         dclo;       // processor reset
 reg         aclo;       // power fail notificaton
-reg         evnt;       // timer interrupt requests
-reg         halt;       // radial interrupt requests
+wire        evnt;       // timer interrupt requests
+wire        halt;       // radial interrupt requests
 reg         virq;       // vectored interrupt request
                         //
 tri1        init;       // peripheral reset
@@ -105,6 +105,10 @@ reg         tty_tx_rdy; // terminal transmitter ready
 reg         tty_tx_ie;  // terminal transmitter interrupt enable
 reg         tty_rx_ie;  // terminal receiver interrupt enable
                         //
+reg         evnt_rq;    //
+reg         halt_rq;    //
+reg         halt_en;    //
+                        //
 wire        ram_read, ram_write;
 
 //_____________________________________________________________________________
@@ -137,9 +141,11 @@ begin
       sel_ram = 1'b1;
    end
 
+   if (~ad == 16'o177710)  // halt control register
+      sel_all = 1'b1;
    if (~ad == 16'o177714)  // 7-segment outhex
       sel_all = 1'b1;
-   if (~ad == 16'o177715)
+   if (~ad == 16'o177716)
       sel_all = 1'b1;
    if ((~ad >= 16'o177560) & (~ad <= 16'o177567))
       sel_all = 1'b1;
@@ -216,8 +222,14 @@ begin
       if (sel_all)
       begin
 #2
-         rply   = 1'b0;
+//       rply   = 1'b0;
          ad_oe  = 1'b1;
+// @ (negedge clk);
+// @ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+         if (sel_all | sel_ram)
+            rply   = 1'b0;
       end
    end
 end
@@ -248,6 +260,13 @@ begin
 //@ (posedge clk);
 #2
       rply = 1'b0;
+   end
+
+   if (addr == 16'o177710)
+   begin
+      halt_rq = ~ad[0];
+      evnt_rq = ~ad[1];
+      halt_en = ~ad[15];
    end
 
    if (addr == 16'o177560)
@@ -328,6 +347,23 @@ begin
    #`SIM_CONFIG_TIME_LIMIT $stop;
 end
 
+initial
+begin
+@ (negedge dclo);
+   forever
+   begin
+      @ (negedge hltm);
+      if (~halt_en)
+      begin
+         $display("HALT @ %06O", cpu.core.pc);
+         $stop;
+      end
+   end
+end
+
+assign halt = ~halt_rq;
+assign evnt = ~evnt_rq;
+
 //_____________________________________________________________________________
 //
 initial
@@ -336,13 +372,15 @@ begin
    tty_rx_ie   = 0;
    tty_tx_rdy  = 1;
 
+   halt_en  = 0;
+   halt_rq  = 0;
+   evnt_rq  = 0;
+
    ssync    = 0;
    in_iako  = 0;
    dclo     = 0;
    aclo     = 0;
-   evnt     = 1;
    virq     = 1;
-   halt     = 1;
    ad_reg   = ~16'h0000;
    ad_oe    = 0;
    rply     = 1;
@@ -420,7 +458,7 @@ vm3 cpu
    .pin_fl_n(1'b1),              // fload long
    .pin_fd_n(1'b1),              // fload double
    .pin_et_n(1'b0),              // enable bus timeout
-   .pin_wo_n(bsel[1])            // boot mode selector
+   .pin_wo_n(~bsel[1])           // boot mode selector
 );
 
 `ifdef SIM_CONFIG_DEBUG_MC

@@ -3107,7 +3107,7 @@ const struct plm_desc plm_desc_vm3_dec = {
 	.in_nb = 18,
 	.out_nb = 22,
 	.na_nb = 6,
-	.na_bits = { 5, 4, 3, 2, 1, 0 }
+	.na_bits = { 0, 1, 2, 3, 4, 5 }
 };
 
 const struct plm_desc plm_desc_vm3 = {
@@ -3838,10 +3838,10 @@ const struct plm_desc plm_desc_vm3 = {
 		}
 	},
 	.xin = 0,
-	.xout = 0x3FFFFFFFFFull,
+	.xout = 0x3FFFFFFFFFull | (0xFFull << (0 + PLM_S_MAX)),
 	.in_nb = 23,
 	.out_nb = 38,
 	.na_nb = 8,
-	.na_bits = { 7, 6, 5, 4, 3, 2, 1, 0 }
+	.na_bits = { 0, 1, 2, 3, 4, 5, 6, 7 }
 };
 
