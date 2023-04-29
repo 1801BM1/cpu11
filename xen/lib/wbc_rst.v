@@ -369,7 +369,7 @@ module wbc_toggle #(parameter
    input       ena_ms,     // millisecond strobe
    output reg  out         // debounced output
 );
-wire rise;
+wire rise, fall, bout;
 
 defparam button.DEBOUNCE = DEBOUNCE;
 wbc_button button(
@@ -377,7 +377,9 @@ wbc_button button(
    .rst(rst),
    .but_n(but_n),
    .ena_ms(ena_ms),
-   .out_rise(rise)
+   .out(bout),
+   .out_rise(rise),
+   .out_fall(fall)
 );
 
 always @(posedge clk)

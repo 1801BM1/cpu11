@@ -79,6 +79,7 @@ wire        vm_aclo_in;                //
 wire [7:4]  vm_virq;                   //
 wire        vm_halt;                   //
 wire        vm_evnt;                   //
+wire        vm_umap;                   //
                                        //
 wire [31:0] baud;                      //
 wire        tx_irq, tx_ack;            //
@@ -148,6 +149,7 @@ f11_wb cpu
    .vm_halt(vm_halt),                  // halt mode interrupt requests
    .vm_evnt(vm_evnt),                  // timer interrupt requests
    .vm_virq(vm_virq),                  // vectored interrupt requests
+   .vm_umap(vm_umap),                  // enable UNIBUS mapping
    .vm_bsel(bsel),                     //
                                        //
    .wbm_gnt_i(1'b1),                   // master wishbone granted
@@ -244,8 +246,7 @@ assign wb_mux     = (mx_stb[0] ? mx_dat[0] : 16'o000000)
 //
 // Simulation stop flag and console
 //
-assign tty_end    = wb_stb & wb_cyc & wb_ios
-                  & ((wb_adr[12:0] == 13'o17676) | (wb_adr[12:0] == 13'o17674));
+assign tty_end    = tty_stb & (tty_dat == 8'o100);
 assign tty_dat    = wb_out[7:0];
 assign tty_stb    = (wb_adr[12:0] == 13'o17566) & wb_ios & wb_stb & wb_we & wb_ack;
 

@@ -119,10 +119,10 @@ assign cjmp = ~pin_bra & (mi[15:11] == 5'b00001);
 // na[5:0] - overriden by unconditional jump
 // na[8:6] - cleared by unconditional jump
 //
-assign na[0] = (jump | cjmp) ? mi[0] : (nar[0] & ~clr_na[0]);
-assign na[1] = (jump | cjmp) ? mi[1] : (nar[1] & ~clr_na[1]);
-assign na[2] = (jump | cjmp) ? mi[2] : (nar[2] & ~clr_na[2]);
-assign na[3] = (jump | cjmp) ? mi[3] : (nar[3] & ~clr_na[3]);
+assign na[0] = (jump | cjmp) ? mi[0] : (nar[0] & ~(clr_na[0] & ~rni));
+assign na[1] = (jump | cjmp) ? mi[1] : (nar[1] & ~(clr_na[1] & ~rni));
+assign na[2] = (jump | cjmp) ? mi[2] : (nar[2] & ~(clr_na[2] & ~rni));
+assign na[3] = (jump | cjmp) ? mi[3] : (nar[3] & ~(clr_na[3] & ~rni));
 assign na[4] = (jump | cjmp) ? mi[4] : nar[4];
 assign na[5] = (jump | cjmp) ? mi[5] : nar[5];
 assign na[6] = cjmp ? mi[6] : (nar[6] & ~jump);

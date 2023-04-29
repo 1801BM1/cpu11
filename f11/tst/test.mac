@@ -10,6 +10,15 @@
 		SP	= %6			;
 		PC	= %7			;
 						;
+		AC0	= %0			;
+		AC1	= %1			;
+		AC2	= %2			;
+		AC3	= %3			;
+		AC4	= %4			;
+		AC5	= %5			;
+		AC6	= %6			;
+		AC7	= %7			;
+						;
 		RXCSR	= 177560		;
 		RXDAT	= 177562		;
 		TXCSR	= 177564		;
@@ -38,7 +47,7 @@
 	.if	nb, <val>			;
 		.word	val			;
 	.iff					;
-		.word	340			;
+		.word	0			; halt on trap
 	.endc					;
 		.endm				;
 ;_____________________________________________________________________________
@@ -254,7 +263,6 @@ outhex:		mov	R1, -(SP)		;
 		.byte	146, 155, 175, 007	;
 		.byte	177, 157, 167, 174	;
 		.byte	071, 136, 171, 161	;
-						;
 ;_____________________________________________________________________________
 ;
 entry:		mov	#003006, @#177714	; 0 000 011 000 000 110
@@ -266,14 +274,13 @@ entry:		mov	#003006, @#177714	; 0 000 011 000 000 110
 		mov	#$txbuf, $txend		;
 		mov	#$txbuf, $txbeg		;
 						;
+		jsr	PC, fdtst		;
 		mov	R0, @#140000		; bus timeout test
 godt:						;
 		mov	#100, @#RXCSR		;
 		mov	#000, @#TXCSR		;
 		clr	R0			;
 		mtps	R0			;
-						;
-
 ;_____________________________________________________________________________
 ;
 start:		.print	#mes1			;
@@ -283,6 +290,26 @@ start:		.print	#mes1			;
 		br	1$			;
 
 mes1:	.asciz	<15><12><15><12>" F-11 started, echo test....@"<12><15>
+	.even
+;_____________________________________________________________________________
+;
+inval:		.word	12., 144.		;
+resdv:		.word	0			;
+f1:		.word	0, 0, 0, 0		;
+f2:		.word	0, 0, 0, 0		;
+						;
+fdtst:		setd				; double div test
+		seti				;
+		ldcid	@#inval, AC3		;
+		stf	AC3, @#f1		;
+		ldcid	@#inval+2, AC2		;
+		stf	AC2, @#f2		;
+;//		divd	@#f1, AC2		; does work
+		divd	AC3, AC2		; does not
+		stcdi	AC2, @#resdv		;
+		clr	R0			;
+		mov	@#resdv, R0		;
+		rts	PC			;
 ;_____________________________________________________________________________
 ;
 		.end

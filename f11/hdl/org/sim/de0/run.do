@@ -21,7 +21,7 @@ vlog -vlog01compat -work work +incdir+../../syn/de0/../../tbe {../../tbe/de0_tbl
 
 vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneiii_ver -L rtl_work -L work -voptargs="+acc"  tb_f11
 
-add wave *
+do wave.do
 view structure
 view signals
 run -all
