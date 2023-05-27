@@ -2264,9 +2264,15 @@ pwait1:		tstb	@#tps			;
 		bpl	pwait1			;
 pfres:		jmp	restrt			;
 
+.if ne HOEP
+msg:		.asciz	. END PASS.
+msg1:		.asciz	.CFKABD0.
+.iff
 msg:		.asciz	<15><12>.CFKABD0 11/34 TRAPS TST DONE  .
-msgpwf: 	.asciz	<15><12>/POWER FAILED!/
 msg1:		.asciz	<15><12>.CFKABD0 11/34 TRAPS TST .
+.endc
+msgpwf: 	.asciz	<15><12>/POWER FAILED!/
+		.even
 ;_____________________________________________________________________________
 ;
 clrall:		clr	@sr0			;

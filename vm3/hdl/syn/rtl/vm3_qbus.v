@@ -20,7 +20,7 @@ module vm3_qbus
 //______________________________________________________________________________
 //
 // The 1801VM3 has the following prefetch bug:
-//  - CPU reads "mov #addr, PC" insrtuction opcode successfully
+//  - CPU reads "mov #addr, PC" instruction opcode successfully
 //  - then perefetching happens to read the word after this instruction
 //  - bus timeout happens, it is ignored for the prefetch
 //  - control is transferred to "addr"
@@ -63,9 +63,7 @@ module vm3_qbus
 
 //______________________________________________________________________________
 //
-reg [21:16] ha;                     // high address latch
 reg  [6:0]  la;                     // low address latch
-reg  [15:0] ad;                     // A/D output latch
 reg  [21:0] ra;                     // instruction prefetch
 reg  [21:0] ca;                     // compare prefetch
 reg  [21:0] a;                      // bus output address
@@ -82,43 +80,32 @@ reg         r757x, r251x;           //
 reg         r7777;                  //
                                     //
 wire        wr_2376, rd_2376;       //
-reg         wr_2376_t, rd_2376_t;   //
-reg         rd_2376_h;              //
-reg         rd_2376_l, rd_2376_lh;  //
+reg         rd_2376_lh;             //
 wire        dn_2376, dn_2376_in;    //
-reg         dn_2376_t0, dn_2376_t1; //
+reg         dn_2376_t;              //
                                     //
 wire        rmsel_clr;              // MMU register select clear
-reg         rmsel_clr_h;            //
-reg         rg_wr_l, rg_wr_lh;      // MMU reguster write
-reg         rg_wr_lhl;              //
-reg         rg_oe_h, rg_oe_hl;      //
-reg  [5:0]  rmsel_st_t;             //
+reg         rg_wr_lh, rg_oe_lh;     // MMU reguster write/read
+reg  [2:0]  rmsel_st_t;             //
 wire        rmsel_st;               // MMU registers strobe
                                     //
-reg         di_oe, di_oe_t;         //
-wire        di_oe_set;              //
-reg         rg_oe, rg_oe_t;         //
+reg         di_oe;                  //
+reg         rg_oe;                  //
 wire        rg_wr;                  //
-reg         dx_stb, dx_stb_t;       //
-reg         dx_stb_l;               //
+reg         dx_stb;                 //
+wire        dx_stb_rc;              //
 wire        dx_swp;                 //
-wire        di_lat, do_lat;         //
-reg         do_oe, do_oe_h;         //
-reg         do_oe_clr;              //
-reg         doh_lat_t;              //
-reg         dox_lat_t;              //
-reg         dol_lat_t;              //
-wire        doh_lat;                //
-wire        dox_lat;                //
-wire        dol_lat;                //
+wire        di_lat;                 //
+wire        do_lat;                 //
+wire        do_clr;                 //
+reg         doh_lat, dol_lat;       //
+reg         do_oe;                  //
+reg         fx_swp;                 //
                                     //
 wire        psw_oe;                 // read registers to D-mux
 wire        parh_oe, sr0_oe;        //
 wire        sr2_oe, sr3_oe;         //
 wire        par_oe, pdr_oe;         //
-reg         psw_oe_t, parh_oe_t;    //
-reg         sr0_oe_t, sr2_oe_t;     //
                                     //
 wire        par_wl, par_wh;         // low/high byte write to PAR
 wire        pdr_wl, pdr_wh;         // low/high byte write to PDR
@@ -136,7 +123,6 @@ reg  [15:0] do_reg;                 // data output register
 reg  [15:0] ba_reg;                 // address buffer register
                                     //
 reg  [15:0] ireg;                   // instruction register
-reg  [15:0] ireg_t;                 // instruction register output latch
 reg  [15:0] ireg_p;                 // instruction register pipeline stage P
 reg  [8:0]  ireg_r;                 // instruction register pipeline stage R
 reg  [8:0]  ireg_m;                 // instruction register pipeline stage M
@@ -148,15 +134,11 @@ reg         ir_doe, doe_clr_t;      // read data from instruction
 wire        doe_clr;                //
                                     //
 reg         ir_stb, ir_stb_t;       // instruction register strobe
-reg         ir_stb_l, ir_stb_lh;    //
+reg         ir_stb_l;               //
 wire        ir_set0, ir_set1;       //
 wire        ir_clr;                 //
 reg         ir_set0_h, ir_set0_t;   //
 reg         ir_tout;                // timed-out IR prefetch
-                                    //
-wire        pir_lat;                //
-wire        mc_res, abort;          // microcode abort
-reg         mc_res_l;               //
                                     //
 wire        alu_rq;                 // ALU cycle start request
 wire        alu_rdy, ardy_st;       // ALU ready to start
@@ -164,32 +146,29 @@ reg         alu_rdy_l, alu_rdy_lh;  //
 reg         alu_plm, alu_plm_h;     // ALU PLM ready
 reg  [2:1]  alu_ea;                 // ALU extended arithmetics states
 reg  [1:0]  alu_st;                 // ALU cycle states
-reg         alu_stb, alu_stb_l;     // ALU control and arguments strobe
+reg         alu_stb;                // ALU result strobe
 reg         alu_rd, alu_rd_l;       // ALU input arguments strobe
 reg         alu_rd_lh, alu_rd_lhl;  //
+wire        alu_wr_rc, alu_stb_rc;  //
 reg         alu_wr;                 // ALU result write code
-wire        alu_wra;                // ALU result write RRA
 wire        alu_run;                // start ALU operation
+wire        alu_mc;                 // microcode ALU request
 reg [33:18] plm_as;                 // ALU register control
                                     //
 reg  [15:0] rra;                    // extended arithmetics register
-reg  [15:0] rra_ix;                 // extended arithmetics input mux
-wire        rra_fwr, rra_wr;        //
-reg         rra_fwr_t, rra_wr_t;    //
+wire [15:0] rra_ix;                 // extended arithmetics input mux
+wire        rra_wr;                 //
 wire        rra_shl, rra_shr;       //
 wire        rra_zf;                 //
 wire        rra_in0, rra_in15;      //
 wire        r10_b15, r11_b15;       //
                                     //
 reg  [5:0]  act_n;                  // arithmetic counter latches
-reg  [5:0]  act_i;                  // counter input latches
-wire [5:0]  act_b;                  // counter outputs
 wire [3:0]  act_c;                  // counter carries
-wire        act_lat;                //
 wire        act_zf;                 //
 wire        act_w15, act_w17;       //
 wire        act_wr;                 //
-reg         act_wr_t, act_rd_t;     //
+reg         act_wr_t;               //
                                     //
 reg  [15:0] vmux;                   // interrupt vector mux
 reg  [15:0] cmux;                   // constant generator mux
@@ -198,21 +177,20 @@ wire        plm85n;                 // register selection type
 wire        plm85p;                 // register selection type
 wire        lin_en;                 // load instruction enable
                                     //
+wire        mc_res, abort;          // microcode abort
 wire [21:0] pld;                    // instruction decoder matrix outputs
 reg  [21:0] dc;                     // instruction decoder output register
 reg  [8:6]  dci;                    // decoder/interrupt status
 reg  [3:0]  dcf_m;                  // flag operation stage R
 reg  [3:0]  dcf_r;                  // flag operation stage M
-wire        dcf_stb;                //
 wire        dc_rtx, dc_rtt;         // rti / rtt commands decoded
 reg         dc_rtt_t;               //
                                     //
 reg  [7:0]  na;                     // next microinstruction address
 reg  [7:0]  ma;                     // microinstruction address
-reg  [1:0]  ma_lat_t;               //
+reg         ma_lat_t;               //
 reg         ma_lat;                 // load microaddress from next
 wire        ma_ldr;                 // load microaddress from predecoder
-reg         ma_ldr_t;               //
 wire        m0_set, m0_clr;         //
                                     //
 reg         dc_stb;                 //
@@ -220,10 +198,10 @@ reg         dc_stb_h, dc_stb_hl;    //
 reg  [2:0]  dc_stb_set;             //
 wire [3:0]  dc_en;                  //
 reg         dc_en2_t;               //
-reg         fpp_pa;                 // address buffer ready for FPP
-wire        fpp_ir;                 // data buffer ready for FPP
+reg         pa_rdy;                 // address buffer ready for prefetch
+wire        ir_rdy;                 // instruction  register ready
                                     //
-reg  [22:0] m;                      // main microcode matrix inputs
+wire [22:0] m;                      // main microcode matrix inputs
 wire [37:0] pl;                     // main microcode matrix outputs
 reg  [37:8] plr;                    // main microcode output register
 reg  [37:8] plm;                    // microcode instruction register
@@ -288,21 +266,16 @@ wire        fpp_exc;                // FPP trap/fatal error
                                     //
 wire        init_clr, init_set;     //
 reg         init_out;               //
-reg  [1:0]  dclo_in;                // DCLO input latch
-wire        dclo;                   // DC low, hardware reset
-reg         dclo_l;                 //
+reg         dclo;                   // DC low, hardware reset
                                     //
 wire        ac_dst, ac_src;         // src/dst address change with 2
 reg         ac_plr, ac_plm;         // alternate constant flag
                                     //
 wire [7:0]  rsel;                   // register file selector index
 wire [4:0]  gr_rx;                  // register row select X
-reg  [4:0]  gr_rx_t;                //
 wire [4:0]  gr_ry;                  // register row select Y
-reg  [4:0]  gr_ry_t;                //
 wire [4:0]  gr_wr;                  // register row select write
-reg  [4:0]  gr_wr_rt;               //
-reg  [4:0]  gr_wr_wt;               //
+reg  [4:0]  gr_wr_t;                //
                                     //
 wire        dst_r6, src_r6;         // SP access flag
 wire        psw_r6, sys_r6;         // SP kernel/user mode select
@@ -310,12 +283,10 @@ wire        plm_rw;                 //
                                     //
 wire        gr0_rx, gr0_ry;         // read register file 0
 wire        gr0_wl, gr0_wh;         // write register file 0
-reg         gr0_wl_t, gr0_wh_t;     //
 reg         gr0_wr_t;               //
                                     //
 wire        gr1_rx, gr1_ry;         // read register file 1
 wire        gr1_wl, gr1_wh;         // write register file 1
-reg         gr1_wl_t, gr1_wh_t;     //
 reg         gr1_wr_t;               //
                                     //
 reg  [15:0] gr0[4:0];               // general register file 0
@@ -326,11 +297,11 @@ reg  [15:0] pc2_t;                  // program counter latch
 wire [15:0] pca;                    // prefetch address
                                     //
 wire        psw_smod;               //
+reg         psw_smod_sa;            //
 reg [15:14] psw_t;                  // temporary mode register
 reg  [15:0] psw;                    // processor status word
 reg  [3:0]  psw_s;                  // hidded backup register
                                     //
-wire        psw_lat;                // common PSW write strobe
 wire        pswh_inf, pswl_inf;     // write PSW from ALU function
 wire        pswh_ind, pswl_ind;     // write PSW from data bus mux
 wire        pswl_inp;               // write ALU operation flags
@@ -338,28 +309,24 @@ wire        pswl_ins;               // restore flags from backup
 wire        pswl_stb;               // hidden backup register strobe
 reg         pswh_inf_t;             //
 reg         pswl_inf_t;             //
-reg         pswl_ind_t;             //
 reg         pswl_inp_t;             //
 reg         pswl_ins_t;             //
                                     //
 wire [4:0]  ov;                     // outputs vector matrix
-reg  [3:0]  vsel;                   // vector mux control
-reg  [4:0]  csel;                   // const mux control
+wire [3:0]  vsel;                   // vector mux control
+wire [4:0]  csel;                   // const mux control
 reg         dc_tbit;                //
 wire        vsel_my;                //
 wire        csel_my;                //
 wire        vec_stb;                //
-reg         vec_stb_t;              //
-wire        con_stb;                //
-reg         con_stb_t;              //
                                     //
-reg  [4:0]  eac;                    // ALU extended arithmetics control
+wire [4:0]  eac;                    // ALU extended arithmetics control
 wire [4:0]  plf;                    // ALU flag control matrix outputs
 reg  [13:0] cia;                    // ALU flag control matrix inputs
+wire        cia_s4, cia_s6;         //
 reg         eaf4;                   // extended arithmetics flag
 reg  [6:0]  ic;                     // ALU conarol matrix inpiuts
 wire [17:0] ac;                     // ALU control matrix outputs
-reg         alu_stw;                //
 reg         ic0_t, ic1_t;           //
                                     //
 wire [7:0]  m8_in;                  //
@@ -368,7 +335,6 @@ reg  [1:0]  rra15_t;                //
 reg  [1:0]  alu_vfr_t;              //
 reg  [2:0]  eac0_t;                 //
                                     //
-reg         psw0r;                  // registered psw[0]
 wire        alu_zh, alu_zl;         // ALU Z flags
 wire        alu_zf;                 //
 wire        c15af, cin0;            //
@@ -377,10 +343,6 @@ wire        cin15, cin7;            //
 wire        alu_shl;                // ALU result shifter controls
 wire        alu_shr;                //
 wire        alu_dir;                //
-reg         alu_shl_t;              //
-reg         alu_shr_t;              //
-reg         alu_dir_t;              //
-                                    //
 wire        alu_b, alu_c;           //
 wire        alu_d, alu_e;           //
 wire        alu_f, alu_g;           //
@@ -389,9 +351,11 @@ wire        alu_ac;                 // ALU adder lsb carry
 wire [15:0] af;                     // ALU adder result
 wire [15:0] c;                      // ALU adder carry
 wire [15:0] s;                      // ALU adder sum
-reg  [15:0] ana;                    // ALU and half-adder
-reg  [15:0] ora;                    // ALU or half-adder
+wire [15:0] ana;                    // ALU and half-adder
+wire [15:0] ora;                    // ALU or half-adder
 reg  [15:0] f;                      // ALU shifter output
+reg  [15:0] fr;                     // ALU output register
+wire [15:0] fx;                     // ALU function byte swap
 wire [15:0] x;                      // ALU argument X mux
 wire [15:0] y;                      // ALU argument Y mux
 reg  [15:0] ax;                     // ALU X argument register
@@ -408,12 +372,6 @@ wire        pc_rx, pc_ry;           // read PC to X/Y bus
 wire        dx_mx, dx_my;           // read swap to X/Y mux
 wire        rra_mx, rra_my;         // read shift to X/Y mux
 wire        psw_mx;                 // read PSW to X/Y mux
-                                    //
-reg         mx_rx_t, my_ry_t;       //
-reg         pc_rx_t, pc_ry_t;       //
-reg         dx_mx_t, dx_my_t;       //
-reg         rra_mx_t, rra_my_t;     //
-reg         psw_mx_t;               //
                                     //
 reg  [15:0] par[15:0];              // MMU page address registers
 reg  [14:1] pdr[15:0];              // MMU page descriptor registers
@@ -490,7 +448,6 @@ wire        ba_lat3, ba_lat4;       //
 reg         ba_lat0_t, ba_lat2_lh;  //
 reg         ba_lat2_l, ba_lat2_lhl; //
 wire        ba_fsel, ba_dir;        //
-reg         ba_fsel_t;              //
                                     //
 wire        wf_set, wrf_set;        //
 wire        ws_set, ws_rst;         //
@@ -501,10 +458,8 @@ reg         op2_wf, op3_wf;         //
 reg         op3_wf_l, op3_wf_lh;    //
 reg         ws_rst_t0, ws_rst_t1;   //
                                     //
-reg  [1:0]  rg_rmw_t;               //
-wire        rg_rmw;                 //
-reg  [1:0]  di_rmw_t;               //
-reg         di_rmw_h, di_rmw_tl;    //
+reg         rg_rmw;                 //
+reg         di_rmw_tl;              //
 wire        di_rmw;                 //
                                     //
 reg         alu_drdy;               //
@@ -513,7 +468,6 @@ reg         rd_oe_l, io_s0_rd_h;    //
 reg         io_s0_as, io_s0_rd;     //
 reg         io_s3_wr;               //
 reg         io_s3_h, io_s3_hl;      //
-reg         io_s4_h, io_s4_hl;      //
 wire        out_rs, s3_out;         //
                                     //
 wire [4:0]  io_s;                   //
@@ -531,7 +485,7 @@ wire        hm_lat_set, hm_lat_clr; //
                                     //
 wire        mrq_pl;                 // page limit error request
 reg         mrq_pl_t0, mrq_pl_t1;   //
-wire        mrq_ro, mrq_nr;         // readonly/ not resident
+wire        mrq_ro, mrq_nr;         // readonly/not resident
 wire        mrqt_er;                //
 reg         mrqt_nr;                // registered traslate results
 reg         mrqt_ro;                //
@@ -543,15 +497,14 @@ reg         ir_mmu_err_h;           //
 reg         ir_mmu_err_hl;          //
                                     //
 wire        pf_init;                //
-wire [2:0]  pf_p;                   // positive register output
-wire [2:0]  pf_n;                   // negative register output
-reg  [2:0]  pf_t;                   //
+wire [2:0]  pf;                     // prefetch status
 reg         pf_ena;                 //
 wire        pf_ena_clr;             //
 wire        pf_00, pf_01;           //
+wire        pf_10, pf_11;           //
 reg         pf_00_l, pf_01_l;       //
 reg         pf_00m, pf_00m_t;       // latched on plm
-reg         pf_00a, pf_00r;         // latcged on addr, plr
+reg         pf_00a, pf_00r;         // latched on addr, plr
 reg         pf_ba0, pf_pa_l;        //
 reg         pf_ba0_h, pf_ba0_hl;    //
 wire        pf_pa, pf_inv;          //
@@ -567,7 +520,7 @@ reg         pf_end1, dc_en2_h;      //
 wire        pc_wr0, pc_wr1, pc_wr2; //
 wire        pc2_wrc, pc2_wrq;       //
 reg         pc2_wrc_l, pc2_wrc_lh;  //
-reg         pc_wr0_rt, pc_wr0_wt;   //
+reg         pc_wr_t;                //
 reg         pc2_wrr, pc2_wrm;       //
 reg         pc2_wrf;                //
 reg         pc3_rdy, pc3_rdy_h;     //
@@ -577,51 +530,35 @@ wire        sel;                    // halt mode bus access
 reg         sel_sa_t, sel_ra_t;     //
 reg         irply_l, irply_lh;      //
 reg         rply_in, rply_in_l;     //
-reg         rply, rply_h;           //
+reg         rply;                   //
 wire        irply_clr;              //
 wire        bus_free;               //
 reg         ba_req, ba_req_l;       // address request
                                     //
-reg         qt_tmr;                 // Q-bus timer
-reg  [3:0]  qt_div_h;               //
-reg  [3:0]  qt_div_l;               //
-reg  [4:0]  qt;                     //
-reg  [4:1]  qt_h;                   //
-wire        qt_ena, qt_stb, qt_out; //
-reg         qt_stb_h, qt_stb_hl;    //
-reg         qt_ena_h, qt_ena_hl;    //
-reg         qt_ena_hlh;             //
-                                    // for debug purposes only
-wire        oat_dbg, mmu_dbg;       // suppress Q-bus glitches
-wire        oat, qerr, qtout;       //
-reg         oat_l, oat_lh;          //
-reg         qerr_l, qerr_lh;        //
-reg         qtout_l, qtout_lh;      //
+reg  [7:0]  qt;                     // Q-bus timer
+wire        qt_ena;                 //
+reg         qt_out;                 //
                                     //
-reg         pa_oe, pa_oe_t;         //
-reg         pa_oe_l, pa_oe_lh;      //
-reg         pa_oe_clr;              //
-wire        pa_oe_set;              //
-reg  [2:0]  ad_oe_t;                //
+wire        oat, qtout;             //
+reg         qerr, qerr_lh;          //
+                                    //
+reg         pa_oe, pa_oe_lh;        //
+wire        pa_oe_set, pa_oe_rc;    //
 wire        ad_a_nd;                //
 wire        ad_oe;                  //
-reg         bd_oe, bd_oe_t;         //
+reg         bd_oe;                  //
                                     //
 wire        wtbt;                   //
 reg         irply;                  //
 reg         irply_en, irply_en_t;   //
 reg         sync, sync_t;           //
 reg         sync_clr;               //
-reg         dout, dout_l, dout_lh;  //
-reg         din, din_l, din_lh;     //
-reg  [2:0]  din_set_t;              //
-wire        din_set0, din_set1;     //
-reg  [1:0]  dout_set_t;             //
-reg         dout_set, dout_set_l;   //
-reg         dout_dn;                //
+reg         din, din_lh;            //
+reg         dout, dout_lh;          //
+reg         dout_set, dout_dn;      // dout done
 wire        din_end, dout_end;      //
-wire        dio_clr;                // din/dout outputs reset
-reg         dio_clr_l;              //
+wire        dio_clr_rc;             //
+reg         dio_clr;                // din/dout outputs reset
 reg         dvc_stb;                //
 reg         iako;                   //
 reg         iako_en, iako_ent;      //
@@ -634,11 +571,11 @@ reg         ins_req, ins_req_l;     //
 wire        ins_set;                //
 wire        arb_ena;                //
 reg         arb_ena_t;              //
-reg         arb_ena_h, arb_ena_hl;  //
 wire        dmr_clr;                //
 reg         dmr_clr_h, dmr_clr_hl;  //
 reg         dmr_en;                 //
-                                    //
+                                    // for debug purposes only
+wire        oat_dbg;                // suppress Q-bus glitches
 //______________________________________________________________________________
 //
 // For simulation purposes only
@@ -706,25 +643,24 @@ end
 // Q-bus
 //
 assign pin_ad_ena = ad_oe;
-assign pin_ad_out[15:0] = ad[15:0];
-always @(*) if (~ad_oe) ad[15:0] <= ad_a_nd ? a[15:0] : d[15:0];
+assign pin_ad_out[15:0] = ad_a_nd ? a[15:0] : do_reg[15:0];
+assign pin_a_out[17:16] = a[17:16];
+assign pin_a_out[21:18] = bs_a18 ? 4'b1111 : a[21:18];
 
+assign pin_a_ena = pa_oe;
 assign pin_bs = ~sel & (bs_a18 | bs_a22);
 assign pin_sel = sel;
-assign pin_a_ena = pa_oe;
-assign pin_a_out[21:16] = ha[21:16];
 
 assign pin_init_out = init_out | dclo;
 assign pin_hltm = hltm;
 assign pin_umap = sr3_um;
 
-assign oat_dbg = ~(oat | oat_l);
-assign mmu_dbg = ~hm_men | ~pa_oe_l;
+assign oat_dbg = ~(oat | qerr);
 assign pin_iako = iako;
 assign pin_sync = sync & oat_dbg;
 assign pin_wtbt = wtbt & oat_dbg;
-assign pin_dout = dout & oat_dbg & mmu_dbg;
-assign pin_din = din & oat_dbg & mmu_dbg;
+assign pin_dout = dout & oat_dbg;
+assign pin_din = din & oat_dbg;
 
 always @(*)
 begin
@@ -734,189 +670,163 @@ begin
    if (pin_clk_p) rply_in <= pin_rply;
    if (~pin_clk_p) rply_in_l <= rply_in;
    if (~pin_clk_p) rply <= rply_in | (irply & ~irply_lh);
-   if (pin_clk_p) rply_h <= rply;
 end
 
-always @(*)
-begin
-   if (~pa_oe)
-      ha[21:16] <= {bs_a18 ? 4'b1111 : a[21:18], a[17:16]};
-   if (pa_oe)
-      la[6:0] <= a[6:0];
-end
-
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (di_lat)
       di_reg[15:0] <= pin_ad_in[15:0];
-
    if (doh_lat)
-      do_reg[15:8] <= f[15:8];
-   else
-      if (dox_lat)
-         do_reg[15:8] <= f[7:0];
-
+      do_reg[15:8] <= fx[15:8];
    if (dol_lat)
-      do_reg[7:0] <= f[7:0];
+      do_reg[7:0] <= fx[7:0];
 end
 
-assign di_lat = ~di_oe;
-assign do_lat = ~plm_as[29] & ~plm_as[30] & plm_as[31] & alu_stb_l;
-
-assign doh_lat = do_lat & doh_lat_t;
-assign dox_lat = do_lat & dox_lat_t;
-assign dol_lat = do_lat & dol_lat_t;
+assign fx = {fx_swp ? fr[7:0] : fr[15:8], fr[7:0]};
 assign dx_swp = io_s0_rd | (~ir_oe & a0_reg & ~mt_op[2] & ~io_s0_as);
+assign do_lat = ~plm_as[29] & ~plm_as[30] & plm_as[31] & alu_stb & alu_wr_rc;
+assign do_clr = dx_stb & do_oe | dout_dn;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (~do_lat)
-   begin
-      doh_lat_t <=   mt_op[2] | io_s0_as;
-      dox_lat_t <= ~(mt_op[2] | io_s0_as) & a0_reg;
-      dol_lat_t <=  (mt_op[2] | io_s0_as) | ~a0_reg;
-   end
+   doh_lat <= ((mt_op[2] | io_s0_as) | ~(mt_op[2] | io_s0_as) & a0_reg) & do_lat;
+   dol_lat <= ((mt_op[2] | io_s0_as) | ~a0_reg) & do_lat;
+   if (do_lat)
+      fx_swp <= ~(mt_op[2] | io_s0_as) & a0_reg;
 end
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (mc_res | do_oe_clr)
-         do_oe <= 1'b0;
+   if (mc_res)
+      do_oe <= 1'b0;
    else
-      if (do_lat)
-         do_oe <= 1'b1;
-
-   if (pin_clk_p) do_oe_h <= do_oe;
-   if (~pin_clk_p) do_oe_clr <= (dx_stb & do_oe_h) | dout_dn;
+      if (do_clr)
+         do_oe <= 1'b0;
+      else
+         if (do_lat)
+            do_oe <= 1'b1;
 end
 
 //______________________________________________________________________________
 //
-assign s23xx = (ha[21:16] == 6'o77) & (ad[15:6] == 10'o1723)  & ~ad[4];
-assign s76xx = (ha[21:16] == 6'o77) & (ad[15:6] == 10'o1776)  & ~ad[4];
-assign s7777 = (ha[21:16] == 6'o77) & (ad[15:3] == 13'o17777) &  ad[2] & ad[1];
-assign s757x = (ha[21:16] == 6'o77) & (ad[15:3] == 13'o17757) & (ad[2] | ad[1]);
-assign s251x = (ha[21:16] == 6'o77) & (ad[15:3] == 13'o17251) &  ad[1];
+// PSW and MMU register bus access decoder
+//
+assign s23xx = (bs_a18 | bs_a22) & (a[15:6] == 10'o1723)  & ~a[4];
+assign s251x = (bs_a18 | bs_a22) & (a[15:3] == 13'o17251) &  a[1];
+assign s757x = (bs_a18 | bs_a22) & (a[15:3] == 13'o17757) & (a[2] | a[1]);
+assign s76xx = (bs_a18 | bs_a22) & (a[15:6] == 10'o1776)  & ~a[4];
+assign s7777 = (bs_a18 | bs_a22) & (a[15:3] == 13'o17777) &  a[2] & a[1];
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (mc_res | rmsel_clr_h)
+   if (mc_res)
+   begin
       rmsel <= 1'b0;
-   else
-      if (pa_oe)
-         rmsel <= s23xx | s76xx | s7777 | s757x | s251x;
-
-   if (dn_2376)
       r2376 <= 1'b0;
-   else
-      if (pa_oe)
-         r2376 <= s23xx | s76xx;
-
-   if (pa_oe)
-   begin
-      r251x <= s251x;
-      r757x <= s757x;
-      r7777 <= s7777;
+      r251x <= 1'b0;
+      r757x <= 1'b0;
+      r7777 <= 1'b0;
    end
+   else
+   begin
+      if (rmsel_clr)
+         rmsel <= 1'b0;
+      else
+         if (pa_oe_rc)
+            rmsel <= s23xx | s76xx | s7777 | s757x | s251x;
 
-   if (~rg_wr) wr_2376_t <= r2376;
-   if (~rg_oe) rd_2376_t <= r2376;
-   if (pin_clk_p) rd_2376_h <= rd_2376;
-   if (~pin_clk_p) rd_2376_l <= rd_2376;
-   if (pin_clk_p) rd_2376_lh <= rd_2376_l;
-   if (~pin_clk_p) dn_2376_t0 <= dn_2376_in;
-   if (pin_clk_p) dn_2376_t1 <= dn_2376_t0;
-   if (~pin_clk_p) dx_stb_t <= (dx_mx | dx_my) & ~dx_stb;
-   if (pin_clk_p) dx_stb <= dx_stb_t;
-   if (~pin_clk_p) dx_stb_l <= dx_stb;
+      if (dn_2376)
+         r2376 <= 1'b0;
+      else
+         if (pa_oe_rc)
+            r2376 <= s23xx | s76xx;
+
+      if (pa_oe_rc)
+      begin
+         r251x <= s251x;
+         r757x <= s757x;
+         r7777 <= s7777;
+      end
+   end
 end
 
-assign dn_2376_in = ~wr_2376 & (~rd_2376_h | io_dc[5]);
-assign dn_2376 = mc_res | (dn_2376_in & ~dn_2376_t1);
-assign wr_2376 = wr_2376_t & rg_wr;
-assign rd_2376 = rd_2376_t & rg_oe;
-
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (pin_clk_p) rmsel_clr_h <= rmsel_clr;
-   if (~pin_clk_p) rg_wr_l <= rg_wr;
-   if (pin_clk_p) rg_wr_lh <= rg_wr_l;
-   if (~pin_clk_p) rg_wr_lhl <= rg_wr_lh;
-   if (pin_clk_p) rg_oe_h <= rg_oe;
-   if (~pin_clk_p) rg_oe_hl <= rg_oe_h;
+   if (pa_oe_rc)
+      la[6:0] <= a[6:0];
 
-   if (pin_clk_p)
-   begin
-      rmsel_st_t[1] <= rmsel_st_t[0];
-      rmsel_st_t[3] <= rmsel_st_t[2];
-      rmsel_st_t[5] <= rmsel_st_t[4];
-   end
-   else
-   begin
-      rmsel_st_t[0] <= rmsel;
-      rmsel_st_t[2] <= rmsel_st_t[1];
-      rmsel_st_t[4] <= rmsel_st_t[3];
-   end
+   rd_2376_lh <= rd_2376;
+   dn_2376_t <= dn_2376_in;
+
+   rmsel_st_t[0] <= rmsel;
+   rmsel_st_t[1] <= rmsel_st_t[0];
+   rmsel_st_t[2] <= rmsel_st_t[1];
+
+   rg_wr_lh <= rg_wr;
 end
 
-assign rmsel_clr = rg_wr_lhl | (~rg_oe & rg_oe_hl & ~io_dc[5]);
-assign rmsel_st = rmsel & rmsel_st_t[5];
-assign rg_wr = ~rg_wr_lhl & ~rg_wr_lh & rmsel_st
-             & alu_drdy & (~io_dc[1] | rg_rmw);
-assign rg_rmw = rg_rmw_t[1];
+always @(posedge pin_clk_p) rg_oe_lh <= rg_oe;
+
+assign wr_2376 = r2376 & rg_wr;
+assign rd_2376 = r2376 & rg_oe;
+
+assign dn_2376_in = wr_2376 | (rd_2376 & ~io_dc[5]);
+assign dn_2376 = ~dn_2376_in & dn_2376_t;
+
+assign rmsel_clr = rg_wr_lh | (~rg_oe & rg_oe_lh & ~io_dc[5]);
+assign rmsel_st = rmsel & rmsel_st_t[2];
+assign rg_wr = ~rg_wr_lh & rmsel_st & alu_drdy & (~io_dc[1] | rg_rmw);
 assign di_rmw = di_rmw_tl & ~rply;
+assign di_lat = ~di_oe & rply & din & ~a21_ins_l & ~io_dc[2];
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (mc_res | dx_stb_l)
+   if (mc_res)
       rg_oe <= 1'b0;
    else
-      if (pin_clk_p & rg_oe_t)
-         rg_oe <= 1'b1;
+      if (dx_stb)
+         rg_oe <= 1'b0;
+      else
+         if (~rg_oe & ~io_dc[2] & pa_oe & rmsel)
+            rg_oe <= 1'b1;
+end
 
-   if (~pin_clk_p)
-      rg_oe_t <= ~rg_oe & ~io_dc[2] & pa_oe_l & rmsel;
-
+always @(posedge pin_clk_p or posedge mc_res)
+begin
    if (mc_res)
-      rg_rmw_t[0] <= 1'b0;
+      rg_rmw <= 1'b0;
    else
       if (rg_oe)
-         rg_rmw_t[0] <= io_dc[5];
-   if (~rg_oe)
-      rg_rmw_t[1] <= rg_rmw_t[0];
+         rg_rmw <= io_dc[5];
 end
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (mc_res | dx_stb_l)
+   if (mc_res)
       di_oe <= 1'b0;
    else
-      if (pin_clk_p & di_oe_t)
-         di_oe <= 1'b1;
-
-   if (~pin_clk_p)
-      di_oe_t <= ~di_oe & rply & di_oe_set & din_l;
-
-   if (pin_clk_p)
-      di_rmw_h <= di_rmw;
-
-   if (~pin_clk_p)
-      di_rmw_tl <= di_rmw_t[1];
-
-   if (di_rmw_h | mc_res)
-      di_rmw_t[1] <= 1'b0;
-   else
-      if (di_oe)
-         di_rmw_t[1] <= di_rmw_t[0];
-
-   if (di_rmw_h)
-      di_rmw_t[0] <= 1'b0;
-   else
-      if (~di_oe)
-         di_rmw_t[0] <= io_dc[5];
+      if (dx_stb_rc)
+         di_oe <= 1'b0;
+      else
+         if (di_lat)
+            di_oe <= 1'b1;
 end
 
-assign di_oe_set = ~a21_ins_l & (~io_dc[2] | io_s[4]);
+always @(posedge pin_clk_p or posedge mc_res)
+begin
+   if (mc_res)
+      di_rmw_tl <= 1'b0;
+   else
+      if (di_rmw)
+         di_rmw_tl <= 1'b0;
+      else
+         if (di_lat)
+            di_rmw_tl <= io_dc[5];
+end
+
+assign dx_stb_rc = alu_rd & (dx_mx | dx_my) & ~dx_stb;
+always @(posedge pin_clk_p) dx_stb <= dx_stb_rc;
+
 //______________________________________________________________________________
 //
 // Internal data bus mux
@@ -943,9 +853,9 @@ assign di_oe_set = ~a21_ins_l & (~io_dc[2] | io_s[4]);
 //
 // VM3 bug - SR3 reserved bits are read out as ones (should be zeroes)
 //
-assign d = (do_oe  ? do_reg : 16'o000000)    // ALU output
+assign d = (do_oe  ? fx     : 16'o000000)    // ALU output
          | (di_oe  ? di_reg : 16'o000000)    // Data input
-         | (ir_oe  ? ireg_t : 16'o000000)    // Instruction
+         | (ir_oe  ? ireg   : 16'o000000)    // Instruction
          | (psw_oe ? psw    : 16'o000000)    // PSW
          | (par_oe ? par_d  : 16'o000000)    // MMU PARs
          | (pdr_oe ? pdr_d  : 16'o000000)    // MMU PDRs
@@ -961,45 +871,30 @@ assign par_d = {sr3_ah ? mmu_a[15:12] : 4'o00, mmu_a[11:0]};
 assign pdr_d = {1'b0, mmu_d[14:8], 1'b0, mmu_d[6], 2'b00, mmu_d[3:1], 1'b0};
 assign dx = dx_swp ? {d[7:0], d[15:8]} : d;
 
-always @(*)
-begin
-   if (~rg_oe)
-   begin
-      psw_oe_t  <= r7777;
-      sr0_oe_t  <= r757x & ~la[2] & la[1];
-      sr2_oe_t  <= r757x &  la[2] & la[1];
-      parh_oe_t <= r251x & ~la[2];
-   end
-end
-
-assign parh_oe = parh_oe_t & rg_oe;
-assign psw_oe = psw_oe_t & rg_oe;
-assign sr0_oe = sr0_oe_t & rg_oe;
-assign sr2_oe = sr2_oe_t & rg_oe;
-assign sr3_oe = rg_oe & r251x & la[2];
-assign par_oe = rd_2376 &  la[5] | parh_oe;
-assign pdr_oe = rd_2376 & ~la[5];
+assign psw_oe = rg_oe & r7777;
+assign sr0_oe = rg_oe & r757x & ~la[2] & la[1];
+assign sr2_oe = rg_oe & r757x &  la[2] & la[1];
+assign sr3_oe = rg_oe & r251x &  la[2];
+assign par_oe = rg_oe & r2376 &  la[5] | parh_oe;
+assign pdr_oe = rg_oe & r2376 & ~la[5];
+assign parh_oe = rg_oe & r251x & ~la[2];
 
 //______________________________________________________________________________
 //
 // Reset circuits
 //
-always @(*)
-begin
-   if (~pin_clk_p) dclo_in[0] <= pin_dclo;
-   if ( pin_clk_p) dclo_in[1] <= dclo_in[0];
-   if (~pin_clk_p) dclo_l <= dclo;
-end
+always @(posedge pin_clk_p) dclo <= pin_dclo;
 
-assign dclo = dclo_in[1];
-
-always @(*)
+always @(posedge pin_clk_p or posedge dclo)
 begin
-   if (dclo | init_clr)
+   if (dclo)
       init_out <= 1'b0;
    else
-      if (init_set)
-         init_out <= 1'b1;
+      if (init_clr)
+         init_out <= 1'b0;
+      else
+         if (init_set)
+            init_out <= 1'b1;
 end
 
 assign init_clr = alu_rd & (rsel[7:4] == 4'b1011);
@@ -1007,25 +902,19 @@ assign init_set = alu_rd & (rsel[7:4] == 4'b1010)
                 & ~mt_mod[6] & ~plm[22] & plm[24];
 
 assign mc_res = dclo | abort;
-always @(*)
-begin
-   if (~pin_clk_p) mc_res_l <= mc_res;
-end
 
 //______________________________________________________________________________
 //
 // Instruction register pipeline
 //
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (ir_stb) ireg[15:0] <= pin_ad_in[15:0];
-   if (pir_lat) ireg_p[15:0] <= ireg[15:0];
+   if (dc_stb) ireg_p[15:0] <= ireg[15:0];
    if (plr_lat) ireg_r[8:0] <= ireg_p[8:0];
    if (plm_lat) ireg_m[8:0] <= ireg_r[8:0];
-   if (~ir_oe) ireg_t[15:0] <= ireg[15:0];
 end
 
-assign pir_lat = ~plr_lat & dc_stb;
 assign ir_oe = ~ir_stb_l & ir_doe & s0_rdy;
 assign ir_zf = ~ir_stb & (ireg[15:0] == 16'o000000);
 assign s0_rdy = io_s0_rd | ~do_oe;
@@ -1046,7 +935,7 @@ begin
          ir_stb <=1'b0;
 
    if (~pin_clk_p)
-      ir_stb_t <= ir_stb & ir_stb_l & ~mc_res & rply & ir_clr & din_l;
+      ir_stb_t <= ir_stb & ~mc_res & ir_clr & rply & din;
 
    if (mc_res | doe_clr)
       ir_doe <=1'b0;
@@ -1067,12 +956,6 @@ begin
    if (pin_clk_p) ir_oe_h <= ir_oe;
    if (pin_clk_p) ir_doe_h <= ir_doe;
    if (~pin_clk_p) ir_stb_l <= ir_stb;
-   if (pin_clk_p) ir_stb_lh <= ir_stb_l;
-end
-
-always @(*)
-begin
-
 end
 
 //______________________________________________________________________________
@@ -1081,18 +964,15 @@ end
 //
 vm3_pld pld_mx(.ins(lin_en), .fpp(1'b0), .ir(ireg), .dc(pld[21:0]));
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (dc_stb)
    begin
       dc[21:0] <= pld[21:0];
       dci[8:6] <= ri[0] ? 3'b000 : {~pld[8], ~pld[7], pld[6]};
    end
-end
 
-always @(*)
-begin
-   if (dcf_stb)
+   if (plr_lat)
       dcf_r[3:0] <= dc[21:18];
    if (plm_lat)
       dcf_m[3:0] <= dcf_r[3:0];
@@ -1101,7 +981,6 @@ end
 assign dc_rtx = dc[6] & ~dc[7] & dc[8] & dc[21];            // rtt/rti
 assign dc_rtt = dc[6] & ~dc[7] & dc[8] & dc[21] & ~dc[20];  // rtt
 
-assign dcf_stb =  plr_lat & ~dc_stb;
 assign lin_en  =  plr[16] | ~plr[8];
 assign plm85n  = ~plm[16] |  plm[8];
 assign plm85p  = ~plm[16] | ~plm[8];
@@ -1115,9 +994,8 @@ begin
 
    if (pin_clk_p)
    begin
-      dc_stb_set[0] <= ~dc_stb & ~pf_n[0] & ~pf_n[1]
-                     & fpp_ir & &dc_en[3:0];
-      dc_stb_set[1] <= ~dc_stb & fpp_ir & fpp_pa;
+      dc_stb_set[0] <= ~dc_stb & pf_11 & ir_rdy & &dc_en[3:0];
+      dc_stb_set[1] <= ~dc_stb & ir_rdy & pa_rdy;
       dc_stb_set[2] <= ~dc_stb & plm_lat & ~lin_en;
    end
 
@@ -1148,12 +1026,8 @@ end
 //
 vm3_plm plm_mx(.dc(m[22:9]), .mx(m[8]), .ma(m[7:0]), .sp(pl));
 
-always @(*)
-begin
-   if (~plm_en)
-   begin
-      m[7:0]  <= ma[7:0];
-      m[8]    <= (plm[14:12] == 3'b000) & ~m8_in[0]
+assign m[7:0]  = ma[7:0];
+assign m[8]    = (plm[14:12] == 3'b000) & ~m8_in[0]
                | (plm[14:12] == 3'b001) & ~m8_in[1]
                | (plm[14:12] == 3'b010) & ~m8_in[2]
                | (plm[14:12] == 3'b011) & ~m8_in[3]
@@ -1161,11 +1035,9 @@ begin
                | (plm[14:12] == 3'b101) & ~m8_in[5]
                | (plm[14:12] == 3'b110) & ~m8_in[6]   // take branch
                | (plm[14:12] == 3'b111) & ~m8_in[7];  // halt mode
-      m[22:9] <= {dc[21:20], dc[17:13], dc[3], dc[11:9], dci[8:6]};
-   end
-end
+assign m[22:9] = {dc[21:20], dc[17:13], dc[3], dc[11:9], dci[8:6]};
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (m0_clr)
       ma[0] <= 1'b0;
@@ -1178,7 +1050,10 @@ begin
          else
             if (ma_ldr)
                ma[0] <= pld[0];
+end
 
+always @(posedge pin_clk_p or posedge mc_res)
+begin
    if (mc_res)
       ma[7:1] <= {2'b00, ma[5:3], 2'b11};
    else
@@ -1192,36 +1067,33 @@ end
 always @(*)
 begin
    if (mc_res | ma_ldr)
-      ma_lat_t[0] <= 1'b0;
+      ma_lat_t <= 1'b0;
    else
       if (plm_en)
-         ma_lat_t[0] <= 1'b1;
-
-   if (mc_res | ma_ldr)
-      ma_lat_t[1] <= 1'b0;
-   else
-      if (plm_en)
-         ma_lat_t[1] <= ma_lat_t[0];
+         ma_lat_t <= 1'b1;
 
    if (plm_en | ma_ldr | mc_res)
       ma_lat <= 1'b0;
    else
-      if (ma_lat_t[1])
+      if (ma_lat_t)
          ma_lat <= 1'b1;
 end
 
-assign m0_clr = ~dclo_l & mc_res & (mmu_req | ~vec_bus);
-assign m0_set =  dclo_l | (mc_res & ~(mmu_req | ~vec_bus));
-assign ma_ldr = ma_ldr_t & dc_stb;
-always @(*) if (~dc_stb) ma_ldr_t <= lin_en;
+assign m0_clr = ~dclo & mc_res & (mmu_req | ~vec_bus);
+assign m0_set =  dclo | (mc_res & ~(mmu_req | ~vec_bus));
+assign ma_ldr = lin_en & dc_stb;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (plr_lat) na[7:0] <= pl[7:0];
    if (plr_lat) plr[37:8] <= pl[37:8];
    if (plm_lat) plm[25:8] <= plr[25:8];
    if (plm_lat) plm[32:27] <= plr[32:27];
    if (plm_lat) plm[37:34] <= plr[37:34];
+end
+
+always @(posedge pin_clk_p or posedge mc_res)
+begin
    if (mc_res)
    begin
       plm[26] <= 1'b1;
@@ -1262,7 +1134,7 @@ begin
    if (pin_clk_p) plr_lat_h <= plr_lat;
 end
 
-assign plm_set0 = pf_rdy & (pf_n[0] | ~pf_ena) & (pf_p[1] | ~pf_ena);
+assign plm_set0 = pf_rdy & (pf_10 | ~pf_ena);
 assign plm_set1 = ~plm_set1_t[0] | plm_set1_t[2];
 always @(*)
 begin
@@ -1313,24 +1185,23 @@ assign m8_in[2] = alu_zfr ? r10_b15 : rra15_t[1];
 assign m8_in[3] = ( rra15_t[1] | ~rra[15])
                 & (~rra15_t[1] |  rra[15] | rra_zf)
                 & (alu_vfr_t[0] ^ alu_vfr_t[1]);
-assign m8_in[4] = ( dc[20] |  dc[21])     // FPP stub
-                & (~dc[20] | ~dc[21]);
+assign m8_in[4] = dc[20] ^ dc[21]; // FPP stubs
 assign m8_in[5] = pin_bsel;
 assign m8_in[7] = hmod;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
+   if (rra_shl & alu_stb) rra15_t[0] <= rra[15];
+   if (rra_wr) rra15_t[1] <= rra15_t[0];
+
+   if (alu_wr & ~eac[0]) alu_vfr_t[0] <= ~cia[6];
+   if (alu_wr & ~eac0_t[2]) alu_vfr_t[1] <= ~cia[6];
+
    if (alu_wr)
    begin
       alu_zfr <= alu_zf;
       alu_nfr <= ~cia[2];
    end
-
-   if (rra_shl) rra15_t[0] <= rra[15];
-   if (rra_wr) rra15_t[1] <= rra15_t[0];
-
-   if (alu_wra & ~eac[0]) alu_vfr_t[0] <= ~cia[6];
-   if (alu_wra & ~eac0_t[2]) alu_vfr_t[1] <= ~cia[6];
 
    if (alu_stb) eac0_t[0] <= eac[0];
    if (~alu_stb) eac0_t[1] <= eac0_t[0];
@@ -1343,12 +1214,15 @@ end
 //
 assign alu_rdy = ~alu_ea[1] & ~alu_plm_h;
 assign alu_rq = ~alu_st[0] & alu_plm & alu_run;
-assign alu_wra = alu_wr & ~pin_clk_p;
-assign alu_run = iodc_rdy_l & plm_rdy & ~io_s[2] & s0_rdy
-               & (rd_oe_l | ~plm[11] | plm[15])
-               & (rd_oe_l | ~plm[22] | plm[24]);
 
-always @(negedge pin_clk_p)
+assign alu_mc = plm_lat ?
+                (~plr[11] | plr[15]) & (~plr[22] | plr[24]) :
+                (~plm[11] | plm[15]) & (~plm[22] | plm[24]);
+
+assign alu_run = iodc_rdy_l & plm_rdy & ~io_s[2]
+               & s0_rdy & (rd_oe_l | alu_mc);
+
+always @(posedge pin_clk_n)
 begin
    alu_st[0] <= alu_rq & ~alu_st[0];
    alu_st[1] <= alu_st[0] & ~mc_res;
@@ -1364,8 +1238,6 @@ begin
       if (alu_stb)
          alu_ea[1] <= ~eac[4];
 
-   if (alu_stb) plm_as[33:18] <= plm[33:18];
-
    if (mc_res | alu_st[1])
          alu_plm <= 1'b0;
    else
@@ -1376,23 +1248,35 @@ begin
    if (pin_clk_p & alu_rq)
       alu_rd <= 1'b1;
    else
-      if (alu_st[1] | mc_res_l)
+      if (alu_st[1] | mc_res)
          alu_rd <= 1'b0;
+end
 
-   if (pin_clk_p)
-      alu_wr <= alu_st[1];
+assign alu_wr_rc = alu_st[1];
+assign alu_stb_rc = ~alu_st[1] & alu_st[0];
 
-   if (alu_wr | mc_res_l)
+always @(posedge pin_clk_p or posedge mc_res)
+begin
+   if (mc_res)
       alu_stb <= 1'b0;
    else
-      if (alu_st[0] & ~mc_res & pin_clk_p & ~alu_stb)
-         alu_stb <= 1'b1;
+      if (alu_wr_rc)
+         alu_stb <= 1'b0;
+      else
+         if (alu_stb_rc)
+            alu_stb <= 1'b1;
+end
+
+always @(posedge pin_clk_p)
+begin
+   alu_wr <= alu_wr_rc;
+
+   if (alu_stb_rc)
+      plm_as[33:18] <= plm[33:18];
 end
 
 always @(*)
 begin
-   if (~pin_clk_p) alu_stb_l <= alu_stb;
-
    if (~pin_clk_p) alu_rd_l <= alu_rd;
    if (pin_clk_p) alu_rd_lh <= alu_rd_l;
    if (~pin_clk_p) alu_rd_lhl <= alu_rd_lh;
@@ -1411,8 +1295,6 @@ begin
 
    if (pin_clk_p) io_s3_h <= io_s[3];
    if (~pin_clk_p) io_s3_hl <= io_s3_h;
-   if (pin_clk_p) io_s4_h <= io_s[4];
-   if (~pin_clk_p) io_s4_hl <= io_s4_h;
 
    if (mc_res | dout_dn)
       io_s3_wr <= 1'b0;
@@ -1474,19 +1356,20 @@ case(csel)
 endcase
 end
 
-always @(*) if (~alu_rd) csel[4:0] <= {plm[13] & plm[37] & plm[36], plm[37:34]};
-always @(*) if (~alu_rd) vsel[3:0] <= {~ov[2], ov[1], ov[0], ~ov[3]};
+assign csel[4:0] = {plm[13] & plm[37] & plm[36], plm[37:34]};
+assign vsel[3:0] = {~ov[2], ov[1], ov[0], ~ov[3]};
 
-assign vsel_my = alu_rd & vec_stb;
-assign csel_my = alu_rd & con_stb;
 //
 // Update register by 2 selector (alternate constant)
 //
 assign ac_dst = (ireg_m[2] & ireg_m[1]) | ac_plm;
 assign ac_src = (ireg_m[8] & ireg_m[7]) | ac_plm;
 
-always @(*) if (plm_lat) ac_plm <= ac_plr;
-always @(*) if (plr_lat & ~dc_stb) ac_plr <= ~dc[13];
+always @(posedge pin_clk_p)
+begin
+   if (plm_lat) ac_plm <= ac_plr;
+   if (plr_lat) ac_plr <= ~dc[13];
+end
 
 //______________________________________________________________________________
 //
@@ -1708,9 +1591,15 @@ vm3_plb plb_mx(.br({ireg_p[15], ireg_p[10:8], psw[3:0]}), .sp(m8_in[6]));
 //
 vm3_plf plf_mx(.cf(cia), .fl(plf));
 
-always @(*)
+assign cia_s4 = ~(alu_shr & af[0]);
+assign cia_s6 = ~(plm[28] ? af[15] : af[7]);
+
+always @(posedge pin_clk_p)
 begin
-   if (alu_stb)
+   if (alu_wr)
+      eaf4 <= plf[4] & ~eac[4];
+
+   if (alu_stb & alu_wr_rc)
    begin
       cia[0]  <= ~(rra_shr & rra[0]);
       cia[1]  <= ~(f[15:0] == 16'o177777);
@@ -1729,18 +1618,16 @@ begin
    end
 end
 
-always @(negedge alu_stb) eaf4 <= plf[4] & ~eac[4];
-
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (~psw_lat)
-      psw_t[15:14] <= psw_smod ? psw[15:14] : f[15:14];
+   if (alu_stb & alu_wr_rc)
+      psw_smod_sa <= psw_smod;
 
    if (pswh_inf)
-      psw[15:12] <= {f[15:14], psw_t[15:14]};
+      psw[15:12] <= {fr[15:14], psw_smod_sa ? psw[15:14] : fr[15:14]};
    else
       if (pswh_ind)
-         psw[15:12] <= d[15:12];
+         psw[15:12] <= fx[15:12];
 
    psw[11:8] <= 4'b0000;               // always zero, reserved
 
@@ -1749,52 +1636,48 @@ begin
    else
    begin
       if (pswh_inf)
-         psw[7:5] <= f[7:5];
+         psw[7:5] <= fr[7:5];
       else
          if (pswl_ind)
-            psw[7:5] <= d[7:5];
+            psw[7:5] <= fx[7:5];
       if (pswl_inf)                    // T-bit can't be altered
-         psw[4] <= f[4];               // from data bus, ALU only
+         psw[4] <= fr[4];               // from data bus, ALU only
    end
 
-   if (pswl_stb)
-      psw_s[3:0] <= psw[3:0];          // save flags to backup register
-
-   if (pswl_inp)
-      psw[3:0] <= plf[3:0];
+   if (pswl_ind)
+      psw[3:0] <= fx[3:0];
    else
-      if (pswl_inf)
-         psw[3:0] <= f[3:0];
+      if (pswl_inp)
+         psw[3:0] <= plf[3:0];
       else
-         if (pswl_ind)
-            psw[3:0] <= d[3:0];
+         if (pswl_inf)
+            psw[3:0] <= fr[3:0];
          else
             if (pswl_ins)              // restore flags on bus timeout
                psw[3:0] <= psw_s[3:0]; // from the hidden backup register
+
+   if (pswl_stb)
+      psw_s[3:0] <= psw[3:0];          // save flags to backup register
 end
 
 assign psw_smod = ~ba_pca & mt_op[1];
-assign psw_lat  = alu_wr | pswh_ind | pswl_ind | pswl_ins;
 assign pswl_ins = pswl_ins_t & qerr_lh;
 assign pswh_ind = rg_wr & r7777 & dwbh;
 assign pswl_ind = rg_wr & r7777 & dwbl;
 assign pswh_inf = pswh_inf_t & alu_wr;
 assign pswl_inf = pswl_inf_t & alu_wr;
-assign pswl_inp = pswl_inp_t & alu_wr & ~pswl_ind & ~pswl_ind_t;
+assign pswl_inp = pswl_inp_t & alu_wr & ~pswl_ind;
 assign pswl_stb = (plm_as[31:29] == 3'b100) & ~alu_wr & alu_stb;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (~pin_clk_p) pswl_ind_t <= pswl_ind;
-   if (~psw_lat)
+   if (alu_stb & alu_wr_rc)
    begin
+      pswl_inp_t <= plm_as[18];
       pswh_inf_t <= (plm_as[31:29] == 3'b101) & (~mt_mod[6] | ~dc_rtx);
       pswl_inf_t <= (plm_as[31:29] == 3'b101);
-      pswl_inp_t <= plm_as[18] & ~pswl_ind & ~pswl_ind_t;
+      pswl_ins_t <= (plm_as[31:29] == 3'b100);
    end
-
-   if (~alu_stb)
-      pswl_ins_t <= plm_as[31:29] == 3'b100;
 end
 
 //______________________________________________________________________________
@@ -1820,35 +1703,21 @@ assign my = (dx_my   ? dx   : 16'o000000)    // Data bus byte swap
           | (vsel_my ? vmux : 16'o000000)    // Vector selector
           | (csel_my ? cmux : 16'o000000);   // Constant selector
 
-always @(*)
-begin
-   if (~alu_rd)
-   begin
-      mx_rx_t  <=  plm[11] | ~plm[15];
-      pc_rx_t  <= ~plm[11] &  plm[15] & rsel[2] & rsel[1] & rsel[0];
-      dx_mx_t  <=  plm[11] & ~plm[15];
-      rra_mx_t <= ~plm[11] & ~plm[15];
-      psw_mx_t <=  plm[11] &  plm[15];
+assign psw_mx =  plm[11] &  plm[15];
+assign mx_rx  =  plm[11] | ~plm[15];
+assign pc_rx  = ~plm[11] &  plm[15] & rsel[2] & rsel[1] & rsel[0];
+assign dx_mx  =  plm[11] & ~plm[15];
+assign rra_mx = ~plm[11] & ~plm[15];
 
-      my_ry_t  <=  plm[22] | ~plm[24];
-      pc_ry_t  <= ~plm[22] &  plm[24] & rsel[6] & rsel[5] & rsel[4];
-      dx_my_t  <=  plm[22] & ~plm[24];
-      rra_my_t <=  plm[22] &  plm[24];
+assign my_ry  =  plm[22] | ~plm[24];
+assign pc_ry  = ~plm[22] &  plm[24] & rsel[6] & rsel[5] & rsel[4];
+assign dx_my  =  plm[22] & ~plm[24];
+assign rra_my =  plm[22] &  plm[24];
 
-      ba_fsel_t <= plm_f32;
-   end
-end
-
-assign mx_rx  = alu_rd & mx_rx_t;
-assign my_ry  = alu_rd & my_ry_t;
-assign pc_rx  = alu_rd & pc_rx_t;
-assign pc_ry  = alu_rd & pc_ry_t;
-assign dx_mx  = alu_rd & dx_mx_t;
-assign dx_my  = alu_rd & dx_my_t;
-assign rra_mx = alu_rd & rra_mx_t;
-assign rra_my = alu_rd & rra_my_t;
-assign psw_mx = alu_rd & psw_mx_t;
-assign ba_fsel = ~(alu_rd & ba_fsel_t);
+assign gr0_rx = ~mx_rx & (dst_r6 ? sys_r6 : ~rsel[0]);
+assign gr0_ry = ~my_ry & (src_r6 ? sys_r6 : ~rsel[4]);
+assign gr1_rx = ~mx_rx & (dst_r6 ? ~sys_r6 : rsel[0]);
+assign gr1_ry = ~my_ry & (src_r6 ? ~sys_r6 : rsel[4]);
 
 //______________________________________________________________________________
 //
@@ -1873,60 +1742,30 @@ assign ba_fsel = ~(alu_rd & ba_fsel_t);
 //
 vm3_plc plc_mx(.ic({plm[33], plm[26], plm[21], plm[20], ic}), .oc(ac));
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (alu_stb)
-      alu_stw <= 1'b0;
-   else
-      if (alu_wr)
-         alu_stw <= 1'b1;
-end
-
-always @(*)
-begin
-   if (alu_stw)
+   if (~alu_stb)
    begin
       ic[0] <= ic0_t;
       ic[1] <= ic1_t;
+      ic[2] <= r11_b15 ^ cia[6];
+      ic[3] <= r10_b15 ^ cia[6];
+      ic[4] <= act_zf;
+      ic[5] <= plm[33] ? ~alu_zf : act_n[5];
+      ic[6] <= plm[33] ? ~rra[0] : act_n[0];
    end
-   else
+   if (alu_stb)
    begin
       ic0_t <= ~ac[8];
       ic1_t <= ~ac[11];
    end
-
-   if (~alu_stb)
-   begin
-      ic[2] <= r11_b15 ^ cia[6];
-      ic[3] <= r10_b15 ^ cia[6];
-      ic[4] <= act_zf;
-      ic[5] <= plm[33] ? ~alu_zf : act_b[5];
-      ic[6] <= plm[33] ? ~rra[0] : act_b[0];
-   end
 end
 
-always @(*)
-begin
-   if (~alu_wr)   // extended arithmetics controls
-   begin
-      eac[0] <= ac[2];
-      eac[1] <= ac[10];
-      eac[2] <= ac[14];
-      eac[3] <= ac[15];
-      eac[4] <= ac[5];
-      psw0r <= psw[0];
-   end
-end
-
-always @(*)
-begin
-   if (~alu_stb)
-   begin
-      alu_shl_t <= ac[13];
-      alu_shr_t <= ~ac[17];
-      alu_dir_t <= ~ac[16];
-   end
-end
+assign eac[0] = ac[2];
+assign eac[1] = ac[10];
+assign eac[2] = ac[14];
+assign eac[3] = ac[15];
+assign eac[4] = ac[5];
 
 assign alu_b = ~ac[6];     // X-argument inversion
 assign alu_c = ~ac[9];     // no add - suppress carries
@@ -1936,41 +1775,38 @@ assign alu_f = ~ac[3];     // ALU OR control
 assign alu_g = ~ac[1];     // ALU OR control
 assign alu_ac = ~ac[7];    // ALU adder lsb carry
 
-assign alu_shl = alu_shl_t & alu_stb;
-assign alu_shr = alu_shr_t & alu_stb;
-assign alu_dir = alu_dir_t & alu_stb;
+assign alu_shl = ac[13];
+assign alu_shr = ~ac[17];
+assign alu_dir = ~ac[16];
 
 always @(*)
 begin
-   if (alu_dir)
-      f <= af;
-   else
-      if (alu_shr)
-         f <= {cin15, af[15:9], cin7, af[7:1]};
+   if (alu_stb)
+   begin
+      if (alu_dir)
+         f <= af;
       else
-         if (alu_shl)
-            f <= {af[14:0], cin0};
+         if (alu_shr)
+            f <= {cin15, af[15:9], cin7, af[7:1]};
+         else
+            if (alu_shl)
+               f <= {af[14:0], cin0};
+   end
 end
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (~alu_stb)
-   begin
-      ax <= x;
-      ay <= y;
-      ana <= 16'o000000;
-      ora <= 16'o177777;
-   end
-   else
-   begin
-      ana <= (alu_d ?  ay : 16'o000000) & (alu_b ? ~ax : ax)
+   if (alu_rd) ax <= x;
+   if (alu_rd) ay <= y;
+   if (alu_stb) fr <= f;
+end
+
+assign ana = (alu_d ?  ay : 16'o000000) & (alu_b ? ~ax : ax)
            | (alu_e ? ~ay : 16'o000000) & (alu_b ? ~ax : ax);
 
-      ora <= (alu_b ? ~ax : ax)
+assign ora = (alu_b ? ~ax : ax)
            | (alu_f ? ~ay : 16'o000000)
            | (alu_g ?  ay : 16'o000000);
-   end
-end
 
 assign s = ora & ~ana;
 assign c = ana | ora & {c[14:0], alu_ac};
@@ -1980,66 +1816,54 @@ assign alu_zh = (f[15:8] == 8'b00000000);
 assign alu_zl = (f[7:0] == 8'b00000000);
 assign alu_zf = alu_zl & (alu_zh | ~plm[28]);
 
-assign cin0 = psw0r & ~ac[12] | rra[15] & (eac[2] | ~eac[3]);
-assign cin7 = plm[28] ? af[8] : (ac[12] ? af[7] : psw0r);
-assign cin15 = ac[12] ? (s[15] ? ~c15af : c15af) : psw0r;
+assign cin0 = psw[0] & ~ac[12] | rra[15] & (eac[2] | ~eac[3]);
+assign cin7 = plm[28] ? af[8] : (ac[12] ? af[7] : psw[0]);
+assign cin15 = ac[12] ? (s[15] ? ~c15af : c15af) : psw[0];
 assign c15af = c[15] & ~alu_c;
 
 //______________________________________________________________________________
 //
 // Extended arithmetics shift register
 //
-always @(*)
-begin
-   if (rra_fwr) rra_ix <= f;
-   if (rra_shr) rra_ix <= {rra_in15, rra[15:1]};
-   if (rra_shl) rra_ix <= {rra[14:0], rra_in0};
-   if (rra_wr) rra <= rra_ix;
-end
+always @(posedge pin_clk_p) if (rra_wr) rra <= rra_ix;
 
-assign rra_zf = (rra_ix == 16'b000000);
-assign rra_shl = alu_stb & eac[2];
-assign rra_shr = alu_stb & ~eac[1];
-assign rra_in0 = ~eac[3] & (r10_b15 ^ cia[6]);
-assign rra_in15 = ~cia[4];
+assign rra_ix = rra_shr ? {rra_in15, rra[15:1]} :
+                rra_shl ? {rra[14:0], rra_in0} : fr;
 
-always @(*)
-begin
-   if (~alu_wr)
-   begin
-      rra_fwr_t <= eac[1] & ~eac[2];
-      rra_wr_t <= ~rra_fwr_t | (plm_as[31:29] == 3'b000);
-   end
-end
+assign rra_zf = (rra_ix == 16'o000000);
+assign rra_shl = eac[2];
+assign rra_shr = ~eac[1];
+assign rra_in0 = ~eac[3] & (r10_b15 ^ cia_s6);
+assign rra_in15 = ~cia_s4;
 
-assign rra_fwr = rra_fwr_t & alu_wr;
-assign rra_wr = rra_wr_t & alu_wra & alu_wr;
+assign rra_wr = (rra_shr | rra_shl | (plm_as[31:29] == 3'b000)) & alu_wr;
 
 //______________________________________________________________________________
 //
 // Extended arithmetics counter
 //
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (act_wr) act_i <= f[5:0];
-   if (act_w15) act_i <= 6'b001111;
-   if (act_w17) act_i <= 6'b010001;
-   if (~act_lat) act_i <= ~act_n ^ {1'b0, act_c[3:0], 1'b1};
-
-   if (act_lat) act_n <= ~act_i;
+   if (alu_wr)
+   begin
+      if (act_wr)
+         act_n <= fr[5:0];
+      else
+      begin
+         if (act_w15)
+            act_n <= 6'b001111;
+         else
+            if (act_w17)
+               act_n <= 6'b010001;
+            else
+               act_n <= act_n ^ {1'b0, act_c[3:0], 1'b1};
+      end
+   end
 end
 
-always @(*)
-begin
-   if (~alu_wr) act_wr_t <= plm_rw & act_rd_t;
-   if (alu_rd) act_rd_t <= ~rsel[0] & ~rsel[1] & rsel[2] & rsel[3];
-end
-
-assign act_wr = act_wr_t & alu_wr;
-assign act_lat = ~alu_stb;
-assign act_c = act_n[3:0] & {act_c[2:0], 1'b1};
-assign act_zf = (act_b[4:1] == 4'b0000);
-assign act_b = ~act_n;
+assign act_wr = alu_wr & plm_rw & act_wr_t;
+assign act_c = ~act_n[3:0] & {act_c[2:0], 1'b1};
+assign act_zf = (act_n[4:1] == 4'b0000);
 
 assign act_w15 = ~eac[0] & eac[3] & ~eac[4];
 assign act_w17 = ~eac[0] & ~eac[3];
@@ -2101,121 +1925,90 @@ assign rsel[7] = ~plm[32];
 //
 // Constant and interrupt vector selectors
 //
-assign con_stb = alu_rd & con_stb_t;
-assign vec_stb = alu_rd & vec_stb_t;
-
-always @(*)
-begin
-   if (~alu_rd)
-   begin
-      vec_stb_t <= ~plm[24] & ~plm[22] & ~plm[13] & (plm[37:34] == 4'b1111);
-      con_stb_t <= ~plm[24] & ~plm[22] & ~(~plm[13] & (plm[37:34] == 4'b1111));
-   end
-end
+assign vsel_my = ~plm[24] & ~plm[22] & ~plm[13] & (plm[37:34] == 4'b1111);
+assign csel_my = ~plm[24] & ~plm[22] & ~(~plm[13] & (plm[37:34] == 4'b1111));
+assign vec_stb = alu_rd & vsel_my;
 
 //
 // Register strobe input latches
 //
 always @(*)
 begin
-   if (~alu_rd)
-   begin
-      gr_rx_t[0] <= ~rsel[3] & ~rsel[2] & ~rsel[1];   // R1:R0
-      gr_rx_t[1] <= ~rsel[3] & ~rsel[2] &  rsel[1];   // R3:R2
-      gr_rx_t[2] <= (~rsel[3] | rsel[0])              // R15 & R5
-                             &  rsel[2] & ~rsel[1];   // R5:R4
-      gr_rx_t[3] <=  rsel[2] &  rsel[1] & ~rsel[0];   // USP:KSP
-      gr_rx_t[4] <=  rsel[3] & ~rsel[2] & ~rsel[1];   // R11:R10
-
-      gr_ry_t[0] <= ~rsel[7] & ~rsel[6] & ~rsel[5];   // R1:R0
-      gr_ry_t[1] <= ~rsel[7] & ~rsel[6] &  rsel[5];   // R3:R2
-      gr_ry_t[2] <= (~rsel[7] | rsel[4])              // R15 & R5
-                             &  rsel[6] & ~rsel[5];   // R5:R4
-      gr_ry_t[3] <=  rsel[6] &  rsel[5] & ~rsel[4];   // USP:KSP
-      gr_ry_t[4] <=  rsel[7] & ~rsel[6] & ~rsel[5];   // R11:R10
-   end
-
    if (alu_rd)
    begin
-      gr_wr_rt[0] <= ~rsel[3] & ~rsel[2] & ~rsel[1];  // R1:R0
-      gr_wr_rt[1] <= ~rsel[3] & ~rsel[2] &  rsel[1];  // R3:R2
-      gr_wr_rt[2] <= (~rsel[3] | rsel[0])             // R15 & R5
-                             &  rsel[2] & ~rsel[1];   // R5:R4
-      gr_wr_rt[3] <=  rsel[2] &  rsel[1] & ~rsel[0];  // USP:KSP
-      gr_wr_rt[4] <=  rsel[3] & ~rsel[2] & ~rsel[1];  // R11:R10
-
+      gr_wr_t <= gr_rx;
       gr0_wr_t <= dst_r6 ? sys_r6 : ~rsel[0];
       gr1_wr_t <= dst_r6 ? ~sys_r6 : rsel[0];
-   end
-
-   if (~alu_wr)
-   begin
-      gr_wr_wt <= plm_rw ? gr_wr_rt : 5'b00000;
-
-      gr0_wl_t <= plm_rw & gr0_wr_t;
-      gr0_wh_t <= plm_rw & gr0_wr_t & plm_as[28];
-      gr1_wl_t <= plm_rw & gr1_wr_t;
-      gr1_wh_t <= plm_rw & gr1_wr_t & plm_as[28];
+      act_wr_t <= rsel[3:0] == 4'b1100;
+      pc_wr_t <= rsel[2:0] == 3'b111;
    end
 end
 
-assign gr_rx = alu_rd ? gr_rx_t  : 5'b00000;
-assign gr_ry = alu_rd ? gr_ry_t  : 5'b00000;
-assign gr_wr = alu_wr ? gr_wr_wt : 5'b00000;
+assign gr_rx[0] = ~rsel[3] & ~rsel[2] & ~rsel[1];  // R1:R0
+assign gr_rx[1] = ~rsel[3] & ~rsel[2] &  rsel[1];  // R3:R2
+assign gr_rx[2] = (~rsel[3] | rsel[0])             // R15 & R5
+                &  rsel[2] & ~rsel[1];             // R5:R4
+assign gr_rx[3] = rsel[2] &  rsel[1] & ~rsel[0];   // USP:KSP
+assign gr_rx[4] = rsel[3] & ~rsel[2] & ~rsel[1];   // R11:R10
+
+assign gr_ry[0] = ~rsel[7] & ~rsel[6] & ~rsel[5];  // R1:R0
+assign gr_ry[1] = ~rsel[7] & ~rsel[6] &  rsel[5];  // R3:R2
+assign gr_ry[2] = (~rsel[7] | rsel[4])             // R15 & R5
+                &  rsel[6] & ~rsel[5];             // R5:R4
+assign gr_ry[3] = rsel[6] &  rsel[5] & ~rsel[4];   // USP:KSP
+assign gr_ry[4] = rsel[7] & ~rsel[6] & ~rsel[5];   // R11:R10
+
+assign gr_wr = (alu_wr & plm_rw) ? gr_wr_t : 5'b00000;
 
 assign plm_rw = (plm_as[31:29] == 3'b010) | (plm_as[31] & plm_as[30]);
-assign dst_r6 = alu_rd & rsel[2] & rsel[1] & ~rsel[0];
-assign src_r6 = alu_rd & rsel[6] & rsel[5] & ~rsel[4];
+assign dst_r6 = rsel[2] & rsel[1] & ~rsel[0];
+assign src_r6 = rsel[6] & rsel[5] & ~rsel[4];
 assign psw_r6 = (iop != 4'b0001) & (iop != 4'b1000);
 assign sys_r6 = psw_r6 ? ~psw[15] : ~psw[13];
 
-assign gr0_rx = ~mx_rx & (dst_r6 ? sys_r6 : ~rsel[0]);
-assign gr0_ry = ~my_ry & (src_r6 ? sys_r6 : ~rsel[4]);
-assign gr0_wl = alu_wr & gr0_wl_t;
-assign gr0_wh = alu_wr & gr0_wh_t;
+assign gr0_wl = alu_wr & plm_rw & gr0_wr_t;
+assign gr0_wh = alu_wr & plm_rw & gr0_wr_t & plm_as[28];
 
-assign gr1_rx = ~mx_rx & (dst_r6 ? ~sys_r6 : rsel[0]);
-assign gr1_ry = ~my_ry & (src_r6 ? ~sys_r6 : rsel[4]);
-assign gr1_wl = alu_wr & gr1_wl_t;
-assign gr1_wh = alu_wr & gr1_wh_t;
+assign gr1_wl = alu_wr & plm_rw & gr1_wr_t;
+assign gr1_wh = alu_wr & plm_rw & gr1_wr_t & plm_as[28];
 
 //______________________________________________________________________________
 //
 // Register files
 //
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (gr0_wl)
    begin
-      if (gr_wr[0]) gr0[0][7:0] <= f[7:0];
-      if (gr_wr[1]) gr0[1][7:0] <= f[7:0];
-      if (gr_wr[2]) gr0[2][7:0] <= f[7:0];
-      if (gr_wr[3]) gr0[3][7:0] <= f[7:0];
-      if (gr_wr[4]) gr0[4][7:0] <= f[7:0];
+      if (gr_wr[0]) gr0[0][7:0] <= fr[7:0];
+      if (gr_wr[1]) gr0[1][7:0] <= fr[7:0];
+      if (gr_wr[2]) gr0[2][7:0] <= fr[7:0];
+      if (gr_wr[3]) gr0[3][7:0] <= fr[7:0];
+      if (gr_wr[4]) gr0[4][7:0] <= fr[7:0];
    end
    if (gr0_wh)
    begin
-      if (gr_wr[0]) gr0[0][15:8] <= f[15:8];
-      if (gr_wr[1]) gr0[1][15:8] <= f[15:8];
-      if (gr_wr[2]) gr0[2][15:8] <= f[15:8];
-      if (gr_wr[3]) gr0[3][15:8] <= f[15:8];
-      if (gr_wr[4]) gr0[4][15:8] <= f[15:8];
+      if (gr_wr[0]) gr0[0][15:8] <= fr[15:8];
+      if (gr_wr[1]) gr0[1][15:8] <= fr[15:8];
+      if (gr_wr[2]) gr0[2][15:8] <= fr[15:8];
+      if (gr_wr[3]) gr0[3][15:8] <= fr[15:8];
+      if (gr_wr[4]) gr0[4][15:8] <= fr[15:8];
    end
    if (gr1_wl)
    begin
-      if (gr_wr[0]) gr1[0][7:0] <= f[7:0];
-      if (gr_wr[1]) gr1[1][7:0] <= f[7:0];
-      if (gr_wr[2]) gr1[2][7:0] <= f[7:0];
-      if (gr_wr[3]) gr1[3][7:0] <= f[7:0];
-      if (gr_wr[4]) gr1[4][7:0] <= f[7:0];
+      if (gr_wr[0]) gr1[0][7:0] <= fr[7:0];
+      if (gr_wr[1]) gr1[1][7:0] <= fr[7:0];
+      if (gr_wr[2]) gr1[2][7:0] <= fr[7:0];
+      if (gr_wr[3]) gr1[3][7:0] <= fr[7:0];
+      if (gr_wr[4]) gr1[4][7:0] <= fr[7:0];
    end
    if (gr1_wh)
    begin
-      if (gr_wr[0]) gr1[0][15:8] <= f[15:8];
-      if (gr_wr[1]) gr1[1][15:8] <= f[15:8];
-      if (gr_wr[2]) gr1[2][15:8] <= f[15:8];
-      if (gr_wr[3]) gr1[3][15:8] <= f[15:8];
-      if (gr_wr[4]) gr1[4][15:8] <= f[15:8];
+      if (gr_wr[0]) gr1[0][15:8] <= fr[15:8];
+      if (gr_wr[1]) gr1[1][15:8] <= fr[15:8];
+      if (gr_wr[2]) gr1[2][15:8] <= fr[15:8];
+      if (gr_wr[3]) gr1[3][15:8] <= fr[15:8];
+      if (gr_wr[4]) gr1[4][15:8] <= fr[15:8];
    end
 end
 
@@ -2253,13 +2046,13 @@ assign ry1 = (gr_ry[0] ? gr1[0] : 16'o000000)
 always @(*)
 begin
    if (pc_wr0)
-      pc <= f;
+      pc <= fr;
    else
       if (pc_wr1)
          pc[15:1] <= pc2[15:1];
 
    if (pc_wr0)
-      pc2[15:0] <= {f[15:1], 1'b0};
+      pc2[15:0] <= {fr[15:1], 1'b0};
    else
       if (pc_wr2)
          pc2[15:0] <= pc2_t[15:0];
@@ -2274,47 +2067,103 @@ assign pca = {pc2[15:1], pc[0]} + 16'o000002;
 //
 // MMU registers
 //
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (par_wl)
    begin
-      if (parh_sel[2]) parh[7:0] <= d[7:0];
-      if (padr_sel[0]) par[0][7:0] <= d[7:0];
-      if (padr_sel[1]) par[1][7:0] <= d[7:0];
-      if (padr_sel[2]) par[2][7:0] <= d[7:0];
-      if (padr_sel[3]) par[3][7:0] <= d[7:0];
-      if (padr_sel[4]) par[4][7:0] <= d[7:0];
-      if (padr_sel[5]) par[5][7:0] <= d[7:0];
-      if (padr_sel[6]) par[6][7:0] <= d[7:0];
-      if (padr_sel[7]) par[7][7:0] <= d[7:0];
-      if (padr_sel[8]) par[8][7:0] <= d[7:0];
-      if (padr_sel[9]) par[9][7:0] <= d[7:0];
-      if (padr_sel[10]) par[10][7:0] <= d[7:0];
-      if (padr_sel[11]) par[11][7:0] <= d[7:0];
-      if (padr_sel[12]) par[12][7:0] <= d[7:0];
-      if (padr_sel[13]) par[13][7:0] <= d[7:0];
-      if (padr_sel[14]) par[14][7:0] <= d[7:0];
-      if (padr_sel[15]) par[15][7:0] <= d[7:0];
+      if (parh_sel[2]) parh[7:0] <= fx[7:0];
+      if (padr_sel[0]) par[0][7:0] <= fx[7:0];
+      if (padr_sel[1]) par[1][7:0] <= fx[7:0];
+      if (padr_sel[2]) par[2][7:0] <= fx[7:0];
+      if (padr_sel[3]) par[3][7:0] <= fx[7:0];
+      if (padr_sel[4]) par[4][7:0] <= fx[7:0];
+      if (padr_sel[5]) par[5][7:0] <= fx[7:0];
+      if (padr_sel[6]) par[6][7:0] <= fx[7:0];
+      if (padr_sel[7]) par[7][7:0] <= fx[7:0];
+      if (padr_sel[8]) par[8][7:0] <= fx[7:0];
+      if (padr_sel[9]) par[9][7:0] <= fx[7:0];
+      if (padr_sel[10]) par[10][7:0] <= fx[7:0];
+      if (padr_sel[11]) par[11][7:0] <= fx[7:0];
+      if (padr_sel[12]) par[12][7:0] <= fx[7:0];
+      if (padr_sel[13]) par[13][7:0] <= fx[7:0];
+      if (padr_sel[14]) par[14][7:0] <= fx[7:0];
+      if (padr_sel[15]) par[15][7:0] <= fx[7:0];
    end
    if (par_wh)
    begin
-      if (parh_sel[2]) parh[15:8] <= d[15:8];
-      if (padr_sel[0]) par[0][15:8] <= d[15:8];
-      if (padr_sel[1]) par[1][15:8] <= d[15:8];
-      if (padr_sel[2]) par[2][15:8] <= d[15:8];
-      if (padr_sel[3]) par[3][15:8] <= d[15:8];
-      if (padr_sel[4]) par[4][15:8] <= d[15:8];
-      if (padr_sel[5]) par[5][15:8] <= d[15:8];
-      if (padr_sel[6]) par[6][15:8] <= d[15:8];
-      if (padr_sel[7]) par[7][15:8] <= d[15:8];
-      if (padr_sel[8]) par[8][15:8] <= d[15:8];
-      if (padr_sel[9]) par[9][15:8] <= d[15:8];
-      if (padr_sel[10]) par[10][15:8] <= d[15:8];
-      if (padr_sel[11]) par[11][15:8] <= d[15:8];
-      if (padr_sel[12]) par[12][15:8] <= d[15:8];
-      if (padr_sel[13]) par[13][15:8] <= d[15:8];
-      if (padr_sel[14]) par[14][15:8] <= d[15:8];
-      if (padr_sel[15]) par[15][15:8] <= d[15:8];
+      if (parh_sel[2]) parh[15:8] <= fx[15:8];
+      if (padr_sel[0]) par[0][15:8] <= fx[15:8];
+      if (padr_sel[1]) par[1][15:8] <= fx[15:8];
+      if (padr_sel[2]) par[2][15:8] <= fx[15:8];
+      if (padr_sel[3]) par[3][15:8] <= fx[15:8];
+      if (padr_sel[4]) par[4][15:8] <= fx[15:8];
+      if (padr_sel[5]) par[5][15:8] <= fx[15:8];
+      if (padr_sel[6]) par[6][15:8] <= fx[15:8];
+      if (padr_sel[7]) par[7][15:8] <= fx[15:8];
+      if (padr_sel[8]) par[8][15:8] <= fx[15:8];
+      if (padr_sel[9]) par[9][15:8] <= fx[15:8];
+      if (padr_sel[10]) par[10][15:8] <= fx[15:8];
+      if (padr_sel[11]) par[11][15:8] <= fx[15:8];
+      if (padr_sel[12]) par[12][15:8] <= fx[15:8];
+      if (padr_sel[13]) par[13][15:8] <= fx[15:8];
+      if (padr_sel[14]) par[14][15:8] <= fx[15:8];
+      if (padr_sel[15]) par[15][15:8] <= fx[15:8];
+   end
+
+   if (pdr_wl)
+   begin
+      if (padr_sel[0]) pdr[0][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[1]) pdr[1][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[2]) pdr[2][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[3]) pdr[3][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[4]) pdr[4][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[5]) pdr[5][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[6]) pdr[6][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[7]) pdr[7][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[8]) pdr[8][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[9]) pdr[9][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[10]) pdr[10][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[11]) pdr[11][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[12]) pdr[12][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[13]) pdr[13][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[14]) pdr[14][5:1] <= {2'b00, fx[3:1]};
+      if (padr_sel[15]) pdr[15][5:1] <= {2'b00, fx[3:1]};
+
+      if (padr_sel[0]) pdr[0][7] <= 1'b0;
+      if (padr_sel[1]) pdr[1][7] <= 1'b0;
+      if (padr_sel[2]) pdr[2][7] <= 1'b0;
+      if (padr_sel[3]) pdr[3][7] <= 1'b0;
+      if (padr_sel[4]) pdr[4][7] <= 1'b0;
+      if (padr_sel[5]) pdr[5][7] <= 1'b0;
+      if (padr_sel[6]) pdr[6][7] <= 1'b0;
+      if (padr_sel[7]) pdr[7][7] <= 1'b0;
+      if (padr_sel[8]) pdr[8][7] <= 1'b0;
+      if (padr_sel[9]) pdr[9][7] <= 1'b0;
+      if (padr_sel[10]) pdr[10][7] <= 1'b0;
+      if (padr_sel[11]) pdr[11][7] <= 1'b0;
+      if (padr_sel[12]) pdr[12][7] <= 1'b0;
+      if (padr_sel[13]) pdr[13][7] <= 1'b0;
+      if (padr_sel[14]) pdr[14][7] <= 1'b0;
+      if (padr_sel[15]) pdr[15][7] <= 1'b0;
+   end
+   if (pdr_wh)
+   begin
+      if (padr_sel[0]) pdr[0][14:8] <= fx[14:8];
+      if (padr_sel[1]) pdr[1][14:8] <= fx[14:8];
+      if (padr_sel[2]) pdr[2][14:8] <= fx[14:8];
+      if (padr_sel[3]) pdr[3][14:8] <= fx[14:8];
+      if (padr_sel[4]) pdr[4][14:8] <= fx[14:8];
+      if (padr_sel[5]) pdr[5][14:8] <= fx[14:8];
+      if (padr_sel[6]) pdr[6][14:8] <= fx[14:8];
+      if (padr_sel[7]) pdr[7][14:8] <= fx[14:8];
+      if (padr_sel[8]) pdr[8][14:8] <= fx[14:8];
+      if (padr_sel[9]) pdr[9][14:8] <= fx[14:8];
+      if (padr_sel[10]) pdr[10][14:8] <= fx[14:8];
+      if (padr_sel[11]) pdr[11][14:8] <= fx[14:8];
+      if (padr_sel[12]) pdr[12][14:8] <= fx[14:8];
+      if (padr_sel[13]) pdr[13][14:8] <= fx[14:8];
+      if (padr_sel[14]) pdr[14][14:8] <= fx[14:8];
+      if (padr_sel[15]) pdr[15][14:8] <= fx[14:8];
    end
 end
 
@@ -2339,62 +2188,6 @@ assign mmu_a[15:0] = (parh_sel[2] ? parh : 16'o000000)
 
 always @(*)
 begin
-   if (pdr_wl)
-   begin
-      if (padr_sel[0]) pdr[0][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[1]) pdr[1][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[2]) pdr[2][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[3]) pdr[3][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[4]) pdr[4][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[5]) pdr[5][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[6]) pdr[6][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[7]) pdr[7][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[8]) pdr[8][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[9]) pdr[9][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[10]) pdr[10][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[11]) pdr[11][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[12]) pdr[12][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[13]) pdr[13][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[14]) pdr[14][5:1] <= {2'b00, d[3:1]};
-      if (padr_sel[15]) pdr[15][5:1] <= {2'b00, d[3:1]};
-
-      if (padr_sel[0]) pdr[0][7] <= 1'b0;
-      if (padr_sel[1]) pdr[1][7] <= 1'b0;
-      if (padr_sel[2]) pdr[2][7] <= 1'b0;
-      if (padr_sel[3]) pdr[3][7] <= 1'b0;
-      if (padr_sel[4]) pdr[4][7] <= 1'b0;
-      if (padr_sel[5]) pdr[5][7] <= 1'b0;
-      if (padr_sel[6]) pdr[6][7] <= 1'b0;
-      if (padr_sel[7]) pdr[7][7] <= 1'b0;
-      if (padr_sel[8]) pdr[8][7] <= 1'b0;
-      if (padr_sel[9]) pdr[9][7] <= 1'b0;
-      if (padr_sel[10]) pdr[10][7] <= 1'b0;
-      if (padr_sel[11]) pdr[11][7] <= 1'b0;
-      if (padr_sel[12]) pdr[12][7] <= 1'b0;
-      if (padr_sel[13]) pdr[13][7] <= 1'b0;
-      if (padr_sel[14]) pdr[14][7] <= 1'b0;
-      if (padr_sel[15]) pdr[15][7] <= 1'b0;
-   end
-   if (pdr_wh)
-   begin
-      if (padr_sel[0]) pdr[0][14:8] <= d[14:8];
-      if (padr_sel[1]) pdr[1][14:8] <= d[14:8];
-      if (padr_sel[2]) pdr[2][14:8] <= d[14:8];
-      if (padr_sel[3]) pdr[3][14:8] <= d[14:8];
-      if (padr_sel[4]) pdr[4][14:8] <= d[14:8];
-      if (padr_sel[5]) pdr[5][14:8] <= d[14:8];
-      if (padr_sel[6]) pdr[6][14:8] <= d[14:8];
-      if (padr_sel[7]) pdr[7][14:8] <= d[14:8];
-      if (padr_sel[8]) pdr[8][14:8] <= d[14:8];
-      if (padr_sel[9]) pdr[9][14:8] <= d[14:8];
-      if (padr_sel[10]) pdr[10][14:8] <= d[14:8];
-      if (padr_sel[11]) pdr[11][14:8] <= d[14:8];
-      if (padr_sel[12]) pdr[12][14:8] <= d[14:8];
-      if (padr_sel[13]) pdr[13][14:8] <= d[14:8];
-      if (padr_sel[14]) pdr[14][14:8] <= d[14:8];
-      if (padr_sel[15]) pdr[15][14:8] <= d[14:8];
-   end
-
    if (ws_rst)
       ws_pdr[15:0] <= 16'o000000;
    else
@@ -2470,7 +2263,7 @@ end
 assign ws_set = wr_2376 | rd_2376 | (~ba_pca & op1_wf);
 assign ws_rst = mc_res | (~rd_2376 & rd_2376_lh) | (op3_wf_lh & ws_rst_t1);
 assign wf_set = mmu_en & op3_wf & wrf_set;
-assign wrf_set = (rply & dout_l) | rmsel & ~(r757x & ~la[2] & la[1]) & pa_oe_l;
+assign wrf_set = (rply & dout) | rmsel & ~(r757x & ~la[2] & la[1]) & pa_oe;
 
 assign mmu_d[14:1] = (padr_sel[0] ? pdr[0] : 14'o00000)
                    | (padr_sel[1] ? pdr[1] : 14'o00000)
@@ -2560,7 +2353,7 @@ always @(*) if (~rg_wr) sr3_wr_t <= r251x & la[2];
 
 assign sr3_ah = sr3_as | hmod;     // 22-bit is enforced by halt mode
 
-always @(*)
+always @(posedge pin_clk_p or posedge pin_init_in)
 begin
    if (pin_init_in)
       sr0 <= 16'o000000;
@@ -2584,13 +2377,16 @@ begin
       end
       if (sr0_wh)
       begin
-         sr0[15:13] <= d[15:13];
-         sr0[8] <= d[8];
+         sr0[15:13] <= fx[15:13];
+         sr0[8] <= fx[8];
       end
       if (sr0_wl)
-         sr0[0] <= d[0];
+         sr0[0] <= fx[0];
    end
+end
 
+always @(posedge pin_clk_p or posedge pin_init_in)
+begin
    if (pin_init_in)
    begin
       sr3_um <= 1'b0;
@@ -2599,8 +2395,8 @@ begin
    else
    if (sr3_wr)
    begin
-      sr3_um <= d[5];
-      sr3_as <= d[4];
+      sr3_um <= fx[5];
+      sr3_as <= fx[4];
    end
 end
 
@@ -2610,16 +2406,27 @@ assign sr0_er = sr0[13] | sr0[14] | sr0[15];
 assign mmu_en = sr0_en | sr0_m & mt_op[3];
 assign hm_men = mmu_en | hmod;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (ba_lat0) sr2[0] <= ba;
    if (ba_dir) sr2[1] <= ba;
    if (ba_lat1) sr2[1] <= sr2[0];
    if (ba_lat2) sr2[2] <= sr2[1];
-   if (ba_lat3) sr2[3] <= sr2[2];
-   if (ba_lat4) sr2[4] <= sr2[3];
+
+   if (ba_lat3)
+      if (ba_lat2)
+         sr2[3] <= sr2[1];
+      else
+         sr2[3] <= sr2[2];
+
+   if (ba_lat4)
+      if (ba_lat3)
+         sr2[3] <= sr2[2];
+      else
+         sr2[4] <= sr2[3];
 end
 
+assign ba_fsel = ~(alu_rd & plm_f32);
 assign ba_rdy = ~ba_req & ~pa_oe & ~sa_sxa_h;
 assign ba_dir = (sa_s16 | sa_s22) & pf_00;
 assign ba_lat = (~plm_f32 | ~alu_stb) & hm_lat;
@@ -2629,7 +2436,7 @@ assign ba_lat2 = pa_oe & (~a[0] | ~io_dc[3]);
 assign ba_lat3 = ir_stb;
 assign ba_lat4 = ~sr0_er & ~mrqt_er & dc_stb;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (ra_s22) msta[0] <= {mt_mod[6:5], ba[15:13], mrq_nr, mrq_pl};
    if (ba_lat1) msta[1] <= msta[0];
@@ -2642,7 +2449,10 @@ begin
       msta[2][1:0] <= 2'b00;
       msta[3][1:0] <= 2'b00;
    end
+end
 
+always @(*)
+begin
    if (~at_stb) ba_lat0_t <= ba_pca;
 end
 
@@ -2839,33 +2649,36 @@ end
 //
 // Prefetch controls
 //
-assign pf_p = pf_ena ? pf_t : 3'b111;
-assign pf_n = pf_ena ? ~pf_t : 3'b111;
+assign pf = {plr[12], plr[9], plr[10]};
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (~pf_ena)
-      pf_t <= {pl[12], pl[9], pl[10]};
-
-   if (mc_res | (pf_ena_clr & pin_clk_p))
+   if (mc_res)
       pf_ena <= 1'b0;
    else
-      if (pin_clk_p & plr_lat)
-         pf_ena <= 1'b1;
-
-   if (~pin_clk_p) pf_00_l <= pf_00;
-   if (~pin_clk_p) pf_01_l <= pf_01;
+      if (pf_ena_clr)
+         pf_ena <= 1'b0;
+      else
+         if (plr_lat)
+            pf_ena <= 1'b1;
 end
 
-assign pf_00 = ~pf_p[1] & ~pf_p[0];
-assign pf_01 = ~pf_p[1] & ~pf_n[0];
+always @(posedge pin_clk_n)
+begin
+   pf_00_l <= pf_00;
+   pf_01_l <= pf_01;
+end
+
+assign pf_00 = pf_ena & ~pf[1] & ~pf[0];
+assign pf_01 = pf_ena & ~pf[1] &  pf[0];
+assign pf_10 = pf_ena &  pf[1] & ~pf[0];
+assign pf_11 = pf_ena &  pf[1] &  pf[0];
 assign pf_pa = pf_00a & pa_oe;
 
 assign pf_inv = rd_err | (qt_out & irply_en)
               | (op1_wf & opwf_clr & (rmsel | adr_eq));
 
-assign pf_ena_clr = pf_end0 | dc_stb
-                  | (plm_lat & (pf_01 | (~pf_p[0] & ~pf_n[1])));
+assign pf_ena_clr = pf_end0 | dc_stb | (plm_lat & (pf_01 | pf_10));
 
 always @(*)
 begin
@@ -2902,11 +2715,11 @@ begin
    if (~pin_clk_p) pf_ba0_hl <= pf_ba0_h;
 end
 
-assign pc_wr0 = pc_wr0_wt & alu_wr;
+assign pc_wr0 = alu_wr & plm_rw & pc_wr_t;
 assign pc_wr1 = (pc_wr2 & ~pc2_wrr) | (alu_stb & pc2_wrc_lh);
 assign pc_wr2 = pc3_rdy & ~pf_ba0 & pf_ba0_hl;
 assign pc2_wrc = alu_rd & pc2_wrf & pc2_wrm;
-assign pc2_wrq = ~pf_n[0] & ~pf_n[1] & dc_en[2];
+assign pc2_wrq = pf_11 & dc_en[2];
 
 always @(*)
 begin
@@ -2920,7 +2733,7 @@ begin
       pc2_wrr <= 1'b1;
    else
       if (plr_lat_h)
-         pc2_wrr <= pc2_wrq | (pf_n[2] & pf_01);
+         pc2_wrr <= pc2_wrq | (~pf[2] & pf_01);
 
    if (mc_res | pc2_wrc_lh)
       pc2_wrf <= 1'b0;
@@ -2934,9 +2747,6 @@ end
 
 always @(*)
 begin
-   if (~alu_wr) pc_wr0_wt <= plm_rw & pc_wr0_rt;
-   if (alu_rd) pc_wr0_rt <= rsel[2:0] == 3'b111;
-
    if (~pin_clk_p)
       pc3_rdy_set <= pf_00m & pc_wr0;
 
@@ -2950,15 +2760,15 @@ begin
 end
 
 assign pf_init = pf_00 & plm_lat;
-assign fpp_ir = ~ir_stb & ~ir_doe_h;
+assign ir_rdy = ~ir_stb & ~ir_doe_h;
 
 always @(*)
 begin
    if (pf_pa)
-      fpp_pa <= 1'b1;
+      pa_rdy <= 1'b1;
    else
       if (pf_00m & dc_stb_h)
-         fpp_pa <= 1'b0;
+         pa_rdy <= 1'b0;
 
    if (~pin_clk_p) pf_pa_l <= pf_pa;
 end
@@ -2984,7 +2794,7 @@ assign pf_tout = irply & pf_doe_lh;
 assign pf_tout_st = pf_tout & ~pf_tout_lh;
 assign pf_doe = pf_01 | pc2_wrq | ir_doe_h;
 assign ins_set = sa_pfa | (sa_sxa & pf_00a) | ins_req_l;
-assign pf_ins = pf_n[0] | pf_n[1] | (dc_en[0] & dc_en[2] & dc_en[3]);
+assign pf_ins = ~pf_ena | pf_00 | pf_01 | pf_10 | (dc_en[0] & dc_en[2] & dc_en[3]);
 assign ba_ins = pf_ba0_h & hm_lat_h & ~pf_rdy
               & ~pf_00 & pf_ins & ba_rdy
               & (~pf_doe | (~irply & ~ir_stb));
@@ -3012,7 +2822,7 @@ end
 always @(*)
 begin
    if (~pin_clk_p)
-      pf_end0 <= ~pf_n[1] & ~pf_n[0] & (~dc_en2_h | ~dc_en[0]);
+      pf_end0 <= pf_11 & (~dc_en2_h | ~dc_en[0]);
 
    if (~pin_clk_p)
       pf_end1 <= pf_tout_st | pf_end0_h;
@@ -3078,13 +2888,24 @@ assign io_s[0] = (iop == 4'b0000);
 assign io_s[1] = (iop == 4'b1001) & (ov[3:0] == 4'b0011);
 assign io_s[2] = (iop == 4'b1001) & (ov[3:0] == 4'b0011) & ~dvc_stb;
 assign io_s[3] = (iop == 4'b1101);
-assign io_s[4] = (iop == 4'b0100);
+assign io_s[4] = (iop == 4'b0100);  // FPP read data
+
+always @(posedge pin_clk_p or posedge mc_res)
+begin
+   if (mc_res)
+      alu_drdy <= 1'b0;
+   else
+      if (do_clr)
+         alu_drdy <= 1'b0;
+      else
+         if ((do_lat | do_oe) & ~io_s0_rd)
+            alu_drdy <= 1'b1;
+end
 
 always @(*)
 begin
    if (alu_stb) io_s0_as <= io_s[0];
    if (~alu_rd) io_s0_rd <= io_s0_as;
-   if (pin_clk_p) alu_drdy <= do_oe & ~io_s0_rd;
 
    if (io_lat0)
       op0_wf <= plm[23] & (~plm[25] | plm[19]);
@@ -3144,7 +2965,6 @@ assign mt_op[3] = iop_m[4];
 assign dwbh = io_dc[3] |  la[0]; // io_dc[3] - word operation
 assign dwbl = io_dc[3] | ~la[0]; //
 
-
 assign io_lat0 = (plm_f30 | plm_f31 | plm_f32) & plm_lat_h;
 assign io_lat1 = (plm_f30 | plm_f31 | plm_f32) & alu_rd & alu_rd_lh;
 assign io_lat2 = bus_free & (io_lat2_t0 | sa_sxa);
@@ -3172,76 +2992,21 @@ begin
 
    if (~pin_clk_p) iodc_rdy_l <= iodc_rdy;
 end
+
 //______________________________________________________________________________
 //
 // Q-bus timer - transaction and bus arbiter timeouts
 //
-always @(*)
+assign qt_ena = dout | din;
+
+always @(posedge pin_clk_p)
 begin
-   if (~pin_clk_p)
-      qt_div_l[0] <= ~qt_div_h[0];
+   if (qt_ena)
+      qt <= qt + 8'o001;
    else
-      qt_div_h[0] <= qt_ena & qt_div_l[0];
+      qt <= 8'o000;
 
-   if (qt_ena & qt_div_l[0])
-      qt_div_l[1] <= ~qt_div_h[1];
-   else
-      qt_div_h[1] <= qt_ena & qt_div_l[1];
-
-   if (qt_ena & qt_div_l[1])
-      qt_div_l[2] <= ~qt_div_h[2];
-   else
-      qt_div_h[2] <= qt_ena & qt_div_l[2];
-
-   if (qt_ena & qt_div_l[2])
-      qt_div_l[3] <= ~qt_div_h[3];
-   else
-      qt_div_h[3] <= qt_ena & qt_div_l[3];
-
-   if (pin_clk_p) qt_stb_h <= qt_stb;
-   if (~pin_clk_p) qt_stb_hl <= qt_stb_h;
-
-   if (pin_clk_p) qt_ena_h <= qt_ena;
-   if (~pin_clk_p) qt_ena_hl <= qt_ena_h;
-   if (pin_clk_p) qt_ena_hlh <= qt_ena_hl;
-
-   qt[0] <= qt_stb & qt_stb_hl & qt_ena_hlh;
-   if (~qt_ena)
-   begin
-      qt[4:1] <= 4'b0000;
-      qt_h[4:1] <= 4'b0000;
-   end
-   else
-   begin
-      if (qt[0])
-         qt_h[1] <= ~qt[1];
-      else
-         qt[1] <= qt_h[1];
-
-      if (qt[1])
-         qt_h[2] <= ~qt[2];
-      else
-         qt[2] <= qt_h[2];
-
-      if (qt[2])
-         qt_h[3] <= ~qt[3];
-      else
-         qt[3] <= qt_h[3];
-
-      if (qt[3])
-         qt_h[4] <= ~qt[4];
-      else
-         qt[4] <= qt_h[4];
-   end
-end
-
-assign qt_stb = qt_ena & qt_div_l[3];
-assign qt_out = qt_tmr & qt_ena;
-assign qt_ena = dout_l | din_l;
-always @(*)
-begin
-   if (pin_clk_p)
-      qt_tmr <= qt[4] & qt[3] & qt[2] & qt[1] & ~qt[0];
+   qt_out <= qt[7] & qt_ena;
 end
 
 //______________________________________________________________________________
@@ -3251,61 +3016,38 @@ end
 assign bus_free = ~rply & dmr_en;
 assign oat = io_dc[3] & a[0] & pa_oe;
 assign qtout = ir_tout | (qt_out & ~irply_en);
-assign qerr = oat_lh | qtout_lh;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (~pin_clk_p) oat_l <= oat;
-   if (pin_clk_p) oat_lh <= oat_l;
-
-   if (~pin_clk_p) qerr_l <= qerr;
-   if (pin_clk_p) qerr_lh <= qerr_l;
-
-   if (~pin_clk_p) qtout_l <= qtout;
-   if (pin_clk_p) qtout_lh <= qtout_l;
+   qerr <= oat | qtout;
+   qerr_lh <= qerr;
+   pa_oe_lh <= pa_oe;
 end
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (~pin_clk_p) pa_oe_l <= pa_oe;
-   if (pin_clk_p) pa_oe_lh <= pa_oe_l;
-
-   if (pin_clk_p)
-      pa_oe_clr <= pa_oe_l;
-
-   if (~pin_clk_p)
-      pa_oe_t <= ~pa_oe & pa_oe_set & bus_free;
-
-   if (mc_res | pa_oe_clr)
+   if (mc_res)
       pa_oe <= 1'b0;
    else
-      if (pin_clk_p & pa_oe_t)
-         pa_oe <= 1'b1;
-
-
+      pa_oe <= pa_oe_rc;
 end
 
-assign pa_oe_set = sa_sxa_hl | sa_pfa | ba_req_l;
+assign pa_oe_rc = pa_oe_set & ~pa_oe & ~mc_res;
+assign pa_oe_set = (sa_sxa_hl | sa_pfa | ba_req_l) & bus_free;
 assign ad_a_nd = ~dout_set & ~bd_oe;
-assign ad_oe = (ad_oe_t[0] & pa_oe) | (ad_oe_t[1] & bd_oe);
-assign wtbt = (ad_oe_t[2] & bd_oe) | (pa_oe & ~io_dc[1]);
+assign ad_oe = pa_oe | bd_oe;
+assign wtbt = (~io_dc[3] & bd_oe) | (pa_oe & ~io_dc[1]);
 
-always @(*)
+always @(posedge pin_clk_n or posedge mc_res)
 begin
-   if (~pa_oe & ~bd_oe)
-   begin
-      ad_oe_t[0] <= ad_a_nd;
-      ad_oe_t[1] <= ~ad_a_nd;
-      ad_oe_t[2] <= ~io_dc[3];
-   end
-
-   if (mc_res | dio_clr_l)
+   if (mc_res)
       bd_oe <= 1'b0;
    else
-      if (~pin_clk_p & bd_oe_t)
-         bd_oe <= 1'b1;
-
-   if (pin_clk_p) bd_oe_t <= ~bd_oe & dout_set & alu_drdy;
+      if (dio_clr)
+         bd_oe <= 1'b0;
+      else
+         if (dout_set & alu_drdy)
+            bd_oe <= 1'b1;
 end
 
 always @(*)
@@ -3331,56 +3073,53 @@ begin
    if (~pin_clk_p) sync_clr <= dout_end | din_end;
 end
 
-assign din_set0 = ~io_s3_wr & io_s4_hl & bus_free & hm_lat & ba_rdy_l;
-assign din_set1 = ~rmsel & pa_oe_l;
 assign din_end = ~din & din_lh & ~io_dc[5];
 assign dout_end = ~dout & dout_lh;
-assign dio_clr = rply_h & ((~ir_stb & ir_stb_lh) | ~a21_ins_l);
+assign dio_clr_rc = rply & ((ir_stb_t & ir_stb) | ~a21_ins_l);
 assign s3_out = io_s3_wr & bus_free & hm_lat & ba_rdy_l;
-assign out_rs = di_rmw | s3_out | (din_set1 & ~io_dc[1]);
+assign out_rs = di_rmw | s3_out | (~rmsel & pa_oe & ~io_dc[1]);
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (mc_res | dio_clr)
-      din <= 1'b0;
-   else
-      if (pin_clk_p & |din_set_t[2:0])
-         din <= 1'b1;
-
-   if (~pin_clk_p)
-   begin
-      din_l <= din;
-      din_set_t[0] <= ~din & din_set0;
-      din_set_t[1] <= ~din & din_set1 & ~io_dc[0];
-      din_set_t[2] <= ~din & ~iako_ent & iako_en_l;
-   end
-   if (pin_clk_p) din_lh <= din_l;
+   dio_clr <= dio_clr_rc;
+   din_lh <= din;
+   dout_lh <= dout;
 end
 
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (mc_res | dio_clr)
+   if (mc_res)
+      din <= 1'b0;
+   else
+      if (dio_clr_rc)
+         din <= 1'b0;
+      else
+         if (~rmsel & pa_oe & ~io_dc[0] | ~iako_ent & iako_en)
+            din <= 1'b1;
+end
+
+always @(posedge pin_clk_p or posedge mc_res)
+begin
+   if (mc_res)
       dout <= 1'b0;
    else
-      if (pin_clk_p & |dout_set_t[1:0])
-         dout <= 1'b1;
+      if (dio_clr_rc)
+         dout <= 1'b0;
+      else
+         if (dout_set & ~io_dc[4] | bd_oe)
+            dout <= 1'b1;
+end
 
-   if (~pin_clk_p)
-   begin
-      dout_l <= dout;
-      dout_set_l <= dout_set;
-      dout_set_t[0] <= ~dout & dout_set_l & ~io_dc[4];
-      dout_set_t[1] <= ~dout & bd_oe & ~dout_l;
-   end
-   if (pin_clk_p) dout_lh <= dout_l;
-
-   if (mc_res | dout)
+always @(posedge pin_clk_p or posedge mc_res)
+begin
+   if (mc_res)
       dout_set <= 1'b0;
    else
-      if (pin_clk_p & out_rs)
-         dout_set <= 1'b1;
-
-   if (~pin_clk_p) dio_clr_l <= dio_clr;
+      if (dout | dout_set & ~io_dc[4] | bd_oe)
+         dout_set <= 1'b0;
+      else
+         if (out_rs)
+            dout_set <= 1'b1;
 end
 
 assign iako_st = iako_en & ~iako_en_lh;
@@ -3429,20 +3168,20 @@ begin
          irply_en_t <= 1'b1;
 end
 
-assign arb_ena = rply & (arb_ena_t | a21_ins | ~io_dc[5]);
-always @(*)
+always @(posedge pin_clk_p or posedge mc_res)
 begin
-   if (mc_res | arb_ena_hl)
+   if (mc_res)
       arb_ena_t <= 1'b0;
    else
-      if (pin_clk_p & di_rmw)
-      arb_ena_t <= 1'b1;
-
-   if (pin_clk_p) arb_ena_h <= arb_ena;
-   if (~pin_clk_p) arb_ena_hl <= arb_ena_h;
+      if (arb_ena)
+         arb_ena_t <= 1'b0;
+      else
+         if (di_rmw)
+            arb_ena_t <= 1'b1;
 end
 
-assign dmr_clr = iako_set | din_set0 | s3_out | (pa_oe_set & bus_free);
+assign arb_ena = rply & (arb_ena_t | a21_ins | ~io_dc[5]);
+assign dmr_clr = iako_set | s3_out | pa_oe_set;
 
 always @(*)
 begin
@@ -3455,6 +3194,7 @@ begin
    if (pin_clk_p) dmr_clr_h <= dmr_clr;
    if (~pin_clk_p) dmr_clr_hl <= dmr_clr_h;
 end
+
 //______________________________________________________________________________
 //
 endmodule

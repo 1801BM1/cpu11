@@ -6659,11 +6659,17 @@ passpt:		.word	-1			;
 octpss:		.word	0			; passcount, octal, stored here
 ascpss:		.word	0			; passcount, ascii, built here
 
+.if ne HOEP
+title:		.ascii	.CFKAAC0.<377>
+		.even
+msg:		.ascii	. END PASS.<377>
+.iff
 title:		.ascii	<15><12><0><0><0><0><0><0>.CFKAAC0 11/34 BSC INST TST.
 		.ascii	<0><0><0><0><0><0><0><377>
 		.even
 msg:		.ascii	<15><12><0><0><0><0><0><0>.END PASS .
 		.ascii	<0><0><0><0><0><0><377>
+.endc
 		.even
 ;_____________________________________________________________________________
 ;

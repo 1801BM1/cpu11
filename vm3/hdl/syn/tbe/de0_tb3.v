@@ -177,8 +177,10 @@ end
 
 always @(posedge din or posedge dout)
 begin
-@ (negedge clk);
-@ (posedge clk);
+//
+// @ (negedge clk);
+// @ (posedge clk);
+//
 #2
    ad_oe    = 1'b0;
    rply     = 1'b1;
@@ -217,10 +219,9 @@ begin
 #2
 //       rply   = 1'b0;
          ad_oe  = 1'b1;
+#1
 // @ (negedge clk);
 // @ (posedge clk);
-@ (negedge clk);
-@ (posedge clk);
          if (sel_all | sel_ram)
             rply   = 1'b0;
       end
