@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2022 by 1801BM1@gmail.com
+// Copyright (c) 2014-2023 by 1801BM1@gmail.com
 //
 // Testbench for the 1801VM3 replica, external QBUS version
 //______________________________________________________________________________
 //
-`include "../../tbe/config.v"
+`include "config.v"
 
 //______________________________________________________________________________
 //
@@ -103,9 +103,16 @@ reg         halt_rq;    //
 reg         halt_en;    //
                         //
 wire        ram_read, ram_write;
+wire        slow_din, slow_dout;
+wire        slow_iako, slow_rply;
 
 //_____________________________________________________________________________
 //
+assign   slow_din = `SIM_CONFIG_SLOW_QBUS;
+assign   slow_dout = `SIM_CONFIG_SLOW_QBUS;
+assign   slow_iako = `SIM_CONFIG_SLOW_QBUS;
+assign   slow_rply = `SIM_CONFIG_SLOW_QBUS;
+
 assign   bsel = `SIM_CONFIG_BOOT_MODE;
 assign   ad = ad_oe ? (sel_ram ? ~ad_mux : ~ad_reg) : 16'hZZZZ;
 assign   adn = ~ad;
@@ -177,10 +184,16 @@ end
 
 always @(posedge din or posedge dout)
 begin
-//
-// @ (negedge clk);
-// @ (posedge clk);
-//
+   if (slow_rply)
+   begin
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+   end
 #2
    ad_oe    = 1'b0;
    rply     = 1'b1;
@@ -220,8 +233,15 @@ begin
 //       rply   = 1'b0;
          ad_oe  = 1'b1;
 #1
-// @ (negedge clk);
-// @ (posedge clk);
+         if (slow_din)
+         begin
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+         end
          if (sel_all | sel_ram)
             rply   = 1'b0;
       end
@@ -238,7 +258,14 @@ begin
          ad_oe    = 1'b1;
          ad_reg   = 16'o000064;
 @ (negedge clk);
-//@ (posedge clk);
+      if (slow_iako)
+      begin
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+      end
 #2
          virq = 1;
          rply = 1'b0;
@@ -250,8 +277,15 @@ always @(negedge dout)
 begin
    if (sel_all)
    begin
-//@ (negedge clk);
-//@ (posedge clk);
+      if (slow_dout)
+      begin
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+@ (negedge clk);
+@ (posedge clk);
+      end
 #2
       rply = 1'b0;
    end
@@ -288,7 +322,7 @@ begin
       if ((~ad & 8'o377) == 16'o000100)
       begin
          $display("ODT invoked, stop");
-         $stop;
+         $finish;
       end
 `endif
    end
@@ -338,7 +372,7 @@ end
 //
 initial
 begin
-   #`SIM_CONFIG_TIME_LIMIT $stop;
+   #`SIM_CONFIG_TIME_LIMIT $finish;
 end
 
 initial
@@ -350,7 +384,7 @@ begin
       if (~halt_en)
       begin
          $display("HALT @ %06O", cpu.core.pc);
-         $stop;
+         $finish;
       end
    end
 end

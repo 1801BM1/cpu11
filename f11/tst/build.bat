@@ -46,7 +46,7 @@ echo.
 echo Environment variable cpu11_tmp should be set to temorary folder
 exit
 
-:blank_tmp
+:blank_sim
 echo.
 echo Environment variable cpu11_sim should be set to RT11 simulator folder
 exit

@@ -654,7 +654,7 @@ tst21:		mov	#$stack, SP		;
 ;_____________________________________________________________________________
 ;
 		mov	#0, @#sr0		;
-		jmp	done			;
+		jmp	tst30			;
 						;
 cmd1:		rts	PC			;
 cmd2:		mov	#0, PC			;
@@ -668,13 +668,13 @@ fail:		halt				;
 ;_____________________________________________________________________________
 ;
 mmu21:		mtps	#340			; kernel mode, ints disabled
-		mov	#0, KPAR0		; map kernel page 0 to 0-4k
-		mov	#200, KPAR1		; map kernel page 1 to 4-8k
-		mov	#400, KPAR2		; map kernel page 2 to 8-12k
-		mov	#600, KPAR3		; map kernel page 3 to 12-16k
-		mov	#1000, KPAR4		; map kernel page 4 to 16-20k
-		mov	#1200, KPAR5		; map kernel page 4 to 16-20k
-		mov	#1400, KPAR6		; map kernel page 4 to 16-20k
+		mov	#0, KPAR0		; map kernel page 0 to 0-4kw
+		mov	#200, KPAR1		; map kernel page 1 to 4-8kw
+		mov	#400, KPAR2		; map kernel page 2 to 8-12kw
+		mov	#600, KPAR3		; map kernel page 3 to 12-16kw
+		mov	#1000, KPAR4		; map kernel page 4 to 16-20kw
+		mov	#1200, KPAR5		; map kernel page 5 to 20-24kw
+		mov	#1400, KPAR6		; map kernel page 6 to 24-28kw
 		mov	#7600, KPAR7		; map kernel page 7 to the i/o page
 		mov	#77406, R0		; make all kernel i-space pages resident
 						; read/write. length 200 blocks
@@ -688,6 +688,22 @@ mmu21:		mtps	#340			; kernel mode, ints disabled
 		mov	#0, @#sr3		; causes bus timeout instead of MMU
 		mov	#1, @#sr0		; trap on prefetch)
 		rts	PC			;
+;_____________________________________________________________________________
+;
+tst30:		br	3$			; prefetch address comparator test
+3$:		nop				; prefetcjed instuction should be
+		nop				; dropped if write to prefetched
+		nop				; address is detected
+		mov	#1, R0			;
+		mov	#2, R1			;
+		mov	#4$, R2			; write new instruction code
+		mov	#010104, R3		; "mov R1, R4"
+		mov	R3, @R2			; write must be detected
+4$:		mov	R0, R4			;
+		mov	#010004, @R2		;
+		cmp	#2, R4			; R4 should be equal 2
+		beq	done			; the new insturction taken
+		halt				;
 ;_____________________________________________________________________________
 ;
 done:		.print	#mes1			;

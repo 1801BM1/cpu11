@@ -45,7 +45,8 @@ There are three models: original asynchronous, refactored synchronous and Wishbo
 In practice can be used for modeling purposes only, because processor contains latches (note,
 it differs from flip-flop), those work in non-reliable fashion on synchronous FPGAs. Also model
 does not contain gate and line delays, in some simulating environment it can be very critical. 
-Nonetheless, this model is included in the package as a demo of the closest possible approximation to the original die. Maybe not synthesizable with some tools, simulation only.
+Nonetheless, this model is included in the package as a demo of the closest possible approximation
+to the original die. Maybe not synthesizable with some tools, simulation only.
 
 #### \hdl\syn
 - synchronous Verilog HDL model, the frontend bus is Q-Bus, does not contain latches, and can be

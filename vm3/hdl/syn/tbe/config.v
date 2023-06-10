@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2022 by 1801BM1@gmail.com
+// Copyright (c) 2014-2023 by 1801BM1@gmail.com
 //
 // Simulation configuration parameters
 //______________________________________________________________________________
@@ -25,6 +25,12 @@
 // 0x - load vector 24
 //
 `define  SIM_CONFIG_BOOT_MODE          2'b00
+
+//______________________________________________________________________________
+//
+// These parameters can be defined externally by the CI script
+//
+`define  SIM_CONFIG_SLOW_QBUS          0
 
 //______________________________________________________________________________
 //

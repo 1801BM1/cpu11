@@ -61,6 +61,11 @@ does not contain line delays, in some simulating environment it can be very crit
 this model is included in the package as a demo of the closest possible approximation to the original die.
 May not be synthesizable with some tools, presented for simulation purposes only.
 
+#### \hdl\syn
+- synchronous Verilog HDL model, the frontend bus is Q-Bus, uses single clock to operate, does not
+contain latches, and whole model can be synthesized for synchronous FPGAs. This model is intermedate
+step for final Wishbone-compatible version.
+
 #### [\cad\vm3](https://github.com/1801BM1/cad11/tree/master/vm3) (moved to dedicated repo)
 - topology in Sprint Layout format
 - topology in PCD-2004 pcb format
