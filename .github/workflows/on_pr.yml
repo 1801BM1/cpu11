@@ -8,16 +8,24 @@ on:
 jobs:
   sim:
     name: Run verification
-    runs-on: [self-hosted, modelsim]
+    runs-on: [self-hosted, modelsim, Linux]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Compile TEST.MAC
+      - name: VM1: Compile TEST.MAC
         run: |
                 cd vm1/tst
                 ./build.sh test.mac
 
-      - name: Run VM1 simulation
+      - name: VM1: Run simulation
         run: vm1/hdl/syn/sim/de0/run_vsim.sh
+
+      - name: VM3: Compile TEST.MAC
+        run: |
+                cd vm3/tst
+                ./build.sh test.mac
+
+      - name: VM3: Run simulation
+        run: vm3/hdl/syn/sim/de0/run_vsim.sh
 

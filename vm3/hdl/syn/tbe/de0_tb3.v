@@ -44,7 +44,7 @@ begin
    begin
       mem[i] = 16'h0000;
    end
-   $readmemh("..\\..\\..\\..\\tst\\out\\test.mem", mem);
+   $readmemh("../../../../tst/out/test.mem", mem);
 end
 endmodule
 
@@ -288,7 +288,7 @@ begin
       if ((~ad & 8'o377) == 16'o000100)
       begin
          $display("ODT invoked, stop");
-         $stop;
+         $finish;
       end
 `endif
    end
@@ -350,7 +350,7 @@ begin
       if (~halt_en)
       begin
          $display("HALT @ %06O", cpu.core.pc);
-         $stop;
+         $finish;
       end
    end
 end
