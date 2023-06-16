@@ -319,7 +319,7 @@ end
 //
 initial
 begin
-   #`CONFIG_SIM_TIME_LIMIT $stop;
+   #`CONFIG_SIM_TIME_LIMIT $finish;
 end
 
 //_____________________________________________________________________________
