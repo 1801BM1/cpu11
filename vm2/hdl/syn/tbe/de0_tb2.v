@@ -44,7 +44,7 @@ begin
    begin
       mem[i] = 16'h0000;
    end
-   $readmemh("..\\..\\..\\..\\tst\\out\\test.mem", mem);
+   $readmemh("../../../../tst/out/test.mem", mem);
 end
 endmodule
 
@@ -144,7 +144,7 @@ begin
    if (~sel & (~ad == 16'o000172))
    begin
       $display("Access to halt vector");
-      $stop;
+      $finish;
    end
 end
 
@@ -283,7 +283,7 @@ begin
    if (addr == 16'o177676)
    begin
       $display("Access to shadow register");
-      $stop;
+      $finish;
    end
 end
 
@@ -346,7 +346,7 @@ end
 //
 initial
 begin
-   #`SIM_CONFIG_TIME_LIMIT $stop;
+   #`SIM_CONFIG_TIME_LIMIT $finish;
 end
 
 //_____________________________________________________________________________
