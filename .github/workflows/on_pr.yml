@@ -13,6 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Compile TEST.MAC
+        run: |
+                cd vm1/tst
+                ./build.sh test.mac
+
       - name: Run VM1 simulation
         run: vm1/hdl/syn/sim/de0/run_vsim.sh
 
