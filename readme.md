@@ -56,7 +56,31 @@ Notes: "cpm" means core clocks per microinstruction, how many clocks model takes
 instruction. For LSI-11 the four phases c1-c4 were refactored to the single core clock, for F-11 four phases
 were refactored to two core clocks. In addition the 1801ВМ2 performs the instruction prefetch gaining some boost.
 
+## Icarus Verilog
+
+Icarus Verilog is an implementation of the Verilog hardware description language compiler that generates
+netlists in the desired format (EDIF). It supports the 1995, 2001 and 2005 versions of the Verilog standard,
+portions of SystemVerilog, and some extensions.
+
+There are builds of Icarus Verilog for Windows available on [site](https://bleyer.org/icarus/).
+We would recommend installing `iverilog` version 12. However version 10 should be sufficient as 
+it comes as part of Ubuntu 20.04 LTS distribution.
+
+There are `run_iverilog.sh` scripts added per each CPU model.
+
+All scripts have similar structure:
+ * run `iverilog` for specified top-level module and create `*.vvp` file
+ * execute compiled representation by `vvp` command:
+
+For example, LSI CPU has following script:
+
+    iverilog -c iverilog.cf -o tb_lsi.vvp -s tbl
+    vvp -n -v ./tb_lsi.vvp
+
+The `iverilog.cf` file contains list of Verilog files to be added to desing (to be compiled and simulated).
+
 ## Supported FPGA development boards
+
 The synchronous models are planned to be run (and appropriate sample projects to be included in repo) on the following Development Kits:
 - [Altera DE0](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=364) - Altera Cyclone-III
 - [Altera DE1](http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=53&No=83) - Altera Cyclone-II
@@ -67,3 +91,4 @@ The synchronous models are planned to be run (and appropriate sample projects to
 - [QMTech QC10-core](https://github.com/ChinaQMTECH/QM_Cyclone10_10CL006) - Altera Cyclone-10LP
 - [QMTech QA7-core](https://github.com/ChinaQMTECH/QM_XC7A35T_DDR3) - Xilinx Artix-7
 - [Lichee Tang Primer](https://tang.sipeed.com/en/) - Anlogic Eagle EG4S20
+

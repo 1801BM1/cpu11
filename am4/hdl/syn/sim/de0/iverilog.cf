@@ -1,0 +1,9 @@
++incdir+../../tbe
+../../tbe/config.v
+../../rtl/am4.v
+../../rtl/am4_alu.v
+../../rtl/am4_seq.v
+../../rtl/am4_plm.v
+../../rtl/am4_mcrom.v
+../../tbe/de0_top.v
+../../tbe/de0_tb4.v

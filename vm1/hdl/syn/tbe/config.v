@@ -10,7 +10,13 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
+`ifdef __ICARUS__
+// under Icarus Verilog 100k ticks takes ~ 46 seconds on my Macbook M1 Pro
+`define  CONFIG_SIM_TIME_LIMIT         100000
+`else
+// execute by ModelSim
 `define  CONFIG_SIM_TIME_LIMIT         2000000
+`endif
 //
 // External clock frequency
 //

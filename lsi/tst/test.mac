@@ -43,7 +43,7 @@
 		.endm				;
 ;_____________________________________________________________________________
 ;
-		.asect				; ловушка прерываний 0-376
+		.asect				; trap for interrupts 0-376
 		. = 0				;
 						;
 		vect	0			;
@@ -51,8 +51,8 @@
 		vect	10			;
 		vect	14			;
 		vect	20			;
-		vect	24, entry		; вектор начального пуска
-		vect	30			; для режима старта 0
+		vect	24, entry		; initial start vector
+		vect	30			; for start mode 0
 		vect	34			;
 		vect	40			;
 		vect	44			;

@@ -1,0 +1,14 @@
++incdir+../../tbe
+../../rtl/f11.v
+../../rtl/dc_302.v
+../../rtl/dc_303.v
+../../rtl/dc_304.v
+../../tbe/de0_top.v
+../../../wbc/rtl/dc_fpp.v
+../../../wbc/rtl/dc_mmu.v
+../../../wbc/rtl/dc_rom.v
+../../../wbc/rtl/dc_pla.v
+../../../wbc/rtl/dc_pla_0.v
+../../../wbc/rtl/dc_pla_1.v
+../../../wbc/rtl/dc_pla_2.v
+../../tbe/de0_tbl.v

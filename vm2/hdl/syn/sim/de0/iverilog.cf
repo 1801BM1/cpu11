@@ -1,0 +1,6 @@
++incdir+../../tbe
+../../rtl/vm2_qbus.v
+../../../wbc/rtl/vm2_plm.v
+../../rtl/vm2.v
+../../tbe/config.v
+../../tbe/de0_tb2.v
