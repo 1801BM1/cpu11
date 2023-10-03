@@ -8,7 +8,11 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
+`ifdef __ICARUS__
+`define  SIM_CONFIG_TIME_LIMIT         500000
+`else
 `define  SIM_CONFIG_TIME_LIMIT         5000000
+`endif
 //
 // External clock frequency
 //

@@ -1,0 +1,8 @@
++incdir+../../tbe
+../../rtl/lsi.v
+../../../wbc/rtl/mcp_plm.v
+../../rtl/mcp1611.v
+../../rtl/mcp1621.v
+../../rtl/mcp1631.v
+#../../tbe/config.v
+../../tbe/de0_tbl.v

@@ -1,0 +1,21 @@
+# +timescale+1ns/100ps
++incdir+../../tbe
+# vlog -vlog01compat -work work +incdir+../../tbe {../../rtl/vm1.v}
+../../rtl/vm1.v
+# vlog -vlog01compat -work work +incdir+../../tbe {../../rtl/vm1_alib.v}
+#../../rtl/vm1_alib.v
+../../rtl/vm1_simlib.v
+# vlog -vlog01compat -work work +incdir+../../tbe {../../rtl/vm1_qbus.v}
+../../rtl/vm1_qbus.v
+# vlog -vlog01compat -work work +incdir+../../tbe {../../../wbc/rtl/vm1_tve.v}
+../../../wbc/rtl/vm1_tve.v
+# vlog -vlog01compat -work work +incdir+../../tbe {../../../wbc/rtl/vm1_plm.v}
+../../../wbc/rtl/vm1_plm.v
+# vlog -vlog01compat -work work +incdir+../../tbe {../../tbe/config.v}
+../../tbe/config.v
+# vlog -vlog01compat -work work +incdir+../../tbe {../../tbe/de0_tb1.v}
+../../tbe/de0_tb1.v
+# top module:
+#-s tb1
+# output file
+#-o de0_tb1.vvp
