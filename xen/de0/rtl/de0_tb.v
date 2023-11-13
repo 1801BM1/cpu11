@@ -107,7 +107,7 @@ end
 
 initial
 begin
-   #`CONFIG_SIM_TIME_LIMIT $stop;
+   #`CONFIG_SIM_TIME_LIMIT $finish;
 end
 
 always @(posedge lcd_en)
@@ -119,7 +119,7 @@ end
 always @(posedge lcd_rs)
 begin
    $display("Stop on debug request");
-   $stop;
+   $finish;
 end
 
 de0 de0_top(

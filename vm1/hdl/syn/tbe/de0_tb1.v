@@ -270,7 +270,7 @@ begin
    if (addr == 16'o177676)
    begin
       $display("Access to shadow register");
-      $stop;
+      $finish;
    end
 end
 
@@ -319,7 +319,7 @@ end
 //
 initial
 begin
-   #`CONFIG_SIM_TIME_LIMIT $stop;
+   #`CONFIG_SIM_TIME_LIMIT $finish;
 end
 
 //_____________________________________________________________________________

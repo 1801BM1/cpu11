@@ -272,7 +272,7 @@ begin
          if ((~ad & 8'o377) == 16'o000100)
          begin
             $display("ODT invoked, stop");
-            $stop;
+            $finish;
          end
 `endif
       end
@@ -323,7 +323,7 @@ end
 //
 initial
 begin
-   #`SIM_CONFIG_TIME_LIMIT $stop;
+   #`SIM_CONFIG_TIME_LIMIT $finish;
 end
 
 //_____________________________________________________________________________

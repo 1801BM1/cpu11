@@ -141,7 +141,7 @@ begin
          if (tst[7]) $display("C4 failed");
          if (tst[8]) $display("nP failed");
          if (tst[9]) $display("nG failed");
-         $stop;
+         $finish;
       end
       clk      = 1;
 #`SIM_CONFIG_CLOCK_HPERIOD

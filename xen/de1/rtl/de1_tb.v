@@ -118,7 +118,7 @@ end
 
 initial
 begin
-   #`CONFIG_SIM_TIME_LIMIT $stop;
+   #`CONFIG_SIM_TIME_LIMIT $finish;
 end
 
 `ifdef CONFIG_SIM_DEBUG_TTY
@@ -133,7 +133,7 @@ end
 always @(posedge gpio1_d[8])
 begin
    $display("Stop on debug request");
-   $stop;
+   $finish;
 end
 
 de1 de1_top(

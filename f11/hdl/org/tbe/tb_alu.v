@@ -33,7 +33,7 @@ dc302 alu
 //
 initial
 begin
-   #`SIM_CONFIG_TIME_LIMIT $stop;
+   #`SIM_CONFIG_TIME_LIMIT $finish;
 end
 
 //_____________________________________________________________________________
@@ -98,7 +98,7 @@ begin
 #`SIM_CONFIG_CLOCK_HPERIOD;
          clk = 0;
    end
-   $stop;
+   $finish;
 end
 
 //_____________________________________________________________________________

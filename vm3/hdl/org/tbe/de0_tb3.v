@@ -294,7 +294,7 @@ begin
       if ((~ad & 8'o377) == 16'o000100)
       begin
          $display("ODT invoked, stop");
-         $stop;
+         $finish;
       end
 `endif
    end
@@ -344,7 +344,7 @@ end
 //
 initial
 begin
-   #`SIM_CONFIG_TIME_LIMIT $stop;
+   #`SIM_CONFIG_TIME_LIMIT $finish;
 end
 
 initial
@@ -356,7 +356,7 @@ begin
       if (~halt_en)
       begin
          $display("HALT @ %06O", cpu.core.pc);
-         $stop;
+         $finish;
       end
    end
 end

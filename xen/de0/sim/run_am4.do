@@ -21,7 +21,7 @@ vlog -vlog01compat -work work +incdir+../../lib {../../lib/wbc_lsi.v}
 vlog -vlog01compat -work work +incdir+../../../am4/hdl/wbc/rtl +define+M4_FILE_MICROM="../../../am4/rom/mc.rom" {../../../am4/hdl/wbc/rtl/am4_mcrom.v}
 vlog -vlog01compat -work work +incdir+../rtl {../rtl/de0_tb.v}
 
-vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneiii_ver -L rtl_work -L work -voptargs="+acc"  tb1
+vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneiii_ver -L rtl_work -L work -voptargs="+acc" -onfinish stop tb1
 
 do wav_am4.do
 view structure

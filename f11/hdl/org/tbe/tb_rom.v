@@ -111,6 +111,6 @@ begin
 //    $display("%02X: %02X %02X;", i, drom, dpla);
    end
    $display("test completed");
-   $stop;
+   $finish;
 end
 endmodule

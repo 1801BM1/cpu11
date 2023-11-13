@@ -20,7 +20,7 @@ vlog -vlog01compat -work work +incdir+../../tbe {../../../wbc/rtl/dc_pla_2.v}
 
 vlog -vlog01compat -work work +incdir+../../syn/de0/../../tbe {../../tbe/de0_tbl.v}
 
-vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneiii_ver -L rtl_work -L work -voptargs="+acc"  tb_f11
+vsim -t 1ps -L rtl_work -L work -voptargs="+acc" -onfinish stop tb_f11
 
 do wave.do
 view structure

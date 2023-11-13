@@ -11,7 +11,7 @@ vlog -vlog01compat -work work +incdir+../../tbe {../../rtl/vm2.v}
 vlog -vlog01compat -work work +incdir+../../tbe {../../tbe/config.v}
 vlog -vlog01compat -work work +incdir+../../tbe {../../tbe/de0_tb2.v}
 
-vsim -t 1ps -L rtl_work -L work -voptargs="+acc"  tb2
+vsim -t 1ps -L rtl_work -L work -voptargs="+acc" -onfinish stop tb2
 set RunLength 500ns
 
 do wave.do

@@ -47,7 +47,7 @@ dc303 pla
 //
 initial
 begin
-   #`SIM_CONFIG_TIME_LIMIT $stop;
+   #`SIM_CONFIG_TIME_LIMIT $finish;
 end
 
 //_____________________________________________________________________________
@@ -378,7 +378,7 @@ begin
    end
    $display("Test address: %03X", taa);
    if (taa == 4'b0000)
-      $stop;
+      $finish;
 
    for (i='h80; i<'h200; i = i + 1)
    begin
@@ -386,7 +386,7 @@ begin
          read_na(0, i, 0);    // read mc might affect next na (jump/jcond)
          $display("%03X: %03X%04X;", i, na, mc);
    end
-   $stop;
+   $finish;
 end
 
 //_____________________________________________________________________________

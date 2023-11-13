@@ -2,7 +2,7 @@
 <Project>
     <Project_Created_Time>2020-07-23 20:19:40</Project_Created_Time>
     <TD_Version>4.6.18154</TD_Version>
-    <UCode>11011110</UCode>
+    <UCode>00111100</UCode>
     <Name>eg4</Name>
     <HardWare>
         <Family>EG4</Family>
@@ -81,8 +81,8 @@
         <SimProperty/>
     </Property>
     <Project_Settings>
-        <Step_Last_Change>2022-06-12 13:24:17</Step_Last_Change>
-        <Current_Step>60</Current_Step>
+        <Step_Last_Change>2023-11-13 22:01:58</Step_Last_Change>
+        <Current_Step>0</Current_Step>
         <Step_Status>true</Step_Status>
     </Project_Settings>
 </Project>

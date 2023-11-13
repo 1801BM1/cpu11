@@ -26,7 +26,7 @@ vlog -vlog01compat -work work +incdir+../../lib {../../lib/wbc_f11.v}
 vlog -vlog01compat -work work +incdir+../../../f11/hdl/wbc/rtl +define+F11_FILE_MICROM_000="../../../f11/rom/000.rom" +define+F11_FILE_MICROM_001="../../../f11/rom/001.rom" +define+F11_FILE_MICROM_002="../../../f11/rom/002.rom" {../../../f11/hdl/wbc/rtl/dc_rom.v}
 vlog -vlog01compat -work work +incdir+../rtl {../rtl/de0_tb.v}
 
-vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneiii_ver -L rtl_work -L work -voptargs="+acc"  tb1
+vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneiii_ver -L rtl_work -L work -voptargs="+acc" -onfinish stop tb1
 
 do wav_f11.do
 view structure
