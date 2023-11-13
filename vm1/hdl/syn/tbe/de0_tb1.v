@@ -44,7 +44,7 @@ begin
    begin
       mem[i] = 16'h0000;
    end
-   $readmemh("..\\..\\..\\..\\tst\\out\\test.mem", mem);
+   $readmemh("../../../../tst/out/test.mem", mem);
 end
 endmodule
 

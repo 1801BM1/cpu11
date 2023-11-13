@@ -20,7 +20,7 @@ reg [21:0] q;
 
 initial
 begin
-   $readmemb("..\\..\\..\\..\\rom\\all_22b.rom", rom);
+   $readmemb("../../../../rom/all_22b.rom", rom);
 end
 
 always @ (posedge pin_clk)

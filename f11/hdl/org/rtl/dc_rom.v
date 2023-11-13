@@ -36,13 +36,13 @@ begin
       mem[i] = 32'h00000000;
    end
    if (DC303_ROM == 0)
-      $readmemh("..\\..\\..\\..\\rom\\000.rom", mem);
+      $readmemh("../../../../rom/000.rom", mem);
    else
    if (DC303_ROM == 1)
-      $readmemh("..\\..\\..\\..\\rom\\001.rom", mem);
+      $readmemh("../../../../rom/001.rom", mem);
    else
    if (DC303_ROM == 2)
-      $readmemh("..\\..\\..\\..\\rom\\002.rom", mem);
+      $readmemh("../../../../rom/002.rom", mem);
 end
 
 //

@@ -24,7 +24,7 @@ end
 
 initial
 begin
-   $readmemh("..\\..\\tbe\\vec_2901.vec", mem);
+   $readmemh("../../tbe/vec_2901.vec", mem);
 end
 endmodule
 

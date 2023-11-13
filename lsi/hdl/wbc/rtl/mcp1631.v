@@ -51,7 +51,7 @@ begin
 `ifdef LSI11_FILE_MICROM
    $readmemb(`LSI11_FILE_MICROM, rom);
 `else
-   $readmemb("..\\..\\..\\..\\rom\\all_22b.rom", rom);
+   $readmemb("../../../../rom/all_22b.rom", rom);
 `endif
 end
 

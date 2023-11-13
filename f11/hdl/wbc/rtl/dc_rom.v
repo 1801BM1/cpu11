@@ -48,21 +48,21 @@ begin
       `ifdef F11_FILE_MICROM_000
          $readmemh(`F11_FILE_MICROM_000, mem);
       `else
-         $readmemh("..\\..\\..\\..\\rom\\000.rom", mem);
+         $readmemh("../../../../rom/000.rom", mem);
       `endif
    else
    if (DC303_ROM == 1)
       `ifdef F11_FILE_MICROM_001
          $readmemh(`F11_FILE_MICROM_001, mem);
       `else
-         $readmemh("..\\..\\..\\..\\rom\\001.rom", mem);
+         $readmemh("../../../../rom/001.rom", mem);
       `endif
    else
    if (DC303_ROM == 2)
       `ifdef F11_FILE_MICROM_002
          $readmemh(`F11_FILE_MICROM_002, mem);
       `else
-         $readmemh("..\\..\\..\\..\\rom\\002.rom", mem);
+         $readmemh("../../../../rom/002.rom", mem);
       `endif
 end
 

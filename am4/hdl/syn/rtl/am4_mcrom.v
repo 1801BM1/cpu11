@@ -29,7 +29,7 @@ begin
    begin
       rom[i] = 56'h00000000000000;
    end
-   $readmemh("..\\..\\..\\..\\rom\\mc.rom", rom);
+   $readmemh("../../../../rom/mc.rom", rom);
 #1 q = 56'h00000000000000;
 end
 
