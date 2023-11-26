@@ -67,3 +67,67 @@ The synchronous models are planned to be run (and appropriate sample projects to
 - [QMTech QC10-core](https://github.com/ChinaQMTECH/QM_Cyclone10_10CL006) - Altera Cyclone-10LP
 - [QMTech QA7-core](https://github.com/ChinaQMTECH/QM_XC7A35T_DDR3) - Xilinx Artix-7
 - [Lichee Tang Primer](https://tang.sipeed.com/en/) - Anlogic Eagle EG4S20
+
+# Icarus Verilog
+
+Icarus Verilog is an implementation of the Verilog hardware description
+language compiler that generates netlists in the desired format (EDIF). It
+supports the 1995, 2001 and 2005 versions of the standard, portions of
+SystemVerilog, and some extensions.
+
+Icarus Verilog is available for Linux, FreeBSD, OpenSolaris, AIX, Microsoft
+Windows, and Mac OS X. Released under the GNU General Public License, Icarus
+Verilog is free software.
+
+So, Icarus Verilog could be usefull as a portable CI tool to run verifaction (test-benches)
+on Linux/Unix and Windows OS.
+
+## Icarus Verilog for Windows
+
+There are builds of Icarus Verilog for Windows available on the https://bleyer.org/icarus/ site
+I would recommend installing `iverilog` version 12. However version 10 should be sufficient as 
+it comes as part of Ubuntu 20.04 LTS distribution.
+
+## Usage
+
+There are `run_iverilog.sh` scripts added for each CPU model:
+
+ * `f11/hdl/syn/sim/de0/run_iverilog.sh`
+ * `vm2/hdl/syn/sim/de0/run_iverilog.sh`
+ * `vm3/hdl/syn/sim/de0/run_iverilog.sh`
+ * `am4/hdl/syn/sim/de0/run_iverilog.sh`
+ * `vm1/hdl/syn/sim/de0/run_iverilog.sh`
+ * `lsi/hdl/syn/sim/de0/run_iverilog.sh`
+ * `lsi/hdl/syn/sim/de0/run_iverilog2.sh`
+
+All scripts have similar structure:
+ * run `iverilog` for specified top-level module and create `*.vvp` file
+ * execute compiled representation by `vvp` command:
+
+For example, LSI cpu has following script:
+
+    iverilog -c iverilog.cf -o tb_lsi.vvp -s tbl
+    vvp -n -v ./tb_lsi.vvp
+
+The `iverilog.cf` file contains list of Verilog files to be added to desing (to be compiled):
+So, for each CPU we have corresponding configuration file:
+
+ * `f11/hdl/syn/sim/de0/iverilog.cf`
+ * `vm2/hdl/syn/sim/de0/iverilog.cf`
+ * `vm3/hdl/syn/sim/de0/iverilog.cf`
+ * `am4/hdl/syn/sim/de0/iverilog.cf`
+ * `vm1/hdl/syn/sim/de0/iverilog.cf`
+ * `lsi/hdl/syn/sim/de0/iverilog.cf`
+
+For example, `iverilog.cfg` for `lsi` module looks like following:
+
+    +incdir+../../tbe
+    ../../rtl/lsi.v
+    ../../../wbc/rtl/mcp_plm.v
+    ../../rtl/mcp1611.v
+    ../../rtl/mcp1621.v
+    ../../rtl/mcp1631.v
+    ../../tbe/de0_tbl.v
+
+In the above example, we're reusing `de0_tbl.v` -- test-bench written for DE0 board.
+
