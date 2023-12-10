@@ -363,6 +363,7 @@ wire           ws_cend, ws_wait;       //
                                        //
 reg   [8:0]    qtim;                   // Q-bus/nINIT timer counter
 reg            tend;                   // Q-bus/nINIT timer counting end pulse
+reg            tadone;                 // suppress repetitive timeout aborts
 reg            tabort;                 // Q-bus false reply strobe
 reg            tevent;                 // Q-bus timeout exception request
 wire           tout;                   // Q-bus/nINIT timer 1/64 pulses
@@ -537,10 +538,19 @@ begin
    //
    // Q-bus false reply strobe
    //
-   if (!tena | tabort | tend)
+   if (!tena | tabort | tend | tadone)
       tabort <= 1'b0;
    else
       tabort <= ~tim_nrdy1 & qtim[0] & qtim[1] & qtim[4] & qtim[5];
+
+   //
+   // Suppress multiple timeout abort requests
+   //
+   if (!tena)
+      tadone <= 1'b0;
+   else
+      if (tabort)
+         tadone <= 1'b1;
 end
 
 always @(posedge vm_clk_p)
@@ -923,7 +933,13 @@ end
 
 always @(posedge vm_clk_p)
 begin
-   vec_stb <= wbi_stb_o & ~wbi_una_o;
+   //
+   // Hold interrupt acknowledge cycle flag on bus timeout
+   // to allow interrupt controller generate correct vector
+   // SEL 274
+   //
+   if (tovf_ack | tovf | ~tout_rq)
+      vec_stb <= wbi_stb_o & ~wbi_una_o;
    //
    // Interrupt requests acknowlegement and reset
    //

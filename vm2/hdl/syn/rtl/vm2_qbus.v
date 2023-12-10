@@ -406,6 +406,7 @@ wire           ws_cend, ws_wait;       //
                                        //
 reg   [8:0]    qtim;                   // Q-bus/nINIT timer counter
 reg            tend;                   // Q-bus/nINIT timer counting end pulse
+reg            tadone;                 // suppress repetitive timeout aborts
 reg            tabort;                 // Q-bus false reply strobe
 reg            tevent;                 // Q-bus timeout exception request
 wire           tout;                   // Q-bus/nINIT timer 1/64 pulses
@@ -576,7 +577,16 @@ assign wtbt_out =  (bus_adr & wtbt) | (bus_dat & ~iop_word);
 assign iako = iop_iak & din & iako_out;
 
 always @(posedge pin_clk_n) iako_out <= iop_iak & din;
-always @(posedge pin_clk_p) vec_stb <= iako_out;
+//
+// Hold interrupt ackonwledge cycle flag on bus timeout
+// to allow interrupt matrix recognize vector timeout
+// and provide the correct vector SEL 274
+//
+always @(posedge pin_clk_p)
+begin
+   if (tovf_ack | tovf | ~tout_rq)
+      vec_stb <= iako_out;
+end
 
 always @(posedge din_set or posedge pin_clk_p)
 begin
@@ -819,10 +829,19 @@ begin
    //
    // Q-bus false reply strobe
    //
-   if (!tena | tabort | tend)
+   if (!tena | tabort | tend | tadone)
       tabort <= 1'b0;
    else
-      tabort <= ~tim_nrdy1 & qtim[0] & qtim[1] & qtim[4] & qtim[5];
+      tabort <= ~tim_nrdy1 & qtim[0] & qtim[2] & qtim[4] & qtim[5];
+
+   //
+   // Suppress multiple timeout abort requests
+   //
+   if (!tena)
+      tadone <= 1'b0;
+   else
+      if (tabort)
+         tadone <= 1'b1;
 
    tevent <= tabort & (~iop_rcd | word27);
 end
