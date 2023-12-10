@@ -272,7 +272,7 @@ begin
       tty_tx_rdy = 0;
       virq       = 1;
 `ifdef  SIM_CONFIG_DEBUG_TTY
-      $display("tty: %06O (%c))", ~ad, (~ad > 16'o000037) ? (~ad & 8'o377) : 8'o52);
+      $display("tty: %06O (%c)", ~ad, (~ad > 16'o000037) ? (~ad & 8'o377) : 8'o52);
 `endif
    end
 

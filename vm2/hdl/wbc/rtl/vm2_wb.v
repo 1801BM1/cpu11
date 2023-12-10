@@ -1528,7 +1528,7 @@ assign brd_wa     = wr2 & (plm_rn[4:0] == 5'b01111);
 assign psw_stb    = wr2 & ~plm[25];
 assign pswc_stb   = wr2 & ~plm[25] & ~plm[26];
 assign wr_psw     = psw_stb | (psw_wa & ~plm[8]);
-assign cpsw_stb   = (~psw[7] | ~psw[8]) & ((wr_psw & ~io_pswr) | (wb_wdone & io_pswr));
+assign cpsw_stb   = (~psw_rc[7] | ~psw_rc[8]) & ((wr_psw & ~io_pswr) | (wb_wdone & io_pswr));
 assign pc_wr      = cpsw_stb | (pc1_wr & (~psw[7] | ~psw[8]) & (io_wr | ~io_pswr));
 assign pc1_wr     = (wr2 & wa_pc & ~io_rcdr) | word27 | (wr1 & io_rcdr & ~iopc_st[1]);
 
