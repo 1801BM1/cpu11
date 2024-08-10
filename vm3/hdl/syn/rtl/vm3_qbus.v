@@ -107,8 +107,6 @@ wire        parh_oe, sr0_oe;        //
 wire        sr2_oe, sr3_oe;         //
 wire        par_oe, pdr_oe;         //
                                     //
-wire        par_wl, par_wh;         // low/high byte write to PAR
-wire        pdr_wl, pdr_wh;         // low/high byte write to PDR
 wire        parh_en, parh_wr;       //
 wire        sr0_wl, sr0_wh;         // low/high byte write to SR0
 wire        sr3_wr;                 //
@@ -365,8 +363,9 @@ wire        dx_mx, dx_my;           // read swap to X/Y mux
 wire        rra_mx, rra_my;         // read shift to X/Y mux
 wire        psw_mx;                 // read PSW to X/Y mux
                                     //
-reg  [15:0] par[15:0];              // MMU page address registers
-reg  [14:1] pdr[15:0];              // MMU page descriptor registers
+wire [15:0] mmu_qa;                 //
+wire [15:0] mmu_qd;                 //
+reg  [15:0] mmu_wf;                 // page dirty flags
 reg  [15:0] parh;                   // halt mode page address
 wire [15:0] par_d;                  //
 wire [15:0] pdr_d;                  //
@@ -383,8 +382,9 @@ wire        sr0_mrqt, sr0_mrqs;     //
 wire        mrqs_pl, mrqs_nr;       //
 wire        rd_err, init_nrpl;      //
                                     //
-wire [3:0]  parh_sel;               // page address halt mode
+wire [3:2]  parh_sel;               // page address halt mode
 wire [15:0] padr_sel;               // page address/descriptor selectors
+wire [3:0]  mm_sa_rc;               //
 reg  [3:0]  mm_sa;                  //
 reg         mm_sah;                 //
 wire        mm_stb;                 //
@@ -577,39 +577,7 @@ begin
    msta[2] = 7'o000;
    msta[3] = 7'o000;
 
-   par[0]  = 16'o000000;
-   par[1]  = 16'o000000;
-   par[2]  = 16'o000000;
-   par[3]  = 16'o000000;
-   par[4]  = 16'o000000;
-   par[5]  = 16'o000000;
-   par[6]  = 16'o000000;
-   par[7]  = 16'o000000;
-   par[8]  = 16'o000000;
-   par[9]  = 16'o000000;
-   par[10] = 16'o000000;
-   par[11] = 16'o000000;
-   par[12] = 16'o000000;
-   par[13] = 16'o000000;
-   par[14] = 16'o000000;
-   par[15] = 16'o000000;
-
-   pdr[0]  = 14'o00000;
-   pdr[1]  = 14'o00000;
-   pdr[2]  = 14'o00000;
-   pdr[3]  = 14'o00000;
-   pdr[4]  = 14'o00000;
-   pdr[5]  = 14'o00000;
-   pdr[6]  = 14'o00000;
-   pdr[7]  = 14'o00000;
-   pdr[8]  = 14'o00000;
-   pdr[9]  = 14'o00000;
-   pdr[10] = 14'o00000;
-   pdr[11] = 14'o00000;
-   pdr[12] = 14'o00000;
-   pdr[13] = 14'o00000;
-   pdr[14] = 14'o00000;
-   pdr[15] = 14'o00000;
+   mmu_wf  = 16'o000000;
 end
 
 //______________________________________________________________________________
@@ -2049,125 +2017,41 @@ assign pca = {pc2[15:1], pc[0]} + 16'o000002;
 
 //______________________________________________________________________________
 //
+// MMU page address and page descriptor register file - 32x16
+//
+vm3_mmu mmu(
+   .clock(pin_clk_p),
+   .address_a({1'b1, mm_stb ? mm_sa : mm_sa_rc}),
+   .address_b({1'b0, mm_stb ? mm_sa : mm_sa_rc}),
+   .byteena_a({dwbh, dwbl}),
+   .byteena_b({dwbh, dwbl}),
+   .data_a(fx),
+   .data_b(fx),
+   .q_a(mmu_qa),
+   .q_b(mmu_qd),
+   .wren_a(wr_2376 & la[5]),
+   .wren_b(wr_2376 & ~la[5])
+);
+
+assign mmu_a[15:0] = (parh_sel[2] ? parh : 16'o000000)
+                   | (parh_sel[3] ? 16'o177600 : 16'o000000)
+                   | (~mm_sah ? mmu_qa : 16'o000000);
+
+assign mmu_d[14:8] = ~mm_sah ? mmu_qd[14:8]: 7'o000;
+assign mmu_d[3:1] = ~mm_sah ? mmu_qd[3:1]: 3'o0;
+assign mmu_d[7] = 1'o0;
+assign mmu_d[5:4] = 2'o0;
+assign mmu_d[6] = |(padr_sel & mmu_wf);
+//______________________________________________________________________________
+//
 // MMU registers
 //
 always @(posedge pin_clk_p)
 begin
-   if (par_wl)
-   begin
-      if (parh_sel[2]) parh[7:0] <= fx[7:0];
-      if (padr_sel[0]) par[0][7:0] <= fx[7:0];
-      if (padr_sel[1]) par[1][7:0] <= fx[7:0];
-      if (padr_sel[2]) par[2][7:0] <= fx[7:0];
-      if (padr_sel[3]) par[3][7:0] <= fx[7:0];
-      if (padr_sel[4]) par[4][7:0] <= fx[7:0];
-      if (padr_sel[5]) par[5][7:0] <= fx[7:0];
-      if (padr_sel[6]) par[6][7:0] <= fx[7:0];
-      if (padr_sel[7]) par[7][7:0] <= fx[7:0];
-      if (padr_sel[8]) par[8][7:0] <= fx[7:0];
-      if (padr_sel[9]) par[9][7:0] <= fx[7:0];
-      if (padr_sel[10]) par[10][7:0] <= fx[7:0];
-      if (padr_sel[11]) par[11][7:0] <= fx[7:0];
-      if (padr_sel[12]) par[12][7:0] <= fx[7:0];
-      if (padr_sel[13]) par[13][7:0] <= fx[7:0];
-      if (padr_sel[14]) par[14][7:0] <= fx[7:0];
-      if (padr_sel[15]) par[15][7:0] <= fx[7:0];
-   end
-   if (par_wh)
-   begin
-      if (parh_sel[2]) parh[15:8] <= fx[15:8];
-      if (padr_sel[0]) par[0][15:8] <= fx[15:8];
-      if (padr_sel[1]) par[1][15:8] <= fx[15:8];
-      if (padr_sel[2]) par[2][15:8] <= fx[15:8];
-      if (padr_sel[3]) par[3][15:8] <= fx[15:8];
-      if (padr_sel[4]) par[4][15:8] <= fx[15:8];
-      if (padr_sel[5]) par[5][15:8] <= fx[15:8];
-      if (padr_sel[6]) par[6][15:8] <= fx[15:8];
-      if (padr_sel[7]) par[7][15:8] <= fx[15:8];
-      if (padr_sel[8]) par[8][15:8] <= fx[15:8];
-      if (padr_sel[9]) par[9][15:8] <= fx[15:8];
-      if (padr_sel[10]) par[10][15:8] <= fx[15:8];
-      if (padr_sel[11]) par[11][15:8] <= fx[15:8];
-      if (padr_sel[12]) par[12][15:8] <= fx[15:8];
-      if (padr_sel[13]) par[13][15:8] <= fx[15:8];
-      if (padr_sel[14]) par[14][15:8] <= fx[15:8];
-      if (padr_sel[15]) par[15][15:8] <= fx[15:8];
-   end
+   if (parh_wr)
+      if (parh_sel[2]) parh[15:0] <= fx[15:0];
 
-   if (pdr_wl)
-   begin
-      if (padr_sel[0]) pdr[0][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[1]) pdr[1][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[2]) pdr[2][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[3]) pdr[3][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[4]) pdr[4][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[5]) pdr[5][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[6]) pdr[6][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[7]) pdr[7][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[8]) pdr[8][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[9]) pdr[9][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[10]) pdr[10][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[11]) pdr[11][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[12]) pdr[12][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[13]) pdr[13][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[14]) pdr[14][5:1] <= {2'b00, fx[3:1]};
-      if (padr_sel[15]) pdr[15][5:1] <= {2'b00, fx[3:1]};
-   end
-   if (pdr_wh)
-   begin
-      if (padr_sel[0]) pdr[0][14:8] <= fx[14:8];
-      if (padr_sel[1]) pdr[1][14:8] <= fx[14:8];
-      if (padr_sel[2]) pdr[2][14:8] <= fx[14:8];
-      if (padr_sel[3]) pdr[3][14:8] <= fx[14:8];
-      if (padr_sel[4]) pdr[4][14:8] <= fx[14:8];
-      if (padr_sel[5]) pdr[5][14:8] <= fx[14:8];
-      if (padr_sel[6]) pdr[6][14:8] <= fx[14:8];
-      if (padr_sel[7]) pdr[7][14:8] <= fx[14:8];
-      if (padr_sel[8]) pdr[8][14:8] <= fx[14:8];
-      if (padr_sel[9]) pdr[9][14:8] <= fx[14:8];
-      if (padr_sel[10]) pdr[10][14:8] <= fx[14:8];
-      if (padr_sel[11]) pdr[11][14:8] <= fx[14:8];
-      if (padr_sel[12]) pdr[12][14:8] <= fx[14:8];
-      if (padr_sel[13]) pdr[13][14:8] <= fx[14:8];
-      if (padr_sel[14]) pdr[14][14:8] <= fx[14:8];
-      if (padr_sel[15]) pdr[15][14:8] <= fx[14:8];
-   end
-   pdr[0][7] <= 1'b0;
-   pdr[1][7] <= 1'b0;
-   pdr[2][7] <= 1'b0;
-   pdr[3][7] <= 1'b0;
-   pdr[4][7] <= 1'b0;
-   pdr[5][7] <= 1'b0;
-   pdr[6][7] <= 1'b0;
-   pdr[7][7] <= 1'b0;
-   pdr[8][7] <= 1'b0;
-   pdr[9][7] <= 1'b0;
-   pdr[10][7] <= 1'b0;
-   pdr[11][7] <= 1'b0;
-   pdr[12][7] <= 1'b0;
-   pdr[13][7] <= 1'b0;
-   pdr[14][7] <= 1'b0;
-   pdr[15][7] <= 1'b0;
 end
-
-assign mmu_a[15:0] = (parh_sel[2] ? parh : 16'o000000)
-                   | (parh_sel[3] ? 16'o177600 : 16'o000000)
-                   | (padr_sel[0] ? par[0] : 16'o000000)
-                   | (padr_sel[1] ? par[1] : 16'o000000)
-                   | (padr_sel[2] ? par[2] : 16'o000000)
-                   | (padr_sel[3] ? par[3] : 16'o000000)
-                   | (padr_sel[4] ? par[4] : 16'o000000)
-                   | (padr_sel[5] ? par[5] : 16'o000000)
-                   | (padr_sel[6] ? par[6] : 16'o000000)
-                   | (padr_sel[7] ? par[7] : 16'o000000)
-                   | (padr_sel[8] ? par[8] : 16'o000000)
-                   | (padr_sel[9] ? par[9] : 16'o000000)
-                   | (padr_sel[10] ? par[10] : 16'o000000)
-                   | (padr_sel[11] ? par[11] : 16'o000000)
-                   | (padr_sel[12] ? par[12] : 16'o000000)
-                   | (padr_sel[13] ? par[13] : 16'o000000)
-                   | (padr_sel[14] ? par[14] : 16'o000000)
-                   | (padr_sel[15] ? par[15] : 16'o000000);
 
 always @(posedge pin_clk_p)
 begin
@@ -2178,68 +2062,16 @@ begin
          ws_pdr <= 16'o000000;
 
    if (wr_2376)   // reset page dirty W-bit
-   begin
-      if (padr_sel[0]) pdr[0][6] <= 1'b0;
-      if (padr_sel[1]) pdr[1][6] <= 1'b0;
-      if (padr_sel[2]) pdr[2][6] <= 1'b0;
-      if (padr_sel[3]) pdr[3][6] <= 1'b0;
-      if (padr_sel[4]) pdr[4][6] <= 1'b0;
-      if (padr_sel[5]) pdr[5][6] <= 1'b0;
-      if (padr_sel[6]) pdr[6][6] <= 1'b0;
-      if (padr_sel[7]) pdr[7][6] <= 1'b0;
-      if (padr_sel[8]) pdr[8][6] <= 1'b0;
-      if (padr_sel[9]) pdr[9][6] <= 1'b0;
-      if (padr_sel[10]) pdr[10][6] <= 1'b0;
-      if (padr_sel[11]) pdr[11][6] <= 1'b0;
-      if (padr_sel[12]) pdr[12][6] <= 1'b0;
-      if (padr_sel[13]) pdr[13][6] <= 1'b0;
-      if (padr_sel[14]) pdr[14][6] <= 1'b0;
-      if (padr_sel[15]) pdr[15][6] <= 1'b0;
-   end
+      mmu_wf <= mmu_wf & ~padr_sel;
+
    if (wf_set) // set page dirty W-bit
-   begin
-      if (ws_pdr[0]) pdr[0][6] <= 1'b1;
-      if (ws_pdr[1]) pdr[1][6] <= 1'b1;
-      if (ws_pdr[2]) pdr[2][6] <= 1'b1;
-      if (ws_pdr[3]) pdr[3][6] <= 1'b1;
-      if (ws_pdr[4]) pdr[4][6] <= 1'b1;
-      if (ws_pdr[5]) pdr[5][6] <= 1'b1;
-      if (ws_pdr[6]) pdr[6][6] <= 1'b1;
-      if (ws_pdr[7]) pdr[7][6] <= 1'b1;
-      if (ws_pdr[8]) pdr[8][6] <= 1'b1;
-      if (ws_pdr[9]) pdr[9][6] <= 1'b1;
-      if (ws_pdr[10]) pdr[10][6] <= 1'b1;
-      if (ws_pdr[11]) pdr[11][6] <= 1'b1;
-      if (ws_pdr[12]) pdr[12][6] <= 1'b1;
-      if (ws_pdr[13]) pdr[13][6] <= 1'b1;
-      if (ws_pdr[14]) pdr[14][6] <= 1'b1;
-      if (ws_pdr[15]) pdr[15][6] <= 1'b1;
-   end
+      mmu_wf <= mmu_wf | ws_pdr;
 end
 
 assign ws_set = ~ba_pca & op1_wf;
 assign wf_set = mmu_en & (op3_wf | ba_lat2 & op2_wf & ~mc_res) & wrf_set;
 assign wrf_set = (rply & dout) | rmsel & ~(r757x & ~a[2] & a[1]) & pa_oe;
 
-assign mmu_d[14:1] = (padr_sel[0] ? pdr[0] : 14'o00000)
-                   | (padr_sel[1] ? pdr[1] : 14'o00000)
-                   | (padr_sel[2] ? pdr[2] : 14'o00000)
-                   | (padr_sel[3] ? pdr[3] : 14'o00000)
-                   | (padr_sel[4] ? pdr[4] : 14'o00000)
-                   | (padr_sel[5] ? pdr[5] : 14'o00000)
-                   | (padr_sel[6] ? pdr[6] : 14'o00000)
-                   | (padr_sel[7] ? pdr[7] : 14'o00000)
-                   | (padr_sel[8] ? pdr[8] : 14'o00000)
-                   | (padr_sel[9] ? pdr[9] : 14'o00000)
-                   | (padr_sel[10] ? pdr[10] : 14'o00000)
-                   | (padr_sel[11] ? pdr[11] : 14'o00000)
-                   | (padr_sel[12] ? pdr[12] : 14'o00000)
-                   | (padr_sel[13] ? pdr[13] : 14'o00000)
-                   | (padr_sel[14] ? pdr[14] : 14'o00000)
-                   | (padr_sel[15] ? pdr[15] : 14'o00000);
-
-assign parh_sel[0] = ~mm_sa[2] & ~mm_sa[1] & mm_sah;
-assign parh_sel[1] = ~mm_sa[2] &  mm_sa[1] & mm_sah;
 assign parh_sel[2] =  mm_sa[2] & ~mm_sa[1] & mm_sah | parh_en;
 assign parh_sel[3] =  mm_sa[2] &  mm_sa[1] & mm_sah;
 
@@ -2276,12 +2108,14 @@ begin
             mm_stbs <= 1'b1;
 end
 
+assign mm_sa_rc = r2376 ? (pa_oe ? {a[6], a[3:1]} : {la[6], la[3:1]})
+                        : {~mt_mod[6], ba[15:13]};
+
 always @(posedge pin_clk_p)
 begin
    if (~mm_stb)
    begin
-      mm_sa <= r2376 ? (pa_oe ? {a[6], a[3:1]} : {la[6], la[3:1]})
-                     : {~mt_mod[6], ba[15:13]};
+      mm_sa <= mm_sa_rc;
       mm_sah <= hmod & ~r2376;
    end
 
@@ -2290,11 +2124,6 @@ end
 
 assign parh_en = parh_wr | parh_oe;
 assign parh_wr = rg_wr & r251x & ~la[2];
-
-assign par_wl = parh_wr | wr_2376 & la[5] & dwbl;
-assign par_wh = parh_wr | wr_2376 & la[5] & dwbh;
-assign pdr_wl = wr_2376 & ~la[5] & dwbl;
-assign pdr_wh = wr_2376 & ~la[5] & dwbh;
 
 assign sr0_wl = rg_wr & r757x & ~la[2] & la[1] & dwbl;
 assign sr0_wh = rg_wr & r757x & ~la[2] & la[1] & dwbh;

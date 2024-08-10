@@ -262,6 +262,7 @@ set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_302 -section_id tb_302
 set_global_assignment -name EDA_TEST_BENCH_FILE ../../tbe/de0_tb3.v -section_id tb_vm3
 set_global_assignment -name VERILOG_FILE ../../rtl/vm3.v
 set_global_assignment -name VERILOG_FILE ../../rtl/vm3_qbus.v
+set_global_assignment -name VERILOG_FILE ../../rtl/vm3_mmu.v
 set_global_assignment -name VERILOG_FILE ../../../wbc/rtl/vm3_plm.v
 set_global_assignment -name SOURCE_FILE ../../tbe/config.v
 set_global_assignment -name VERILOG_FILE ../../tbe/de0_top.v

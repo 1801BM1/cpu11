@@ -1,7 +1,7 @@
 //
-// Copyright (c) 2014-2022 by 1801BM1@gmail.com
+// Copyright (c) 2014-2024 by 1801BM1@gmail.com
 //
-// DC304 MMU Chip Memory Managment Register File
+// Memory Managment Unit Register File
 //______________________________________________________________________________
 //
 // Generic implementation of Register File, memory blocks are supposed to be
@@ -16,10 +16,10 @@
 //
 // Port A is used to access MMU registers from CPU bus and to present page
 // address register (PAR) content on address translation cycle. Port B is used
-// to present page descriptor register (PDR) content for address translation
-// and write Dirty Page flag back to PDR after memory write access.
+// to present page descriptor register (PDR) content for address translation only.
+// Actually, write enable for port B is not used.
 //
-module dc_mmu (
+module vm3_mmu (
    input         clock,
    input  [4:0]  address_a,
    input  [4:0]  address_b,
