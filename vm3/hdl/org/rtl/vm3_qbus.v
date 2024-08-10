@@ -1728,7 +1728,7 @@ assign exc_abt = dbl_req | mmu_req | fpp_req | ber_req;
 assign exc_abt_st = exc_abt_l & ~exc_abt_lhl;
 assign aclo_ok = ac_th & ~aclo & ~hltm;
 assign aclo_bad = ac_tl & aclo & ~hltm;
-assign evnt_req = (psw[7:5] >= 3'o6) & ~evnt & evnt_th;
+assign evnt_req = (psw[7:5] != 3'o7) & ~evnt & evnt_th;
 assign abort = exc_abt & ~exc_abt_lhlh;
 assign ftrpi = pin_ftrp_in | abort;
 

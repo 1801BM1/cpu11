@@ -1475,7 +1475,7 @@ assign exc_abt = dbl_exc | bus_exc | mmu_req | fpp_req;
 assign exc_abt_st = exc_abt & ~exc_abt_lh;
 assign aclo_ok = ac_th & ~aclo & ~hltm;
 assign aclo_bad = ac_tl & aclo & ~hltm;
-assign evnt_req = (psw[7:5] >= 3'o6) & ~evnt & evnt_th;
+assign evnt_req = (psw[7:5] != 3'o7) & ~evnt & evnt_th;
 assign abort = exc_abt & ~exc_abt_lhlh;
 
 always @(posedge vm_clk_p or posedge mc_res)
