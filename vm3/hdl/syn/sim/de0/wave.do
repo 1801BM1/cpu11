@@ -8,6 +8,7 @@ add wave -noupdate -group tb -group tb_qbus /tb3/cpu/pin_din_n
 add wave -noupdate -group tb -group tb_qbus /tb3/cpu/pin_dout_n
 add wave -noupdate -group tb -group tb_qbus /tb3/cpu/pin_rply_n
 add wave -noupdate -group tb -group tb_qbus /tb3/cpu/pin_wtbt_n
+add wave -noupdate -group tb -group tb_qbus /tb3/cpu/pin_iako_n
 add wave -noupdate -group tb -group tb_qbus /tb3/cpu/pin_bs_n
 add wave -noupdate -group tb -group tb_other -group tb_ints /tb3/cpu/pin_dclo_n
 add wave -noupdate -group tb -group tb_other -group tb_ints /tb3/cpu/pin_aclo_n
@@ -337,44 +338,8 @@ add wave -noupdate -group mmu -group sr3 /tb3/cpu/core/sr3_as
 add wave -noupdate -group mmu -group sr3 /tb3/cpu/core/sr3_oe
 add wave -noupdate -group mmu -group sr3 /tb3/cpu/core/sr3_um
 add wave -noupdate -group mmu -group sr3 /tb3/cpu/core/sr3_wr
-add wave -noupdate -group mmu -group kpar -label kpar7 -radix octal {/tb3/cpu/core/par[15]}
-add wave -noupdate -group mmu -group kpar -label kpar6 -radix octal {/tb3/cpu/core/par[14]}
-add wave -noupdate -group mmu -group kpar -label kpar5 -radix octal {/tb3/cpu/core/par[13]}
-add wave -noupdate -group mmu -group kpar -label kpar4 -radix octal {/tb3/cpu/core/par[12]}
-add wave -noupdate -group mmu -group kpar -label kpar3 -radix octal {/tb3/cpu/core/par[11]}
-add wave -noupdate -group mmu -group kpar -label kpar2 -radix octal {/tb3/cpu/core/par[10]}
-add wave -noupdate -group mmu -group kpar -label kpar1 -radix octal {/tb3/cpu/core/par[9]}
-add wave -noupdate -group mmu -group kpar -label kpar0 -radix octal -childformat {{{/tb3/cpu/core/par[8][15]} -radix octal} {{/tb3/cpu/core/par[8][14]} -radix octal} {{/tb3/cpu/core/par[8][13]} -radix octal} {{/tb3/cpu/core/par[8][12]} -radix octal} {{/tb3/cpu/core/par[8][11]} -radix octal} {{/tb3/cpu/core/par[8][10]} -radix octal} {{/tb3/cpu/core/par[8][9]} -radix octal} {{/tb3/cpu/core/par[8][8]} -radix octal} {{/tb3/cpu/core/par[8][7]} -radix octal} {{/tb3/cpu/core/par[8][6]} -radix octal} {{/tb3/cpu/core/par[8][5]} -radix octal} {{/tb3/cpu/core/par[8][4]} -radix octal} {{/tb3/cpu/core/par[8][3]} -radix octal} {{/tb3/cpu/core/par[8][2]} -radix octal} {{/tb3/cpu/core/par[8][1]} -radix octal} {{/tb3/cpu/core/par[8][0]} -radix octal}} -subitemconfig {{/tb3/cpu/core/par[8][15]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][14]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][13]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][12]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][11]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][10]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][9]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][8]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][7]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][6]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][5]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][4]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][3]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][2]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][1]} {-height 15 -radix octal} {/tb3/cpu/core/par[8][0]} {-height 15 -radix octal}} {/tb3/cpu/core/par[8]}
-add wave -noupdate -group mmu -group kpdr -label kpdr7 -radix octal {/tb3/cpu/core/pdr[15]}
-add wave -noupdate -group mmu -group kpdr -label kpdr6 -radix octal {/tb3/cpu/core/pdr[14]}
-add wave -noupdate -group mmu -group kpdr -label kpdr5 -radix octal {/tb3/cpu/core/pdr[13]}
-add wave -noupdate -group mmu -group kpdr -label kpdr4 -radix octal {/tb3/cpu/core/pdr[12]}
-add wave -noupdate -group mmu -group kpdr -label kpdr3 -radix octal {/tb3/cpu/core/pdr[11]}
-add wave -noupdate -group mmu -group kpdr -label kpdr2 -radix octal {/tb3/cpu/core/pdr[10]}
-add wave -noupdate -group mmu -group kpdr -label kpdr1 -radix octal {/tb3/cpu/core/pdr[9]}
-add wave -noupdate -group mmu -group kpdr -label kpdr0 -radix octal -childformat {{{/tb3/cpu/core/pdr[8][14]} -radix octal} {{/tb3/cpu/core/pdr[8][13]} -radix octal} {{/tb3/cpu/core/pdr[8][12]} -radix octal} {{/tb3/cpu/core/pdr[8][11]} -radix octal} {{/tb3/cpu/core/pdr[8][10]} -radix octal} {{/tb3/cpu/core/pdr[8][9]} -radix octal} {{/tb3/cpu/core/pdr[8][8]} -radix octal} {{/tb3/cpu/core/pdr[8][7]} -radix octal} {{/tb3/cpu/core/pdr[8][6]} -radix octal} {{/tb3/cpu/core/pdr[8][5]} -radix octal} {{/tb3/cpu/core/pdr[8][4]} -radix octal} {{/tb3/cpu/core/pdr[8][3]} -radix octal} {{/tb3/cpu/core/pdr[8][2]} -radix octal} {{/tb3/cpu/core/pdr[8][1]} -radix octal}} -subitemconfig {{/tb3/cpu/core/pdr[8][14]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][13]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][12]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][11]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][10]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][9]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][8]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][7]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][6]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][5]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][4]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][3]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][2]} {-height 15 -radix octal} {/tb3/cpu/core/pdr[8][1]} {-height 15 -radix octal}} {/tb3/cpu/core/pdr[8]}
-add wave -noupdate -group mmu -group upar -label upar7 -radix octal {/tb3/cpu/core/par[7]}
-add wave -noupdate -group mmu -group upar -label upar6 -radix octal {/tb3/cpu/core/par[6]}
-add wave -noupdate -group mmu -group upar -label upar5 -radix octal {/tb3/cpu/core/par[5]}
-add wave -noupdate -group mmu -group upar -label upar4 -radix octal {/tb3/cpu/core/par[4]}
-add wave -noupdate -group mmu -group upar -label upar3 -radix octal {/tb3/cpu/core/par[3]}
-add wave -noupdate -group mmu -group upar -label upar2 -radix octal {/tb3/cpu/core/par[2]}
-add wave -noupdate -group mmu -group upar -label upar1 -radix octal {/tb3/cpu/core/par[1]}
-add wave -noupdate -group mmu -group upar -label upar0 -radix octal {/tb3/cpu/core/par[0]}
-add wave -noupdate -group mmu -group updr -label updr7 -radix octal {/tb3/cpu/core/pdr[7]}
-add wave -noupdate -group mmu -group updr -label updr6 -radix octal {/tb3/cpu/core/pdr[6]}
-add wave -noupdate -group mmu -group updr -label updr5 -radix octal {/tb3/cpu/core/pdr[5]}
-add wave -noupdate -group mmu -group updr -label updr4 -radix octal {/tb3/cpu/core/pdr[4]}
-add wave -noupdate -group mmu -group updr -label updr3 -radix octal {/tb3/cpu/core/pdr[3]}
-add wave -noupdate -group mmu -group updr -label updr2 -radix octal {/tb3/cpu/core/pdr[2]}
-add wave -noupdate -group mmu -group updr -label updr1 -radix octal {/tb3/cpu/core/pdr[1]}
-add wave -noupdate -group mmu -group updr -label updr0 -radix octal {/tb3/cpu/core/pdr[0]}
 add wave -noupdate -group mmu -radix octal -childformat {{{/tb3/cpu/core/parh[15]} -radix octal} {{/tb3/cpu/core/parh[14]} -radix octal} {{/tb3/cpu/core/parh[13]} -radix octal} {{/tb3/cpu/core/parh[12]} -radix octal} {{/tb3/cpu/core/parh[11]} -radix octal} {{/tb3/cpu/core/parh[10]} -radix octal} {{/tb3/cpu/core/parh[9]} -radix octal} {{/tb3/cpu/core/parh[8]} -radix octal} {{/tb3/cpu/core/parh[7]} -radix octal} {{/tb3/cpu/core/parh[6]} -radix octal} {{/tb3/cpu/core/parh[5]} -radix octal} {{/tb3/cpu/core/parh[4]} -radix octal} {{/tb3/cpu/core/parh[3]} -radix octal} {{/tb3/cpu/core/parh[2]} -radix octal} {{/tb3/cpu/core/parh[1]} -radix octal} {{/tb3/cpu/core/parh[0]} -radix octal}} -subitemconfig {{/tb3/cpu/core/parh[15]} {-height 15 -radix octal} {/tb3/cpu/core/parh[14]} {-height 15 -radix octal} {/tb3/cpu/core/parh[13]} {-height 15 -radix octal} {/tb3/cpu/core/parh[12]} {-height 15 -radix octal} {/tb3/cpu/core/parh[11]} {-height 15 -radix octal} {/tb3/cpu/core/parh[10]} {-height 15 -radix octal} {/tb3/cpu/core/parh[9]} {-height 15 -radix octal} {/tb3/cpu/core/parh[8]} {-height 15 -radix octal} {/tb3/cpu/core/parh[7]} {-height 15 -radix octal} {/tb3/cpu/core/parh[6]} {-height 15 -radix octal} {/tb3/cpu/core/parh[5]} {-height 15 -radix octal} {/tb3/cpu/core/parh[4]} {-height 15 -radix octal} {/tb3/cpu/core/parh[3]} {-height 15 -radix octal} {/tb3/cpu/core/parh[2]} {-height 15 -radix octal} {/tb3/cpu/core/parh[1]} {-height 15 -radix octal} {/tb3/cpu/core/parh[0]} {-height 15 -radix octal}} /tb3/cpu/core/parh
 add wave -noupdate -group mmu -radix octal -childformat {{{/tb3/cpu/core/padr_sel[15]} -radix octal} {{/tb3/cpu/core/padr_sel[14]} -radix octal} {{/tb3/cpu/core/padr_sel[13]} -radix octal} {{/tb3/cpu/core/padr_sel[12]} -radix octal} {{/tb3/cpu/core/padr_sel[11]} -radix octal} {{/tb3/cpu/core/padr_sel[10]} -radix octal} {{/tb3/cpu/core/padr_sel[9]} -radix octal} {{/tb3/cpu/core/padr_sel[8]} -radix octal} {{/tb3/cpu/core/padr_sel[7]} -radix octal} {{/tb3/cpu/core/padr_sel[6]} -radix octal} {{/tb3/cpu/core/padr_sel[5]} -radix octal} {{/tb3/cpu/core/padr_sel[4]} -radix octal} {{/tb3/cpu/core/padr_sel[3]} -radix octal} {{/tb3/cpu/core/padr_sel[2]} -radix octal} {{/tb3/cpu/core/padr_sel[1]} -radix octal} {{/tb3/cpu/core/padr_sel[0]} -radix octal}} -subitemconfig {{/tb3/cpu/core/padr_sel[15]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[14]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[13]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[12]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[11]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[10]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[9]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[8]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[7]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[6]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[5]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[4]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[3]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[2]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[1]} {-height 15 -radix octal} {/tb3/cpu/core/padr_sel[0]} {-height 15 -radix octal}} /tb3/cpu/core/padr_sel
-add wave -noupdate -group mmu /tb3/cpu/core/par_wh
-add wave -noupdate -group mmu /tb3/cpu/core/par_wl
-add wave -noupdate -group mmu /tb3/cpu/core/pdr_wl
-add wave -noupdate -group mmu /tb3/cpu/core/pdr_wh
 add wave -noupdate -group mmu /tb3/cpu/core/mm_sa
 add wave -noupdate -group mmu /tb3/cpu/core/mm_stb
 add wave -noupdate -group mmu /tb3/cpu/core/at_stb
@@ -406,7 +371,7 @@ add wave -noupdate /tb3/cpu/core/alu_rd
 add wave -noupdate /tb3/cpu/core/alu_stb
 add wave -noupdate /tb3/cpu/core/alu_wr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 2} {206385463 ps} 0}
+WaveRestoreCursors {{Cursor 2} {10000 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 166
 configure wave -valuecolwidth 73
@@ -422,4 +387,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {206118800 ps} {208801200 ps}
+WaveRestoreZoom {0 ps} {2682400 ps}

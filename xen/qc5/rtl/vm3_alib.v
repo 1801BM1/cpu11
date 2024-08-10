@@ -36,7 +36,7 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module dc_mmu (
+module vm3_mmu (
    address_a,
    address_b,
    byteena_a,
@@ -110,7 +110,7 @@ module dc_mmu (
       altsyncram_component.clock_enable_output_a = "BYPASS",
       altsyncram_component.clock_enable_output_b = "BYPASS",
       altsyncram_component.indata_reg_b = "CLOCK0",
-      altsyncram_component.intended_device_family = "MAX 10",
+      altsyncram_component.intended_device_family = "Cyclone V",
       altsyncram_component.lpm_type = "altsyncram",
       altsyncram_component.numwords_a = 32,
       altsyncram_component.numwords_b = 32,
@@ -121,8 +121,8 @@ module dc_mmu (
       altsyncram_component.outdata_reg_b = "UNREGISTERED",
       altsyncram_component.power_up_uninitialized = "FALSE",
       altsyncram_component.read_during_write_mode_mixed_ports = "DONT_CARE",
-      altsyncram_component.read_during_write_mode_port_a = "NEW_DATA_WITH_NBE_READ",
-      altsyncram_component.read_during_write_mode_port_b = "NEW_DATA_WITH_NBE_READ",
+      altsyncram_component.read_during_write_mode_port_a = "NEW_DATA_NO_NBE_READ",
+      altsyncram_component.read_during_write_mode_port_b = "NEW_DATA_NO_NBE_READ",
       altsyncram_component.widthad_a = 5,
       altsyncram_component.widthad_b = 5,
       altsyncram_component.width_a = 16,

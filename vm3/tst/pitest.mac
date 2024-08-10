@@ -293,7 +293,7 @@ outhex:		mov	R1, -(SP)		;
 		movb	1$(R0),	R0		;
 		swab	R0			;
 		bis	R0, R1			;
-		mov	R1, @#177715		;
+		mov	R1, @#177716		;
 						;
 		mov	(SP)+, R0		;
 		mov	(SP)+, R1		;
@@ -327,7 +327,7 @@ start:		.print	#mes1			;
 		cmp	R0, #'0			;
 		bne	2$			;
 		jsr	PC, spigot		;
-		br	1$			;
+		br	start			;
 2$:		jsr	PC, putch		;
 		br	1$			;
 ;_____________________________________________________________________________

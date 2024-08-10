@@ -218,6 +218,26 @@ endtask
 
 //_____________________________________________________________________________
 //
+// Stop simulation on regular (non debug) HALT
+//
+`ifdef CONFIG_CPU_VM3
+initial
+begin
+@ (negedge de0_top.cpu.vm_dclo_in);
+   forever
+   begin
+      @ (posedge de0_top.cpu.vm_hltm);
+      if (~de0_top.cpu.halt_en)
+      begin
+         $display("HALT @ %06O", de0_top.cpu.cpu.pc);
+         $finish;
+      end
+   end
+end
+`endif
+
+//_____________________________________________________________________________
+//
 endmodule
 
 

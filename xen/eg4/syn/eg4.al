@@ -48,6 +48,10 @@
             <File>../rtl/lsi_tlib.v</File>
             <File>../rtl/am4_tlib.v</File>
             <File>../rtl/f11_tlib.v</File>
+            <File>../../lib/wbc_vm3.v</File>
+            <File>../rtl/vm3_tlib.v</File>
+            <File>../../../vm3/hdl/wbc/rtl/vm3_plm.v</File>
+            <File>../../../vm3/hdl/wbc/rtl/vm3_wb.v</File>
         </Verilog>
         <ADC_FILE>eg4.adc</ADC_FILE>
         <SDC_FILE>eg4.sdc</SDC_FILE>
@@ -81,8 +85,8 @@
         <SimProperty/>
     </Property>
     <Project_Settings>
-        <Step_Last_Change>2023-11-13 22:01:58</Step_Last_Change>
-        <Current_Step>0</Current_Step>
-        <Step_Status>true</Step_Status>
+        <Step_Last_Change>2024-08-16 19:27:18</Step_Last_Change>
+        <Current_Step>20</Current_Step>
+        <Step_Status>false</Step_Status>
     </Project_Settings>
 </Project>
