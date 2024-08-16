@@ -1028,7 +1028,7 @@ begin
       pc2_res <= 1'b0;
    else
       if (ir_stb)
-         pc2_res =  (breg[14:12] != 3'o0)    // two ops instructions
+         pc2_res <= (breg[14:12] != 3'o0)    // two ops instructions
                   & (breg[14:12] != 3'o7)    //
                   & (breg[11:6] == 6'o17)    // source is @PC
                   & (breg[5:3] != 3'o6)      // not E(Rn) destination

@@ -727,14 +727,14 @@ begin
       bir_fix <= 1'b0;
    else
       if (ir_stb)
-         bir_fix = (breg[14:12] != 3'o0)    // two ops instructions
-                 & (breg[14:12] != 3'o7)    //
-                 & (breg[8:6] == 3'o7)      // source is PC related
-                 & (breg[10:9] == 2'o1)     // source @PC or @-(PC) mode
-                 & (breg[2:0] != 3'o7)      // not PC related destination
-                 & (breg[5:3] != 3'o6)      // not E(Rn) destination
-                 & (breg[5:3] != 3'o7)      // not @E(Rn) destination
-                 & (VM2_CORE_FIX_PREFETCH != 0);
+         bir_fix <= (breg[14:12] != 3'o0)   // two ops instructions
+                  & (breg[14:12] != 3'o7)   //
+                  & (breg[8:6] == 3'o7)     // source is PC related
+                  & (breg[10:9] == 2'o1)    // source @PC or @-(PC) mode
+                  & (breg[2:0] != 3'o7)     // not PC related destination
+                  & (breg[5:3] != 3'o6)     // not E(Rn) destination
+                  & (breg[5:3] != 3'o7)     // not @E(Rn) destination
+                  & (VM2_CORE_FIX_PREFETCH != 0);
 end
 
 //______________________________________________________________________________
