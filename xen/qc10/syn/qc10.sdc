@@ -19,7 +19,7 @@
 ## PROGRAM "Quartus Prime"
 ## VERSION "Version 18.0.0 Build 614 04/24/2018 SJ Standard Edition"
 
-## DATE    "Fri Jul 24 13:10:42 2020"
+## DATE    "Fri Jul 24 12:59:11 2020"
 
 ##
 ## DEVICE  "10CL006YU256C8G"
@@ -45,8 +45,8 @@ create_clock -name {qc10_clock_50} -period 20.000 -waveform { 0.000 10.000 } [ge
 # Create Generated Clock
 #**************************************************************
 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50/1 -multiply_by 1 -master_clock {qc10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50/1 -multiply_by 1 -phase 180.000 -master_clock {qc10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
+create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50/1 -multiply_by 3 -divide_by 2 -master_clock {qc10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
+create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50/1 -multiply_by 3 -divide_by 2 -phase 180.000 -master_clock {qc10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
 
 
 #**************************************************************

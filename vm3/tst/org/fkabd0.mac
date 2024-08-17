@@ -114,6 +114,7 @@
 		HOEP	= 0			; halt on end-of-pass
 		MEMLIM	= 000000		; 0 for original, 100000 to limit
 		VM3FIX	= 0			; not 0 for VM3 test fixes
+		SKIP	= 0			; skip final prints
 ;_____________________________________________________________________________
 ;
 		.asect				;
@@ -2265,8 +2266,13 @@ pwait1:		tstb	@#tps			;
 pfres:		jmp	restrt			;
 
 .if ne HOEP
+.if ne SKIP
+msg:		.asciz	..
+msg1:		.asciz	..
+.iff
 msg:		.asciz	. END PASS.
 msg1:		.asciz	.CFKABD0.
+.endc
 .iff
 msg:		.asciz	<15><12>.CFKABD0 11/34 TRAPS TST DONE  .
 msg1:		.asciz	<15><12>.CFKABD0 11/34 TRAPS TST .

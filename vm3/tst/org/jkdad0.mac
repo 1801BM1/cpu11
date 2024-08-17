@@ -504,16 +504,17 @@
 ;	equal to "1".
 ;_____________________________________________________________________________
 ;
-		HOEP	= 1			; halt on end-of-pass
-		NOSCO	= 1			; no scope trap
-		INSWR	= 100000		; 100000 for halt on error, no gtswr
-		VM3FX	= 1			; fixes for VM3
+		HOEP	= 0			; halt on end-of-pass
+		NOSCO	= 0			; no scope trap
+		INSWR	= 000000		; 100000 for halt on error, no gtswr
+		VM3FX	= 0			; fixes for VM3
+		SKIP	= 0			; skip/minimize prints
 ;_____________________________________________________________________________
 ;
 		.asect				;
 		. = 0				; loop on test
 
-		.title	CJKDADO	KTF11-AA MMU DIAG.
+		.title	CJKDAD0	KTF11-AA MMU DIAG.
 		.nlist	cnd, mc, md		;
 		.list	me			;
 ;_____________________________________________________________________________
@@ -1396,10 +1397,14 @@ start:						;
 74$:						;
 		br	71$			; get over the asciz
 72$:
-.if ne VM3FX					;
-		.asciz /CJKDAD0/<crlf>
+.if ne VM3FX
+.if ne SKIP
+		.asciz	<15><0><0><0><0><0><0><0>
 .iff
-		.asciz <crlf>/CJKDAD0 KTF11-AA MMU DIAG./<crlf>
+		.asciz	/CJKDAD0/<crlf>
+.endc
+.iff
+		.asciz	<crlf>/CJKDAD0 KTF11-AA MMU DIAG./<crlf>
 .endc						;
 		.even				;
 71$:						;
@@ -3956,7 +3961,11 @@ $endct:		.word	1			;
 .iff						;
 		br	64$			; get over the asciz
 .endc						;
-65$:		.asciz	<12><15>/END PASS #/	;
+.if ne SKIP
+65$:		.asciz	<15>
+.iff
+65$:		.asciz	<12><15>/END PASS #/
+.endc
 		.even				;
 64$:						;
 		mov	@#$pass, -(SP)		; save $pass for typeout

@@ -16,6 +16,8 @@
 ;  - instruction prefetch bus error abort test
 ;  - instruction prefetch MMU-exceptions test
 ;
+		SKIP	= 1			; skip final prints
+						;
 		.title	haltm			;
 		.list	meb			;
 						;
@@ -709,8 +711,12 @@ tst30:		br	3$			; prefetch address comparator test
 done:		.print	#mes1			;
 		mov	#0, @#HMCSR		;
 		halt				;
-
+						;
+.if ne SKIP
+mes1:	.asciz	<15>
+.iff						;
 mes1:	.asciz	<15><12><15><12>" 1801BM3 HALT MODE TEST PASSED"<12><15>
+.endc
 ;_____________________________________________________________________________
 ;
 		.end

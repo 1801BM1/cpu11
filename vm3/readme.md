@@ -66,12 +66,52 @@ May not be synthesizable with some tools, presented for simulation purposes only
 contain latches, and whole model can be synthesized for synchronous FPGAs. This model is intermedate
 step for final Wishbone-compatible version.
 
+#### \hdl\wbc
+- synchronous Wishbone compatible version of 1801BM3 synchronous core uses a single clock,
+is FPGA-optimized, follows the original command execution timings, is intended for SoC building.
+
 #### [\cad\vm3](https://github.com/1801BM1/cad11/tree/master/vm3) (moved to dedicated repo)
 - topology in Sprint Layout format
 - topology in PCD-2004 pcb format
 - schematics in PCD-2004 pcb format
 - schematics in pdf (gate level)
 
-## Work in Progress
+## How to simulate
+- run "tst\build.bat haltm" to prebuild desired test software image (haltm is a sample)
+- run ModelSim simulator
+- set "vm3/hdl/org/sim/de0" as working directory in ModelSim (File->Change Directory)
+- execute "do run.do" console command
+- wait, simulation may take some time till complete
+- see the results in waveform and console output
 
-	
+## Implemented resources
+- RAM 16Kx16bit at 000000<sub>8</sub> with initialized content from test.mif file
+- TTY at 177560<sub>8</sub>, 60<sub>8</sub>/64<sub>8</sub> vector interrupts, 
+  tx/rx with cts/rts handshake, 115200/8/N/1, RS-232 levels (board dependent).
+- 50Hz system timer interrupt (IRQ2, edge sensitive, vector 100<sub>8</sub>),
+  enabled by board switch[0], if timer is enabled the board led[0] lights
+- 4x7-segment display, segments attached to output registers at 177714<sub>8</sub>/177716<sub>8</sub>,
+  see the test software source for the details
+- halt mode debug register, write only at 177710<sub>8</sub>
+- switches and buttons can be read from input register at 177714<sub>8</sub>
+- board button[0] is reset, short press less than 1 sec causes system reset, 
+  long press over 1 second simulates power reset (excluding RAM content)
+
+## Fmax and FPGA resources
+- Wishbone compatible 1801BM3 core
+- register file and constant generator in flip-flops, no RAM block
+- speed optimization chosen
+- slow model, worst corner
+
+All results are just approximate estimations by synthesis tools (Quartus/XST) on sample
+projects.
+
+| Board   | FPGA             | Family       | Fmax    | LUTs | FFs  | MEM    |
+|---------|------------------|--------------|---------|------|------|--------|
+| DE0     | EP3C16F484C6N    | Cyclone III  | 99 MHz  | 3397 | 1340 | 1 M9K  |
+| DE1     | EP2C20F484C7N    | Cyclone II   | 74 MHz  | 3834 | 1515 | 1 M4K  |
+| DE2-115 | EP4CE115F29C7N   | Cyclone IV   | 87 MHz  | 3981 | 1558 | 1 M9K  |
+| DE10-LT | 10M50DAF484C7G   | Max 10       | 81 MHz  | 3048 | 1198 | 1 M9K  |
+| QC5     | 5CEFA2F23I7N     | Cyclone V    | 105 MHz | 1562 | 1483 | 1 M10K |
+| QC10    | 10CL006U256CN8   | Cyclone 10   | 73 MHz  | 3421 | 1423 | 1 M9K  |
+| EG4     | EG4S20BG256      | Eagle EG4S20 | 71 MHz  | 3949 | 1221 | 1 M9K  |

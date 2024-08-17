@@ -8,6 +8,7 @@ set_global_assignment -name ORIGINAL_QUARTUS_VERSION "9.1 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "09:10:21  MARCH 29, 2010"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.0.0 Standard Edition"
 set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS OFF -section_id eda_blast_fpga
+set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
 
 #============================================================
 # CLOCK
@@ -428,8 +429,6 @@ set_location_assignment PIN_AA2 -to de10_gpio_d[35]
 set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
 set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
 set_global_assignment -name CYCLONEIII_CONFIGURATION_DEVICE AUTO
-
-
 set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name TIMING_ANALYZER_DO_CCPP_REMOVAL ON
 set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION OFF
@@ -442,7 +441,7 @@ set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY "./out"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY ./out
 set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name MISC_FILE "de10-lite.dpf"
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 7
@@ -470,7 +469,6 @@ set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de10_vga_vs
-set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
 set_global_assignment -name VERILOG_MACRO "LSI11_DEPTH_MICROM=(* max_depth = 1024 *)"
@@ -492,6 +490,7 @@ set_global_assignment -name VERILOG_FILE ../../lib/config.v
 set_global_assignment -name VERILOG_FILE ../rtl/de10_top.v
 set_global_assignment -name VERILOG_FILE ../rtl/de10_alib.v
 set_global_assignment -name VERILOG_FILE ../rtl/vm1_alib.v
+set_global_assignment -name VERILOG_FILE ../rtl/vm3_alib.v
 set_global_assignment -name VERILOG_FILE ../rtl/f11_alib.v
 set_global_assignment -name MIF_FILE ../../lib/vm1_reg.mif
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
@@ -499,6 +498,7 @@ set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm1.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm2.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm3.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_lsi.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_am4.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_f11.v
@@ -507,6 +507,8 @@ set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_plm.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_tve.v
 set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_wb.v
 set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_plm.v
+set_global_assignment -name VERILOG_FILE ../../../vm3/hdl/wbc/rtl/vm3_wb.v
+set_global_assignment -name VERILOG_FILE ../../../vm3/hdl/wbc/rtl/vm3_plm.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/lsi_wb.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp_plm.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1611.v
@@ -534,6 +536,7 @@ set_global_assignment -name MIF_FILE ../../../f11/rom/002.mif
 set_global_assignment -name MIF_FILE ../../tst/lsi.mif
 set_global_assignment -name MIF_FILE ../../tst/vm1.mif
 set_global_assignment -name MIF_FILE ../../tst/vm2.mif
+set_global_assignment -name MIF_FILE ../../tst/vm3.mif
 set_global_assignment -name MIF_FILE ../../tst/am4.mif
 set_global_assignment -name MIF_FILE ../../tst/f11.mif
 set_global_assignment -name CDF_FILE "de10-lite.cdf"

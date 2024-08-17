@@ -2,7 +2,7 @@
 <Project>
     <Project_Created_Time>2020-07-23 20:19:40</Project_Created_Time>
     <TD_Version>4.6.18154</TD_Version>
-    <UCode>00111100</UCode>
+    <UCode>01010100</UCode>
     <Name>eg4</Name>
     <HardWare>
         <Family>EG4</Family>
@@ -19,6 +19,7 @@
             <File>../../lib/wbc_vic.v</File>
             <File>../../lib/wbc_vm1.v</File>
             <File>../../lib/wbc_vm2.v</File>
+            <File>../../lib/wbc_vm3.v</File>
             <File>../../lib/wbc_am4.v</File>
             <File>../../lib/wbc_f11.v</File>
             <File>../../../lsi/hdl/wbc/rtl/lsi_wb.v</File>
@@ -31,6 +32,8 @@
             <File>../../../vm1/hdl/wbc/rtl/vm1_wb.v</File>
             <File>../../../vm2/hdl/wbc/rtl/vm2_plm.v</File>
             <File>../../../vm2/hdl/wbc/rtl/vm2_wb.v</File>
+            <File>../../../vm3/hdl/wbc/rtl/vm3_plm.v</File>
+            <File>../../../vm3/hdl/wbc/rtl/vm3_wb.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_alu.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_plm.v</File>
             <File>../../../am4/hdl/wbc/rtl/am4_seq.v</File>
@@ -45,13 +48,10 @@
             <File>../../../f11/hdl/wbc/rtl/f11_wb.v</File>
             <File>../rtl/eg4_tlib.v</File>
             <File>../rtl/vm1_tlib.v</File>
+            <File>../rtl/vm3_tlib.v</File>
             <File>../rtl/lsi_tlib.v</File>
             <File>../rtl/am4_tlib.v</File>
             <File>../rtl/f11_tlib.v</File>
-            <File>../../lib/wbc_vm3.v</File>
-            <File>../rtl/vm3_tlib.v</File>
-            <File>../../../vm3/hdl/wbc/rtl/vm3_plm.v</File>
-            <File>../../../vm3/hdl/wbc/rtl/vm3_wb.v</File>
         </Verilog>
         <ADC_FILE>eg4.adc</ADC_FILE>
         <SDC_FILE>eg4.sdc</SDC_FILE>
@@ -85,8 +85,8 @@
         <SimProperty/>
     </Property>
     <Project_Settings>
-        <Step_Last_Change>2024-08-16 19:27:18</Step_Last_Change>
-        <Current_Step>20</Current_Step>
-        <Step_Status>false</Step_Status>
+        <Step_Last_Change>2024-08-18 13:43:24</Step_Last_Change>
+        <Current_Step>60</Current_Step>
+        <Step_Status>true</Step_Status>
     </Project_Settings>
 </Project>

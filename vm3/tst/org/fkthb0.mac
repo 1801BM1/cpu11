@@ -448,10 +448,11 @@
 ;	equal to "1".
 ;_____________________________________________________________________________
 ;
-		HOEP	= 0			; halt on end-of-pass
-		NOSCO	= 0			; no scope trap
-		INSWR	= 000000		; 100000 for halt on error, no gtswr
-		MSIM	= 0			; make test shorter for simulation
+		HOEP    = 0			; halt on end-of-pass
+		NOSCO   = 0			; no scope trap
+		INSWR   = 000000		; 100000 for halt on error, no gtswr
+		MSIM    = 0			; make test shorter for simulation
+		SKIP	= 0			; skip/minimize final prints
 ;_____________________________________________________________________________
 ;
 		.asect				;
@@ -1426,7 +1427,11 @@ start:
 73$:		movb	#1, @#$autob		; set auto-mode indicator
 74$:		br	71$			; get over the asciz
 						;
+.if ne SKIP
+72$:		.asciz	<15><0>#CFKTHB0 11/34 MEMORY MGMT. DIAG.#<crlf>
+.iff
 72$:		.asciz	<crlf>#CFKTHB0  11/34 MEMORY MGMT. DIAG.#<crlf>
+.endc
 		.even				;
 71$:						;
 						;
@@ -3934,7 +3939,11 @@ $endct:		.word	1			;
 .iff						;
 		br	64$			; get over the asciz
 .endc						;
+.if ne SKIP					;
+65$:		.asciz	<15>			;
+.iff						;
 65$:		.asciz	<12><15>/END PASS #/	;
+.endc						;
 		.even				;
 64$:		mov	$pass, -(SP)		; save $pass for typeout
 						; type pass number

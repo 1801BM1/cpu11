@@ -1,4 +1,4 @@
-## Generated SDC file "de10-lite.sdc"
+## Generated SDC file "de10-lite.out.sdc"
 
 ## Copyright (C) 2018  Intel Corporation. All rights reserved.
 ## Your use of Intel Corporation's design tools, logic functions 
@@ -19,7 +19,7 @@
 ## PROGRAM "Quartus Prime"
 ## VERSION "Version 18.0.0 Build 614 04/24/2018 SJ Standard Edition"
 
-## DATE    "Tue Jul 07 22:44:07 2020"
+## DATE    "Tue Jul 07 23:22:00 2020"
 
 ##
 ## DEVICE  "10M50DAF484C7G"
@@ -45,8 +45,8 @@ create_clock -name {de10_clock_50} -period 20.000 -waveform { 0.000 10.000 } [ge
 # Create Generated Clock
 #**************************************************************
 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 1 -master_clock {de10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 1 -phase 180.000 -master_clock {de10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
+create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 3 -divide_by 2 -master_clock {de10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
+create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 3 -divide_by 2 -phase 180.000 -master_clock {de10_clock_50} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
 
 
 #**************************************************************

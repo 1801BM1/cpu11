@@ -535,6 +535,7 @@ set_global_assignment -name VERILOG_FILE ../rtl/de1_tb.v
 set_global_assignment -name VERILOG_FILE ../rtl/de1_top.v
 set_global_assignment -name VERILOG_FILE ../rtl/de1_alib.v
 set_global_assignment -name VERILOG_FILE ../rtl/vm1_alib.v
+set_global_assignment -name VERILOG_FILE ../rtl/vm3_alib.v
 set_global_assignment -name VERILOG_FILE ../rtl/f11_alib.v
 set_global_assignment -name MIF_FILE ../../lib/vm1_reg.mif
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vic.v
@@ -542,6 +543,7 @@ set_global_assignment -name VERILOG_FILE ../../lib/wbc_uart.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_rst.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm1.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm2.v
+set_global_assignment -name VERILOG_FILE ../../lib/wbc_vm3.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_lsi.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_am4.v
 set_global_assignment -name VERILOG_FILE ../../lib/wbc_f11.v
@@ -550,6 +552,8 @@ set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_plm.v
 set_global_assignment -name VERILOG_FILE ../../../vm1/hdl/wbc/rtl/vm1_tve.v
 set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_wb.v
 set_global_assignment -name VERILOG_FILE ../../../vm2/hdl/wbc/rtl/vm2_plm.v
+set_global_assignment -name VERILOG_FILE ../../../vm3/hdl/wbc/rtl/vm3_wb.v
+set_global_assignment -name VERILOG_FILE ../../../vm3/hdl/wbc/rtl/vm3_plm.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/lsi_wb.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp_plm.v
 set_global_assignment -name VERILOG_FILE ../../../lsi/hdl/wbc/rtl/mcp1611.v
@@ -577,5 +581,6 @@ set_global_assignment -name MIF_FILE ../../../f11/rom/002.mif
 set_global_assignment -name MIF_FILE ../../tst/lsi.mif
 set_global_assignment -name MIF_FILE ../../tst/vm1.mif
 set_global_assignment -name MIF_FILE ../../tst/vm2.mif
+set_global_assignment -name MIF_FILE ../../tst/vm3.mif
 set_global_assignment -name MIF_FILE ../../tst/f11.mif
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

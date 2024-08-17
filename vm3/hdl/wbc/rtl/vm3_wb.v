@@ -106,7 +106,7 @@ wire        dx_stb_rc;              //
 wire        dx_swp;                 //
 wire        di_lat;                 //
 wire        do_lat;                 //
-wire        do_clr;                 //
+wire        do_clr, do_clrh;        //
 reg         doh_lat, dol_lat;       //
 reg         do_oe;                  //
 reg         fx_swp;                 //
@@ -415,21 +415,23 @@ wire        ra_s22, ra_s16;         //
 wire        sa_s22, sa_s16;         //
 wire        sa_sxa;                 //
 reg         sa_sxa_h;               //
-wire        sa_pfa_fc;              //
-reg         sa_pfa;                 //
+wire        sa_pfa;                 //
+reg         sa_pfa_t;               //
 reg         ra_s22_h, ra_s22_hlh;   //
 reg         sa_s22_h;               //
-reg         sa_req, sa_req_l;       //
+reg         sa_req;                 //
                                     //
 wire        bs_a18, bs_a22, bs_ax;  // I/O bank select
 reg         adr_eq;                 // prefetched address match
 wire        io_lat0, io_lat1;       //
 wire        io_lat2, io_res2;       //
+reg         io_lat2_t;              //
 reg         iop_rdy;                // I/O opcode register ready
                                     //
-reg         at_stb;                 //
-reg         ba_pca, ba_pca_hl;      //
-reg         ba_rdy_l, ba_rdy_lh;    //
+wire        at_stb;                 //
+wire        ba_pca_rc;              //
+reg         ba_pca;                 //
+reg         ba_rdy_lh;              //
                                     //
 wire        ba_rdy, ba_ins;         //
 wire        ba_lat, ba_lat0;        //
@@ -446,8 +448,7 @@ reg         op0_wf, op1_wf;         //
 reg         op2_wf, op3_wf;         //
                                     //
 reg         rg_rmw;                 //
-reg         di_rmw_tl;              //
-wire        di_rmw;                 //
+reg         di_rmw;                 //
                                     //
 reg         alu_drdy;               //
 reg         do_rdy;                 // output register ready
@@ -459,15 +460,19 @@ wire        out_rs, s3_out;         //
 wire [3:0]  io_s;                   //
 wire [3:0]  iop;                    // I/O operation code
 reg  [4:0]  iop_m;                  // IO opcode register, memory translation
-reg  [3:0]  iop_t;                  // IO opcode register, bus transaction
-wire [5:0]  io_dc;                  // IO transaction opcode
+wire [3:0]  iop_rc;                 //
+wire        io_dc_st;               //
+wire [5:0]  io_dc_op;               // IO opcode, bus transaction
+wire [5:0]  io_dc_rc;               //
+reg  [5:0]  io_dc;                  // IO transaction opcode
 wire [3:0]  mt_op;                  // memory translation opcode
 wire        dwbl, dwbh;             // byte selection strobes
                                     //
 reg         hmod;                   // halt mode flag
-reg         hm_lat, hm_lat_h;       //
-reg         hm_lat_set_l;           //
-wire        hm_lat_set, hm_lat_clr; //
+reg         hm_lat_t, hm_lat_h;     //
+reg         hm_lat_set;             //
+wire        hm_lat_clr;             //
+wire        hm_lat;                 //
                                     //
 wire        mrq_pl;                 // page limit error request
 reg         mrq_pl_t;               //
@@ -494,7 +499,7 @@ wire        pf_00_rc, pf_10_rc;     //
 wire        pf_00a_rc;              //
 reg         pf_00m;                 // latched on plm
 reg         pf_00a, pf_00r;         // latched on addr, plr
-reg         pf_ba0_h, pf_ba0_hl;    //
+reg         pf_ba0_h;               //
 wire        pf_pa, pf_pa_rc;        //
 wire        pf_inv, pf_doe;         //
 wire        pf_tout, pf_tout_st;    //
@@ -515,8 +520,6 @@ reg         pc_wr_t;                //
 reg         sel_sa, sel_ra;         // halt mode bus access
 wire        irply_clr;              //
 reg         irply, irply_lh;        //
-reg         rply;                   //
-wire        rply_fc;                //
 wire        bus_free;               //
                                     //
 reg  [7:0]  qt;                     // Q-bus timer
@@ -524,7 +527,7 @@ wire        qt_ena;                 //
 reg         qt_out;                 //
 wire        qt_out_rc;              //
                                     //
-wire        oat, qtout;             //
+wire        oat, oat_rc, qtout;     //
 reg         qerr, qerr_lh;          //
                                     //
 reg         pa_req;                 // bus address request
@@ -532,7 +535,7 @@ reg         pa_oe, pa_oe_lh;        //
 wire        pa_oe_set, pa_oe_rc;    //
                                     //
 reg         irply_en, irply_pf;     //
-reg         dout_set;               //
+reg         dout_set, dout_end_h;   //
 wire        dout_dn;                // dout done
 wire        din_end, dout_end;      //
 reg         dvc_stb;                //
@@ -541,14 +544,8 @@ reg         iako_en_l, iako_en_lh;  //
 wire        iako_st, iako_set;      //
                                     //
 reg         a21_ins, a21_req;       //
+wire        a21_ins_rc;             //
 wire        ins_set;                //
-wire        arb_ena;                //
-reg         arb_ena_t;              //
-wire        dmr_clr;                //
-reg         dmr_clr_h;              //
-reg         dmr_en;                 //
-                                    // for debug purposes only
-wire        oat_dbg;                // suppress Q-bus glitches
                                     //
 reg  [22:0] wb_adr;                 // Wishbone master output address
 reg  [15:0] wb_dat;                 // Wishbone master input data
@@ -566,6 +563,7 @@ reg         wb_sdone;               //
 wire        wb_wdone;               //
 wire        wb_rdone;               //
 wire        wb_idone;               //
+reg         wb_adone;               // ALU write data ready
 reg         wb_ios;                 // I/O bank access
                                     //
 //______________________________________________________________________________
@@ -621,10 +619,12 @@ assign fx = {fx_swp ? fr[7:0] : fr[15:8], fr[7:0]};
 assign dx_swp = io_s0_as | (~ir_oe & a0_reg & ~mt_op[2] & ~io_s0_as);
 assign do_lat = ~plm_as[29] & ~plm_as[30] & plm_as[31] & alu_stb & alu_wr_rc;
 assign do_clr = dx_stb & do_oe | dout_dn;
+assign do_clrh = dx_stb & do_oe | dout_end_h | rg_wr_lh;
 assign dout_dn = dout_end | rg_wr_lh;
 
 always @(posedge vm_clk_p)
 begin
+   dout_end_h <= dout_end;
    doh_lat <= ((mt_op[2] | io_s0_as) | ~(mt_op[2] | io_s0_as) & a0_reg) & do_lat;
    dol_lat <= ((mt_op[2] | io_s0_as) | ~a0_reg) & do_lat;
    if (do_lat)
@@ -709,8 +709,19 @@ assign dn_2376 = ~dn_2376_in & dn_2376_t;
 
 assign rmsel_st = rmsel & rmsel_st_t[2];
 assign rg_wr = ~rg_wr_lh & rmsel_st & alu_drdy & (~io_dc[1] | rg_rmw);
-assign di_rmw = di_rmw_tl & ~rply;
 assign di_lat = ~di_oe & wb_rdone & ~a21_ins & ~io_dc[2];
+
+always @(posedge vm_clk_p or posedge mc_res)
+begin
+   if (mc_res)
+      di_rmw <= 1'b0;
+   else
+      if (~wb_cyc | dout_set & alu_drdy)
+         di_rmw <= 1'b0;
+      else
+         if (io_dc[5] & wb_rdone)
+            di_rmw <= 1'b1;
+end
 
 always @(posedge vm_clk_p or posedge mc_res)
 begin
@@ -730,8 +741,6 @@ begin
       else
          if (~io_dc[2] & pa_oe & rmsel)
             rg_oe <= 1'b1;
-
-
 end
 
 always @(posedge vm_clk_p or posedge mc_res)
@@ -753,18 +762,6 @@ begin
       else
          if (di_lat)
             di_oe <= 1'b1;
-end
-
-always @(posedge vm_clk_p or posedge mc_res)
-begin
-   if (mc_res)
-      di_rmw_tl <= 1'b0;
-   else
-      if (di_rmw)
-         di_rmw_tl <= 1'b0;
-      else
-         if (di_lat)
-            di_rmw_tl <= io_dc[5];
 end
 
 assign dx_stb_rc = alu_rd & (dx_mx | dx_my) & ~dx_stb;
@@ -860,7 +857,7 @@ begin
 end
 
 assign ir_oe = ~ir_stb & ir_doe & do_rdy;
-always @(posedge vm_clk_n) do_rdy <= io_s0_as | ~do_oe | do_clr;
+always @(posedge vm_clk_n) do_rdy <= io_s0_as | ~do_oe | do_clrh;
 
 assign ir_set0 = ~ir_stb & (~ir_set0_t & ~pf_pa | pf_init);
 assign ir_set1 = ~dc_stb & (iako_st | dc_stb_hl | ir_set0);
@@ -874,17 +871,17 @@ always @(posedge vm_clk_p or posedge mc_res)
 begin
    if (mc_res)
    begin
-      ir_stb <=1'b1;
+      ir_stb <= 1'b1;
       ir_set0_t <= 1'b1;
-      ir_doe <=1'b0;
+      ir_doe <= 1'b0;
    end
    else
    begin
       if (doe_clr | ir_set1)
-         ir_stb <=1'b1;
+         ir_stb <= 1'b1;
       else
          if (ir_clr)
-            ir_stb <=1'b0;
+            ir_stb <= 1'b0;
 
       if (pf_init)
          ir_set0_t <= 1'b0;
@@ -893,10 +890,10 @@ begin
             ir_set0_t <= 1'b1;
 
       if (doe_clr)
-         ir_doe <=1'b0;
+         ir_doe <= 1'b0;
       else
          if (plm_lat & pf_01)
-            ir_doe <=1'b1;
+            ir_doe <= 1'b1;
    end
 end
 
@@ -1605,7 +1602,7 @@ begin
       psw_s[3:0] <= psw[3:0];          // save flags to backup register
 end
 
-assign psw_smod = ~ba_pca & mt_op[1];
+assign psw_smod = ~(ba_pca_rc | ba_pca) & mt_op[1];
 assign pswl_ins = pswl_ins_t & qerr_lh;
 assign pswh_ind = rg_wr & r7777 & dwbh;
 assign pswl_ind = rg_wr & r7777 & dwbl;
@@ -2093,8 +2090,9 @@ assign padr_sel[14] = (mm_sa == 4'b1110) & ~mm_sah;
 assign padr_sel[15] = (mm_sa == 4'b1111) & ~mm_sah;
 
 assign mm_stb = mm_stbs | rd_2376 | wr_2376;
-assign mm_stb_set = (ba_pca & ~ba_pca_hl)
-                  | (hm_men & ba_rdy_l & ~sa_pfa & ~hm_lat & ~at_stb & ~ba_pca);
+assign mm_stb_set = ba_pca_rc
+                  | (hm_men & ba_rdy & ~sa_pfa & ~hm_lat & ~at_stb & ~ba_pca);
+assign at_stb = mm_stbs;
 
 always @(posedge vm_clk_p or posedge mc_res)
 begin
@@ -2242,9 +2240,7 @@ assign ir_mmu_err = (ir_oe | dc_stb) & (mrqs_pl | mrqs_nr);
 
 always @(posedge vm_clk_n) sr0_er_hl <= sr0_er | ~mmu_en;
 always @(posedge vm_clk_p) ba_lat2_lh <= ba_lat2;
-
-always @(posedge vm_clk_n) ba_rdy_l <= ba_rdy;
-always @(posedge vm_clk_p) ba_rdy_lh <= ba_rdy_l;
+always @(posedge vm_clk_p) ba_rdy_lh <= ba_rdy;
 
 assign sr0_mrqs = ~mrqt_er & (ir_oe | dc_stb) & ~sr0_er_hl;
 assign sr0_mrqt = ba_lat2 & ~sr0_er_hl;
@@ -2288,7 +2284,7 @@ assign sx_ro = op1_wf & ~mmu_d[2] & mmu_d[1];            // readonly error
 assign sx_nr = ~mmu_d[1] | (mt_mod[5] ^ mt_mod[6]);      // not resident or bad mode
 
 assign a0_reg = ba_fsel ? ba_fr[0] : ba_ax[0];
-assign ba = ba_pca ? pca : (ba_fsel ? ba_fr : ba_ax);
+assign ba = (ba_pca | ba_pca_rc) ? pca : (ba_fsel ? ba_fr : ba_ax);
 assign sa77 = ba[15:13] == 3'b111;
 
 assign bs_a22 = (as[21:13] == 9'o777);
@@ -2300,8 +2296,8 @@ assign mrq_ro = ~hmod & (at_stb ? sx_ro : mrq_ro_t);     // readonly error
 assign mrq_nr = ~hmod & (at_stb ? sx_nr : mrq_nr_t);     // not resident or bad mode
 assign mrqt_er = mrqt_pl | mrqt_ro | mrqt_nr;
 
-assign mt_mod[5] = ((mt_op[0] | ba_pca) ? psw[14] : psw[12]) & ~psw_smod;
-assign mt_mod[6] = ((mt_op[0] | ba_pca) ? psw[15] : psw[13]) & ~psw_smod;
+assign mt_mod[5] = ((mt_op[0] | (ba_pca_rc | ba_pca)) ? psw[14] : psw[12]) & ~psw_smod;
+assign mt_mod[6] = ((mt_op[0] | (ba_pca_rc | ba_pca)) ? psw[15] : psw[13]) & ~psw_smod;
 
 always @(posedge vm_clk_p)
 begin
@@ -2327,44 +2323,34 @@ begin
    ra_s22_h <= ra_s22;
    ra_s22_hlh <= ra_s22_h;
    sa_sxa_h <= sa_sxa;
-   ba_pca_hl <= ba_pca;
+end
+
+always @(posedge vm_clk_p or posedge mc_res)
+begin
+   if (mc_res)
+      ba_pca <= 1'b0;
+   else
+      ba_pca <= ba_pca_rc;
 end
 
 assign ra_s16 = at_stb & ba_pca & ~(hm_men & ~sr0_m);
 assign ra_s22 = at_stb & ba_pca & hm_men & ~sr0_m;
 assign sa_s22 = at_stb & ~ba_pca;
 assign sa_sxa = sa_s16 | sa_s22;
-assign sa_s16 = ~hm_lat_set_l & ~hm_men & ~ba_pca & ~sa_pfa & ba_rdy_l & ~hm_lat;
-assign sa_pfa_fc = ~mc_res & ~(sa_pfa & ~ba_rdy) & (ba_ins | sa_pfa);
+assign sa_s16 = ~hm_men & ~hm_lat & ~ba_pca & ~sa_pfa & ba_rdy;
+assign sa_pfa = ~mc_res & ~(sa_pfa_t & ~ba_rdy) & (ba_ins | sa_pfa_t);
+assign ba_pca_rc = ~mm_stb_clr & ba_rdy_lh & ~r2376 & ~pf_ba0_h & pc3_rdy_h & ~mm_stbs;
 
-always @(posedge vm_clk_n or posedge mc_res)
+always @(posedge vm_clk_p or posedge mc_res)
 begin
    if (mc_res)
-   begin
-      ba_pca <= 1'b0;
-      at_stb <= 1'b0;
-      sa_pfa <= 1'b0;
-   end
+      sa_pfa_t <= 1'b0;
    else
-   begin
-      if (mm_stb_clr)
-         ba_pca <= 1'b0;
-      else
-         if (ba_rdy_lh & ~r2376 & ~pf_ba0_h & pc3_rdy_h & ~mm_stbs)
-            ba_pca <= 1'b1;
-
-      if (mm_stb_clr)
-         at_stb <= 1'b0;
-      else
-         if (mm_stbs)
-            at_stb <= 1'b1;
-
-      if (sa_pfa & ~ba_rdy)
-         sa_pfa <= 1'b0;
+      if (sa_pfa_t & ~ba_rdy)
+         sa_pfa_t <= 1'b0;
       else
          if (ba_ins)
-            sa_pfa <= 1'b1;
-   end
+            sa_pfa_t <= 1'b1;
 end
 
 //______________________________________________________________________________
@@ -2430,7 +2416,6 @@ begin
             pf_00a <= pf_00a_rc;
 end
 
-always @(posedge vm_clk_n) pf_ba0_hl <= pf_ba0_h;
 always @(posedge vm_clk_p)
 begin
    if (pf_init | sa_pfa)
@@ -2442,7 +2427,7 @@ end
 
 assign pc_wr0 = alu_wr & plm_rw & pc_wr_t;
 assign pc_wr1 = (pc_wr2 & ~pc2_wrr) | (alu_stb & pc2_wrc);
-assign pc_wr2 = (pc3_rdy & ~pf_init) & (pf_init | sa_pfa) & pf_ba0_hl;
+assign pc_wr2 = (pc3_rdy & ~pf_init) & (pf_init | sa_pfa) & pf_ba0_h;
 assign pc2_wrq = pf_11 & dc_en[2];
 assign pc2_wrc_rc = alu_rd & pc2_wrf & pc2_wrm;
 
@@ -2504,7 +2489,7 @@ begin
    if (mc_res)
       plm_rdy <= 1'b1;
    else
-      if (pf_end1 | sa_pfa_fc)
+      if (pf_end1 | sa_pfa)
          plm_rdy <= 1'b1;
       else
          if (plm_lat_fc & ~pf_00r & ~pf_rdy)
@@ -2528,6 +2513,7 @@ assign pf_ins = ~pf_ena | pf_00 | pf_01 | pf_10 | (dc_en[0] & dc_en[2] & dc_en[3
 assign ba_ins = pf_ba0_h & hm_lat_h & ~pf_rdy
               & ~pf_00 & pf_ins & ba_rdy
               & (~pf_doe | (~irply & ~ir_stb));
+assign a21_ins_rc = ~mc_res & ~(ir_stb & ir_clr) & ((bus_free & ins_set) | a21_ins);
 
 always @(posedge vm_clk_p or posedge mc_res)
 begin
@@ -2580,41 +2566,42 @@ begin
          hmod <= hltm;
 end
 
-always @(posedge vm_clk_n or posedge mc_res)
+assign hm_lat = hm_lat_set | ~hm_lat_clr & hm_lat_t;
+assign hm_lat_clr = alu_wr & (plm_f30_as | plm_f31_as)
+                  | alu_stb & plm_f32;
+
+always @(posedge vm_clk_p or posedge mc_res)
 begin
    if (mc_res)
-      hm_lat <= 1'b1;
+   begin
+      hm_lat_t <= 1'b1;
+      hm_lat_h <= 1'b1;
+      hm_lat_set <= 1'b1;
+   end
    else
+   begin
       if (hm_lat_set)
-         hm_lat <= 1'b1;
-   else
-      if (hm_lat_clr)
-         hm_lat <= 1'b0;
+         hm_lat_t <= 1'b1;
+      else
+         if (hm_lat_clr)
+            hm_lat_t <= 1'b0;
+
+      hm_lat_h <= hm_lat;
+      hm_lat_set <= ~ba_pca & (sa_s16 | at_stb);
+   end
 end
-
-assign hm_lat_clr = hm_lat & ( alu_wr & (plm_f30_as | plm_f31_as)
-                             | alu_stb & plm_f32 );
-assign hm_lat_set = ~ba_pca & mm_stb_clr;
-
-always @(posedge vm_clk_p) hm_lat_h <= hm_lat;
-always @(posedge vm_clk_n) hm_lat_set_l <= hm_lat_set;
 
 //______________________________________________________________________________
 //
 // IO operations and memory translations decoder
 //
 assign iop = {plm[25], plm[27], plm[19], plm[23]};
+assign iop_rc = io_res2 ? 4'b0010 : io_lat1 ? iop[3:0] : iop_m[3:0];
 
 always @(posedge vm_clk_p)
 begin
    if (io_lat1)
       iop_m <= {~plm85p, iop[3:0]};
-
-   if (io_res2)
-      iop_t <= 4'b0010;
-   else
-      if (io_lat2)
-         iop_t <= io_lat1 ? iop[3:0] : iop_m[3:0];
 end
 
 assign io_s[0] = (iop == 4'b0000);
@@ -2670,41 +2657,49 @@ begin
          op3_wf <= op2_wf | sa_s22_h & ~mrqt_er & op1_wf;
 end
 
-assign opwf_clr = pa_oe_lh & (~io_dc[1] | io_dc[5]);
-
+//______________________________________________________________________________
 //
 // active high
-// io_dc[0] - block DIN set
+// io_dc[0] - not read transaction
 // io_dc[1] - read transaction
 // io_dc[3] - word transaction
-// io_dc[4] - write data not ready, block DOUT set
+// io_dc[4] - write data not ready from FPP, block DOUT set
 // io_dc[5] - read-modify-write transaction
 //
-assign io_dc[0] = (~iop_t[3] | ~iop_t[1])
-                & ( iop_t[3] | ~iop_t[2] | ~iop_t[1] | iop_t[0])
-                & (~iop_t[3] |  iop_t[2] |  iop_t[1] | iop_t[0])
-                & (~iop_t[3] | ~iop_t[2] |  iop_t[1] | iop_t[0])
-                & ~a21_ins;
-assign io_dc[1] = ( iop_t[3] | ~iop_t[0]);
-assign io_dc[2] = (~iop_t[3] | ~iop_t[1])
-                & ( iop_t[3] | ~iop_t[2] | ~iop_t[1] | iop_t[0])
-                & (~iop_t[3] |  iop_t[2] |  iop_t[1] | iop_t[0]);
-assign io_dc[3] = ~iop_t[2] | ~iop_t[1] | (~iop_t[0] & ~iop_t[3]);
-assign io_dc[4] =  iop_t[3] | ~iop_t[2] | iop_t[1] | ~iop_t[0] | 1'b1; // FPP removed
-assign io_dc[5] =  iop_t[3] & iop_t[1] & iop_t[0];
+assign io_dc_st = io_res2 | io_lat2;
+assign io_dc_op[0] = (~iop_rc[3] | ~iop_rc[1])
+                   & ( iop_rc[3] | ~iop_rc[2] | ~iop_rc[1] | iop_rc[0])
+                   & (~iop_rc[3] |  iop_rc[2] |  iop_rc[1] | iop_rc[0])
+                   & (~iop_rc[3] | ~iop_rc[2] |  iop_rc[1] | iop_rc[0]);
+assign io_dc_op[1] = ( iop_rc[3] | ~iop_rc[0]);
+assign io_dc_op[2] = (~iop_rc[3] | ~iop_rc[1])
+                   & ( iop_rc[3] | ~iop_rc[2] | ~iop_rc[1] | iop_rc[0])
+                   & (~iop_rc[3] |  iop_rc[2] |  iop_rc[1] | iop_rc[0]);
+assign io_dc_op[3] = ~iop_rc[2] | ~iop_rc[1] | (~iop_rc[0] & ~iop_rc[3]);
+assign io_dc_op[4] =  iop_rc[3] | ~iop_rc[2] | iop_rc[1] | ~iop_rc[0] | 1'b1; // FPP removed
+assign io_dc_op[5] =  iop_rc[3] & iop_rc[1] & iop_rc[0];
+
+assign io_dc_rc = io_dc_st ? io_dc_op : io_dc;
+always @(posedge vm_clk_p)
+begin
+   if (io_dc_st)
+      io_dc <= io_dc_op;
+end
 
 assign mt_op[0] = (iop_m[3:0] != 4'b0001) & (iop_m[3:0] != 4'b1000);
 assign mt_op[1] = (iop_m[3:0] == 4'b0110);
 assign mt_op[2] = (~iop_m[3] & ~iop_m[0]) | ~iop_m[2] | ~iop_m[1];
 assign mt_op[3] = iop_m[4];
 
+assign opwf_clr = pa_oe_lh & (~io_dc[1] | io_dc[5]);
 assign dwbh = io_dc[3] |  la[0]; // io_dc[3] - word operation
 assign dwbl = io_dc[3] | ~la[0]; //
 
 assign io_lat0 = (plm_f30 | plm_f31 | plm_f32) & plm_lat_h;
 assign io_lat1 = (plm_f30 | plm_f31 | plm_f32) & alu_rd;
-assign io_lat2 = bus_free & (sa_req_l | sa_sxa);
+assign io_lat2 = bus_free & (sa_req | sa_sxa);
 assign io_res2 = ~io_lat2 & (mc_res | rmsel_clr | din_end | dout_end);
+always @(posedge vm_clk_p) io_lat2_t <= sa_req | sa_sxa;
 
 always @(posedge vm_clk_p or posedge mc_res)
 begin
@@ -2723,14 +2718,12 @@ begin
    if (mc_res)
       iop_rdy <= 1'b1;
    else
-      if (io_lat2)
+      if (bus_free & io_lat2_t)
          iop_rdy <= 1'b1;
       else
          if (io_lat1)
             iop_rdy <= 1'b0;
 end
-
-always @(posedge vm_clk_n) sa_req_l <= sa_req;
 
 //______________________________________________________________________________
 //
@@ -2754,6 +2747,7 @@ end
 // Q-bus logic
 //
 assign oat = io_dc[3] & a[0] & pa_oe;
+assign oat_rc = io_dc_rc[3] & as[0] & pa_oe_rc;
 assign qtout = ir_tout | (qt_out & ~irply_en);
 
 always @(posedge vm_clk_p)
@@ -2788,7 +2782,7 @@ end
 
 assign din_end = wb_rdone & ~io_dc[5] | wb_idone;
 assign dout_end = wb_wdone;
-assign s3_out = io_s3_wr & bus_free & hm_lat & ba_rdy_l;
+assign s3_out = io_s3_wr & bus_free & hm_lat & ba_rdy;
 assign out_rs = di_rmw | s3_out | (~rmsel & pa_oe & ~io_dc[1]);
 
 always @(posedge vm_clk_p or posedge mc_res)
@@ -2815,7 +2809,8 @@ begin
 end
 
 assign iako_st = iako_set & ~iako_en;
-assign iako_set = ~iako_en_lh & io_s[1] & bus_free & hm_lat & ba_rdy_l;
+assign iako_set = ~iako_en_lh & io_s[1] & bus_free & hm_lat & ba_rdy;
+assign bus_free = ~wb_cyc & ~wb_swait & ~rmsel;
 
 always @(posedge vm_clk_p)
 begin
@@ -2851,46 +2846,15 @@ begin
    else
       if (sa_pfa)
          irply_pf <= 1'b1;
-end
 
-always @(posedge vm_clk_p or posedge mc_res)
-begin
-   if (mc_res)
-      arb_ena_t <= 1'b0;
-   else
-      if (arb_ena)
-         arb_ena_t <= 1'b0;
-      else
-         if (di_rmw)
-            arb_ena_t <= 1'b1;
-end
-
-assign rply_fc = wb_idone | wb_rdone | wb_wdone | (irply & ~irply_lh);
-always @(posedge vm_clk_n) rply <= rply_fc;
-always @(posedge vm_clk_p) irply_lh <= irply;
-
-assign arb_ena = rply_fc & (arb_ena_t | a21_ins | ~io_dc[5]);
-assign dmr_clr = iako_set | s3_out | pa_oe_set;
-assign bus_free = ~rply & dmr_en;
-
-always @(posedge vm_clk_p) dmr_clr_h <= dmr_clr;
-always @(posedge vm_clk_n or posedge mc_res)
-begin
-   if (mc_res)
-      dmr_en <= 1'b1;
-   else
-      if (arb_ena | rmsel_clr)
-         dmr_en <= 1'b1;
-      else
-         if (dmr_clr_h)
-            dmr_en <= 1'b0;
+   irply_lh <= irply;
 end
 
 //______________________________________________________________________________
 //
 // Wishbone master and interrupt interfaces
 //
-assign wb_start   = (~wb_wset & pa_oe_rc)
+assign wb_start   = (~wb_wset & pa_oe_rc & ~rmsel_rc)
                   | (wb_wclr & wb_swait);
 assign wb_wdone   = wb_stb & wbm_ack_i & wb_we;
 assign wb_rdone   = wb_stb & (wbm_ack_i | (irply & ~irply_lh)) & ~wb_we;
@@ -2959,6 +2923,7 @@ begin
       wb_stb <= 1'b0;
       wb_iak <= 1'b0;
       wb_sdone <= 1'b0;
+      wb_adone <= 1'b0;
    end
    else
    begin
@@ -2978,28 +2943,23 @@ begin
          if (ir_clr)
             wb_sdone <= 1'b0;
 
-      if (wb_start)
+      //
+      // Early suppress Wishbone for odd address word cycles
+      //
+      if (wb_start & ~oat_rc)
       begin
          //
          // Start master bus read/read-modify write transaction
          //
          wb_cyc <= 1'b1;
          wb_we  <= 1'b0;
-         wb_sel <= 2'b00;
-         wb_stb <= 1'b0;
+         //
+         // Early read strobe assertion
+         //
+         wb_sel <= (~io_dc_rc[0] | a21_ins_rc) ? 2'b11 : 2'b00;
+         wb_stb <= ~io_dc_rc[0] | a21_ins_rc;
       end
-      if (pa_oe & wb_cyc)
-      begin
-         if (~io_dc[0])
-         begin
-            //
-            // Read start
-            //
-            wb_sel <= 2'b11;
-            wb_stb <= 1'b1;
-         end
-      end
-      else
+      if (wb_cyc)
       begin
          if (wb_wdone | (~io_dc[5] & wb_rdone))
          begin
@@ -3012,6 +2972,7 @@ begin
             wb_stb <= 1'b0;
          end
          else
+         begin
             if (wb_rdone)
             begin
                //
@@ -3021,14 +2982,23 @@ begin
                wb_sel <= 2'b00;
                wb_stb <= 1'b0;
             end
+            if (dout_set & alu_drdy | wb_adone)
+            begin
+               wb_we  <= 1'b1;
+               wb_sel[0] <= io_dc[3] | ~wbm_adr_o[0];
+               wb_sel[1] <= io_dc[3] |  wbm_adr_o[0];
+               wb_stb <= 1'b1;
+            end
+         end
+         if (wb_wdone)
+            wb_adone <= 1'b0;
       end
-      if (dout_set & alu_drdy)
+      else
       begin
-         wb_we  <= 1'b1;
-         wb_sel[0] <= io_dc[3] | ~wbm_adr_o[0];
-         wb_sel[1] <= io_dc[3] |  wbm_adr_o[0];
-         wb_stb <= 1'b1;
+         if (dout_set & alu_drdy)
+            wb_adone <= 1'b1;
       end
+
       //
       // Interrupt vector read handshake
       //
@@ -3036,10 +3006,8 @@ begin
          wb_iak <= 1'b0;
       if (iako_en & ~iako_en_lh)
          wb_iak <= 1'b1;
-      end
    end
-
-assign oat_dbg = ~(oat | qerr);
+end
 
 //______________________________________________________________________________
 //

@@ -128,6 +128,10 @@ wbc_vm1 cpu
 wbc_vm2 cpu
 `endif
 
+`ifdef CONFIG_CPU_VM3
+wbc_vm3 cpu
+`endif
+
 `ifdef CONFIG_CPU_LSI
 wbc_lsi cpu
 `endif

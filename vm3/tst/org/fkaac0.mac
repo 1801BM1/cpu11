@@ -497,6 +497,7 @@
 ;_____________________________________________________________________________
 ;
 		HOEP	= 0			; halt on end-of-pass
+		SKIP	= 0			; skip final prints
 ;_____________________________________________________________________________
 ;
 		.asect
@@ -6611,7 +6612,11 @@ tst264:		inc 	(R2)			; update test number
 wait:		tstb	@#tps			;
 		bpl	wait			;
 		cmpb	(R0), #377		; check for terminator
+.if ne SKIP					;
+		br	1$			;
+.iff						;
 		beq	1$			;
+.endc						;
 		movb	(R0)+, @#tpb		; not term, print char
 		br	wait			; get next character
 1$:		rts	PC			; char string done, return

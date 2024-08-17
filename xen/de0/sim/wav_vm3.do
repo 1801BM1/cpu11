@@ -2,6 +2,8 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -group clocks /tb1/de0_top/cpu/cpu/vm_clk_n
 add wave -noupdate -group clocks /tb1/de0_top/cpu/cpu/vm_clk_p
+add wave -noupdate -group clocks /tb1/de0_top/cpu/cpu/vm_clk_slow
+add wave -noupdate -group clocks /tb1/de0_top/cpu/cpu/vm_clk_ena
 add wave -noupdate -group wb -group reset /tb1/de0_top/cpu/cpu/vm_aclo
 add wave -noupdate -group wb -group reset /tb1/de0_top/cpu/cpu/vm_dclo
 add wave -noupdate -group wb -group reset /tb1/de0_top/cpu/cpu/vm_init
@@ -25,62 +27,63 @@ add wave -noupdate -group wb -group wb_master /tb1/de0_top/cpu/cpu/wbm_ack_i
 add wave -noupdate -group wb -group wb_master /tb1/de0_top/cpu/cpu/wbm_sel_o
 add wave -noupdate -group wb -group wb_master /tb1/de0_top/cpu/cpu/wbm_we_o
 add wave -noupdate -group wb -group wb_master /tb1/de0_top/cpu/cpu/wbm_gnt_i
+add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_start
 add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_swait
 add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_wclr
 add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_wset
 add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_wdone
 add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_rdone
 add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_sdone
+add wave -noupdate -group wb -group wb_master -group wb_inner /tb1/de0_top/cpu/cpu/wb_idone
 add wave -noupdate -group wb -group wb_master -group wb_inner -radix octal /tb1/de0_top/cpu/cpu/wb_dat
+add wave -noupdate -group wb -group wb_master -group wb_inner -radix octal /tb1/de0_top/cpu/cpu/wb_wcnt
 add wave -noupdate -group wb -group wb_ints -radix octal /tb1/de0_top/cpu/cpu/wbi_dat_i
 add wave -noupdate -group wb -group wb_ints /tb1/de0_top/cpu/cpu/wbi_stb_o
 add wave -noupdate -group wb -group wb_ints /tb1/de0_top/cpu/cpu/wbi_ack_i
-add wave -noupdate -group qbus -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/a[21]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[20]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[19]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[18]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[17]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[16]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/a[21]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[20]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[19]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[18]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[17]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[16]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/a
-add wave -noupdate -group qbus -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/d[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/d[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/d
-add wave -noupdate -group qbus -group pa_oe /tb1/de0_top/cpu/cpu/pa_oe
-add wave -noupdate -group qbus -group pa_oe /tb1/de0_top/cpu/cpu/pa_oe_set
-add wave -noupdate -group qbus -group pa_oe /tb1/de0_top/cpu/cpu/pa_oe_lh
-add wave -noupdate -group qbus -group pa_oe /tb1/de0_top/cpu/cpu/alu_drdy
-add wave -noupdate -group qbus -group dmr /tb1/de0_top/cpu/cpu/bus_free
-add wave -noupdate -group qbus -group dmr /tb1/de0_top/cpu/cpu/dmr_en
-add wave -noupdate -group qbus -group dmr /tb1/de0_top/cpu/cpu/rmsel
-add wave -noupdate -group qbus -group rply /tb1/de0_top/cpu/cpu/rply
-add wave -noupdate -group qbus -group rply /tb1/de0_top/cpu/cpu/irply
-add wave -noupdate -group qbus -group din -radix octal {/tb1/de0_top/cpu/cpu/io_dc[0]}
-add wave -noupdate -group qbus -group dout /tb1/de0_top/cpu/cpu/dout_set
-add wave -noupdate -group qbus -group dout /tb1/de0_top/cpu/cpu/dout_dn
-add wave -noupdate -group qbus -group dout /tb1/de0_top/cpu/cpu/dout_end
-add wave -noupdate -group qbus -group dout /tb1/de0_top/cpu/cpu/out_rs
-add wave -noupdate -group qbus -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/do_reg[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/do_reg[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/do_reg
-add wave -noupdate -group qbus /tb1/de0_top/cpu/cpu/do_oe
-add wave -noupdate -group qbus /tb1/de0_top/cpu/cpu/doh_lat
-add wave -noupdate -group qbus /tb1/de0_top/cpu/cpu/dol_lat
-add wave -noupdate -group qbus -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/di_reg[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/di_reg[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/di_reg
-add wave -noupdate -group qbus /tb1/de0_top/cpu/cpu/di_oe
-add wave -noupdate -group qbus /tb1/de0_top/cpu/cpu/di_lat
-add wave -noupdate -group qbus /tb1/de0_top/cpu/cpu/oat
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/s23xx
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/s251x
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/s757x
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/s76xx
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/s7777
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/r2376
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/r251x
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/r757x
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/r7777
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/rg_rmw
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/rg_oe
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/rg_wr
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/dwbh
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/dwbl
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/rmsel
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/rmsel_clr
-add wave -noupdate -group qbus -group sel /tb1/de0_top/cpu/cpu/rmsel_st
-add wave -noupdate -group qbus -group qt /tb1/de0_top/cpu/cpu/qerr
-add wave -noupdate -group qbus -group qt -radix octal /tb1/de0_top/cpu/cpu/qt
-add wave -noupdate -group qbus -group qt /tb1/de0_top/cpu/cpu/qt_ena
-add wave -noupdate -group qbus -group qt /tb1/de0_top/cpu/cpu/qt_out
-add wave -noupdate -group qbus -group qt /tb1/de0_top/cpu/cpu/qtout
+add wave -noupdate -group wb -group bus -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/a[21]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[20]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[19]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[18]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[17]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[16]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/a[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/a[21]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[20]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[19]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[18]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[17]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[16]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/a[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/a
+add wave -noupdate -group wb -group bus -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/d[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/d[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/d[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/d[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/d
+add wave -noupdate -group wb -group bus -group pa_oe /tb1/de0_top/cpu/cpu/pa_oe
+add wave -noupdate -group wb -group bus -group pa_oe /tb1/de0_top/cpu/cpu/pa_oe_set
+add wave -noupdate -group wb -group bus -group pa_oe /tb1/de0_top/cpu/cpu/pa_oe_lh
+add wave -noupdate -group wb -group bus -group pa_oe /tb1/de0_top/cpu/cpu/alu_drdy
+add wave -noupdate -group wb -group bus -group pa_oe /tb1/de0_top/cpu/cpu/oat
+add wave -noupdate -group wb -group bus -group di -radix octal {/tb1/de0_top/cpu/cpu/io_dc[0]}
+add wave -noupdate -group wb -group bus -group di -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/di_reg[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/di_reg[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/di_reg[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/di_reg[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/di_reg
+add wave -noupdate -group wb -group bus -group di /tb1/de0_top/cpu/cpu/di_oe
+add wave -noupdate -group wb -group bus -group di /tb1/de0_top/cpu/cpu/di_lat
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/dout_set
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/dout_dn
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/dout_end
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/out_rs
+add wave -noupdate -group wb -group bus -group do -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/do_reg[15]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[14]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[13]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[12]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[11]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[10]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[9]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[8]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[7]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[6]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[5]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/do_reg[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/do_reg[15]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[14]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[13]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[12]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[11]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[10]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[9]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[8]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[7]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[6]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[5]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/do_reg[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/do_reg
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/do_oe
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/doh_lat
+add wave -noupdate -group wb -group bus -group do /tb1/de0_top/cpu/cpu/dol_lat
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/s23xx
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/s251x
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/s757x
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/s76xx
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/s7777
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/r2376
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/r251x
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/r757x
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/r7777
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rg_rmw
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rg_oe
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rg_wr
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/dwbh
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/dwbl
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rmsel
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rmsel_clr
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rmsel_st
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/rmsel
+add wave -noupdate -group wb -group bus -group sel /tb1/de0_top/cpu/cpu/bus_free
+add wave -noupdate -group wb -group bus -group qt /tb1/de0_top/cpu/cpu/qerr
+add wave -noupdate -group wb -group bus -group qt -radix octal /tb1/de0_top/cpu/cpu/qt
+add wave -noupdate -group wb -group bus -group qt /tb1/de0_top/cpu/cpu/qt_ena
+add wave -noupdate -group wb -group bus -group qt /tb1/de0_top/cpu/cpu/qt_out
+add wave -noupdate -group wb -group bus -group qt /tb1/de0_top/cpu/cpu/qtout
+add wave -noupdate -group wb -group bus -group qt /tb1/de0_top/cpu/cpu/irply
 add wave -noupdate -group reset /tb1/de0_top/cpu/cpu/dclo
 add wave -noupdate -group reset /tb1/de0_top/cpu/cpu/abort
 add wave -noupdate -group reset /tb1/de0_top/cpu/cpu/mc_res
@@ -100,7 +103,6 @@ add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_00m
 add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_00r
 add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_01
 add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_ba0_h
-add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_ba0_hl
 add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_doe
 add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_doe_lh
 add wave -noupdate -group pf /tb1/de0_top/cpu/cpu/pf_end0
@@ -311,7 +313,6 @@ add wave -noupdate -group ios -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/
 add wave -noupdate -group ios -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/io_s[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/io_s[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/io_s[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/io_s[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/io_s[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/io_s[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/io_s[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/io_s[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/io_s
 add wave -noupdate -group ios -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/iop[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/iop[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/iop
 add wave -noupdate -group ios -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/iop_m[4]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_m[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_m[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_m[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_m[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/iop_m[4]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_m[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_m[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_m[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_m[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/iop_m
-add wave -noupdate -group ios -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/iop_t[3]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_t[2]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_t[1]} -radix octal} {{/tb1/de0_top/cpu/cpu/iop_t[0]} -radix octal}} -subitemconfig {{/tb1/de0_top/cpu/cpu/iop_t[3]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_t[2]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_t[1]} {-height 15 -radix octal} {/tb1/de0_top/cpu/cpu/iop_t[0]} {-height 15 -radix octal}} /tb1/de0_top/cpu/cpu/iop_t
 add wave -noupdate -group ios -radix octal /tb1/de0_top/cpu/cpu/io_lat0
 add wave -noupdate -group ios -radix octal /tb1/de0_top/cpu/cpu/io_lat1
 add wave -noupdate -group ios -radix octal /tb1/de0_top/cpu/cpu/io_lat2
@@ -347,6 +348,9 @@ add wave -noupdate -group mmu -radix octal -childformat {{{/tb1/de0_top/cpu/cpu/
 add wave -noupdate -group mmu /tb1/de0_top/cpu/cpu/mm_sa
 add wave -noupdate -group mmu /tb1/de0_top/cpu/cpu/mm_stb
 add wave -noupdate -group mmu /tb1/de0_top/cpu/cpu/at_stb
+add wave -noupdate -group mmu /tb1/de0_top/cpu/cpu/mm_stb_clr
+add wave -noupdate -group mmu /tb1/de0_top/cpu/cpu/mm_stb_set
+add wave -noupdate -group mmu /tb1/de0_top/cpu/cpu/mm_stbs
 add wave -noupdate -group mmu -group wf /tb1/de0_top/cpu/cpu/wf_set
 add wave -noupdate -group mmu -group wf /tb1/de0_top/cpu/cpu/wrf_set
 add wave -noupdate -group mmu -group wf /tb1/de0_top/cpu/cpu/ws_set
@@ -375,7 +379,7 @@ add wave -noupdate /tb1/de0_top/cpu/cpu/alu_rd
 add wave -noupdate /tb1/de0_top/cpu/cpu/alu_stb
 add wave -noupdate /tb1/de0_top/cpu/cpu/alu_wr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 2} {103398556 ps} 0}
+WaveRestoreCursors {{Cursor 2} {114373548 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 166
 configure wave -valuecolwidth 73
@@ -391,4 +395,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {103152969 ps} {104494169 ps}
+WaveRestoreZoom {113309600 ps} {115992 ns}

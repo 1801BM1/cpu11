@@ -217,6 +217,7 @@
 		HOEP	= 0			; halt on end-of-pass
 		NOSCO	= 0			; no scope trap
 		INSWR	= 000000		; 100000 for halt on error, no gtswr
+		SKIP	= 0			; skip final prints
 ;_____________________________________________________________________________
 ;
 		.asect				;
@@ -2476,7 +2477,11 @@ $doagn:						;
 .endc						;
 		jmp	@#begin			; return
 						;
+.if ne SKIP					;
+$endmg:		.asciz	<15>			;
+.iff						;
 $endmg:		.ascii	<15><12>/END PASS/	;
+.endc						;
 $enull:		.byte	-1, -1, 0		; null character string
 		.even				;
 ;_____________________________________________________________________________
