@@ -1,8 +1,8 @@
 `include "../../lib/config.v"
 
-// `define QA7_DISTRIBUTED_RAM 1
+// `define S7_DISTRIBUTED_RAM 1
 
-`ifdef QA7_DISTRIBUTED_RAM
+`ifdef S7_DISTRIBUTED_RAM
 //______________________________________________________________________________
 //
 // Initialized RAM block - 8K x 16
@@ -80,6 +80,83 @@ end
 
 endmodule
 
+//______________________________________________________________________________
+//
+// Initialized RAM block - 16K x 16
+//
+module wbc_mem_32k
+(
+   input          wb_clk_i,
+   input  [15:0]  wb_adr_i,
+   input  [15:0]  wb_dat_i,
+   output [15:0]  wb_dat_o,
+   input          wb_cyc_i,
+   input          wb_we_i,
+   input  [1:0]   wb_sel_i,
+   input          wb_stb_i,
+   output         wb_ack_o
+);
+wire [1:0] byteena;
+reg [1:0]ack;
+
+qa7_dist_ram_32k ram(
+   .addra(wb_adr_i[14:1]),
+   .clka(wb_clk_i),
+   .dina(wb_dat_i),
+   .wea( wb_we_i & wb_cyc_i & wb_stb_i),
+   .byteena(byteena),
+   .douta(wb_dat_o));
+
+assign byteena = wb_we_i ? wb_sel_i : 2'b00;
+assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
+always @ (posedge wb_clk_i)
+begin
+   ack[0] <= wb_cyc_i & wb_stb_i;
+   ack[1] <= wb_cyc_i & ack[0];
+end
+endmodule
+
+
+module qa7_dist_ram_32k
+(
+   input [13:0]   addra,
+   input          clka,
+   input [15:0]   dina,
+   input          wea,
+   input [1:0]    byteena,
+   output [15:0]  douta
+);
+
+(* ram_style="distributed", RAM_DECOMP="power" *)
+reg [15:0]  mem [0:16383];
+reg [13:0]  areg;
+reg [1:0]   wreg;
+
+always @ (posedge clka)
+begin
+   areg <= addra;
+   wreg[0] <= wea & byteena[0];
+   wreg[1] <= wea & byteena[1];
+
+   if (wreg[0])
+      mem[areg][7:0] <= dina[7:0];
+   if (wreg[1])
+      mem[areg][15:8] <= dina[15:8];
+end
+
+assign douta = mem[areg];
+//
+// $readmemh is synthezable in XST
+// Use inferred block memory instead core generator
+// (work too boring, difficult to change content)
+//
+initial
+begin
+   $readmemh(`CPU_TEST_MEMF, mem, 0, 16383);
+end
+
+endmodule
+
 `else
 
 //______________________________________________________________________________
@@ -149,8 +226,75 @@ ram (
                   // 2'b10.
 );
 endmodule
-`endif
+//______________________________________________________________________________
+//
+// Initialized RAM block - 116K x 16  using XPM (Xilinx Platform Templates)
+// to instantiate BRAMs
+//
+module wbc_mem_32k
+(
+   input          wb_clk_i,
+   input  [15:0]  wb_adr_i,
+   input  [15:0]  wb_dat_i,
+   output [15:0]  wb_dat_o,
+   input          wb_cyc_i,
+   input          wb_we_i,
+   input  [1:0]   wb_sel_i,
+   input          wb_stb_i,
+   output         wb_ack_o
+);
+wire       ena;
+wire [1:0] byteena;
+reg  [1:0] ack;
 
+assign byteena = wb_we_i ? wb_sel_i : 2'b00;
+assign ena = wb_cyc_i & wb_stb_i;
+assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
+always @ (posedge wb_clk_i)
+begin
+   ack[0] <= wb_cyc_i & wb_stb_i;
+   ack[1] <= wb_cyc_i & ack[0];
+end
+
+// xpm_memory_spram: Single Port RAM
+// Xilinx Parameterized Macro, version 2018.2
+xpm_memory_spram #(
+  .ADDR_WIDTH_A(14), // DECIMAL
+  .AUTO_SLEEP_TIME(0), // DECIMAL
+  .BYTE_WRITE_WIDTH_A(8), // DECIMAL
+  .ECC_MODE("no_ecc"), // String
+  .MEMORY_INIT_FILE(`CPU_TEST_MEMN), // *.mem filename without path!
+  .MEMORY_INIT_PARAM(""), // String
+  .MEMORY_OPTIMIZATION("false"), // String
+  .MEMORY_PRIMITIVE("auto"), // String
+  .MEMORY_SIZE(262144), // DECIMAL in bits
+  .MESSAGE_CONTROL(1), // DECIMAL
+  .READ_DATA_WIDTH_A(16), // DECIMAL
+  .READ_LATENCY_A(1), // DECIMAL
+  .READ_RESET_VALUE_A("0"), // String
+  .USE_MEM_INIT(1), // DECIMAL
+  .WAKEUP_TIME("disable_sleep"), // String
+  .WRITE_DATA_WIDTH_A(16), // DECIMAL
+  .WRITE_MODE_A("read_first") // String
+)
+ram (
+    .clka(wb_clk_i), // 1-bit input: Clock signal for port A.
+    .addra(wb_adr_i[14:1]), // ADDR_WIDTH_A-bit input: Address for port A write and read operations.
+    .douta(wb_dat_o), // READ_DATA_WIDTH_A-bit output: Data output for port A read operations.
+    .dina(wb_dat_i), // WRITE_DATA_WIDTH_A-bit input: Data input for port A write operations.
+    .ena(ena), // 1-bit input: Memory enable signal for port A. Must be high on clock
+               // cycles when read or write operations are initiated. Pipelined
+               // internally.
+    .wea(byteena) // WRITE_DATA_WIDTH_A-bit input: Write enable vector for port A input
+                  // data port dina. 1 bit wide when word-wide writes are used. In
+                  // byte-wide write configurations, each bit controls the writing one
+                  // byte of dina to address addra. For example, to synchronously write
+                  // only bits [15-8] of dina when WRITE_DATA_WIDTH_A is 16, wea would be
+                  // 2'b10.
+);
+endmodule
+`endif
+// ifdef S7_DISTRIBUTED_RAM
 
 //------------------------------------- PLL section -----------------------------------------------------------
 //

@@ -92,6 +92,9 @@ wire  [5:0] leds;                // output LEDs
 //
 // Select of one of the available CPUs
 //
+`ifdef CONFIG_WBC_CPU
+`CONFIG_WBC_CPU cpu
+`else
 `ifdef CONFIG_CPU_VM1
 wbc_vm1 cpu
 `endif
@@ -111,6 +114,12 @@ wbc_lsi cpu
 `ifdef CONFIG_CPU_AM4
 wbc_am4 cpu
 `endif
+
+`ifdef CONFIG_CPU_F11
+wbc_f11 cpu
+`endif
+`endif
+// `ifdef CONFIG_CPU_MODEL
 (
    .osc_clk(sys_clk_p),          // qa7_clock_50 can feed PLL only
    .sys_clk_p(sys_clk_p),        // system clock positive phase
