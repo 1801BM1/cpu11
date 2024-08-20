@@ -23,7 +23,9 @@ srec_cat ${base_fn}.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o ${base_
 srec_cat ${base_fn}.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o ${base_fn}.hex -Intel
 srec_cat ${base_fn}.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o ${base_fn}.mif -Memory_Initialization_File 16 -obs=2
 
-mv -f ../../xen/tst/$CPUID.mem{,~}
-mv -f ../../xen/tst/$CPUID.mif{,~}
-cp -p ${base_fn}.mem ../../xen/tst/$CPUID.mem
-cp -p ${base_fn}.mif ../../xen/tst/$CPUID.mif
+MEM_F=../../xen/tst/$CPUID.mem
+MIF_F=../../xen/tst/$CPUID.mif
+[ -e "$MEM_F ]  && mv -f $MEM_F{,~}
+[ -e "$MIF_F ]  && mv -f $MIM_F{,~}
+cp -p ${base_fn}.mem $MEM_F
+cp -p ${base_fn}.mif $MIF_F
