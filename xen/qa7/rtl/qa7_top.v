@@ -165,6 +165,9 @@ qa7_pll66 corepll
 `ifdef CONFIG_PLL_75
 qa7_pll75 corepll
 `endif
+`ifdef CONFIG_PLL_85
+qa7_pll85 corepll
+`endif
 `ifdef CONFIG_PLL_100
 qa7_pll100 corepll
 `endif

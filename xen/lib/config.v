@@ -63,6 +63,10 @@
 `define  CONFIG_SYS_CLOCK     75000000
 `endif
 
+`ifdef   CONFIG_PLL_85
+`define  CONFIG_SYS_CLOCK     85000000
+`endif
+
 `ifdef   CONFIG_PLL_100
 `define  CONFIG_SYS_CLOCK     100000000
 `endif

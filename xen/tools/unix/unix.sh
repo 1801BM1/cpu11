@@ -23,6 +23,13 @@ srec_cat ${base_fn}.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o ${base_
 srec_cat ${base_fn}.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o ${base_fn}.hex -Intel
 srec_cat ${base_fn}.bin -binary -fill 0x00 0x0000 0x4000 -byte-swap 2 -o ${base_fn}.mif -Memory_Initialization_File 16 -obs=2
 
+if [ "$base_fn" = "test" ]; then
+    # test.{mif,mem} will remain in $CPUID/tst/ to be used by de0_tbl.v (run_iverilog.sh on Unix)
+    mkdir -p out
+    mv ${base_fn}.mem out/
+    exit 0
+fi
+# else - copy pitest.mem into "release" folder to run on bare-metal
 MEM_F=../../xen/tst/$CPUID.mem
 MIF_F=../../xen/tst/$CPUID.mif
 [ -e "$MEM_F ]  && mv -f $MEM_F{,~}
