@@ -1,0 +1,17 @@
+[General]
+ipc_version=4
+file=mem16x8k_am4
+module=mem16x8k_am4
+target_device=gw1nr9c-004
+type=ram_sp
+version=3.0
+
+[Config]
+BYTE_SIZE=0
+DEPTH=8192
+LANG=0
+MEM_FILE=am4.mif
+READ=0
+RESET_MODE=true
+WIDTH=16
+WRITE=0

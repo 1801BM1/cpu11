@@ -1,0 +1,27 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW1NR-9C" pn="GW1NR-LV9QN88PC6/I5">gw1nr9c-004</Device>
+    <FileList>
+        <File path="/home/yu/work/cpu11/vm2/hdl/wbc/rtl/vm2_plm.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm2/hdl/wbc/rtl/vm2_wb.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/config.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_rst.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_uart.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_vic.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_vm2.v" type="file.verilog" enable="1"/>
+        <File path="rtl/gwn_mem.v" type="file.verilog" enable="1"/>
+        <File path="rtl/sn9_top.v" type="file.verilog" enable="1"/>
+        <File path="rtl/vm2_defs.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_f11/mem_f11.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_vm2/mem16x8k_vm2.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_vm3/mem_vm3.v" type="file.verilog" enable="1"/>
+        <File path="syn/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
+        <File path="syn/nano9k.cst" type="file.cst" enable="1"/>
+        <File path="src/cpu11.sdc" type="file.sdc" enable="1"/>
+        <File path="src/mem_vm2/mem16x8k_vm2.ipc" type="file.other" enable="1"/>
+        <File path="src/mem_vm2/mem16x8k_vm2.mod" type="file.other" enable="1"/>
+    </FileList>
+</Project>

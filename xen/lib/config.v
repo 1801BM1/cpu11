@@ -8,7 +8,9 @@
 //
 // CPU selector - only one of available CPU type must be defined
 //
-`define CONFIG_CPU_VM3        1
+`ifndef CONFIG_WBC_CPU
+  `define CONFIG_CPU_LSI        1
+`endif
 
 //`define CONFIG_CPU_VM1      1
 //`define CONFIG_CPU_VM2      1
@@ -17,6 +19,9 @@
 //`define CONFIG_CPU_AM4      1
 //`define CONFIG_CPU_F11      1
 //
+`ifndef CONFIG_WBC_MEM
+`define CONFIG_WBC_MEM wbc_mem
+`endif
 //
 // PLL selector - only one of available PLL type must be defined
 // The appropriate .sdc file must be copied to provide constraints
@@ -51,6 +56,9 @@
 //
 // Global system clock
 //
+`ifndef CONFIG_SYS_CLOCK
+// ^^ we may have it defined per board/cpu in files like rtl/am4_defs.v
+// so let's check and not try to redefine
 `ifdef   CONFIG_PLL_50
 `define  CONFIG_SYS_CLOCK     50000000
 `endif
@@ -95,10 +103,15 @@
 `define  CONFIG_SYS_CLOCK     200000000
 `endif
 
+`endif // CONFIG_SYS_CLOCK
+
 `define  CONFIG_SLOW_DIV  (`CONFIG_SYS_CLOCK / 5000000)
 
 //______________________________________________________________________________
 //
+// CPU_TEST_FILE could be defined in files like rtl/vm3_defs.v related to 
+// part board/vendor directory like xen/sn9 (Sipeed Nano-9K):
+`ifndef CPU_TEST_FILE
 `ifdef CONFIG_CPU_VM1
 `define CPU_TEST_FILE "../../tst/vm1.mif"
 `define CPU_TEST_MEMF "../../tst/vm1.mem"
@@ -134,7 +147,7 @@
 `define CPU_TEST_MEMF "../../tst/f11.mem"
 `define CPU_TEST_MEMN "f11.mem"
 `endif
-
+`endif
 //______________________________________________________________________________
 //
 // Reset button debounce interval (in ms))
