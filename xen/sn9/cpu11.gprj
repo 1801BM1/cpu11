@@ -1,0 +1,39 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW1NR-9C" pn="GW1NR-LV9QN88PC6/I5">gw1nr9c-004</Device>
+    <FileList>
+        <File path="/home/yu/work/cpu11/am4/hdl/org/rtl/am4_plm.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/am4/hdl/wbc/rtl/am4_alu.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/am4/hdl/wbc/rtl/am4_mcrom.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/am4/hdl/wbc/rtl/am4_seq.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/am4/hdl/wbc/rtl/am4_wb.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/lsi/hdl/wbc/rtl/lsi_wb.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/lsi/hdl/wbc/rtl/mcp1611.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/lsi/hdl/wbc/rtl/mcp1621.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/lsi/hdl/wbc/rtl/mcp1631.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/lsi/hdl/wbc/rtl/mcp_plm.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_plm.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_reg.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_tve.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_wb.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/config.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_am4.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_lsi.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_rst.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_uart.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_vic.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_vm1.v" type="file.verilog" enable="1"/>
+        <File path="rtl/gw1n_config.v" type="file.verilog" enable="1"/>
+        <File path="rtl/gwn_mem.v" type="file.verilog" enable="1"/>
+        <File path="rtl/sn9_top.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_am4/mem16x8k_am4.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_lsi/mem16x8k_lsi.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_vm1/mem16x8k_vm1.v" type="file.verilog" enable="1"/>
+        <File path="syn/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
+        <File path="syn/nano9k.cst" type="file.cst" enable="1"/>
+        <File path="src/cpu11.sdc" type="file.sdc" enable="1"/>
+    </FileList>
+</Project>
