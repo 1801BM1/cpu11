@@ -31,6 +31,7 @@ There are a few words regarding the reverse engineering process stages:
 - [1801BM1](/vm1) - USSR microprocessor, no DEC prototype, proprietary die design
 - [1801BM2](/vm2) - USSR microprocessor, no DEC prototype, proprietary die design
 - [1801BM3](/vm3) - USSR microprocessor, no DEC prototype, proprietary die design
+- [CM-2420](/s20) - Soviet mini-computer processor, very close to DEC PDP-11/70 model
 - [LSI-11](/lsi) - Soviet 581-series, DEC LSI-11 clone, Western Digital MCP-1600 chipset
 - [F-11](/f11) - Soviet 1811-series, DEC F-11 clone, DEC DC302/DC303/DC304 "Fonz" chipset
 - [M4](/am4) - Soviet replica of military LSI-11M, AMD Am2900 bit-slices

@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Sun Aug 25 22:24:53 2024
+Quartus II 64-Bit Version : 12.1 Build 243 01/31/2013 SP 1 SJ Full Version
+Revision Name : s20
+Top-level Entity Name : de0
+Family : Cyclone III
+Total logic elements : 0
+    Total combinational functions : 0
+    Dedicated logic registers : 0
+Total registers : 0
+Total pins : 252
+Total virtual pins : 0
+Total memory bits : 0
+Embedded Multiplier 9-bit elements : 0
+Total PLLs : 0
