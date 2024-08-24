@@ -10,7 +10,7 @@ the aircraft reconnaissance radar module. The massive aluminum heatsink is built
 providing operation in the stratosphere.
 
 The M4 processor supports PDP-11 basic instruction set, extended instruction set (EIS), and floating
-instruction set (EIS), no MMU is implemented, 32KB of RAM is integrated onboard, refresh is performed
+instruction set (FIS), no MMU is implemented, 32KB of RAM is integrated onboard, refresh is performed
 by microcode on periodic requests. The microcode provides the standard built-in DEC ODT.
 
 The processor is built on top of the AMD Am2900 bit-slice series with 56x1K horizontal microcode,
