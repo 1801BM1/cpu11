@@ -1,0 +1,17 @@
+[General]
+ipc_version=4
+file=mem16x16k_vm3
+module=mem16x16k_vm3
+target_device=gw2ar18c-000
+type=ram_sp
+version=3.0
+
+[Config]
+BYTE_SIZE=0
+DEPTH=16384
+LANG=0
+READ=0
+RESET_MODE=true
+WIDTH=16
+WRITE=0
+MEM_FILE=vm3.mif
