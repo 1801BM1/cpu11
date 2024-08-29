@@ -1,0 +1,28 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW2AR-18C" pn="GW2AR-LV18QN88C8/I7">gw2ar18c-000</Device>
+    <FileList>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_plm.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_tve.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/vm1/hdl/wbc/rtl/vm1_wb.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/config.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_rst.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_uart.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_vic.v" type="file.verilog" enable="1"/>
+        <File path="/home/yu/work/cpu11/xen/lib/wbc_vm1.v" type="file.verilog" enable="1"/>
+        <File path="rtl/gwn_mem.v" type="file.verilog" enable="1"/>
+        <File path="rtl/sn20_top.v" type="file.verilog" enable="1"/>
+        <File path="rtl/vm1_defs.v" type="file.verilog" enable="1"/>
+        <File path="rtl/vm1_vcram.v" type="file.verilog" enable="1"/>
+        <File path="src/mem_vm1/mem16x8k_vm1.v" type="file.verilog" enable="1"/>
+        <File path="src/vcram/vcram.v" type="file.verilog" enable="1"/>
+        <File path="syn/gw2ar_rpll/rpll.v" type="file.verilog" enable="1"/>
+        <File path="syn/nano20k.cst" type="file.cst" enable="1"/>
+        <File path="src/cpu11.sdc" type="file.sdc" enable="1"/>
+        <File path="src/mem_vm1/mem16x8k_vm1.ipc" type="file.other" enable="1"/>
+        <File path="syn/gw2ar_rpll/rpll.ipc" type="file.other" enable="1"/>
+    </FileList>
+</Project>

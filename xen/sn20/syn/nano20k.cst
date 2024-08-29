@@ -1,0 +1,21 @@
+IO_LOC "sys_uart_txd" 70;
+IO_PORT "sys_uart_txd" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "sys_uart_rxd" 69;
+IO_PORT "sys_uart_rxd" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "sys_reset_n" 88;
+IO_PORT "sys_reset_n" PULL_MODE=UP;
+IO_LOC "sys_clock_27" 4;
+IO_PORT "sys_clock_27" BANK_VCCIO=1.8 PULL_MODE=UP;
+//
+IO_LOC "sys_led[5]" 20;
+IO_PORT "sys_led[5]" PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
+IO_LOC "sys_led[4]" 19;
+IO_PORT "sys_led[4]" PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
+IO_LOC "sys_led[3]" 18;
+IO_PORT "sys_led[3]" PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
+IO_LOC "sys_led[2]" 17;
+IO_PORT "sys_led[2]" PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
+IO_LOC "sys_led[1]" 16;
+IO_PORT "sys_led[1]" PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
+IO_LOC "sys_led[0]" 15;
+IO_PORT "sys_led[0]" PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;

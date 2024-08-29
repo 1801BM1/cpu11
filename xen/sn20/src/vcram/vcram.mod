@@ -1,0 +1,26 @@
+-series GW2AR
+-device GW2AR-18
+-device_version C
+-package QFN88
+-part_number GW2AR-LV18QN88C8/I7
+
+
+-mod_name vcram
+-file_name vcram
+-path /home/yu/work/cpu11/xen/sn20/src/vcram/
+-type RAM_DP
+-file_type vlg
+-bram_b true
+-dev_type GW2AR-18C
+-depth_0 64
+-depth_1 64
+-width_0 16
+-width_1 16
+-read_mode_0 bypass
+-read_mode_1 bypass
+-write_mode_0 normal
+-write_mode_1 normal
+-speed true
+-reset_mode sync
+-init_file /home/yu/work/cpu11/xen/sn20/src/vcram/vm1_xram.mif
+-init_match port_A
