@@ -86,26 +86,7 @@ wire  [1:0] leds;                // output LEDs
 //______________________________________________________________________________
 //
 // Select of one of the available CPUs
-//
-`ifdef CONFIG_CPU_VM1
-wbc_vm1 cpu
-`endif
-
-`ifdef CONFIG_CPU_VM2
-wbc_vm2 cpu
-`endif
-
-`ifdef CONFIG_CPU_VM3
-wbc_vm3 cpu
-`endif
-
-`ifdef CONFIG_CPU_LSI
-wbc_lsi cpu
-`endif
-
-`ifdef CONFIG_CPU_AM4
-wbc_am4 cpu
-`endif
+`CONFIG_WBC_CPU cpu
 (
    .osc_clk(sys_clk_p),          // qa7_clock_50 can feed PLL only
    .sys_clk_p(sys_clk_p),        // system clock positive phase
@@ -142,36 +123,7 @@ wbc_am4 cpu
 //
 assign clk50   = qk7_clock_50;
 
-`ifdef CONFIG_PLL_50
-qk7_pll50 corepll
-`endif
-`ifdef CONFIG_PLL_66
-qk7_pll66 corepll
-`endif
-`ifdef CONFIG_PLL_75
-qk7_pll75 corepll
-`endif
-`ifdef CONFIG_PLL_100
-qk7_pll100 corepll
-`endif
-`ifdef CONFIG_PLL_125
-qk7_pll125 corepll
-`endif
-`ifdef CONFIG_PLL_133
-qk7_pll133 corepll
-`endif
-`ifdef CONFIG_PLL_150
-qk7_pll150 corepll
-`endif
-`ifdef CONFIG_PLL_166
-qk7_pll166 corepll
-`endif
-`ifdef CONFIG_PLL_175
-qk7_pll175 corepll
-`endif
-`ifdef CONFIG_PLL_200
-qk7_pll200 corepll
-`endif
+`CONFIG_WBC_PLL corepll
 (
    .inclk0(clk50),
    .c0(sys_clk_p),
