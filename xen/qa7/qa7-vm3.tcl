@@ -157,6 +157,7 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [list \
+ [file normalize "${origin_dir}/rtl/vm3_defs.v"] \
  [file normalize "${origin_dir}/../lib/config.v"] \
  [file normalize "${origin_dir}/rtl/qa7_xlib.v"] \
  [file normalize "${origin_dir}/../lib/wbc_vm3.v"] \
