@@ -45,12 +45,12 @@
 ;
 		.asect      			;
 		. = 0				;
-						; вектор начального пуска
-		vect	0, entry		; для процессора 1801ВМ2
+						; vector of initial start
+		vect	0, entry		; for the 1801VM2 CPU
 ;_____________________________________________________________________________
 ;
 		vect	4			;
-		vect	10			; ловушка прерываний 0-376
+		vect	10			; interrupt trap 0-376
 		vect	14			;
 		vect	20			;
 		vect	24			;

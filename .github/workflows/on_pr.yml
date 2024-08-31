@@ -1,0 +1,50 @@
+name: on_pr
+
+on:
+    pull_request:
+        branches:
+          - master
+
+jobs:
+  sim:
+    name: Run verification
+    runs-on: [self-hosted, modelsim, Linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: "AM4: Compile TEST.MAC"
+        run: |
+                cd am4/tst
+                ./build.sh test.mac
+      - name: "AM4: Run simulation"
+        run: am4/hdl/syn/sim/de0/run_vsim.sh
+
+      - name: "F11: Compile TEST.MAC"
+        run: |
+                cd f11/tst
+                ./build.sh test.mac
+      - name: "F11: Run simulation"
+        run: f11/hdl/syn/sim/de0/run_vsim.sh
+
+      - name: "VM1: Compile TEST.MAC"
+        run: |
+                cd vm1/tst
+                ./build.sh test.mac
+      - name: "VM1: Run simulation"
+        run: vm1/hdl/syn/sim/de0/run_vsim.sh
+
+      - name: "VM2: Compile TEST.MAC"
+        run: |
+                cd vm2/tst
+                ./build.sh test.mac
+      - name: "VM2: Run simulation"
+        run: vm2/hdl/syn/sim/de0/run_vsim.sh
+
+      - name: "VM3: Compile TEST.MAC"
+        run: |
+                cd vm3/tst
+                ./build.sh test.mac
+      - name: "VM3: Run simulation"
+        run: vm3/hdl/syn/sim/de0/run_vsim.sh
+
