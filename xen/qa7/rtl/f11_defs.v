@@ -2,9 +2,20 @@
 `define CONFIG_CPU_F11	 1
 `define CONFIG_WBC_CPU   wbc_f11
 `define CONFIG_WBC_MEM   wbc_mem_32k
-`define CONFIG_PLL_133	 1
-`define CONFIG_WBC_PLL   qk7_pll133
-`define CONFIG_SYS_CLOCK 133_333_333
+`define CONFIG_MEM_32K   1
+`ifdef __ICARUS__
+  `define CONFIG_WBC_PLL	xsimpll
+  `define CONFIG_SYS_CLOCK  50_000
+  `define CONFIG_OSC_CLOCK  50_000
+`elsif XILINX_SIMULATOR
+  `define CONFIG_WBC_PLL	xsimpll
+  `define CONFIG_SYS_CLOCK  50_000_000
+  `define CONFIG_OSC_CLOCK  50_000_000
+`else
+  `define CONFIG_PLL_100	 1
+  `define CONFIG_WBC_PLL   qa7_pll100
+  `define CONFIG_SYS_CLOCK 100_000_000
+`endif
 `define CONFIG_OSC_CLOCK  50_000_000
 `define CONFIG_SLOW_DIV  (`CONFIG_SYS_CLOCK / 5000000)
 
