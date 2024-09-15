@@ -122,20 +122,6 @@ set proj_dir [get_property directory [current_project]]
 # Set project properties
 set obj [current_project]
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
-set_property -name "dsa.accelerator_binary_content" -value "bitstream" -objects $obj
-set_property -name "dsa.accelerator_binary_format" -value "xclbin2" -objects $obj
-set_property -name "dsa.description" -value "Vivado generated DSA" -objects $obj
-set_property -name "dsa.dr_bd_base_address" -value "0" -objects $obj
-set_property -name "dsa.emu_dir" -value "emu" -objects $obj
-set_property -name "dsa.flash_interface_type" -value "bpix16" -objects $obj
-set_property -name "dsa.flash_offset_address" -value "0" -objects $obj
-set_property -name "dsa.flash_size" -value "1024" -objects $obj
-set_property -name "dsa.host_architecture" -value "x86_64" -objects $obj
-set_property -name "dsa.host_interface" -value "pcie" -objects $obj
-set_property -name "dsa.num_compute_units" -value "60" -objects $obj
-set_property -name "dsa.platform_state" -value "pre_synth" -objects $obj
-set_property -name "dsa.vendor" -value "xilinx" -objects $obj
-set_property -name "dsa.version" -value "0.0" -objects $obj
 set_property -name "enable_vhdl_2008" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
 set_property -name "ip_output_repo" -value "$proj_dir/${_xil_proj_name_}.cache/ip" -objects $obj
@@ -144,13 +130,6 @@ set_property -name "part" -value "xc7a35tftg256-1" -objects $obj
 set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_user_files" -objects $obj
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
-set_property -name "webtalk.activehdl_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.ies_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.modelsim_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.questa_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.riviera_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.vcs_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.xsim_export_sim" -value "62" -objects $obj
 
 # Create 'sources_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sources_1] ""]} {
@@ -160,8 +139,10 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [list \
+ [file normalize "${origin_dir}/rtl/lsi_defs.v"] \
  [file normalize "${origin_dir}/../lib/config.v"] \
- [file normalize "${origin_dir}/rtl/qa7_xlib.v"] \
+ [file normalize "${origin_dir}/rtl/xpll.v"] \
+ [file normalize "${origin_dir}/rtl/ram_sp_nc.v"] \
  [file normalize "${origin_dir}/../lib/wbc_rst.v"] \
  [file normalize "${origin_dir}/../lib/wbc_uart.v"] \
  [file normalize "${origin_dir}/../lib/wbc_vic.v"] \
@@ -173,10 +154,22 @@ set files [list \
  [file normalize "${origin_dir}/../../lsi/hdl/wbc/rtl/mcp_plm.v"] \
  [file normalize "${origin_dir}/../lib/wbc_lsi.v"] \
  [file normalize "${origin_dir}/../tst/lsi.mem"] \
+ [file normalize "${origin_dir}/../../lsi/rom/all_22b.rom"] \
 ]
 add_files -norecurse -fileset $obj $files
 
+# Set 'sources_1' fileset file properties for remote files
+set file "$origin_dir/rtl/lsi_defs.v"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "is_global_include" -value "1" -objects $file_obj
+
 set file "$origin_dir/../tst/lsi.mem"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../lsi/rom/all_22b.rom"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Memory File" -objects $file_obj
@@ -187,10 +180,8 @@ set_property -name "file_type" -value "Memory File" -objects $file_obj
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
 set_property -name "top" -value "qa7_top" -objects $obj
-set_property -name "verilog_define" -value \
-    "LSI11_FILE_MICROM=\"/opt/xilinx/workspace/cpu11/lsi/rom/all_22b.rom\" \
-     CONFIG_WBC_CPU=wbc_lsi" \
-    -objects $obj
+# set_property -name "verilog_define" -value "CONFIG_WBC_CPU=\"wbc_lsi\"" \
+#     -objects $obj
 
 # # Set 'sources_1' fileset object
 # set obj [get_filesets sources_1]

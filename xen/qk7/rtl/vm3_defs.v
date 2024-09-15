@@ -11,3 +11,6 @@
 `define CPU_TEST_FILE "../../tst/vm3.mif"
 `define CPU_TEST_MEMF "../../tst/vm3.mem"
 `define CPU_TEST_MEMN "vm3.mem"
+
+// shared config
+`include "../../lib/config.v"

@@ -98,3 +98,9 @@ set_input_jitter [get_clocks -of_objects [get_ports qa7_clock_50]] 0.200
 
 set_property PHASESHIFT_MODE WAVEFORM [get_cells -hierarchical *adv*]
 
+## TODO check CFGBVS/CONFIG_VOLTAGE in documentation
+set_property CFGBVS VCCO [current_design]
+#where value1 is either VCCO or GND
+set_property CONFIG_VOLTAGE 3.3 [current_design]
+#where value2 is the voltage provided to configuration bank 0
+##

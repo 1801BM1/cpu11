@@ -76,13 +76,14 @@ wire [15:0] ext_una;             // config word/start address
 reg         ext_halt;            // external halt request
 wire        ena_timer;           // enable system timer
                                  //
-wire        uart_rxd, uart_txd;  // serial data
+wire        uart_rxd, uart_txd, uart_cts;  // serial data
                                  //
 wire        tty_end, tty_stb;    // debug
 wire  [7:0] tty_dat;             // debug data
                                  //
 wire  [1:0] leds;                // output LEDs
-             //
+wire  [5:0] no_leds;
+
 //______________________________________________________________________________
 //
 // Select of one of the available CPUs
@@ -106,15 +107,16 @@ wire  [1:0] leds;                // output LEDs
                                  //
    .uart_rxd(uart_rxd),          // serial data input
    .uart_txd(uart_txd),          // serial data output
+   .uart_cts(uart_cts),          // UART clear to send (inverted)
                                  //
    .tty_end(tty_end),            // debug stop
    .tty_stb(tty_stb),            // debug data strobe
    .tty_dat(tty_dat),            // debug data value
                                  //
-//   .seg_hex0(seg_hex0),          // seven segment digit 0
-//   .seg_hex1(seg_hex1),          // seven segment digit 1
-//   .seg_hex2(seg_hex2),          // seven segment digit 2
-   .leds(leds)                   // output LEDs
+   .seg_hex0(seg_hex0),          // seven segment digit 0
+   .seg_hex1(seg_hex1),          // seven segment digit 1
+   .seg_hex2(seg_hex2),          // seven segment digit 2
+   .leds({no_leds, leds})        // output LEDs
 );
 
 //______________________________________________________________________________
@@ -137,7 +139,7 @@ assign ext_ready = 1'b1;
 assign ext_una = `CONFIG_START_ADDR_OPTIONS;
 
 always @(posedge sys_clk_p)
-   ext_halt  <= 1'b0;
+   ext_halt <= 1'b0;
 
 //______________________________________________________________________________
 //
@@ -172,4 +174,42 @@ wbc_toggle tog2
 assign   qk7_gpio1[0]   = ena_us;
 assign   qk7_gpio1[1]   = ena_ms;
 //
+endmodule
+
+module `CONFIG_WBC_MEM
+(
+  input          wb_clk_i,
+  input  [15:0]  wb_adr_i,
+  input  [15:0]  wb_dat_i,
+  output [15:0]  wb_dat_o,
+  input          wb_cyc_i,
+  input          wb_we_i,
+  input  [1:0]   wb_sel_i,
+  input          wb_stb_i,
+  output         wb_ack_o
+);
+  wire [1:0] byteena;
+  reg  [1:0] ack;
+
+  ram_sp_nc 
+  u_mem (
+   .addr(wb_adr_i[13:1]),
+   .clk(wb_clk_i),
+   .din(wb_dat_i),
+   .dout(wb_dat_o),
+   .en(wb_cyc_i & wb_stb_i),
+   .we(byteena)
+  );
+  defparam u_mem.MEMF = `CPU_TEST_MEMN;
+  defparam u_mem.ADDR_WIDTH = 13; // 2**13 = 8192 x16 bit
+
+  assign byteena = wb_we_i ? wb_sel_i : 2'b00;
+  assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
+
+  always @ (posedge wb_clk_i)
+  begin
+     ack[0] <= wb_cyc_i & wb_stb_i;
+     ack[1] <= wb_cyc_i & ack[0];
+  end
+
 endmodule

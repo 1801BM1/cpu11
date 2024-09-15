@@ -9,7 +9,7 @@
 // CPU selector - only one of available CPU type must be defined
 //
 `ifndef CONFIG_WBC_CPU
-  `define CONFIG_CPU_LSI        1
+  `define CONFIG_CPU_AM4        1
 `endif
 
 //`define CONFIG_CPU_VM1      1

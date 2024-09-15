@@ -96,12 +96,13 @@ these bits, LSI-11 usually returns zeroes on mftp instruction.
 The M4 board schematics is updated and Revision 3 seems to be final one.
 
 ## Fmax and FPGA resources
-- Wishbone compatible M4 prociessor core
+- Wishbone compatible M4 processor core
 - speed optimization chosen
 - slow model, worst corner
 
 All results are just approximate estimations by synthesis tools (Quartus/XST/Tang Dynasty)
-on sample projects (target frequency in .sdc was set to 50MHz, relaxed time-driven P&R)
+on sample projects (target frequency in .sdc was set to 50MHz, relaxed time-driven P&R).
+Xilinx based numbers are obtained as results of implementation and optimisations.
 
 | Board   | FPGA             | Family       | Fmax    | LUTs | FFs  | MEM     |
 |---------|------------------|--------------|---------|------|------|---------|
@@ -113,5 +114,5 @@ on sample projects (target frequency in .sdc was set to 50MHz, relaxed time-driv
 | QC5     | 5CEFA2F23I7N     | Cyclone V    | 73 MHz  | 554  | 553  | 6 M10K  |
 | QC10    | 10CL006U256CN8   | Cyclone 10   | 55 MHz  | 1193 | 471  | 7 M9K   |
 | EG4     | EG4S20BG256      | Eagle EG4S20 | 59 MHz  | 1021 | 392  | 7 M9K   |
-| QA7     | XC7A35TFTG256-1  | Artix 7      | 90 MHz  | 631  | 413  | 2 BR    |
-| QK7     | XC7K325TFFG676-1 | Kintex 7     | 114 MHz | 620  | 404  | 6 BR    |
+| QA7     | XC7A35TFTG256-1  | Artix 7      | 85 MHz  | 629  | 459  | 6 RAMB36 |
+| QK7     | XC7K325TFFG676-1 | Kintex 7     | 115 MHz | 609  | 414  | 6 RAMB36 |
