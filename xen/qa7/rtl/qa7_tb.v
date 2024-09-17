@@ -24,17 +24,21 @@ wire [1:0] gpio1;       // GPIO Connection 1 Data Bus
 
 //_____________________________________________________________________________
 //
+// defparam dut.cpu.reset.DCLO_WIDTH = 3; // affects count_os counter size
+defparam dut.cpu.reset.DCLO_WIDTH = 2;
 initial
 begin
 //
 // Let PLL to lock incoming clock and short debouncer start time
 //
 // #100000
-#60000
+#6000
    button = 5'b00111;
    dut.cpu.reset.count_db = `CONFIG_RESET_BUTTON_DEBOUNCE_MS-1;
    dut.cpu.reset.key_down = 0;
-#60004;
+#6004;
+   // dut.cpu.reset.key_down = 1;
+   // dut.cpu.reset.count_os = dut.cpu.reset.DCLO_WIDTH - 1;
    // dut.cpu.reset.sys_dclo = 0;
 //#20010
 //   dut.cpu.reset.sys_aclo = 0;
@@ -65,7 +69,11 @@ end
 
 initial
 begin
-   #`CONFIG_SIM_TIME_LIMIT $finish;
+   #`CONFIG_SIM_TIME_LIMIT
+`ifdef CONFIG_CPU_VM1
+  $display("VIM1 Sim finished with PC @ %06O", dut.cpu.cpu.vreg_ff.gpr[7][15:0]);
+`endif
+   $finish;
 end
 
 `ifdef CONFIG_HAS_LCD
@@ -174,7 +182,9 @@ endmodule
 `elsif XILINX_ISIM
        `define _SIM_PLL_
 `endif
+
 `ifdef _SIM_PLL_
+
 module xsimpll
  (// Clock in ports
   // Clock out ports
@@ -192,7 +202,7 @@ module xsimpll
  initial begin
    #0;
    locked = 0;
-   #10000;
+   #100;
    locked = 1;
  end
 endmodule
