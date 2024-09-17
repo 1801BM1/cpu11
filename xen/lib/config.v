@@ -42,7 +42,9 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
-`define  CONFIG_SIM_TIME_LIMIT      5000000
+`ifndef CONFIG_SIM_TIME_LIMIT
+  `define  CONFIG_SIM_TIME_LIMIT      5000000
+`endif
 //
 // External clock frequency
 //
@@ -159,7 +161,9 @@
 // Internal reset pulse width (in system clocks)
 //
 `define CONFIG_RESET_PULSE_WIDTH_CLK      15
-`define CONFIG_DCLO_WIDTH_CLK             15
+`ifndef CONFIG_DCLO_WIDTH_CLK
+  `define CONFIG_DCLO_WIDTH_CLK             15
+`endif
 `define CONFIG_ACLO_DELAY_CLK             7
 
 //______________________________________________________________________________
