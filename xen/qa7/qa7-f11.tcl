@@ -152,10 +152,28 @@ set files [list \
  [file normalize "${origin_dir}/../../f11/hdl/wbc/rtl/f11_wb.v"] \
  [file normalize "${origin_dir}/../lib/wbc_f11.v"] \
  [file normalize "${origin_dir}/../tst/f11.mem"] \
+ [file normalize "${origin_dir}/../../f11/rom/000.rom"] \
+ [file normalize "${origin_dir}/../../f11/rom/001.rom"] \
+ [file normalize "${origin_dir}/../../f11/rom/002.rom"] \
 ]
 add_files -norecurse -fileset $obj $files
 
 set file "$origin_dir/../tst/f11.mem"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../f11/rom/000.rom"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../f11/rom/001.rom"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../f11/rom/002.rom"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Memory File" -objects $file_obj
