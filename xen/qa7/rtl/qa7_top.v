@@ -4,7 +4,7 @@
 //
 // Top module for QMTECH Artix-7 DDR3 with daughter board (QA7)
 //
-`include "../../lib/config.v"
+// `include "../../lib/config.v"
 
 //______________________________________________________________________________
 //
@@ -70,14 +70,15 @@ wire        sys_clk_n;           // system negative clock (180 phase shift)
 wire        sys_plock;           //
 wire        ena_us, ena_ms;      //
 wire        sys_rst, pwr_rst;    //
-wire        ena_slow;            //
+reg         ena_slow;            //
                                  //
 wire        ext_ready;           // external system ready
 wire [15:0] ext_una;             // config word/start address
 reg         ext_halt;            // external halt request
-wire        ena_timer;           // enable system timer
+reg         ena_timer;           // enable system timer
                                  //
 wire        uart_rxd, uart_txd;  // serial data
+wire        uart_cts, uart_rts;  // serial handshake
                                  //
 wire        tty_end, tty_stb;    // debug
 wire  [7:0] tty_dat;             // debug data
@@ -87,7 +88,9 @@ wire  [7:0] seg_hex0;            // seven segment digit 0
 wire  [7:0] seg_hex1;            // seven segment digit 1
 wire  [7:0] seg_hex2;            // seven segment digit 2
 wire  [5:0] leds;                // output LEDs
-				 //
+wire  [1:0] no_leds;
+
+wire        tog1_out, tog2_out;  // button controlled bits
 //______________________________________________________________________________
 //
 // Select of one of the available CPUs
@@ -139,15 +142,17 @@ wbc_f11 cpu
                                  //
    .uart_rxd(uart_rxd),          // serial data input
    .uart_txd(uart_txd),          // serial data output
+   .uart_rts(uart_rts),          // enable remote transmitter
+   .uart_cts(uart_cts),          // UART clear to send (inverted)
                                  //
    .tty_end(tty_end),            // debug stop
    .tty_stb(tty_stb),            // debug data strobe
    .tty_dat(tty_dat),            // debug data value
                                  //
-//   .seg_hex0(seg_hex0),          // seven segment digit 0
-//   .seg_hex1(seg_hex1),          // seven segment digit 1
-//   .seg_hex2(seg_hex2),          // seven segment digit 2
-   .leds(leds)                   // output LEDs
+   .seg_hex0(seg_hex0),          // seven segment digit 0
+   .seg_hex1(seg_hex1),          // seven segment digit 1
+   .seg_hex2(seg_hex2),          // seven segment digit 2
+   .leds({no_leds, leds})        // output LEDs
 );
 
 //______________________________________________________________________________
@@ -156,6 +161,10 @@ wbc_f11 cpu
 //
 assign clk50   = qa7_clock_50;
 
+
+`ifdef CONFIG_WBC_PLL
+`CONFIG_WBC_PLL corepll
+`else
 `ifdef CONFIG_PLL_50
 qa7_pll50 corepll
 `endif
@@ -171,6 +180,7 @@ qa7_pll85 corepll
 `ifdef CONFIG_PLL_100
 qa7_pll100 corepll
 `endif
+`endif
 (
    .inclk0(clk50),
    .c0(sys_clk_p),
@@ -184,12 +194,19 @@ assign ext_ready = 1'b1;
 assign ext_una = `CONFIG_START_ADDR_OPTIONS;
 
 always @(posedge sys_clk_p)
-   ext_halt  <= 1'b0;
-
+begin
+   // .ext_reset(qa7_reset_n),    // external reset button
+   ena_timer <= 1'b0;
+   ena_slow <= 1'b0;
+   ext_halt <= 1'b0;
+end
 //______________________________________________________________________________
 //
 assign qa7_uart_txd = uart_txd;
+assign qa7_uart_cts = uart_rts;
 assign uart_rxd = qa7_uart_rxd;
+assign uart_cts = 1'b0;
+// assign qa7_reset_n = 1'b1;
 
 //______________________________________________________________________________
 //
@@ -205,14 +222,14 @@ assign qa7_hsel[2] = ~(hsel == 3'b010);
 
 always @(posedge sys_clk_p)
 begin
-	if (~qa7_button[0])
-		hsel <= 3'b000;
-	else
-      if (ena_ms)
-         if (hsel == 3'b000)
-            hsel <= 3'b101;
-         else
-            hsel <= hsel - 3'b001;
+    if (~qa7_button[0])
+        hsel <= 3'b000;
+    else
+        if (ena_ms)
+           if (hsel == 3'b000)
+               hsel <= 3'b101;
+           else
+               hsel <= hsel - 3'b001;
 end
 
 assign qa7_led = leds[5:0];
@@ -225,7 +242,7 @@ wbc_toggle tog1
    .rst(pwr_rst),
    .but_n(qa7_button[1]),
    .ena_ms(ena_ms),
-   .out(ena_timer)
+   .out(tog1_out)
 );
 
 wbc_toggle tog2
@@ -234,7 +251,7 @@ wbc_toggle tog2
    .rst(pwr_rst),
    .but_n(qa7_button[2]),
    .ena_ms(ena_ms),
-   .out(ena_slow)
+   .out(tog2_out)
 );
 
 //______________________________________________________________________________
@@ -280,4 +297,47 @@ assign   qa7_gpio1[1]   = ena_ms;
 // assign   qa7_gpio0      = 34'hzzzzzzzzz;
 // assign   qa7_gpio1      = 34'hzzzzzzzzz;
 //
+endmodule
+
+module `CONFIG_WBC_MEM
+(
+  input          wb_clk_i,
+  input  [15:0]  wb_adr_i,
+  input  [15:0]  wb_dat_i,
+  output [15:0]  wb_dat_o,
+  input          wb_cyc_i,
+  input          wb_we_i,
+  input  [1:0]   wb_sel_i,
+  input          wb_stb_i,
+  output         wb_ack_o
+);
+  wire [1:0] byteena;
+  reg  [1:0] ack;
+
+`ifdef CONFIG_MEM_32K
+	`define ADDR_WIDTH 14
+`else
+	`define ADDR_WIDTH 13
+`endif
+  ram_sp_nc
+  u_mem (
+   .addr(wb_adr_i[`ADDR_WIDTH:1]),
+   .clk(wb_clk_i),
+   .din(wb_dat_i),
+   .dout(wb_dat_o),
+   .en(wb_cyc_i & wb_stb_i),
+   .we(byteena)
+  );
+  defparam u_mem.MEMF = `CPU_TEST_MEMN;
+  defparam u_mem.ADDR_WIDTH = `ADDR_WIDTH; // 2**13 = 8192 x16 bit
+
+  assign byteena = wb_we_i ? wb_sel_i : 2'b00;
+  assign wb_ack_o = wb_cyc_i & wb_stb_i & (ack[1] | wb_we_i);
+
+  always @ (posedge wb_clk_i)
+  begin
+     ack[0] <= wb_cyc_i & wb_stb_i;
+     ack[1] <= wb_cyc_i & ack[0];
+  end
+
 endmodule

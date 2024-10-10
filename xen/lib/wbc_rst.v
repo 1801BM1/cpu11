@@ -67,7 +67,7 @@ reg   [AC_COUNTER_WIDTH-1:0] count_ac;
 reg   ena_us;
 reg   osc_ms;
 reg   pll_reg;
-reg   but_reg;
+reg   but_reg_n;
 reg   key_down;
 reg   key_long;
 
@@ -97,10 +97,10 @@ end
 //
 always @(posedge osc_clk)
 begin
-   if (~but_reg | ~pll_reg)
+   if (~but_reg_n | ~pll_reg)
    begin
       count_db <= 0;
-      key_down <= 1'b1;
+      key_down <= 1'b1; // was 1'b1
    end
    else
       if (osc_ms)
@@ -111,7 +111,7 @@ begin
             key_down <= 1'b0;
       end
    pll_reg <= pll_lock;
-   but_reg <= button;
+   but_reg_n <= button;
    pwr_event <= ~pll_reg | key_long;
 end
 //

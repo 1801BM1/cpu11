@@ -24,24 +24,25 @@
 #    (Please see the '$orig_proj_dir' and '$origin_dir' variable setting below at the start of the script)
 #
 #    "/opt/xilinx/workspace/cpu11/xen/qa7/syn/vm1_xlib.coe"
-#    "/opt/xilinx/workspace/cpu11/xen/qa7/syn/ip/xvcram/xvcram.xci"
 #    "/opt/xilinx/workspace/cpu11/xen/qa7/syn/qa7.xdc"
-#    "/opt/xilinx/workspace/cpu11/xen/qa7/syn/qa7.srcs/constrs_1/new/qa7_dbg.xdc"
 #
 # 3. The following remote source files that were added to the original project:-
 #
 #    "/opt/xilinx/workspace/cpu11/xen/lib/config.v"
-#    "/opt/xilinx/workspace/cpu11/xen/qa7/rtl/qa7_xlib.v"
+#    "/opt/xilinx/workspace/cpu11/xen/qa7/rtl/${board}_xlib.v"
 #    "/opt/xilinx/workspace/cpu11/xen/lib/wbc_rst.v"
 #    "/opt/xilinx/workspace/cpu11/xen/lib/wbc_uart.v"
 #    "/opt/xilinx/workspace/cpu11/xen/lib/wbc_vic.v"
-#    "/opt/xilinx/workspace/cpu11/xen/qa7/rtl/qa7_top.v"
+#    "/opt/xilinx/workspace/cpu11/xen/qa7/rtl/${board}_top.v"
 #    "/opt/xilinx/workspace/cpu11/xen/tst/f11.mem"
 #
 #*****************************************************************************************
 
+set part "xc7a35tftg256-1"
+
 # Set the reference directory for source file relative paths (by default the value is script directory path)
 set origin_dir "."
+set board [file tail [file normalize "$origin_dir" ] ]
 
 # Use origin directory path location variable, if specified in the tcl shell
 if { [info exists ::origin_dir_loc] } {
@@ -49,7 +50,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "qa7-f11"
+set _xil_proj_name_ "$board-f11"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -57,7 +58,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "qa7-f11.tcl"
+set script_file "$board-f11.tcl"
 
 # Help information for this script
 proc print_help {} {
@@ -108,7 +109,7 @@ if { $::argc > 0 } {
 set orig_proj_dir "[file normalize "$origin_dir/syn"]"
 
 # Create project
-create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xc7a35tftg256-1 -force
+create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part $part -force
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -116,35 +117,14 @@ set proj_dir [get_property directory [current_project]]
 # Set project properties
 set obj [current_project]
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
-set_property -name "dsa.accelerator_binary_content" -value "bitstream" -objects $obj
-set_property -name "dsa.accelerator_binary_format" -value "xclbin2" -objects $obj
-set_property -name "dsa.description" -value "Vivado generated DSA" -objects $obj
-set_property -name "dsa.dr_bd_base_address" -value "0" -objects $obj
-set_property -name "dsa.emu_dir" -value "emu" -objects $obj
-set_property -name "dsa.flash_interface_type" -value "bpix16" -objects $obj
-set_property -name "dsa.flash_offset_address" -value "0" -objects $obj
-set_property -name "dsa.flash_size" -value "1024" -objects $obj
-set_property -name "dsa.host_architecture" -value "x86_64" -objects $obj
-set_property -name "dsa.host_interface" -value "pcie" -objects $obj
-set_property -name "dsa.num_compute_units" -value "60" -objects $obj
-set_property -name "dsa.platform_state" -value "pre_synth" -objects $obj
-set_property -name "dsa.vendor" -value "xilinx" -objects $obj
-set_property -name "dsa.version" -value "0.0" -objects $obj
 set_property -name "enable_vhdl_2008" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
 set_property -name "ip_output_repo" -value "$proj_dir/${_xil_proj_name_}.cache/ip" -objects $obj
 set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
-set_property -name "part" -value "xc7a35tftg256-1" -objects $obj
+set_property -name "part" -value "$part" -objects $obj
 set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_user_files" -objects $obj
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
-set_property -name "webtalk.activehdl_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.ies_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.modelsim_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.questa_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.riviera_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.vcs_export_sim" -value "62" -objects $obj
-set_property -name "webtalk.xsim_export_sim" -value "62" -objects $obj
 
 # Create 'sources_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sources_1] ""]} {
@@ -154,12 +134,14 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [list \
+ [file normalize "${origin_dir}/rtl/f11_defs.v"] \
  [file normalize "${origin_dir}/../lib/config.v"] \
- [file normalize "${origin_dir}/rtl/qa7_xlib.v"] \
+ [file normalize "${origin_dir}/rtl/xpll.v"] \
+ [file normalize "${origin_dir}/rtl/ram_sp_nc.v"] \
  [file normalize "${origin_dir}/../lib/wbc_rst.v"] \
  [file normalize "${origin_dir}/../lib/wbc_uart.v"] \
  [file normalize "${origin_dir}/../lib/wbc_vic.v"] \
- [file normalize "${origin_dir}/rtl/qa7_top.v"] \
+ [file normalize "${origin_dir}/rtl/${board}_top.v"] \
  [file normalize "${origin_dir}/../../f11/hdl/wbc/rtl/dc_302.v"] \
  [file normalize "${origin_dir}/../../f11/hdl/wbc/rtl/dc_303.v"] \
  [file normalize "${origin_dir}/../../f11/hdl/wbc/rtl/dc_304.v"] \
@@ -173,10 +155,28 @@ set files [list \
  [file normalize "${origin_dir}/../../f11/hdl/wbc/rtl/f11_wb.v"] \
  [file normalize "${origin_dir}/../lib/wbc_f11.v"] \
  [file normalize "${origin_dir}/../tst/f11.mem"] \
+ [file normalize "${origin_dir}/../../f11/rom/000.rom"] \
+ [file normalize "${origin_dir}/../../f11/rom/001.rom"] \
+ [file normalize "${origin_dir}/../../f11/rom/002.rom"] \
 ]
 add_files -norecurse -fileset $obj $files
 
 set file "$origin_dir/../tst/f11.mem"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../f11/rom/000.rom"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../f11/rom/001.rom"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "Memory File" -objects $file_obj
+
+set file "$origin_dir/../../f11/rom/002.rom"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Memory File" -objects $file_obj
@@ -186,31 +186,21 @@ set_property -name "file_type" -value "Memory File" -objects $file_obj
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
-set_property -name "top" -value "qa7_top" -objects $obj
-set_property -name "verilog_define" -value \
-    "CONFIG_WBC_CPU=wbc_f11" \
-    -objects $obj
+set_property -name "top" -value "${board}_top" -objects $obj
+# set_property -name "verilog_define" -value "CONFIG_WBC_CPU=wbc_f11" -objects $obj
 
-# Set 'sources_1' fileset object
-set obj [get_filesets sources_1]
-# Import local files from the original project
-set files [list \
- [file normalize "${origin_dir}/syn/ip/xvcram/xvcram.xci" ]\
-]
-set imported_files [import_files -fileset sources_1 $files]
+#
+# Set 'sources_1' fileset file properties for remote files
+set file "$origin_dir/rtl/f11_defs.v"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "is_global_include" -value "1" -objects $file_obj
 
 # Set 'sources_1' fileset file properties for remote files
-# None
-
-# Set 'sources_1' fileset file properties for local files
-set file "xvcram/xvcram.xci"
+set file "$origin_dir/../lib/config.v"
+set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
-set_property -name "registered_with_manager" -value "1" -objects $file_obj
-if { ![get_property "is_locked" $file_obj] } {
-  set_property -name "synth_checkpoint_mode" -value "Singular" -objects $file_obj
-}
-
+# set_property -name "is_global_include" -value "1" -objects $file_obj
 
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
@@ -227,18 +217,11 @@ set file "syn/qa7.xdc"
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 
-# Add/Import constrs file and set constrs file properties
-set file "[file normalize "$origin_dir/syn/qa7.srcs/constrs_1/new/qa7_dbg.xdc"]"
-set file_imported [import_files -fileset constrs_1 [list $file]]
-set file "new/qa7_dbg.xdc"
-set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
-set_property -name "file_type" -value "XDC" -objects $file_obj
-
 # Set 'constrs_1' fileset properties
 set obj [get_filesets constrs_1]
-set_property -name "target_constrs_file" -value "[get_files *new/qa7_dbg.xdc]" -objects $obj
-set_property -name "target_part" -value "xc7a35tftg256-1" -objects $obj
-set_property -name "target_ucf" -value "[get_files *new/qa7_dbg.xdc]" -objects $obj
+set_property -name "target_constrs_file" -value "[get_files *new/qa7.xdc]" -objects $obj
+set_property -name "target_part" -value "$part" -objects $obj
+set_property -name "target_ucf" -value "[get_files *new/qa7.xdc]" -objects $obj
 
 # Create 'sim_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sim_1] ""]} {
@@ -251,7 +234,7 @@ set obj [get_filesets sim_1]
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
-set_property -name "top" -value "qa7_top" -objects $obj
+set_property -name "top" -value "${board}_top" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 # Set 'utils_1' fileset object
@@ -263,7 +246,7 @@ set obj [get_filesets utils_1]
 
 # Create 'synth_2' run (if not found)
 if {[string equal [get_runs -quiet synth_2] ""]} {
-    create_run -name synth_2 -part xc7a35tftg256-1 -flow {Vivado Synthesis 2018} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
+    create_run -name synth_2 -part $part -flow {Vivado Synthesis 2018} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
 } else {
   set_property strategy "Vivado Synthesis Defaults" [get_runs synth_2]
   set_property flow "Vivado Synthesis 2018" [get_runs synth_2]
@@ -282,7 +265,7 @@ set_property -name "display_name" -value "synth_2_synth_report_utilization_0" -o
 
 }
 set obj [get_runs synth_2]
-set_property -name "part" -value "xc7a35tftg256-1" -objects $obj
+set_property -name "part" -value "$part" -objects $obj
 set_property -name "strategy" -value "Vivado Synthesis Defaults" -objects $obj
 
 # set the current synth run
@@ -290,7 +273,7 @@ current_run -synthesis [get_runs synth_2]
 
 # Create 'impl_3' run (if not found)
 if {[string equal [get_runs -quiet impl_3] ""]} {
-    create_run -name impl_3 -part xc7a35tftg256-1 -flow {Vivado Implementation 2018} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_2
+    create_run -name impl_3 -part $part -flow {Vivado Implementation 2018} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_2
 } else {
   set_property strategy "Vivado Implementation Defaults" [get_runs impl_3]
   set_property flow "Vivado Implementation 2018" [get_runs impl_3]
@@ -506,7 +489,7 @@ set_property -name "display_name" -value "impl_3_post_route_phys_opt_report_bus_
 
 }
 set obj [get_runs impl_3]
-set_property -name "part" -value "xc7a35tftg256-1" -objects $obj
+set_property -name "part" -value "$part" -objects $obj
 set_property -name "strategy" -value "Vivado Implementation Defaults" -objects $obj
 set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
 set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
