@@ -142,4 +142,4 @@ projects.
 | QC10    | 10CL006U256CN8   | Cyclone 10   | 58 MHz  | 1455 | 393 | 4 M9K  |
 | EG4     | EG4S20BG256      | Eagle EG4S20 | 70 MHz  | 1559 | 590 | 5 M9K  |
 | QA7     | XC7A35TFTG256-1  | Artix 7      | 85 MHz  | 1202 | 634 | 1 BR   |
-| QK7     | XC7K325TFFG676-1 | Kintex 7     | 136 MHz | 1189 | 603 | 5 BR   |
+| QK7     | XC7K325TFFG676-1 | Kintex 7     | 133 MHz | 1181 | 613 | 5 BR   |

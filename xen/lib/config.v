@@ -9,7 +9,7 @@
 // CPU selector - only one of available CPU type must be defined
 //
 `ifndef CONFIG_WBC_CPU
-  `define CONFIG_CPU_LSI        1
+  `define CONFIG_CPU_AM4        1
 `endif
 
 //`define CONFIG_CPU_VM1      1
@@ -26,7 +26,9 @@
 // PLL selector - only one of available PLL type must be defined
 // The appropriate .sdc file must be copied to provide constraints
 //
+`ifndef CONFIG_WBC_PLL
 `define  CONFIG_PLL_100       1
+`endif
 
 // `define  CONFIG_PLL_50     1
 // `define  CONFIG_PLL_66     1
@@ -40,7 +42,9 @@
 //
 // Simulation stops (breakpoint) after this time elapsed
 //
-`define  CONFIG_SIM_TIME_LIMIT      5000000
+`ifndef CONFIG_SIM_TIME_LIMIT
+  `define  CONFIG_SIM_TIME_LIMIT      5000000
+`endif
 //
 // External clock frequency
 //
@@ -157,7 +161,9 @@
 // Internal reset pulse width (in system clocks)
 //
 `define CONFIG_RESET_PULSE_WIDTH_CLK      15
-`define CONFIG_DCLO_WIDTH_CLK             15
+`ifndef CONFIG_DCLO_WIDTH_CLK
+  `define CONFIG_DCLO_WIDTH_CLK             15
+`endif
 `define CONFIG_ACLO_DELAY_CLK             7
 
 //______________________________________________________________________________
