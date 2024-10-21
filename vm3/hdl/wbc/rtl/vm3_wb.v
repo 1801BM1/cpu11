@@ -2284,7 +2284,7 @@ assign sx_ro = op1_wf & ~mmu_d[2] & mmu_d[1];            // readonly error
 assign sx_nr = ~mmu_d[1] | (mt_mod[5] ^ mt_mod[6]);      // not resident or bad mode
 
 assign a0_reg = ba_fsel ? ba_fr[0] : ba_ax[0];
-assign ba = (ba_pca | ba_pca_rc) ? pca : (ba_fsel ? ba_fr : ba_ax);
+assign ba = (ba_pca | (ba_pca_rc & ~sa_sxa)) ? pca : (ba_fsel ? ba_fr : ba_ax);
 assign sa77 = ba[15:13] == 3'b111;
 
 assign bs_a22 = (as[21:13] == 9'o777);
