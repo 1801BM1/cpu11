@@ -1,8 +1,8 @@
 
-`define CONFIG_CPU_F11	 1
+`define CONFIG_CPU_F11   1
 `define CONFIG_WBC_CPU   wbc_f11
 `define CONFIG_WBC_MEM   wbc_mem_32k
-`define CONFIG_PLL_133	 1
+`define CONFIG_PLL_133   1
 `define CONFIG_WBC_PLL   qk7_pll133
 `define CONFIG_SYS_CLOCK 133_333_333
 `define CONFIG_OSC_CLOCK  50_000_000

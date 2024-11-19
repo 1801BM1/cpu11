@@ -191,7 +191,7 @@ module `CONFIG_WBC_MEM
   wire [1:0] byteena;
   reg  [1:0] ack;
 
-  ram_sp_nc 
+  ram_sp_nc
   u_mem (
    .addr(wb_adr_i[13:1]),
    .clk(wb_clk_i),

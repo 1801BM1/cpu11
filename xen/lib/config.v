@@ -113,7 +113,7 @@
 
 //______________________________________________________________________________
 //
-// CPU_TEST_FILE could be defined in files like rtl/vm3_defs.v related to 
+// CPU_TEST_FILE could be defined in files like rtl/vm3_defs.v related to
 // part board/vendor directory like xen/sn9 (Sipeed Nano-9K):
 `ifndef CPU_TEST_FILE
 `ifdef CONFIG_CPU_VM1

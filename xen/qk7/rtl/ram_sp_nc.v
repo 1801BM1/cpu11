@@ -1,4 +1,4 @@
-// 
+//
 // Block RAM with Resettable Data Output
 // File: rams_sp_rf_rst.v
 //---
@@ -22,7 +22,7 @@ module ram_sp_nc
     input [ADDR_WIDTH-1:0]  addr,
     input [DATA_WIDTH-1:0]  din,
     output reg [DATA_WIDTH-1:0] dout
-);    
+);
 
     // core memory
     reg [DATA_WIDTH-1:0] ram [2**ADDR_WIDTH-1:0];
@@ -39,8 +39,8 @@ always @(posedge clk)
                         ram[addr][i*COL_WIDTH +: COL_WIDTH] <= din[i*COL_WIDTH +: COL_WIDTH];
                     end
                 end
-	    else
-	        dout <= ram[addr];
+       else
+           dout <= ram[addr];
         end
     end
 

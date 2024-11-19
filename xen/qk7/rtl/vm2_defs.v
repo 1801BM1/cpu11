@@ -1,5 +1,5 @@
 
-`define CONFIG_CPU_VM2	 1
+`define CONFIG_CPU_VM2   1
 `define CONFIG_WBC_CPU   wbc_vm2
 `define CONFIG_WBC_MEM   wbc_mem
 `define CONFIG_PLL_150   1
