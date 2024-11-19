@@ -1569,7 +1569,7 @@ begin
       psw_smod_sa <= psw_smod;
 
    if (pswh_inf)
-      psw[15:12] <= {fr[15:14], psw_smod_sa ? psw[15:14] : fr[15:14]};
+      psw[15:12] <= {fr[15:14], psw_smod_sa ? psw[15:14] : fr[13:12]};
    else
       if (pswh_ind)
          psw[15:12] <= fx[15:12];

@@ -283,6 +283,7 @@ add wave -noupdate -group mux -group cnst -radix octal -childformat {{{/tb3/cpu/
 add wave -noupdate -group mux -group cnst /tb3/cpu/core/con_stb
 add wave -noupdate -group mux -group cnst /tb3/cpu/core/vec_stb
 add wave -noupdate -group psw -radix octal -childformat {{{/tb3/cpu/core/psw[15]} -radix octal} {{/tb3/cpu/core/psw[14]} -radix octal} {{/tb3/cpu/core/psw[13]} -radix octal} {{/tb3/cpu/core/psw[12]} -radix octal} {{/tb3/cpu/core/psw[11]} -radix octal} {{/tb3/cpu/core/psw[10]} -radix octal} {{/tb3/cpu/core/psw[9]} -radix octal} {{/tb3/cpu/core/psw[8]} -radix octal} {{/tb3/cpu/core/psw[7]} -radix octal} {{/tb3/cpu/core/psw[6]} -radix octal} {{/tb3/cpu/core/psw[5]} -radix octal} {{/tb3/cpu/core/psw[4]} -radix octal} {{/tb3/cpu/core/psw[3]} -radix octal} {{/tb3/cpu/core/psw[2]} -radix octal} {{/tb3/cpu/core/psw[1]} -radix octal} {{/tb3/cpu/core/psw[0]} -radix octal}} -subitemconfig {{/tb3/cpu/core/psw[15]} {-height 15 -radix octal} {/tb3/cpu/core/psw[14]} {-height 15 -radix octal} {/tb3/cpu/core/psw[13]} {-height 15 -radix octal} {/tb3/cpu/core/psw[12]} {-height 15 -radix octal} {/tb3/cpu/core/psw[11]} {-height 15 -radix octal} {/tb3/cpu/core/psw[10]} {-height 15 -radix octal} {/tb3/cpu/core/psw[9]} {-height 15 -radix octal} {/tb3/cpu/core/psw[8]} {-height 15 -radix octal} {/tb3/cpu/core/psw[7]} {-height 15 -radix octal} {/tb3/cpu/core/psw[6]} {-height 15 -radix octal} {/tb3/cpu/core/psw[5]} {-height 15 -radix octal} {/tb3/cpu/core/psw[4]} {-height 15 -radix octal} {/tb3/cpu/core/psw[3]} {-height 15 -radix octal} {/tb3/cpu/core/psw[2]} {-height 15 -radix octal} {/tb3/cpu/core/psw[1]} {-height 15 -radix octal} {/tb3/cpu/core/psw[0]} {-height 15 -radix octal}} /tb3/cpu/core/psw
+add wave -noupdate -group psw /tb3/cpu/core/psw_t
 add wave -noupdate -group psw -radix octal -childformat {{{/tb3/cpu/core/psw_s[3]} -radix octal} {{/tb3/cpu/core/psw_s[2]} -radix octal} {{/tb3/cpu/core/psw_s[1]} -radix octal} {{/tb3/cpu/core/psw_s[0]} -radix octal}} -subitemconfig {{/tb3/cpu/core/psw_s[3]} {-height 15 -radix octal} {/tb3/cpu/core/psw_s[2]} {-height 15 -radix octal} {/tb3/cpu/core/psw_s[1]} {-height 15 -radix octal} {/tb3/cpu/core/psw_s[0]} {-height 15 -radix octal}} /tb3/cpu/core/psw_s
 add wave -noupdate -group psw /tb3/cpu/core/psw_lat
 add wave -noupdate -group psw /tb3/cpu/core/pswh_ind
@@ -297,6 +298,7 @@ add wave -noupdate -group psw /tb3/cpu/core/pswl_ind_t
 add wave -noupdate -group psw /tb3/cpu/core/pswl_inf_t
 add wave -noupdate -group psw /tb3/cpu/core/pswl_inp_t
 add wave -noupdate -group psw /tb3/cpu/core/pswl_ins_t
+add wave -noupdate -group psw /tb3/cpu/core/psw_smod
 add wave -noupdate -group psw -radix hexadecimal -childformat {{{/tb3/cpu/core/plf[4]} -radix hexadecimal} {{/tb3/cpu/core/plf[3]} -radix hexadecimal} {{/tb3/cpu/core/plf[2]} -radix hexadecimal} {{/tb3/cpu/core/plf[1]} -radix hexadecimal} {{/tb3/cpu/core/plf[0]} -radix hexadecimal}} -subitemconfig {{/tb3/cpu/core/plf[4]} {-height 15 -radix hexadecimal} {/tb3/cpu/core/plf[3]} {-height 15 -radix hexadecimal} {/tb3/cpu/core/plf[2]} {-height 15 -radix hexadecimal} {/tb3/cpu/core/plf[1]} {-height 15 -radix hexadecimal} {/tb3/cpu/core/plf[0]} {-height 15 -radix hexadecimal}} /tb3/cpu/core/plf
 add wave -noupdate -group rra /tb3/cpu/core/rra_wr_t
 add wave -noupdate -group rra /tb3/cpu/core/rra_fwr_t
@@ -465,7 +467,7 @@ add wave -noupdate /tb3/cpu/core/plm_lat
 add wave -noupdate /tb3/cpu/core/plr_rdy
 add wave -noupdate /tb3/cpu/core/alu_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 2} {743157798 ps} 0}
+WaveRestoreCursors {{Cursor 3} {1230182471 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 166
 configure wave -valuecolwidth 73
@@ -481,4 +483,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {742853298 ps} {743773184 ps}
+WaveRestoreZoom {2567709 ps} {17285885 ps}

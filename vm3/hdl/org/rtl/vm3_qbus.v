@@ -1811,7 +1811,7 @@ always @(negedge alu_stb) eaf4 <= plf[4] & ~eac[4];
 always @(*)
 begin
    if (~psw_lat)
-      psw_t[15:14] <= psw_smod ? psw[15:14] : f[15:14];
+      psw_t[15:14] <= psw_smod ? psw[15:14] : f[13:12];
 
    if (pswh_inf)
       psw[15:12] <= {f[15:14], psw_t[15:14]};
