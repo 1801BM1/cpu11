@@ -2280,8 +2280,8 @@ begin
 end
 
 assign sel = sel_sa;
-assign sx[21:6] = {sr3_ah ? mmu_a[15:12] : 4'b0000, mmu_a[11:0]}
-                + {9'b000000000 + ba[12:6]};
+assign sx[21:6] = (mmu_a[15:0] + {9'o000 + ba[12:6]})
+                & (sr3_ah ? 16'o177777 : 16'o007777);
 
 assign sx_pl = ~mmu_d[3] ? (ba[12:6] > mmu_d[14:8]) :    // page grows up
                            (ba[12:6] < mmu_d[14:8]);     // page grows down

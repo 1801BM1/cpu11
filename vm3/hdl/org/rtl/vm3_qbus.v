@@ -2774,8 +2774,8 @@ begin
 
    if (~at_stb)
    begin
-      sa_t[21:6] <= {sr3_ah ? pa[15:12] : 4'b0000, pa[11:0]}
-                  + {9'b000000000 + ba[12:6]};
+      sa_t[21:6] <= (pa[15:0] + {9'o000 + ba[12:6]})
+                  & (sr3_ah ? 16'o177777 : 16'o007777);
 
       mrq_pl_t0 <= ~pd[3] ? (ba[12:6] > pd[14:8]) :   // page grows up
                             (ba[12:6] < pd[14:8]);    // page grows down
