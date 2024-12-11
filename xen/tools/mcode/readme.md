@@ -85,19 +85,22 @@ reference, this functionality is enabled with --match key and provided for
 
 The --speed key enables the performance measurement tests, all input range is
 calculated and the resulting time is reported. There are some results obtained
-on the developer machine (Haswell i7-4770, @3.4GHz, single core):
+on the developer machines, single core, HT on:
 
-| Matrix/method            | x86-32    | x86-64    |
-|--------------------------|-----------|-----------|
-| vm1a reference           | 5:50      | 5:37      |
-| vm1a 32b/tree(4)         | 5:50/0:65 | 5:53/0:51 |
-| vm1a 64b/tree(4)         | 5:27/1:23 | 4:27/0:50 |
-| vm1a 128b (SSE2)/tree(4) | 2:57/0:34 | 2:51/0:27 |
-| vm1a 256b (AVX2)/tree(4) | 1:31/0:28 | 1:25/0:21 |
-| vm2 32b/tree(4)          | -         | 0:36/0:06 |
-| vm2 64b/tree(4)          | -         | 0:29/0:04 |
-| vm2 128b (SSE2)/tree(4)  | -         | 0:17/0:03 |
-| vm2 256b (AVX2)/tree(4)  | -         | 0:09/0:02 |
+ - Haswell i7-4770, @3.4GHz
+ - Ryzen 7 9700X, @5.5GHz
+
+| Matrix/method            | i4770-32  | i4770-64  | 9700x-64  |
+|--------------------------|-----------|-----------|-----------|
+| vm1a reference           | 5:50      | 5:37      | 2:37      |
+| vm1a 32b/tree(4)         | 5:50/0:65 | 5:53/0:51 | 2:37/0:22 |
+| vm1a 64b/tree(4)         | 5:27/1:23 | 4:27/0:50 | 1:53/0:15 |
+| vm1a 128b (SSE2)/tree(4) | 2:57/0:34 | 2:51/0:27 | 1:37/0:10 |
+| vm1a 256b (AVX2)/tree(4) | 1:31/0:28 | 1:25/0:21 | 0:34/0:07 |
+| vm2 32b/tree(4)          | -         | 0:36/0:06 | 0:17/0:02 |
+| vm2 64b/tree(4)          | -         | 0:29/0:04 | 0:12/0:02 |
+| vm2 128b (SSE2)/tree(4)  | -         | 0:17/0:03 | 0:10/0:01 |
+| vm2 256b (AVX2)/tree(4)  | -         | 0:09/0:02 | 0:03/0:01 |
 
 The --table method builds the micro address tables and gathers the statistics 
 about jumps to target micro addresses.
