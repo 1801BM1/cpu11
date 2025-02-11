@@ -58,6 +58,7 @@ enum plm_type {
 	PLM_TYPE_VM2_DEC,
 	PLM_TYPE_VM3_DEC,
 	PLM_TYPE_VM3_MAIN,
+	PLM_TYPE_T11_MAIN,
 };
 
 enum opt_type {
@@ -180,6 +181,7 @@ extern const struct plm_desc plm_desc_f11_cs0;
 extern const struct plm_desc plm_desc_f11_cs1;
 extern const struct plm_desc plm_desc_f11_cs2;
 extern const struct plm_desc plm_desc_f11_na_clr0;
+extern const struct plm_desc plm_desc_t11;
 
 extern int32_t cl_ab;
 extern int32_t cl_ae;

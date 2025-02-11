@@ -12,6 +12,7 @@ if exist .\vm3 call :proj vm3
 if exist .\lsi call :proj lsi
 if exist .\am4 call :proj am4
 if exist .\f11 call :proj f11
+if exist .\t11 call :proj t11
 if exist .\xen call :proj xen
 exit
 
@@ -41,6 +42,7 @@ if not exist .\%1\hdl\%2\sim\%3\	 	exit /b
 if exist .\%1\hdl\%2\sim\%3\rtl_work	 	rd  .\%1\hdl\%2\sim\%3\rtl_work /s /q
 if exist .\%1\hdl\%2\sim\%3\*.mif		del .\%1\hdl\%2\sim\%3\*.mif /s /q
 if exist .\%1\hdl\%2\sim\%3\*.hex		del .\%1\hdl\%2\sim\%3\*.hex /s /q
+if exist .\%1\hdl\%2\sim\%3\*.tmp		del .\%1\hdl\%2\sim\%3\*.tmp /s /q
 if exist .\%1\hdl\%2\sim\%3\*rtl_verilog.do	del .\%1\hdl\%2\sim\%3\*rtl_verilog.do /s /q
 exit /b
 

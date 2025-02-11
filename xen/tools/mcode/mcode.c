@@ -76,6 +76,9 @@ int plm_init(struct plm *plm, enum plm_type type)
 	case PLM_TYPE_VM3_MAIN:
 		desc = &plm_desc_vm3;
 		break;
+	case PLM_TYPE_T11_MAIN:
+		desc = &plm_desc_t11;
+		break;
 	default:
 		printf("mcode: unrecognized plm type %d\n", type);
 		assert(0);
@@ -409,7 +412,7 @@ static inline uint32_t plm_index_tree(const struct plm *plm, uint32_t value)
 #if PLM_M_TREE_BITS > 7
 	index |= (value >> plm->mt_bits[7]) & (1u << 7);
 #if PLM_M_TREE_BITS > 8
-#error "PLM_M_TREE_BITS exeeds 8"
+#error "PLM_M_TREE_BITS exceeds 8"
 #endif
 #endif
 #endif
@@ -711,6 +714,7 @@ mc_test_table(enum plm_type type, enum opt_type opt, const char *text)
 		break;
 	case PLM_TYPE_VM2_MAIN:
 	case PLM_TYPE_VM3_MAIN:
+	case PLM_TYPE_T11_MAIN:
 		op = cl_op < 0 ? 0 : ((uint32_t)cl_op << tpl.na_nb);
 		om = cl_om < 0 ? 0 : ((uint32_t)cl_om << tpl.na_nb);
 		break;
@@ -851,7 +855,9 @@ mc_test_count(enum plm_type type, enum opt_type opt, const char *text)
 {
 	static struct plm tpl;
 	uint64_t start, qm, qv;
-	uint32_t op, om, max, i, n;
+	uint32_t op, om, max, val, n, sum;
+	uint32_t adr, amx, ab, ae;
+
 	int ret;
 
 	printf("Minterm table output match counting, wait...\n");
@@ -863,35 +869,51 @@ mc_test_count(enum plm_type type, enum opt_type opt, const char *text)
 		exit(-1);
 
 	max = 1ul << tpl.in_nb;	/* input value limit */
+	amx = 1ul << tpl.na_nb; /* microaddress limit */
+	ab = cl_ab < 0 ? 0 : MIN(cl_ab, (int)amx);
+	ae = cl_ae < 0 ? amx : MIN(cl_ae, (int)amx);
 	qv = cl_qv < 0 ? 0 : (uint64_t)cl_qv;
 	qm = cl_qm < 0 ? (1ull << tpl.out_nb) - 1 : (uint64_t)cl_qm;
 	op = cl_op < 0 ? 0 : (uint32_t)cl_op;
 	om = cl_om < 0 ? 0 : (uint32_t)cl_om;
 
-	n = 0;
+	sum = 0;
+	qv &= qm;
+	op &= om;
 	start = mc_query_ms();
-	for (i = 0; i < max; i++) {
-		if ((i & om) == op) {
-			uint64_t sop;
+	for (adr = ab; adr < ae; adr++) {
+		n = 0;
+		for (val = adr; val < max; val += amx) {
+			if ((val & om) == op) {
+				uint64_t sop = plm_get(&tpl, val);
 
-			sop = plm_get(&tpl, i);
-			if ((sop & qm) == qv)
-				n++;
+				if ((sop & qm) == qv)
+					n++;
+			}
+		}
+		if (n) {
+			printf("%02X: %u/0x%X\n", adr, n, n);
+			sum += n;
 		}
 	}
 	start = mc_query_ms() - start;
-	printf("Elapsed %s: %" PRIu64 ".%03" PRIu64 " (%u/0x%X\n)",
-	       text, start / 1000, start % 1000, n, n);
+	printf("Elapsed %s: %" PRIu64 ".%03" PRIu64 " (%u/0x%X)\n",
+	       text, start / 1000, start % 1000, sum, sum);
 }
 
 static int mc_param_hex(char *s)
 {
 	int r = 0;
+	char *arg = s;
 
 	if (*s == 0) {
 		printf("mcode: empty parameter\n");
 		return -1;
 	}
+	/* Skip optional 0x prefix */
+	if (s[0] == '0' && (tolower(s[1]) == 'x'))
+		s += 2;
+
 	do {
 		char c = *s++;
 
@@ -909,7 +931,7 @@ static int mc_param_hex(char *s)
 			c -= 'A' - 10;
 			r = (r << 4) + c;
 		} else {
-			printf("mcode: invalid hex parameter: %s\n", s);
+			printf("mcode: invalid hex parameter: %s\n", arg);
 			return -1;
 		}
 		if (r >= UINT32_MAX/2) {
@@ -923,10 +945,22 @@ static int mc_param_hex(char *s)
 static int64_t mc_param_oct(char *s, int64_t limit)
 {
 	int r = 0;
+	char *arg = s;
 
 	if (*s == 0) {
 		printf("mcode: empty parameter\n");
 		return -1;
+	}
+
+	/* Override default octal radix with 0x prefix */
+	if (s[0] == '0' && (tolower(s[1]) == 'x')) {
+		r = mc_param_hex(s + 2);
+		if (r < 0 || r > limit) {
+			printf("mcode: octal parameter overflow: %llo\n",
+				(uint64_t)r);
+			return -1;
+		}
+		return r;
 	}
 	do {
 		char c = *s++;
@@ -939,7 +973,7 @@ static int64_t mc_param_oct(char *s, int64_t limit)
 			c -= '0';
 			r = (r << 3) + c;
 		} else {
-			printf("mcode: invalid octal parameter: %s\n", s);
+			printf("mcode: invalid octal parameter: %s\n", arg);
 			return -1;
 		}
 		if (r < 0 || r > limit) {
@@ -1083,6 +1117,10 @@ static int mc_proc_param(const char *p)
 		cl_type = PLM_TYPE_F11_CS2;
 		return 0;
 	}
+	if (!strcmp(b, "--t11")) {
+		cl_type = PLM_TYPE_T11_MAIN;
+		return 0;
+	}
 	eq = strchr(b, '=');
 	if (eq) {
 		eq++;
@@ -1137,11 +1175,12 @@ static void mc_cmd_line(int argc, char *argv[])
 		       "  --mterm - write table to file\n"
 		       "  --speed - performance test\n"
 		       "  --table - build address table\n"
+		       "  --count - count output pattern match\n"
 		       "  --32 --32t - select 32 bit operations (with tree)\n"
 		       "  --64 --64t - select 64 bit operations (with tree)\n"
 		       "  --128 --128t - select 128 bit operations (with tree)\n"
 		       "  --256 --256t - select 256 bit operations (with tree)\n"
-		       "  --vm1a (vm1g vm2 vm2d vm3 vm3d f11-x) - select matrix\n"
+		       "  --vm1a (vm1g vm2 vm2d vm3 vm3d f11-x t11) - select matrix\n"
 		       "  --ab=xxx --ae=xxx - optional address range in hex\n"
 		       "  --as=xxx --az=xxx - optional address set/zero mask\n"
 		       "  --op=oooooo --om=oooooo - opcode mask in octal\n"
@@ -1203,6 +1242,9 @@ static void mc_cmd_line(int argc, char *argv[])
 	case PLM_TYPE_F11_CS2:
 		strcpy(cl_text, "f11-2");
 		break;
+	case PLM_TYPE_T11_MAIN:
+		strcpy(cl_text, "t11");
+		break;
 	default:
 		printf("Unrecognized plm type\n");
 		exit(-1);
@@ -1244,7 +1286,7 @@ static void mc_cmd_line(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	printf("\r\nMicrocode matrix test utility (c) 1801BM1, 2020-2022\n");
+	printf("\r\nMicrocode matrix test utility (c) 1801BM1, 2020-2025\n");
 	mc_cmd_line(argc, argv);
 	mc_query_simd();
 

@@ -1,0 +1,2666 @@
+;
+; LSI-11 interrupt and exception test adopted for T-11:
+;
+;	- start at address 0
+;	- no bus timeout traps tests
+;	- trapa macro uses MARK instead of MFPT (000007)
+;
+;			IDENTIFICATION
+;			--------------
+;
+; PRODUCT CODE:		AC-8198C-MC
+; PRODUCT NAME:		CVKADC1	CSI-11 BSC INST
+; DATE CREATED:		AUG, 1978
+; PRODUCT DATE:		01-NOVEMBER-1978
+; MAINTAINER:		DIAGNOSTIC GROUP
+; AUTHOR:		AL LOSCHAK
+; REVISED BY:		M. MCNALLY JUNE	1976
+;			J. RICH	JULY 1978
+;
+; Copyright (c)	1975,1977,1978
+; Digital Equipment Corp., Maynard, Mass.
+;
+; This software	is furnished to	purchaser under	a license for use
+; on a single computer system and can be copied	with inclusion
+; of DEC's copyright notice only for use in such system, except
+; as may otherwise be provided in writing by DEC.
+;
+; The information in this document is subject to change	without
+; notice and should not	be construed as	a commitment by	Digital
+; Equipment Corporation.
+;
+; DEC assumes no responsibility	for the	use or reliability of
+; its software on equipment which is not supplied by DEC.
+;_____________________________________________________________________________
+;
+; 1.	Abstract
+;
+;	This is	a test of all operations and instructions that
+;	traps, oddities	of register 6, interrupts, the reset
+;	and wait instructions.
+;
+; 2.	Requirements
+; 2.1	Equipment
+;
+;	PDT-11 or LSI-11 standard computer with	an SLU	unit
+;	and 4K of memory. the clock must be disabled.
+;
+; 2.2	Storage
+; 2.2.1	Program	storage	- the routine uses 4k memory.
+;
+; 3.	Loading	procedure
+; 3.1	Method
+;
+;	Procedure for normal absolute tapes should be followed.
+;
+; 4.	Setup procedure
+;
+;	The program starts at 200.
+;	if it is desired to reset the pass count back to zero
+;	start at location 210.
+;	The clock must be disabled for this program to run correctly.
+;
+; 4.1	Switch register	bits
+;
+;	The operator has the following options by setting
+;	the software switch register (location 422)
+;
+;	bit 6=1	(100 octal) to suppress	testing	EIS and	FIS opcodes
+;		(70000-75037) for reserved instruction trapping
+;		in the last test of this diagnostic.
+;
+;	bit 5=1	(40 octal) if we want to suppress "end of pass"	typeout
+;
+;	bit 4=1	(20 octal) to suppress testing opcodes 75400-76777 for
+;		reserved instructions traps in the last	test of	this
+;		diagnostic.
+;
+;	bit 3=1	(10 octal) to suppress testing opcodes 170000-177777
+;		for reserved instructions traps	in the last test
+;		of this	diagnostic.
+;
+;	bit 2=1	(4 octal) to suppress testing opcodes 76030-76057
+;		(DIS reserved opcode space) nor	EIS opcodes for
+;		reserved instruction traps in the last test
+;		of this	diagnostic
+;
+;	bit 1=1	(2 octal) if there is no I/O device in the address space
+;		160000-167777. If this bit is set, this	address	area
+;		will be	checked	by test	70, expecting it to all	trap,
+;		or all not.
+;
+;		NOTE: this bit should normally be set when running
+;		on tim,	since it cannot	have peripherals in this
+;		address	area.
+;
+; 4.2	APT -- CPU options
+;
+;	When running under APT,	the don't size bit should be set
+;	($envm=200, or 240 to inhibit all typeouts) and	the CPU	options
+;	word ($cpuop) should be	setup to flag the presence or absence
+;	of EIS/FIS or DIS to indicate EIS/FIS present, set CPU options
+;	bits 6,7 (octal	300). To indicate DIS present, set CPU options
+;	bit 5 (octal 40). These	bits inhibit trap testing of their
+;	respective opcodes. The	same thing can be accomplished using
+;	the switch register as described in section 4.1. However, the
+;	don't size bit should still be set.
+;
+; 4.3	Program	and/or operator	action
+;
+;	- load program into memory (bottom 4K)
+;	- set the desired switch register bits,	if any
+;	- load address 200
+;	- start
+;
+;	The program will size for EIS/FIS and for DIS. To inhibit
+;	sizing,	set the	don't size bit (bit 7 of $envm (odd byte),
+;	i.e. $env,$envm=100000)
+;
+;	The program will print end of pass after the 1st iteration and
+;	then print it every 15 times: approximately 2 minutes.
+;
+; 5.	Operation procedure
+; 5.2	Subroutine abstracts
+;
+; 5.2.1	Trapcatcher
+;
+;	This is	a series of instructions designed to detect and
+;	isolate	unexpected traps and interrupts, that occur in the
+;	trap and interrupt vector area of memory.
+;
+;	The principle of this routine is: the vector entrance
+;	address	points to the next sequential word which will con-
+;	tain a halt (000000) (this location is also the	status
+;	word for that vector entrance, but this	will have no effect
+;	on it).
+;
+;	If a halt occurs in the	trap or	interrupt vector area,
+;	register six should be examined	to determine its contents,
+;	then use register six contents as an address to	determine
+;	the location the program was at, when the interrupt or
+;	trap occurred. (memory as specified by SP contains the
+;	PC of the instruction following	the instruction	where the
+;	trap occurred.
+;
+;	Also the contents of '$testn' contain the test number
+;	that it	was doing before it trapped.
+;
+; 5.3	Program	and/or operator	action
+;
+; 5.3.1	Loading	and starting at	200 starts the test. If
+;	an error is detected, there will be a halt,
+;
+; 6.	Errors
+;
+; 6.1	All errors will	cause a	halt.
+;	The PC+2 of the	halt instruction is printed
+;	on the console device by the LSI-11's u-ODT.
+;
+; 6.1.1	The program checks to see that the PC doesn't jump
+;	within the tests, by a sequence	count called '$tstn'
+;	this test is a sequential increment and	compare	count.
+;
+;	ex:	code
+;
+;	inc	@#$testn	; update test number
+;	cmp	#n, @#$testn	; sequence error?
+;	bne	some location	; branch to error halt on seq error
+;
+;	Important
+;	---------
+;	If an error is detected, it could be because of	two reasons:
+;		a) wrong test number
+;		b) error in the	present	test
+;
+;	----------------------------------------------------------
+;	The test sequence location "testn" should be checked first
+;	to see if it matches the present test.
+;	if it doesn't match : then the c(intents of this location
+;	tell you which test it was doing before	it halted.
+;	----------------------------------------------------------
+;
+; 6.2	Error recovery
+;
+;	On trap	errors - restart at starting address
+;
+; 7.	Restrictions
+; 7.1	Starting restriction
+;
+;	None
+;
+; 7.2	Operational restriction
+;
+;	None
+;
+; 8.	Miscellaneous
+;
+;	There is a test	that will check	that odd addressing
+;	will ignore bit	"0"
+;
+; 8.1	Execution time
+;
+;	for one	pass approximately 8 seconds: then it types
+;	"END OF PASS" approximately every 2 minutes.
+;
+; 9.	Program	description
+;
+;	This program checks that on all	trap operations	register
+;	6 is decremented the correct amount, that the correct
+;	PC is saved on the stack, that the old condition codes and
+;	priority are placed on the stack and that the new status and
+;	condition codes	are correct. Both the "trap" and "emt"
+;	trap instructions are tested to	see that all combinations will
+;	trap. Checked also are the rtt and the rti instructions	and that all
+;	restricted instructions	will trap. Verification	of the "bpt"
+;	instruction (00003) which is used for software debug routines: ODT,
+;	DDT is done.
+;
+;	Also, the trace	bit is checked to see if it causes a trap.
+;	special	checks are made	to see if bus error traps occur	on
+;	non-existent memory.
+;_____________________________________________________________________________
+;
+		HOEP	= 1			; halt on end-of-pass
+		MEMLIM	= 1			; != 0 to cut the invalid opcode loop
+		DATA8	= 1			; 8-bit bus
+;_____________________________________________________________________________
+;
+		.asect
+		.list	bin, loc
+		.nlist	md, cnd, mc
+		.list	me
+;_____________________________________________________________________________
+;
+		PC	= %7			;
+		SP	= %6			;
+		R5	= %5			;
+		R4	= %4			;
+		R3	= %3			;
+		R2	= %2			;
+		R1	= %1			;
+		R0	= %0			;
+						;
+		hlt	= halt			;
+		trap	= 104400		;
+		emt	= 104000		;
+		trt	= 3			;
+		itrap5	= 4			;
+		rtrap5	= 4			; reserved inst	and illegal addr
+		rtrap4	= 14			; for trace trap
+		rtrap3	= 30			; for emulator trap
+		rtrap2	= 20			; for iot trap
+		rtrap1	= 34			; for trap inst
+		ttcsr	= 177564		;
+		trcsr	= 177560		;
+		tps	= 177564		;
+		tpb	= 177566		;
+		bell	= 240			;
+		nop	= 240			;
+		trapa	= 006400		;
+		rtrap	= 10			;
+		illa	= 004700		;
+		illb	= 100			;
+		$tstnm	= $testn		;
+		$error	= $fatal		;
+;_____________________________________________________________________________
+;
+		.macro	vect, offset, adr, val	;
+		.	= offset		;
+	.if	nb, <adr>			;
+		.word	adr			;
+	.iff					;
+		.word	.+2			;
+	.endc					;
+	.if	nb, <val>			;
+		.word	val			;
+	.iff					;
+		.word	0			;
+	.endc					;
+		.endm				;
+;_____________________________________________________________________________
+;
+		.nlist
+		jmp	@#200			; T-11 entry
+		vect	4			;
+		vect	10			;
+		vect	14			;
+		vect	20			;
+		vect	24, 200			; power	fail entry
+		vect	30			;
+		vect	34			;
+		vect	40			;
+		vect	44, $etend, $endad	;
+		vect	50			;
+		vect	54			;
+		vect	60			;
+		vect	64, 340			;
+		vect	70			;
+		vect	74			;
+		vect	100			;
+		vect	104			;
+		vect	110			;
+		vect	114			;
+		vect	120			;
+		vect	124			;
+		vect	130			;
+		vect	134			;
+		vect	140			;
+		vect	144			;
+		vect	150			;
+		vect	154			;
+		vect	160			;
+		vect	164			;
+		vect	170			;
+		vect	174			;
+		.list				;
+;_____________________________________________________________________________
+;
+; Hooks	required by act11
+;
+;		. = 400				;
+;		.sbttl	ACT-11 hooks		;
+;						;
+;		$svpc=.				; save PC
+;		. = 46				;
+;		$endad				; 1) set loc.46	to address
+;						; of $endad in $eop
+;		. = 52				;
+;		.word	0			; 2) set loc.52	to zero
+;		. = $svpc			; restore PC
+;_____________________________________________________________________________
+;
+;		.sbttl	APT parameter block
+;
+; Set locations	24 and 44 as required for APT
+;
+;		.$x = .				; save current location
+;		. = 24				; set power fail to point to start
+;		200				; of program for APT start up
+;		. = 44				; point	to APT indirect	address	pntr.
+;		$apthdr				; point	to APT header block
+;		. = .$x				; reset	location counter
+;_____________________________________________________________________________
+;
+		. = 200				;
+		jmp	start			;
+		vect	204			;
+		. = 210				;
+		clr	@#$pass			; clear	the pass count
+		jmp	start			;
+		.nlist				;
+		vect	220			;
+		vect	224			;
+		vect	230			;
+		vect	234			;
+		vect	240			;
+		vect	244			;
+		vect	250			;
+		vect	254			;
+		vect	260			;
+		vect	264			;
+		vect	270			;
+		vect	274			;
+		vect	300			;
+		vect	304			;
+		vect	310			;
+		vect	314			;
+		vect	320			;
+		vect	324			;
+		vect	330			;
+		vect	334			;
+		vect	340			;
+		vect	344			;
+		vect	350			;
+		vect	354			;
+		vect	360			;
+		vect	364			;
+		vect	370			;
+		vect	374			;
+		.list				;
+;_____________________________________________________________________________
+;
+;		.sbttl	APT mailbox-etable
+;
+;		. = 400				;
+;		.even				;
+$mail:				;		; apt mailbox
+$msgty:		.word	0	; amsgty	; message type code
+$fatal:		.word	0	; afatal	; fatal	error number
+$testn:		.word	0	; atestn	; test number
+$pass:		.word	0	; apass		; pass count
+$devct:		.word	0	; adevct	; device count
+$unit:		.word	0	; aunit		; I/O unit number
+$msgad:		.word	0	; amsgad	; message address
+$msglg:		.word	0	; amsglg	; message length
+$etable:			;		; apt environment table
+$env:		.byte	0	; aenv		; environment byte
+$envm:		.byte	0	; aenvm		; environment mode bits
+$swreg:		.word	0	; aswreg	; apt switch register
+$uswr:		.word	0	; auswr		; user switches
+$cpuop:		.word	0	; acpuop	; cpu type, options
+						; bits 15-11=cpu type
+						;	11/04=01, 11/05=02
+						;	11/20=03, 11/40=04
+						;	11/45=05, 11/70=06
+						;	PDQ=07,	Q=10
+						; bit 10 - real	time clock
+						; bit 9	- floating point
+						; bit 8	- memory management
+$mams1:		.byte	0	; amams1	; high address,	m.s. byte
+$mtyp1:		.byte	0	; amtyp1	; mem. type,blk#1
+						; mem. type byte -- (high byte)
+						;	900 nsec core=001
+						;	300 nsec bipolar=002
+						;	500 nsec MOS=003
+$madr1:		.word	0	; amadr1	: high address,blk#1
+						; mem. last addr.=3 bytes
+						; this word and	low of "type" above
+$mams2:		.byte	0	; amams2	; high address ,m.s. byte
+$mtyp2:		.byte	0	; amtyp2	; mem. type ,blk#2
+$madr2:		.word	0	; amadr2	; mem .last address ,blk#2
+$mams3:		.byte	0	; amams3	; high address ,m.s .byte
+$mtyp3:		.byte	0	; amtyp3	; mem. type ,blk#3
+$madr3:		.word	0	; amadr3	; mem .last address ,blk#3
+$mams4:		.byte	0	; amams4	; high address ,m.s .byte
+$mtyp4:		.byte	0	; amtyp4	; mem. type ,blk#4
+$madr4:		.word	0	; amadr4	; mem.east address ,blk#4
+$etend:						;
+;
+; Setup	APT parameter block as defined in the APT-PDP11	diagnostic
+; interface spec
+;
+$apthd:
+$hibts:		.word	0			; two high bits	of 18 bit mailbox addr.
+$mbadr:		.word	$mail			; address of apt mailbox (bits 0-15)
+$tstm:		.word	10			; run time of longest test
+$pastm:		.word	15			; run time in secs. of 1st pass	on 1 unit (quick verify)
+$unitm:		.word	0			; additional run time (secs) of	a pass for each	additional unit
+		.word	$etend-$mail/2		; length mailbox-etable	(words)
+;_____________________________________________________________________________
+;
+		. = 500				;
+buff:		00000				;
+start:		mov	#pwrdwn, 24		; set up the power down	vector
+		mov	#340, 26		; set up power down priority
+		mov	#buff, SP		; set stack pointer
+		tstb	@#tps+1			; test odd byte	of console in case on a
+						; PDT-11. This will reswap comm	and console
+						; addresses back to normal in case on APT
+		jsr	R5,type			; type the title "CTKADX"
+		title				; "CVKADX"
+;_____________________________________________________________________________
+;
+begin:		mov	#-1 ,@#passpt		;
+restrt:		mov	#$msgty, R2		;
+		clr	$msgty			;
+		clr	$tstnm			;
+		clr	$error			;
+		jmp	tst1			;
+						;
+k1:		0				;
+k2:		0				;
+k3:		0				;
+k4:		0				;
+k5:		0				;
+k6:		0				;
+k7:		052525				;
+k10:		052400				;
+k11:		0				;
+k12:		0				;
+here:		0				;
+;_____________________________________________________________________________
+;
+; TEST 1 - auto	increment/decrement of SP for word and bytes
+;
+tst1:		inc	@#$testn		; update test number
+		cmp	#1, @#$testn		; sequence error?
+		bne	tst2-12			; br to	error halt on seq error
+r6tst:		clr	SP			;
+		movb	(SP)+, here		; SP should increment by two
+		cmp	SP, #2			;
+		beq	1$			;
+		mov	#1 , @#$fatal		; move to mailbox *** 1	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; SP did not auto increment by two
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 764
+1$:		mov	#1000, SP		;
+		movb	-(SP), here		; should decrement by two
+		cmp	SP, #776		;
+		beq	2$			;
+		mov	#2, @#$fatal		; move to mailbox *** 2	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; SP did not auto decrement by 2
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 750
+2$:		clr	SP			;
+		movb	(SP)+, (SP)+		; doubles auto increment of SP
+		cmp	SP, #4			;
+		beq	3$			;
+		mov	#3, @#$fatal		; move to mailbox *** 3	****
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	auto increment of SP
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 736
+3$:		clr	SP			;
+		clr	R4			;
+		cmpb	(SP)+, (R4)+		; test increment of SP
+		cmp	SP, #2			;
+		beq	4$			;
+		mov	#4, @#$fatal		; move to mailbox *** 4	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	increment of SP
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 723
+4$:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		; test increment of SP
+		cmp	SP, #2			;
+		beq	5$			;
+		mov	#5, @#$fatal		; move to mailbox *** 5	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	increment of SP
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 710
+5$:		clr	SP			;
+		clr	R4			;
+		cmpb	(SP)+, (R4)+		; test increment of R4
+		cmp	R4, #1			;
+		beq	6$			;
+		mov	#6, @#$fatal		; move to mailbox *** 6	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	increment of R4
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 675
+6$:		clr	SP			;
+		clr	R4			;
+		cmpb	(R4)+, (SP)+		; test increment of R4
+		cmp	R4, #1			;
+		beq	7$			;
+		mov	#7, @#$fatal		; move to mailbox *** 7	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	increment of R4
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 662
+7$:		mov	#1000, SP		;
+		cmpb	-(SP), here		; test decrement of SP
+		cmp	#776, SP		;
+		beq	tst2			;
+		mov	#10, @#$fatal		; move to mailbox *** 10 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	decrement of SP, or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 646
+;_____________________________________________________________________________
+;
+; TEST 2 - transfer of byte using SP
+;
+tst2:		inc	@#$testn		; update test number
+		cmp	#2, @#$testn		; sequence error?
+		bne	tst3-12			; br to	error halt on seq error
+		mov	#123456, k5		;
+		mov	#050505, k1		;
+		mov	#k1, R5			; R5=(050505)k1
+		mov	#k5, SP			; SP=(123456)k5
+		movb	(SP)+, (R5)+		; low .byte of SP to R5
+		cmp	#050456	,k1		;
+		beq	1$			;
+		mov	#11, @#$fatal		; move to mailbox *** 11 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; false	transfer of .byte
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#123456, k5		;
+		mov	#050505, k1		;
+		mov	#k1, R5			; R5(050505)k1
+		mov	#k6, SP			; SP(123456)k5
+		movb	-(SP), (R5)+		; low .byte of SP to rs	(decrement)
+		cmp	k1 ,#050456		;
+		beq	2$			;
+		mov	#12, @#$fatal		; move to mailbox *** 12 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; false	SP .byte transfer
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 727
+2$:		mov	#123456, k1		;
+		mov	#050505	,k5		;
+		mov	#k1, R5			; (123456)
+		mov	#k5, SP			; (050505)
+		movb	(R5)+, (SP)+		; low of R5 to low of SP
+		cmp	#050456, k5		;
+		beq	3$			;
+		mov	#13, @#$fatal		; move to mailbox *** 13 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; false	SP .byte transfer
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 703
+3$:		mov	#123456, k1		;
+		mov	#050505	,k5		;
+		mov	#k1+1, R5		;
+		mov	#k5, SP			; 050505
+		movb	(R5)+, (SP)+		; high of R5 to	low of SP
+		cmp	k5 ,#050647		;
+		beq	4$			;
+		mov	#14, @#$fatal		; move to mailbox *** 14 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; false	SP .byte transfer
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 657
+4$:		mov	#123456, k1		;
+		mov	#050505, k5		;
+		mov	#k1+1, R5		; R5-123456 - odd address
+		mov	#k5, SP			; SP-050505 - even address
+		movb	(SP)+, (R5)+		; low of SP to high of R5
+		cmp	#042456, k1		;
+		beq	tst3			;
+		mov	#15, @#$fatal		; move to mailbox *** 15 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; failed low of	R6 to high of R5
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 633
+;_____________________________________________________________________________
+;
+; TEST 3 - byte	operation with sequential odd/even address
+;
+tst3:		inc	@#$testn		; update test number
+		cmp	#3, @#$testn		; sequence error?
+		bne	tst4-12			; br to	error halt on seq error
+		cmpb	k7, k7+1		; .same	.word low to high
+		beq	1$			;
+		mov	#16, @#$fatal		; move to mailbox *** 16 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; should compare low to	high
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 766
+						;
+1$:		cmpb	k7+1, k7		; compare odd to even same .word
+		beq	2$			;
+		mov	#17, @#$fatal		; move to mailbox *** 17 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; odd to .even .byte failure
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 755
+						;
+2$:		cmpb	k10+1, k7		; sequential .bytes
+						; different .words
+		beq	tst4			;
+		mov	#20, @#$fatal		; move to mailbox *** 20 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; odd to .even failed
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 744
+		cmpb	k10, k6			;
+		beq	3$			;
+		mov	#21, @#$fatal		; move to mailbox *** 21 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; even to even failed
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 733
+3$:		cmpb	k7+1, k10+1		;
+		beq	4$			;
+		mov	#22, @#$fatal		; move to mailbox *** 22 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; odd to odd failed
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 72?
+4$:		cmpb	k10, k10+1		;
+		bne	5$			;
+		mov	#23, @#$fatal		; move to mailbox *** 23 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; low to high in same .word failed
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 711
+5$:		cmpb	k10+1, k10+1		;
+		beq	6$			;
+		mov	#24, @#$fatal		; move to mailbox *** 24 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; high to low in same .word failed
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 700
+6$:		cmpb	k10, k7+1		;
+		bne	tst4			;
+		mov	#25, @#$fatal		; move to mailbox *** 25 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; even to odd failed or	wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 667
+;_____________________________________________________________________________
+;
+; TEST 4 - the cc bits
+;
+tst4:		inc	@#$testn		; update test number
+		cmp	#4, @#$testn		; sequence error?
+		bne	tst5-12			; br to	error halt on seq error
+		scc				; set status
+		clr	status			; clear	status
+		mtps	status			;
+		bcc	1$			;
+		mov	#26, @#$fatal		; move to mailbox *** 26 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	clear
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 764
+1$:		bvc	2$			;
+		mov	#27, @#$fatal		; move to mailbox *** 27 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	clear
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 756
+2$:		bne	3$			;
+		mov	#30, @#$fatal		; move to mailbox *** 30 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	clear
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 750
+3$:		bpl	4$			;
+		mov	#31, @#$fatal		; move to mailbox *** 31 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	clear
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 742
+4$:		ccc				; clear	condition codes
+		mfps	status			;
+		bis	#17, status		; set status to	ones
+		mtps	status			;
+		bcs	5$			;
+		mov	#32, @#$fatal		; move to mailbox *** 32 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		bvs	6$			;
+		mov	#33, @#$fatal		; move to mailbox *** 33 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 716
+6$:		beq	7$			;
+		mov	#34, @#$fatal		; move to mailbox *** 34 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 710
+7$:		bmi	tst5			;
+		mov	#35, @#$fatal		; move to mailbox *** 35 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set, or	wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 702
+;_____________________________________________________________________________
+;
+; TEST 5 - that	a trap occurs on a reserved instruction
+;
+tst5:		inc	@#$testn		; update test number
+		cmp	#5, @#$testn		; sequence error?
+		bne	tst6-12			; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reta, rtrap		; return location
+		trapa				; reserved instruction,	should trap
+		mov	#36, @#$fatal		; move to mailbox *** 36 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trap or wrong	$testn
+						; to scope replace halt	w/ 240
+reta:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 6 - decrement of	stack pointer on a trap	operation
+;
+tst6:		inc	@#$testn		; update test number
+		cmp	#6, @#$testn		; sequence error?
+		bne	tst7-12			; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retb, rtrap		; return pointer
+		trapa				; reserved instruction
+retb:		cmp	SP,#buff-4		; test decrement of SP
+		beq	tst7			;
+		mov	#37, @#$fatal		; move to mailbox *** 37 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 7 - that	proper PC is saved
+;
+tst7:		inc	@#$testn		; update test number
+		cmp	#7, @#$testn		; sequence error?
+		bne	tst10-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retc, rtrap		; return from trap pointer
+instc:		trapa				; trap on this instruction
+retc:		cmp	#., buff-4		; check	for incremented	PC
+		beq	tst10			;
+		mov	#40, @#$fatal		; move to mailbox *** 40 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 10 - that "old" status and priority are placed on stack
+;
+tst10:		inc	@#$testn		; update test number
+		cmp	#10, @#$testn		; sequence error?
+		bne	tst11-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd, rtrap		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		trapa				; trap
+						;
+retd:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#41, @#$fatal		; move to mailbox *** 41 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#rete, rtrap		; set up
+		mov	#357, status		; set priority
+		mtps	status			;
+		scc				; set status
+		trapa				; trap
+						;
+rete:		cmp	buff-2,	#357		; compares status on stack
+		beq	tst11			;
+		mov	#42, @#$fatal		; move to mailbox *** 42 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 726
+;_____________________________________________________________________________
+;
+; TEST 11 - that "new" status is correct
+;
+tst11:		inc	@#$testn		; update test number
+		cmp	#11, @#$testn		; sequence error?
+		bne	rstp1			; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf, rtrap		;
+		clr	rtrap+2			; clear	future priority	and cc
+		trapa				;
+						;
+retf:		bpl	1$			;
+		mov	#43, @#$fatal		; move to mailbox *** 43 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#44, @#$fatal		; move to mailbox *** 44 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#45, @#$fatal		; move to mailbox *** 45 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#46, @#$fatal		; move to mailbox *** 46 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		bit	#340, status		; test priority
+		beq	5$			;
+		mov	#47, @#$fatal		; move to mailbox *** 47 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		mov	#buff, SP		;
+		mov	#retg, rtrap		;
+		mov	#357, rtrap+2		; set new "cc" and priority
+		trapa				; trap here
+						;
+retg:		bmi	1$			;
+		mov	#50, @#$fatal		; move to mailbox *** 50 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 705
+1$:		beq	2$			;
+		mov	#51, @#$fatal		; move to mailbox *** 51
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 677
+2$:		bvs	3$			;
+		mov	#52, @#$fatal		; move to mailbox *** 52 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 671
+3$:		bcs	4$			;
+		mov	#53, @#$fatal		; move to mailbox *** 53 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 663
+4$:		mfps	status			;
+		mov	status,	SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	rst1			;
+						;
+rstp1:		mov	#54, @#$fatal		; move to mailbox *** 54 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 645
+rst1:		mov	#12, 10			;
+		clr	12			;
+;_____________________________________________________________________________
+;
+; TEST 12 - that a trap	occures	for a "trap" instruction
+;
+tst12:		inc	@#$testn		; update test number
+		cmp	#12, @#$testn		; sequence error?
+		bne	tst13-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reta1,	rtrap1		; return location
+		trap				; reserved instruction,	should trap
+		mov	#55, @#$fatal		; move to mailbox *** 55 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trap,or wrong	$tesn
+						; to scope replace halt	w/ 240
+reta1:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 13 - decrement of stack pointer on a trap operation
+;
+tst13:		inc	@#$testn		; update test number
+		cmp	#13, @#$testn		; sequence error?
+		bne	tst14-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retb1,	rtrap1		; return pointer
+		trap				; reserved instruction
+retb1:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst14			;
+		mov	#56, @#$fatal		; move to mailbox *** 56 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 14 - that proper	PC is saved
+;
+tst14:		inc	@#$testn		; update test number
+		cmp	#14, @#$testn		; sequence error?
+		bne	tst15-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retc1,	rtrap1		; return from trap pointer
+		trap				; trap on this instruction
+retc1:		cmp	#., buff-4		; check	incremented PC
+		beq	tst15			;
+		mov	#57, @#$fatal		; move to mailbox *** 57 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC,	or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 15 - that "old" status and priority are placed on stack
+;
+tst15:		inc	@#$testn		; update test number
+		cmp	#15, @#$testn		; sequence error?
+		bne	tst16-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd1,	rtrap1		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		trap				; trap
+						;
+retd1:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#60, @#$fatal		; move to mailbox *** 60 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#rete1,	rtrap1		; set up
+		mov	#357,status		; set priority
+		mtps	status			;
+		trap				; set cc
+						;
+rete1:		cmp	buff-2,	#357		; compares status on stack
+		beq	tst16			;
+		mov	#61, @#$fatal		; move to mailbox *** 61 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 727
+;_____________________________________________________________________________
+;
+; TEST 16 - that "new" status is correct
+;
+tst16:		inc	@#$testn		; update test number
+		cmp	#16, @#$testn		; sequence error?
+		bne	tst17-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf1,	rtrap1		;
+		clr	rtrap1+2		; clear	future priority	and cc
+		trap				;
+						;
+retf1:		bpl	1$			;
+		mov	#62, @#$fatal		; move to mailbox *** 62 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#63, @#$fatal		; move to mailbox *** 63 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	clear'd
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#64, @#$fatal		; move to mailbox *** 64 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#65, @#$fatal		; move to mailbox *** 65 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		bit	#340, status		; test priority
+		beq	5$			;
+		mov	#66, @#$fatal		; move to mailbox *** 66 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		mov	#buff, SP		;
+		mov	#retg1,	rtrap1		;
+		mov	#357, rtrap1+2		; set nww "cc" and priority
+		trap				; trap here
+						;
+retg1:		bmi	1$			;
+		mov	#67, @#$fatal		; move to mailbox *** 67 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 705
+1$:		beq	2$			;
+		mov	#70, @#$fatal		; move to mailbox *** 70 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 677
+2$:		bvs	3$			;
+		mov	#71, @#$fatal		; move to mailbox *** 71 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 671
+3$:		bcs	4$			;
+		mov	#72, @#$fatal		; move to mailbox *** 72 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 663
+4$:		mfps	status			;
+		mov	status,	SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst17			;
+		mov	#73, @#$fatal		; move to mailbox *** 73 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 645
+;_____________________________________________________________________________
+;
+; TEST 17 - that all combination of "trap" will	trap
+;
+tst17:		inc	@#$testn		; update test number
+		cmp	#17, @#$testn		; sequence error?
+		bne	rb1aa			; br to	error halt on seq error
+		mov	#trap, rb1		; initialize base trap instruction
+		mov	#ra1, 34		; return from trap to ra1
+rc1:		mov	#buff, SP		; set up stack pointer
+rb1:		trap				; trap inst will be
+						; modified to trap+377
+						;
+rb1aa:		mov	#74, @#$fatal		; move to mailbox *** 74 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; previous inst	failed to trap
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+ra1:		inc	rb1			;
+		cmp	#104777, rb1		; .trap+377 to upper limit
+		bhis	rc1			; have we tested all
+		mov	#36, 34			;
+		clr	36			;
+;_____________________________________________________________________________
+;
+; TEST 20 - that a trap	occures	on an "iot" instruction
+;
+tst20:		inc	@#$testn		; update test number
+		cmp	#20, @#$testn		; sequence error?
+		bne	tst21-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reta2,	rtrap2		; return location
+		iot				; reserve instruction, should trap
+		mov	#75, @#$fatal		; move to mailbox *** 75 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; iot did not trap or wrong $testn
+						; to scope replace halt	w/ 240
+reta2:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 21 - decrement of stack pointer on a trap operation
+;
+tst21:		inc	@#$testn		; update test number
+		cmp	#21, @#$testn		; sequence error?
+		bne	tst22-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retb2,	rtrap2		; return pointer
+		iot				; reserved instruction
+retb2:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst22			;
+		mov	#76, @#$fatal		; move to mailbox *** 76 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 22 - that proper	PC is saved
+;
+tst22:		inc	@#$testn		; update test number
+		cmp	#22, @#$testn		; sequence error?
+		bne	tst23-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retc2,	rtrap2		; return from trap pointer
+		iot				; trap on this instruction
+retc2:		cmp	#., buff-4		; check	for incremented	PC
+		beq	tst23			;
+		mov	#77, @#$fatal		; move to mailbox ++++++v 77 ++*++**
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 23 - that "old" status and priority are placed on stack
+;
+tst23:		inc	@#$testn		; update test number
+		cmp	#23, @#$testn		; sequence error?
+		bne	tst24-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd2,	rtrap2		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		iot				; trap
+retd2:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#100, @#$fatal		; move to mailbox *** 100 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#rete2,	rtrap2		; set up
+		mov	#357, status		; set priority
+		mtps	status			;
+		scc				; set cc
+		iot				; trap
+rete2:		cmp	buff-2,	#357		; compares status on stack
+		beq	tst24			;
+		mov	#101, @#$fatal		; move to mailbox *** 101 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 726
+;_____________________________________________________________________________
+;
+; TEST 24 - that new status is correct
+;
+tst24:		inc	@#$testn		; update test number
+		cmp	#24, @#$testn		; sequence error?
+		bne	stp			; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf2,	rtrap2		;
+		clr	rtrap2+2		; clear	future priority	and cc
+		iot				;
+retf2:		bpl	1$			;
+		mov	#102, @#$fatal		; move to mailbox *** 102 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#103, @#$fatal		; move to mailbox *** 103 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#104, @#$fatal		; move to mailbox *** 104 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#105, @#$fatal		; move to mailbox *** 105 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		bit	#340, status		; test priority
+		beq	5$			;
+		mov	#106, @#$fatal		; move to mailbox *** 106 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		mov	#buff, SP		;
+		mov	#retg2,	rtrap2		;
+		mov	#357, rtrap2+2		; set new "cc" and priority
+		iot				; trap here
+retg2:		bmi	1$			;
+		mov	#107, @#$fatal		; move to mailbox *** 107 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 705
+1$:		beq	2$			;
+		mov	#110, @#$fatal		; move to mailbox *** 110 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 677
+2$:		bvs	3$			;
+		mov	#111, @#$fatal		; move to mailbox *** 111 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 671
+3$:		bcs	4$			;
+		mov	#112, @#$fatal		; move to mailbox *** 112 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 663
+4$:		mfps	status			;
+		mov	status,	SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	stpa			;
+stp:		mov	#113, @#$fatal		; move to mailbox *** 113 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 645
+stpa:		mov	#22,	20		;
+		clr	22			;
+;_____________________________________________________________________________
+;
+; TEST 25 - that trap occurs on	an emt restricted instruction
+;
+tst25:		inc	@#$testn		; update test number
+		cmp	#25, @#$testn		; sequence error?
+		bne	tst26-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reta3,	rtrap3		; return location
+		emt				; reserve instruction, should trap
+		mov	#114, @#$fatal		; move to mailbox *** 114 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; emt did not trap,or wrong $testn
+						; to scope replace halt	w/ 240
+reta3:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 26 - decrement of stack pointer on a trap operation
+;
+tst26:		inc	@#$testn		; update test number
+		cmp	#26, @#$testn		; sequence error?
+		bne	tst27-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retb3,	rtrap3		; return pointer
+		emt				; reserved instruction
+retb3:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst27			;
+		mov	#115, @#$fatal		; move to mailbox *** 115 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 27 - that proper	PC is saved
+;
+tst27:		inc	@#$testn		; update test nlmber
+		cmp	#27, @#$testn		; sequence error?
+		bne	tst30-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retc3,	rtrap3		; return from trap pointer
+		emt				; trap on this instruction
+retc3:		cmp	#. ,buff-4		; check	for incremented	PC
+		beq	tst30			;
+		mov	#116, @#$fatal		; move to mailbox *** 116 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 30 - that "old" status and priority are placed on stack
+;
+tst30:		inc	@#$testn		; update test number
+		cmp	#30, @#$testn		; sequence error?
+		bne	tst31-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd3,	rtrap3		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		emt				; trap
+retd3:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#117, @#$fatal		; move to mailbox *** 117 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#rete3,	rtrap3		; set up
+		mov	#357, status		; set priority
+		mtps	status			;
+		scc				; set cc
+		emt				; trap
+rete3:		cmp	buff-2,	#357		; compares status on stack
+		beq	tst31			;
+		mov	#120, @#$fatal		; move to mailbox *** 120 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 726
+;_____________________________________________________________________________
+;
+; TEST 31 - that "new" status is correct
+;
+tst31:		inc	@#$testn		; update test number
+		cmp	#31, @#$testn		; sequence error?
+		bne	tst32-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf3,	rtrap3		;
+		clr	rtrap3+2		; clear	future priority	and cc
+		emt				;
+						;
+retf3:		bpl	1$			; test for "cc"	cleared
+		mov	#121, @#$fatal		; move to mailbox *** 121 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#122, @#$fatal		; move to mailbox *** 122 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#123, @#$fatal		; move to mailbox *** 123 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared.
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#124, @#$fatal		; move to mailbox *** 124 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		bit	#340, status		; test priority
+		beq	5$			;
+		mov	#125, @#$fatal		; move to mailbox *** 125 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		mov	#buff, SP		;
+		mov	#retg3,	rtrap3		;
+		mov	#357, rtrap3+2		; set new "cc" and priority
+		emt				; trap here
+retg3:		bmi	1$			;
+		mov	#126, @#$fatal		; move to mailbox *** 126 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 705
+1$:		beq	2$			;
+		mov	#127, @#$fatal		; move to mailbox *** 127 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 677
+2$:		bvs	3$			;
+		mov	#130, @#$fatal		; move to mailbox *** 130 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 671
+3$:		bcs	4$			;
+		mov	#131, @#$fatal		; move to mailbox *** 131 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 663
+4$:		mfps	status			;
+		mov	status,	SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	tst32			;
+		mov	#132, @#$fatal		; move to mailbox *** 132 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 645
+;_____________________________________________________________________________
+;
+; TEST 32 - that all combination of emt	will cause a trap
+;
+tst32:		inc	@#$testn		; update test number
+		cmp	#32, @#$testn		; sequence error?
+		bne	rbbb			; br to	error halt on seq error
+		mov	#emt, rb		; initialize base emt instruction
+		mov	#ra, 30			; return from trap to ra
+rc:		mov	#buff, SP		; set up stack pointer
+rb:		emt				; trap inst. will be modified to emt+377
+rbbb:		mov	#133, @#$fatal		; move to mailbox *** 133 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; previous inst	failed to trap
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+ra:		inc	rb			;
+		cmp	#104377, rb		; emt+377 to emt?
+		bhis	rc			; have we tested all
+		mov	#32, 30			;
+		clr	32			; halt
+;_____________________________________________________________________________
+;
+; TEST 33 - that a trap	occures	on an "bpt" instruction
+;
+tst33:		inc	@#$testn		; update test number
+		cmp	#33, @#$testn		; sequence error?
+		bne	tst34-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reta4,	rtrap4		; return location
+		trt				; reserved instruction,	should trap
+		mov	#134, @#$fatal		; move to mailbox *** 134 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trap,or wrong	$testn
+						; to scope replace halt	w/ 240
+reta4:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 34 - decrement of stack pointer on a trap operation
+;
+tst34:		inc	@#$testn		; update test number
+		cmp	#34, @#$testn		; sequence error?
+		bne	tst35-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retb4,	rtrap4		; return pointer
+		trt				; reserved instruction
+retb4:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst35			;
+		mov	#135, @#$fatal		; move to mailbox *** 135 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 35 - that proper	PC is saved
+;
+tst35:		inc	@#$testn		; update test number
+		cmp	#35, @#$testn		; sequence error?
+		bne	tst36-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retc4,	rtrap4		; return from trap pointer
+		trt				; trap on this instruction
+retc4:		cmp	#. ,buff-4		; check	for incremented	PC
+		beq	tst36			;
+		mov	#136, @#$fatal		; move to mailbox *** 136 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 36 - that "old" status and priority are placed on stack
+;
+tst36:		inc	@#$testn		; update test number
+		cmp	#36, @#$testn		; sequence error?
+		bne	tst37-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd4,	rtrap4		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		trt				; trap
+retd4:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#137, @#$fatal		; move to mailbox *** 137 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#rete4,	rtrap4		; set up
+		mov	#357, status		; set priority
+		mtps	status			;
+		scc				; set-set cc
+		trt				; trap
+rete4:		cmp	buff -2	,#357		; compares status on stack
+		beq	tst37			;
+		mov	#140, @#$fatal		; move to mailbox *** 140 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 726
+;_____________________________________________________________________________
+;
+; TEST 37 - that "new" status is correct
+;
+tst37:		inc	@#$testn		; update test number
+		cmp	#37, @#$testn		; sequence error?
+		bne	rstp2			; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf4,	rtrap4		;
+		clr	rtrap4+2		; clear	future priority	and cc
+		trt				;
+retf4:		bpl	1$			;
+		mov	#141, @#$fatal		; move to mailbox *** 141 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#142, @#$fatal		; move to mailbox *** 142 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#143, @#$fatal		; move to mailbox *** 143 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#144, @#$fatal		; move to mailbox *** 144 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		bit	#340, status		; test priority
+		beq	5$			;
+		mov	#145, @#$fatal		; move to mailbox *** 145 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		mov	#buff, SP		;
+		mov	#retg4,	rtrap4		;
+		mov	#357, rtrap4+2		; set new "cc" and priority
+		trt				; trap here
+retg4:		bmi	1$			;
+		mov	#146, @#$fatal		; move to mailbox *** 146 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 705
+1$:		beq	2$			;
+		mov	#147, @#$fatal		; move to mailbox *** 147 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 677
+2$:		bvs	3$			;
+		mov	#150, @#$fatal		; move to mailbox *** 150 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 671
+3$:		bcs	4$			;
+		mov	#151, @#$fatal		; move to mailbox *** 151 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 663
+4$:		mfps	status			;
+		mov	status,	SP		;
+		bic	#17, SP			;
+		cmp	#340, SP		;
+		beq	rst2			;
+rstp2:		mov	#152, @#$fatal		; move to mailbox *** 152 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 645
+rst2:		mov	#16, 14			;
+		clr	16			;
+;_____________________________________________________________________________
+;
+; PDP-11 illegal and address instruction test all instructions
+; that are reserved should trap	to location 4, and the PC that
+; points to the	trapping instruction should be placed on the stack
+;_____________________________________________________________________________
+;
+; TEST 40  - that a trap occurs	on an illegal instruction
+;
+tst40:		inc	@#$testn		; update test number
+		cmp	#40, @#$testn		; sequence error?
+		bne	tst41-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reta5,	rtrap5		; return location
+		jmp	R0			; illegal	instruction, should trap
+		mov	#153, @#$fatal		; move to mailbox *** 153 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trap or wrong	$testn
+						; to scope replace halt	w/ 240
+reta5:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 41 - decrement of stack pointer on trap operation
+;
+tst41:		inc	@#$testn		; update test number
+		cmp	#41, @#$testn		; sequence error?
+		bne	tst42-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retb5,	rtrap5		; return pointer
+		jmp	R0			; reserved instruction
+retb5:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst42			;
+		mov	#154, @#$fatal		; move to mailbox *** 154 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 42  - that proper PC is saved
+;
+tst42:		inc	@#$testn		; update test number
+		cmp	#42, @#$testn		; sequence error?
+		bne	tst43-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retc5,	rtrap5		; return from trap pointer
+		jmp	R0			; trap on this instruction
+retc5:		cmp	#., buff-4		; check	for incremented	PC
+		beq	tst43			;
+		mov	#155, @#$fatal		; move to mailbox *** 155 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 43 - that "old" status and priority are placed on stack
+;
+tst43:		inc	@#$testn		; update test number
+		cmp	#43, @#$testn		; sequence error?
+		bne	tst44-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retd5,	rtrap5		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		jmp	R0			; trap
+						;
+retd5:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#156, @#$fatal		; move to mailbox *** 156 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#rete5,	rtrap5		; set up
+		mov	#357, status		; set priority
+		mtps	status			;
+		scc				; set cc
+		jmp	R0			; trap
+						;
+rete5:		cmp	buff-2,	#357		; compares status on stack
+		beq	tst44			;
+		mov	#157, @#$fatal		; move to mailbox *** 157 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 726
+;_____________________________________________________________________________
+;
+; TEST 44 - that "new" status is correct
+;
+tst44:		inc	@#$testn		; update test number
+		cmp	#44, @#$testn		; sequence error?
+		bne	tst45-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retf5,	rtrap5		;
+		clr	rtrap5+2		; clear	future priority	and cc
+		jmp	R0			;
+						;
+retf5:		bpl	1$			;
+		mov	#160, @#$fatal		; move to mailbox *** 160 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#161, @#$fatal		; move to mailbox *** 161 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#162, @#$fatal		; move to mailbox *** 162 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#163, @#$fatal		; move to mailbox *** 163 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		bit	#357, status		; test priority
+		beq	5$			;
+		mov	#164, @#$fatal		; move to mailbox *** 164 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+5$:		mov	#buff, SP		;
+		mov	#retg5,	rtrap5		;
+		mov	#357, rtrap5+2		; set new "cc" and priority
+		jmp	R0			; trap here
+						;
+retg5:		bmi	1$			;
+		mov	#165, @#$fatal		; move to mailbox *** 165 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 705
+1$:		beq	2$			;
+		mov	#166, @#$fatal		; move to mailbox *** 166 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 677
+2$:		bvs	3$			;
+		mov	#167, @#$fatal		; move to mailbox *** 167 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 671
+3$:		bcs	4$			;
+		mov	#170, @#$fatal		; move to mailbox *** 170 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 663
+4$:		mfps	status			;
+		mov	status,	SP		;
+		cmp	#357, SP		;
+		beq	tst45			;
+		mov	#171, @#$fatal		; move to mailbox *** 171 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 647
+;_____________________________________________________________________________
+;
+; TEST 45 - that a trap	occurs on all illegal instruction
+;
+tst45:		inc	@#$testn		; update test number
+		cmp	#45, @#$testn		; sequence error?
+		bne	tst46-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#reth5,	rtrap5		; return location
+		jsr	R0, R0			; reserved instruction,	should trap
+		mov	#172, @#$fatal		; move to mailbox *** 172 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trap or wrong	$testn
+						; to scope replace halt	w/ 240
+reth5:						; and replace next inst	w/ 764
+;_____________________________________________________________________________
+;
+; TEST 46 - decrement of stack pointer on a trap operation
+;
+tst46:		inc	@#$testn		; update test number
+		cmp	#46, @#$testn		; sequence error?
+		bne	tst47-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retj, rtrap5		; return pointer
+		jsr	R0, R0			; reserved instruction
+retj:		cmp	SP, #buff-4		; test decrement of SP
+		beq	tst47			;
+		mov	#173, @#$fatal		; move to mailbox *** 173 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; not decremented two words
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+;_____________________________________________________________________________
+;
+; TEST 47 - that proper	PC is saved
+;
+tst47:		inc	@#$testn		; update test number
+		cmp	#47, @#$testn		; sequence error?
+		bne	tst50-12		; br to	error halt on seq error
+		mov	#buff, SP		; stack	pointer	setup
+		mov	#retk, rtrap5		; return from trap pointer
+instk:		jsr	R0, R0			; trap on this instruction
+retk:		cmp	#instk+2, buff-4	; check	for incremented	PC
+		beq	tst50			;
+		mov	#174, @#$fatal		; move to mailbox *** 174 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect PC or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 760
+;_____________________________________________________________________________
+;
+; TEST 50  - that "old"	status and priority are	placed on stack
+;
+tst50:		inc	@#$testn		; update test number
+		cmp	#50, @#$testn		; sequence error?
+		bne	tst51-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up
+		mov	#retl, rtrap5		; set up
+		clr	status			; clear	status and priority
+		mtps	status			;
+		ccc				;
+		jsr	R0, R0			; trap
+						;
+retl:		cmp	buff-2,	#0		; test that old	status
+		beq	1$			; went to stack
+		mov	#175, @#$fatal		; move to mailbox *** 175 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+1$:		mov	#buff, SP		; set up
+		mov	#retm, rtrap5		; set up
+		mov	#357, status		; set priority
+		mtps	status			;
+		scc				; set cc
+		jsr	R0, R0			; trap
+						;
+retm:		cmp	buff-2,	#357		; compares status on stack
+		beq	tst51			;
+		mov	#176, @#$fatal		; move to mailbox *** 176 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; incorrect status on stack
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 726
+;_____________________________________________________________________________
+;
+; TEST 51 that	'new'' status is	correct
+;
+tst51:		inc	@#$testn		; update test number
+		cmp	#51, @#$testn		;.sequence error?
+		bne	stp1			; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retn, rtrap5		;
+		clr	rtrap5+2		; clear	future priority	and cc
+		jsr	R0,R0			;
+						;
+retn:		bpl	1$			; test for C cleared
+		mov	#177, @#$fatal		; move to mailbox *** 177 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 761
+1$:		bne	2$			;
+		mov	#200, @#$fatal		; move to mailbox *** 200 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 753
+2$:		bvc	3$			;
+		mov	#201, @#$fatal		; move to mailbox *** 201 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 745
+3$:		bcc	4$			;
+		mov	#202, @#$fatal		; move to mailbox *** 202 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	cleared
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+4$:		mfps	status			;
+		mov	status,	R0		; temp storage
+		beq	5$			;
+		mov	#203, @#$fatal		; move to mailbox *** 203 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority not zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 725
+5$:		mov	#buff, SP		;
+		mov	#reto, rtrap5		;
+		mov	#357, rtrap5+2		; set new "cc" and priority
+		jsr	R0, R0			; trap here
+						;
+reto:		bmi	1$			;
+		mov	#204, @#$fatal		; move to mailbox *** 204 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; N not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 706
+1$:		beq	2$			;
+		mov	#205, @#$fatal		; move to mailbox *** 205 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; Z not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 700
+2$:		bvs	3$			;
+		mov	#206, @#$fatal		; move to mailbox *** 206 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; V not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 672
+3$:		bcs	4$			;
+		mov	#207, @#$fatal		; move to mailbox *** 207 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; C not	set
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 664
+4$:		mfps	status			;
+		mov	status,	R0		;
+		cmp	#357, R0		;
+		beq	stpbb			;
+stp1:		mov	#210, @#$fatal		; move to mailbox *** 210 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; priority was changed
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+stpbb:		mov	#6, 4			; and replace next inst	w/ 650
+		clr	6			;
+;_____________________________________________________________________________
+;
+; TEST 52 - that the T-bit (bit4) will cause trace trap	to 14
+;
+tst52:		inc	@#$testn		; update test number
+		cmp	#52, @#$testn		; sequence error?
+		bne	tst53-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retat,	rtrap4		; set up to trap to 14
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+		nop				; trap here
+		mov	#211, @#$fatal		; move to mailbox *** 211 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; trace	bit did	not trap
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+retat:						; and replace next inst	w/ 757
+;_____________________________________________________________________________
+;
+; TEST 53 - stack pointer decrements
+;
+tst53:		inc	@#$testn		; update test number
+		cmp	#53, @#$testn		; sequence error?
+		bne	tst54-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retbt,	rtrap4		;
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+		nop				; trap here
+		mov	#212, @#$fatal		; move to mailbox *** 212 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; trace	bit did	not trap
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 757
+retbt:		cmp	SP, #buff-4		;
+		beq	tst54			;
+		mov	#213, @#$fatal		; move to mailbox *** 213 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; stack	pointer	was not	pushed
+						; by trap or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 747
+;_____________________________________________________________________________
+;
+; TEST 54 - for	proper PC on stack
+;
+tst54:		inc	@#$testn		; update test number
+		cmp	#54, @#$testn		; sequence error?
+		bne	tst55-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#retct,	rtrap4		;
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+						; trap here
+retct:		cmp	#., buff-4		;
+		beq	tst55			;
+		mov	#214, @#$fatal		; move to mailbox *** 214 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; correct PC was not saved
+						; on stack or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 754
+;_____________________________________________________________________________
+;
+; TEST 55 - that rtt pops T-bit
+;
+tst55:		inc	@#$testn		; update test number
+		cmp	#55, @#$testn		; sequence error?
+		bne	tst56-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		clr	R1			; clear	R1
+		mov	#20, -(SP)		;
+		mov	#rtt1, -(SP)		;
+		mov	#rtt2, 14		;
+		rtt				;
+						;
+rtt1:		nop				;
+		beq	tst56			;
+		mov	#215, @#$fatal		; move to mailbox *** 215 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; T-bit	did not	trap
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+rtt2:						; and replace next inst	w/ 755
+;_____________________________________________________________________________
+;
+; TEST 56 - that rtt allows one	instruction before trap
+;
+tst56:		inc	@#$testn		; update test number
+		cmp	#56, @#$testn		; sequence error?
+		bne	tst57-12		; br to	error halt on seq error
+		mov	#177777, R5		;
+rtt5:		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#rtt3, -(SP)		;
+		mov	#rtt4, 14		;
+		clr	R1			; clear	R1
+		rtt				; set T-bit
+rtt3:		inc	R1			;
+		inc	R5			;
+		beq	rtt5			; do this test no more than 2 times
+		mov	#216, @#$fatal		; move to mailbox *** 216 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trap
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 752
+rtt4:		dec	R1			; see if rtt allows 1 inst.
+		beq	rtt6			;
+		inc	R5			; :do this test	no more	than two times
+		beq	rtt5			;
+		mov	#217, @#$fatal		; move to mailbox *** 217 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; rtt did not allow 1 inst.
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+rtt6:						; and replace next inst	w/ 741
+;_____________________________________________________________________________
+;
+; TEST 57 - that rti does not allow 1 instruction
+;
+tst57:		inc	@#$testn		; update test number
+		cmp	#57, @#$testn		; sequence error?
+		bne	tst60-12		; br to	error halt on seq error
+		mov	#buff, SP		;
+		mov	#20, -(SP)		;
+		mov	#rti1, -(SP)		;
+		mov	#rti2, 14		;
+		clr	R1			;
+		rti				; set T-bit
+rti1:		inc	R1			; rti should not allow this
+		mov	#220, @#$fatal		; move to mailbox *** 220 ***
+		inc (R2)			; set msgtyp to	fatal error
+		halt				; T- bit did not cause trap
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 756
+rti2:		tst	R1			; rti should not allow
+						; 1 inst. before trap
+		beq	tst60			;
+		mov	#221, @#$fatal		; move to mailbox *** 221 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; rti did allow	1 inst.	before
+						; trap or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 747
+;_____________________________________________________________________________
+;
+; TEST 60 - trap on trap
+;
+tst60:		inc	@#$testn		; update test number
+		cmp	#60, @#$testn		; sequence error?
+		bne	trace			; br to	error halt on seq error
+						;
+		mov	#177777, R5		; test that trace bit traps
+trptrp:		mov	#buff, SP		; are inhibited	on trap	inst
+		mov	#trace1, 14		; trace	trap
+		clr	#16			;
+		clr	#22			;
+		mov	#tont1,	20		; iot trap
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rtt				; set T-bit
+		iot				; trap,	new status have	trace reset
+		mov	#222, @#$fatal		; move to mailbox *** 222 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; no trap occurred
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 746
+trace1:		inc	R5			; if failed try	this test
+		beq	trptrp			; twice	but no more
+trace:		mov	#223, @#$fatal		; move to mailbox *** 223 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; iot should have cleared
+						; the T-bit or wrong $testn
+tont1:		mov	#16, 14			; to scope replace halt	w/ 240
+		mov	#22, 20			; and replace next inst	w/ 737
+;_____________________________________________________________________________
+;
+; TEST 61 - that the trace bit will cause a trap
+;
+tst61:		inc	@#$testn		; update test number
+		cmp	#61 , @#$testn		; sequence error?
+		bne	tst62-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up stack pointer
+		mov	#trc1, 14		; trace	trap return
+		clr	16			;
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rti				; set T-bit
+		nop				;
+		mov	#224, @#$fatal		; move to mailbox *** 224 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; do not trap
+						; to scope replace halt	w7 240
+						; and replace next inst	w/ 755
+trc1:		bit	buff-2,	#20		; check	for T-bit on stack
+		bne	tst62			;
+		mov	#225, @#$fatal		; move to mailbox *** 225 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; T-bit	not saved on stacked
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 744
+;_____________________________________________________________________________
+;
+; TEST 62 - that an rti	pops the T-bit
+;
+tst62:		inc	@#$testn		; update test number
+		cmp	#62, @#$testn		; sequence error?
+		bne	tst63-12		; br to	error halt on seq error
+		mov	#buff, SP		; set up the stack
+		mov	#20, -(SP)		; future t bit on stack
+		mov	#trc2, -(SP)		; rti return
+		mov	#trc3, 14		; trace	trap interrupt pointer
+		rti				;
+						;
+trc2:		nop				; trace	is set should trap to 14
+		mov	#226, @#$fatal		; move to mailbox *** 226 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; did not trace	trap or	wrong $testn
+						; to scope replace halt	w/ 240
+trc3:		mov	#16, 14			; and replace next inst	w/ 757
+		clr	16			;
+;_____________________________________________________________________________
+;
+; TEST 63 - that a pending interrupt occurs before trap
+;
+tst63:		inc	@#$testn		; update test number
+		cmp	#63, @#$testn		; sequence error?
+		bne	tr1			; br to	error halt on seq error
+		bit	#1, $env		; check	if on APT
+		beq	noapt			; if not on APT
+		tst	$pass			; check	if on first pass
+		bne	tst64			; if not first pass
+						;
+noapt:		tstb	@#tps			;
+		bpl	.-4			;
+		mov	#buff, SP		;
+		mov	#340, status		; highest priority level
+		mtps	status			;
+		mov	#tr0, 64		;
+		mov	#100, ttcsr		; interrupt for	TTY punch/printer
+		mov	#20, R4			; set up delay in case on PDT-11 (it takes long
+		sob	R4, .			; time for interrupt request to	be seen	by CPU)
+		mov	#tr1, 34		; trap vector
+		mov	#tr2, 64		; TTY vector
+		mov	#340, 36		; if trap traps, move 340 to priority
+		mov	#340, 66		;
+		clr	status			; should trap at end of	clr inst
+		mtps	status			;
+		trap				; TTY interrupt	should override	trap
+						;
+tr0:		mov	#227, @#$fatal		; move to mailbox *** 227 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; TTY shouldn't	have interrupted
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 722
+tr1:		mov	#230, @#$fatal		; move to mailbox *** 230 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; interrupt did	not occur
+						; first	or wrong $testn
+						; to scope replace halt	w/ 240
+tr2:		clr	36			; and replace next inst	w/ 715
+;_____________________________________________________________________________
+;
+; TEST	64 that	pending	interrupt occurs between traps
+;
+tst64:		inc	@#$testn		; update test number
+		cmp	#64, @#$testn		; sequence error?
+		bne	tr5			; br to	error halt on seq error
+		bit	#1, $env		; check	if on APT
+		beq	noapt1			; if not
+		tst	$pass			; check	if on first pass
+		bne	tst65			; if not
+						;
+noapt1:		bic	#100, ttcsr		;
+		mov	#buff, SP		;
+		mov	#340, status		;
+		mtps	status			;
+		mov	#100, ttcsr		;
+		mov	#tr3, 34		; trap
+		mov	#tr4, 64		; TTY output
+		mov	#tr5, 20		; iot
+		mov	#340, 22		; iot priority
+		mov	#20, R4			; set up delay in case on PDT-11 (it takes long
+		sob	R4, .			; time for interrupt request to	be seen	by CPU)
+		trap				; the act of trapping lower priority
+tr3:		iot				; interrupt should occur in place of iot trap
+						;
+tr5:		mov	#231, @#$fatal		; move to mailbox *** 231 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; no interrupt between traps
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 725
+tr4:		clr	22			; clr iot priority
+		clr	66			;
+		mov	#66, 64			;
+		mov	#36, 34			;
+		mov	#22, 20			;
+;_____________________________________________________________________________
+;
+; TEST 65 - that "reset" goes to outside world
+;
+tst65:		inc	@#$testn		; update test number
+		cmp	#65, @#$testn		; sequence error?
+		bne	tst66-12		; br to	error halt on seq error
+		mtps	#340			;
+		mov	#100, ttcsr		; set interrupt	enable
+		mov	#100, trcsr		; set interrupt	enable
+		reset				; should clear interrupt enable
+		mov	#14, R4			; delay	after the reset	in case	on PDT-11 to
+		sob	R4, .			; allow	8085 to	be ready for I/O page reference
+		bit	#100, ttcsr		; test for clear
+		beq	1$			;
+		mov	#232, @#$fatal		; move tg mailbox *** 232 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; reset	failed to clear	ttcsr
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 752
+1$:		bit	#100, trcsr		; test for clear
+		beq	tst66			;
+		mov	#233, @#$fatal		; move to mailbox *** 233 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; reset	failed to clear	trcsr
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 741
+;_____________________________________________________________________________
+;
+; TEST 66 - that reset has no effect on	the trace trap
+
+tst66:		inc	@#$testn		; update test number
+		cmp	#66, @#$testn		; sequence error?
+		bne	rstp3			; br to	error halt on seq error
+		mov	#buff, SP		; set stack
+		mov	#reset2, 14		; set up trace vector
+		mov	#20, -(SP)		; push T-bit
+		mov	#.+6, -(SP)		; push PC
+		rtt				; set T-bit
+		reset				; should have no effect
+		reset				; no effect
+						;
+rstp3:		mov	#234, @#$fatal		; move to mailbox *** 234 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; trace	trap failed,or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 756
+reset2:		clr	status			; clear	track
+		mtps	status			;
+		mov	#16, 14			;
+		clr	16			; trace	status
+;_____________________________________________________________________________
+;
+; TEST 67 - that when TTY interrupts it	pops new status
+;
+tst67:		inc	@#$testn		; update test number
+		cmp	#67, @#$testn		; sequence error?
+		bne	rstp4			; br to	error halt on seq error
+		bit	#1 ,$env		; check	if on apt
+		beq	noapt2			; if not on apt
+		tst	$pass			; check	if first pass
+		bne	tst70			; if not
+						;
+noapt2:		reset				;
+		mov	#12, R4			; delay	after the reset
+						; in case on PDT-11 to
+		sob	R4, .			; allow	8085 to	be ready
+						; for I/O page reference
+		mov	#buff, SP		; set up stack
+		mov	#tty3, 64		; interrupt vector
+		mtps	#0			;
+		mov	#357, 66		; high priority	on interrupt
+		bis	#100, ttcsr		; should set interrupt enable 8	interrupt
+		mov	#120, R4		; set up delay in case on PDT-11 (it takes long
+		sob	R4, .			; time for interrupt request to	be seen	by CPU)
+		mov	#235, @#$fatal		; move to mailbox *** 235 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; no interrupt
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 737
+tty3:		mfps	status			;
+		cmp	#357, status		;
+		beq	1$			;
+		mov	#236, @#$fatal		; move to mailbox *** 3	***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; interrupt did	not pop	correct	status
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 724
+1$:		reset				; clr interrupt	enable
+		mov	#12, R4			; delay	after the reset
+						; in case on PDT-11 to
+		sob	R4, .			; allow	8085 to	be ready
+						; for I/O page reference
+		mov	#buff, SP		; stack	set up
+		mov	#tty4, 64		; interrupt vector
+		mov	#345, 66		; set new status
+		mtps	#17			;
+		bis	#100, ttcsr		; set interrupt	enable
+		mov	#120, R4		; set up delay in case on PDT-11
+		sob	R4, .			; wait for TTY interrupt request
+tty4:		mfps	status			; to get thru to CPU (on T)
+		cmp	#345, status		;
+		beq	rst4			;
+rstp4:		mov	#237, @#$fatal		; move to mailbox *** 237 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; interrupt did	not pop	correct
+						; status or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 667
+rst4:		clr	ttcsr			;
+		mov	#66, 64			;
+;_____________________________________________________________________________
+;
+; This routine tests that no legal address traps and that an illegal
+; address traps	to location 4. this will run on	30K systems. if	switch
+; register bit 1 = 0. then the memory from 28K-30K is not looked
+; at, since it may have	I/O devices. If	swr bit	1 = 1, then that
+; area is checked  (it should either all trap or all not trap).	Loc 160000
+; is no	longer guaranteed to trap, since it may	contain	memory.	Location
+; 177700 (the Unibus address for R0 on older systems) is used for forcing
+; a timeout in the event that there was	none from 0K-28K(30K).
+; This routine will also work if there is a ROM	above the highest
+; memory location (whether contiguous with R/R memory or not) .
+;_____________________________________________________________________________
+;
+; TEST 70 - non-existent address traps
+;
+tst70:		inc	@#$testn		; update test number
+		br	tst71			; skipped for T-11
+
+;_____________________________________________________________________________
+;
+; TEST 71 - the	"wait" instruction
+;
+tst71:		inc	@#$testn		; update test number
+		cmp	#71, @#$testn		; sequence error?
+		bne	rees1			; br to	error halt on seq error
+		bit	#1, $env		; check	if on APT
+		beq	noapt3			; br, if not on	APT
+		tst	$pass			; check	if first pass
+		bne	rees			; br, if not
+						;
+noapt3:		bic	#100, tps		; clear	interrupt enable
+		mov	#buff, SP		; set up the stack
+		mov	#wate, 64		; set up the interrupt vector
+		mov	#347, 66		;
+wate1:		tstb	tps			; wait for ready
+		bpl	wate1			; to be	up
+		mov	#15, tpb		; do a carriage	return
+wate2:		tstb	tps			; wait for ready to come up
+		bpl	wate2			;
+		mov	#15, tpb		; do another carriage return
+		bis	#100, tps		; set the interrupt enable
+		clr	status			; clear	the PSW
+		mtps	status			;
+wate3:		wait				; wait for the interrupt
+		mov	#246, @#$fatal		; move to mailbox *** 246 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wait instruction did not loop
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 725
+wate:		mfps	status			;
+		cmp	#347, status		; is the PSW correct?
+		beq	1$			;
+		mov	#247, @#$fatal		; move to mailbox *** 247 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; new psw should have been zero
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 713
+1$:		cmp	buff-4,	#wate3+2	; is the old PC	saved
+		beq	rees			;
+rees1:		mov	#250, @#$fatal		; move to mailbox *** 250 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; old PC was not saved
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 702
+rees:		bic	#100, tps		; clear	the interrupt enable
+		mov	#66, 64			;
+;_____________________________________________________________________________
+;
+; TEST 72 - that odd addressing	will ignore bit	0
+;
+tst72:		inc	@#$testn		; update test number
+		cmp	#72, @#$testn		; sequence error?
+		bne	rstp5			; br to	error halt on seq error
+.if ne data8					;
+		jmp	tst73			; T11 on 8-bit bus reads
+.iff						; the upper byte twice and gets
+		jmp	odd+1			; the invalid opcode
+.endc						;
+						;
+rstp5:		mov	#251, @#$fatal		; move to mailbox *** 251 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; should have jumped
+						; or wrong $testn
+						; to scope replace halt	w/ 240
+odd:		dec	PC			; and replace next inst	w/ 770
+;_____________________________________________________________________________
+;
+; TEST 73 - that all reserved instructions trap
+;
+tst73:		inc	@#$testn		; update test number
+		cmp	#73, @#$testn		; sequence error?
+		bne	ret4			; br to	error halt on seq error
+		mov	R2, r2stor		; save reg 2
+		mov	PC, R0			; set these
+		mov	PC, R4			; registers
+		mov	PC, R5			; to existent memory locations
+		mov	#table,	R3		; table	pointer
+gin1:		mov	(R3)+, R2		; first	or current instruction
+		mov	(R3)+, R1		; last instruction or group
+						;
+3$:		cmp	R2, stop		; is it	the stop group
+		bne	4$			; no
+		bit	#20, $swreg		; do we	want to	do it?
+		beq	4$			; yes
+		add	#10, R3			; skip entire stop group
+		br	gin1			; no
+4$:		cmp	R2,dis			; is this the DIS group?
+		bne	5$			; no
+		bit	#40, $cpuop		; DIS present??
+		bne	gin1			; branch if yes	- don't	do DIS
+		bit	#4, $swreg		; suppress DIS option?
+		bne	gin1			; branch if yes, skip the DIS group
+5$:		cmp	R2, stop1		; is it	the stop1 group?
+		bne	6$			; no
+		bit	#10, $swreg		; do we	want to	do it?
+		beq	6$			; yes
+		br	gin1			; no
+6$:		cmp	R2, finish		; tested all
+		beq	gin3			; branch if yes, go to end of pass routine
+		mov	R2, inst		; set up inst
+gin2:		inc	inst			;
+		mov	#ret, 10		; set up return	from trap
+		mov	#buff, SP		; set up stack pointer
+		clr	status			; clear	priority
+		mtps	status			; execute reserved instruction
+		br	inst			;
+						;
+						; trapping should send you here
+ret:		mov	R2, r2save		; save reg 2
+		mov	r2stor,	R2		; restore mailbox pointer
+		cmp	SP, #buff-4		; test decrement of SP
+		beq	ret1			;
+		mov	#252, @#$fatal		; move to mailbox *** 252 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; wrong	decrement
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 651
+ret1:		cmp	buff-4,	#inst+2		; loc of inst unincremented
+		beq	ret2			;
+		mov	#253, @#$fatal		; move to mailbox *** 253 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; inst inc on trap
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 640
+ret2:		tst	buff-2			;
+		beq	ret3			;
+ret4:		mov	#254, @#$fatal		; move to mailbox **** 254 ***
+		inc	(R2)			; set msgtyp to	fatal error
+		halt				; condition codes set on
+						; trap or wrong	$testn
+						; to scope replace halt	w/ 240
+						; and replace next inst	w/ 630
+ret3:		mov	r2save,R2		; restore reg 2
+		cmp	inst, R1		;
+		beq	gin1			; set up	new group
+		br	gin2			; finish old group
+r2save :	.word	0			;
+						; end of instruction group
+;_____________________________________________________________________________
+;
+table:		7				;
+		77				;
+		106477				;
+		106677				;
+		6777				;
+		7777				;
+.if ne memlim					;
+.iff						;
+		106777				;
+		107777				;
+eisfis:		67777				; if we	have the EIS FIS option
+		73777				; then the eisfis group
+.endc						;
+						;
+fis:		74777				; will be skipped
+		75037				;
+stop:		75377				;
+		76027				;
+dis:		76027				;
+		76777				;
+stop1:		167777				;
+.if ne memlim					;
+		170007				; reduce simulation time
+.iff						;
+		177777				;
+.endc						;
+finish:		.				; end flag
+inst:		halt				; will continue	reserved inst
+		br	terr			;
+		br	terr			;
+		br	terr			;
+		br	terr			;
+status:		0				;
+;_____________________________________________________________________________
+;
+terr:		mov	r2stor,	R2		; restore R2
+		mov	#255, @#$fatal		; indicate error
+		inc	(R2)			;
+		halt				;
+						;
+gin3:		inc	@#$pass			;
+		inc	passpt			; should print this pass?
+		bne	act			; no
+		bit	#40, $swreg		; type end of pass?
+		bne	1$			; branch if not
+		jsr	R5, type		;
+		eopmsg				;
+.if ne HOEP					;
+		halt				; halt on end-of-pass
+.endc						;
+		reset				;
+1$:		mov	#177761, passpt		; do it	15 decimal times
+act:		mov	@#42, R0		; check	act
+		beq	goagin			; keep going
+		reset				;
+$endad:		jsr	PC, (R0)		; ACT hooks
+		nop				;
+		nop				;
+		nop				;
+goagin:		mov	#12, 10			;
+		clr	12			;
+		jmp	restrt			; do next pass
+						;
+r2stor:		.word	0			;
+passpt:		-1				;
+;_____________________________________________________________________________
+;
+; Type routine
+;
+type:		mov	R0, -(SP)		; save register
+		mov	(R5)+, R0		; get text pointer
+		bitb	#40, $envm		; suppress output?
+		bne	3$			; branch if yes	- return
+1$:		tstb	@#tps			; wait for TTY ready
+		bpl	1$			;
+		movb	(R0)+, @#tpb		; type character
+		bne	1$			; branch if it was not terminator
+2$:		tstb	@#tps			; wait for ready
+		bpl	2$			;
+3$:		mov	(SP)+, R0		; restore register
+		rts	R5			;
+;_____________________________________________________________________________
+;
+; Power	fail routine
+;
+pwrdwn:		mov	#pwrup,	24		;
+		halt				;
+						;
+pwrup:		mov	#pwrdwn	,24		;
+		mov	#buff, SP		;
+		clr	R0			; set up a delay
+		mov	#-30, R1		;
+1$:		inc	R0			;
+		bne	1$			;
+		inc	R1			;
+		bne	1$			;
+		jsr	R5,type			; type power fail message
+		msgpwf				;
+		jmp	start			;
+
+eopmsg:		.asciz	<15><12>"END OF PASS"
+msgpwf:		.asciz	<15><12>"POWER FAILED!"
+title:		.asciz	<15><12>"CTKADC0 T-11 TRAPS TEST"<15><12>
+;_____________________________________________________________________________
+;
+		.end
