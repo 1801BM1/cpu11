@@ -222,7 +222,7 @@
 ;
 		HOEP	= 1			; halt on end-of-pass
 		MEMLIM	= 1			; != 0 to cut the invalid opcode loop
-		DATA8	= 1			; 8-bit bus
+		DATA8	= 0			; 8-bit bus
 ;_____________________________________________________________________________
 ;
 		.asect
