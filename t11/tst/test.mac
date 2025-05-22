@@ -272,6 +272,7 @@ godt:		clr	R0			;
 		mov	R0, @#RXCSR		;
 		mov	R0, @#TXCSR		;
 		mtps	R0			;
+;		jsr	PC, htest		;
 		jsr	PC, itest		;
 						;
 		mov	#isrrx, @#60		; rx console
@@ -422,6 +423,28 @@ itest:		mov 	#mes2, R1		;
 
 mes1:	.asciz	<15><12><15><12>"T-11 started, echo test...@"<12><15>
 mes2:	.asciz	<15><12><15><12>"Interrupt test..."<12><15>
+;_____________________________________________________________________________
+;
+; HALT instruction test
+;
+htest:		mov	5$, @#4			; not vector
+		mov	5$+2, @#6		; should be instruction
+		mtps	#17			;
+		halt				;
+1$:		br	.			;
+						;
+2$:		mov	(SP)+, R0		; check stack PC/PSW
+		cmp	R0, #1$			; return address after halt
+		beq	3$			;
+		halt				;
+						;
+3$:		mov	(SP)+, R0		;
+		cmp	R0, #17			;
+		beq	4$			;
+		halt				;
+4$:		rts	PC			;
+						;
+5$:		jmp	@#2$			;
 ;_____________________________________________________________________________
 ;
 		.end

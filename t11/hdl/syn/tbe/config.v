@@ -38,7 +38,7 @@
 
 //______________________________________________________________________________
 //
-// Mode selection
+// Mode selection (removed in synchronous model - static 16-bit only)
 //
 // 0  1 - COUT is processor clock phase W
 //    0 - COUT is constant clock
@@ -71,46 +71,10 @@
 //    110 - 173000
 //    111 - 172000
 //
-`ifndef MODE_SELECT_COUT_PHASE_W
-`define MODE_SELECT_COUT_PHASE_W    1
-`endif
-
-`ifndef MODE_SELECT_STD_CYCLE
-`define MODE_SELECT_STD_CYCLE       1
-`endif
-
-`ifndef MODE_SELECT_DELAYED_RW
-`define MODE_SELECT_DELAYED_RW      0
-`endif
-
-`ifndef MODE_SELECT_STATIC_MEMORY
-`define MODE_SELECT_STATIC_MEMORY   1
-`endif
-
-`ifndef MODE_SELECT_4K_16K_MEMORY
-`define MODE_SELECT_4K_16K_MEMORY   0
-`endif
-
-`ifndef MODE_SELECT_8BIT_BUS
-`define MODE_SELECT_8BIT_BUS        0
-`endif
-
-`ifndef MODE_SELECT_USER_MODE
-`define MODE_SELECT_USER_MODE       1
-`endif
-
 `ifndef MODE_SELECT_START_ADDR
 `define MODE_SELECT_START_ADDR      5
 `endif
 
 `ifndef SIM_CONFIG_MODE_SELECT
-`define SIM_CONFIG_MODE_SELECT      ( (`MODE_SELECT_START_ADDR << 13) \
-                                    | (`MODE_SELECT_COUT_PHASE_W   ? 16'o000001 : 16'o000000) \
-                                    | (`MODE_SELECT_STD_CYCLE      ? 16'o000002 : 16'o000000) \
-                                    | (`MODE_SELECT_DELAYED_RW     ? 16'o000400 : 16'o000000) \
-                                    | (`MODE_SELECT_STATIC_MEMORY  ? 16'o001000 : 16'o000000) \
-                                    | (`MODE_SELECT_4K_16K_MEMORY  ? 16'o002000 : 16'o000000) \
-                                    | (`MODE_SELECT_8BIT_BUS       ? 16'o004000 : 16'o000000) \
-                                    | (`MODE_SELECT_USER_MODE      ? 16'o010000 : 16'o000000) )
-
+`define SIM_CONFIG_MODE_SELECT      (`MODE_SELECT_START_ADDR << 13)
 `endif

@@ -2,82 +2,61 @@
 // Copyright (c) 2014-2025 by 1801BM1@gmail.com
 //______________________________________________________________________________
 //
-`timescale 1ns / 10ps
-
 module t11
 (
-   input          pin_clk,       // processor clock input
-   output         pin_cout,      // processor clock output
-   input          pin_pup,       // power-up
+   input          pin_clk_p,     // processor clock, rising edge
+   input          pin_clk_n,     // processor clock, falling edge
+   input          pin_dclo,      // processor reset
    output         pin_bclr_n,    // bus clear
                                  //
+   input  [15:0]  pin_ad_in,     // data bus input
+   output [15:0]  pin_ad_out,    // address/data bus output
    output [1:0]   pin_sel,       // select output flag
    output [1:0]   pin_wb_n,      // read/write/byte mask
-   inout  [15:0]  pin_dal,       // address/data bus
    input          pin_ready,     // bus ready
                                  //
    output         pin_ras_n,     //
    output         pin_cas_n,     //
-   output [7:0]   pin_a,         // address bus
+   output         pin_pi,        // priority input strobe
                                  //
    input          pin_hlt_n,     // supervisor exception requests
    input          pin_pf_n,      // power fail notification
    input          pin_vec_n,     // vectored interrupt request
-   input [3:0]    pin_cp_n,      // coded interrupt priority
-   output         pin_pi         // priority input strobe
+   input  [3:0]   pin_cp_n,      // coded interrupt priority
+   input  [2:0]   pin_bsel       // start address selector
 );
 
 //______________________________________________________________________________
 //
-wire           clk;              // external clock
-reg            clk1, clk2;       // processor core clock
-reg            rst;              //
-reg   [3:0]    ph;               // clock generator phases
+reg            t1, t2, t3, t4;   // clock generator phases
 wire           ph_w;             // insert phase D between phases 2 and 3
-wire           t1, t2, t3, t4;   //
-wire           t4del;            //
                                  //
-reg            init, init_t4;    //
-wire           bclr, hwclr;      // bus clear
-reg            bclr_t1, bclr_t2; //
+reg            dclo;             //
+reg            reset;            // power-up reset
+reg            hwclr;            //
                                  //
 wire  [15:0]   da;               // internal A/D bus
 reg   [15:0]   dal;              // A/D bus output register
 wire           da_stx;           //
 wire           da_stl, da_sth;   // low/high byte register strobe
-reg            da_oel, da_oeh;   // low/high byte register output enable
-wire           da_ocl, da_och;   //
-wire           da_rdl, da_rdh;   // low/high byte register read enable
+wire           da_rd, da_rx;     // low/high byte register read enable
 wire           da0_clr;          // reset lower register bit
-wire           da_pup;           // pullup A/D outputs on bus clear
 wire           da_rst;           //
                                  //
-reg            sx_swp;           //
-reg            sx_wtl, sx_wth;   //
+wire           sx_swp;           //
 wire           sx_wl, sx_wh;     //
-wire           chrg, rs_chr;     //
-wire           sx_x, sx_af;      //
+wire           sx_af;            //
 wire           sx_da, dx_da;     //
 wire  [15:0]   dx;               // data bus X
 wire  [15:0]   wx;               // write data bus X
                                  //
-wire           ref_ck;           // refresh counter pulse
-reg   [7:0]    rfa;              // refresh address counter
-reg            refsh, ref_t2;    // refresh flag
-reg            refrq;            // refresh request
-wire           sa_rfa;           // select refresh address
-wire           sa_al;            //
+wire           sa_hx;            //
 reg            sa_ah;            // select low/high address byte
-reg            sa_hx;            //
-wire           sa_lat;           // latch output address register
-reg   [7:0]    sa;               // dynamic RAM address register
-reg   [15:0]   ra;               // address register
+reg            ra0;              // address register lsb
 wire  [15:0]   rx;               // register block bus X
 wire  [15:0]   ry;               // register block bus Y
-reg   [15:0]   mr;               // mode register
+reg   [15:13]  mr;               // mode register
 reg   [15:0]   r[10:0];          // general purpose register files
-reg   [11:0]   rselx_t;          //
-reg   [11:0]   rsely_t;          //
 wire  [11:0]   rselx;            //
 wire  [11:0]   rsely;            //
 wire  [7:0]    rsel;             //
@@ -89,7 +68,7 @@ wire  [15:0]   y;                // ALU bus Y
 wire  [15:0]   ax;               // ALU half sum
 wire  [15:0]   ay;               // ALU half carry
 wire  [16:0]   ac;               // ALU carry
-reg   [15:0]   af;               // ALU function result
+wire  [15:0]   af;               // ALU function result
                                  //
 wire           ac_in;            //
 wire           ax_in;            //
@@ -113,7 +92,6 @@ wire           alu_y11;          //
 reg            pr;               // priority input
 wire           pr_c0;            // priority input clear
 wire           pr_s0, pr_s1;     // priority input sets
-reg            pi_oe;            // priority pins output enable
 wire           pi_lat;           // priority pins input latch
                                  //
 reg            pf0, pf1, pf2;    // power fail edge detector
@@ -129,38 +107,23 @@ wire           inrq;             //
                                  //
 wire           rdy;              //
 reg            cas, ras;         //
-reg            cas_c0;           //
+wire           cas_c0;           //
 wire           cas_s0, cas_s1;   //
 wire           ras_c0;           //
 wire           ras_s0, ras_s1;   //
-reg            rdy_s0;           //
-reg            iordy, iordy_t;   //
-wire           rdy_st;           //
+wire           iordy;            //
                                  //
 reg            sm0, sm1;         //
 wire           sm1_set, sm1_clr; //
-reg            wb0, wb0_t;       //
-reg            wb1, wb1_t;       //
-wire           wb_stb, wb_clr;   //
+reg            wb0, wb1;         //
 wire           wa0;              //
                                  //
 wire           bra;              //
 wire           rs_wre;           // result write enable
-wire           rse_in;           //
-reg            rse_nx, rse_nx_t; //
-reg            rs_ena, rs_ena_t; //
-reg            rs_dal;           // register select input dal pins
-reg            bus_dn;           //
+wire           bus_wt;           // bus waiting for ready
                                  //
-wire  [16:0]   iop;              //
-reg            iop5_t1;          //
-reg            iop50t, iop92t;   //
-                                 //
-reg            mr0_ph3;          //
-wire           mr_stb;           //
 wire           ra0_clr;          //
 wire           ra_stb;           // address register write strobe
-wire           sx_ra;            // address register read/write strobe
                                  //
 wire  [15:0]   ri;               //
 reg   [15:0]   ir;               // instruction register
@@ -176,53 +139,42 @@ wire           psw_v;            //
 wire           psw_z;            //
 wire           psw_n;            //
                                  //
-reg            alu_zf;           //
+wire           alu_zf;           //
 wire           alu_nf;           //
 wire           alu_cf;           //
 wire           alu_vf;           //
 wire           cf_s1;            //
-reg   [1:0]    vf_t;             //
-reg   [2:0]    cf_t;             //
+wire   [1:0]   vf_t;             //
+wire   [2:0]   cf_t;             //
                                  //
-reg            psw_wc;           //
-reg            psw_wf;           //
+wire           psw_wc, psw_wf;   // PSW flags write enable
                                  //
 wire           dns_s0;           //
 wire           dns_s1;           //
 wire           dns_s2;           //
-reg            tt_dns;           //
+reg            t4_dns;           //
 wire           st_dns;           //
 wire           mi_op, mi_dns;    //
 wire           mi_src, mi_dst;   //
 reg            mi12_t;           //
-wire           mi12_clr;         //
                                  //
-reg            af_byte;          // ALU byte result
-wire           pdc10_8;          //
+wire           af_byte;          // ALU byte result
 wire  [12:0]   pdc;              // plm output decode
 wire  [20:0]   id;               // instruction decode
 wire           id_dns;           //
                                  //
 wire           ir_stl, ir_sth;   //
 wire           plm_stb;          //
-wire           plm_io;           // I/O bus ready
-reg            plm_h0, plm_h1;   //
-reg            plm_ch;           //
-wire           pl_up;            //
+reg            plm_rdy;          //
                                  //
 wire  [29:0]   pla;              //
-wire  [29:0]   plm;              //
-reg   [29:0]   plm_t;            //
+reg   [29:0]   plm;              //
 wire           plm_cz;           // set na[0] on flag ZF
-reg            plm_qz;           // used in microcode loops
-wire  [6:0]    op;               //
-reg   [6:0]    op_t;             //
-wire           op_clr;           //
+reg   [6:0]    op;               // used in microcode loops
+wire  [15:0]   iop;              //
                                  //
-                                 //
-reg   [1:0]    bt2_t;            //
+reg            bt2_t;            //
 wire  [15:0]   bt;               // boot/restart address
-reg   [3:0]    da_st;            //
 wire           da_s0, da_s1;     //
 wire           da_s2, da_s3;     //
 wire           da_s4, da_s5;     //
@@ -236,137 +188,75 @@ wire           immed;            //
 //
 // Debug and temporary assignments to supress glitches in model
 //
-wire t1_syn;
-wire t2_syn;
-wire t3_syn;
-wire t4_syn;
 integer i;
-
-assign #1 t1_syn = t1;
-assign #1 t2_syn = t2;
-assign #1 t3_syn = t3;
-assign #1 t4_syn = t4;
 
 initial
 begin
    for (i=0; i<11; i = i + 1)
       r[i] = 16'o000000;
 
-   ra = 16'o000000;
+   ra0 = 1'b0;
    psw = 8'o000;
-   sa = 8'o000;
 end
 
 //______________________________________________________________________________
 //
 // Reset and clocks
 //
-assign clk = pin_clk;
-assign pin_cout = mr0_ph3 ? ph[3] : clk2;
-
-always @(*)
+always @(posedge pin_clk_p or posedge dclo)
 begin
-   if (pin_pup)
-      rst <= 1'b1;
-   else
-      if (clk & clk2)
-         rst <= 1'b0;
-end
-
-always @(negedge clk or posedge pin_pup)
-begin
-   if (pin_pup)
-      clk2 <= 1'b0;
-   else
-      clk2 <= ~clk2;
-end
-
-always @(negedge clk or posedge rst)
-begin
-   if (rst)
-      ph <= 4'b0010;
+   if (dclo)
+   begin
+      t1 <= 1'b1;
+      t2 <= 1'b0;
+      t3 <= 1'b0;
+      t4 <= 1'b0;
+   end
    else
    begin
-      ph[0] <= ph[2] & ph_w;              // phase D (extra)
-      ph[1] <= ~ph[0] & ~ph[1] & ~ph[2];  // phase 1
-      ph[2] <= ph[1];                     // phase 2
-      ph[3] <= ph[0] | (ph[2] & ~ph_w);   // phase W
+      t1 <= t4;                     // phase 1
+      t2 <= t1;                     // phase 2
+      t3 <= t2 & ph_w;              // phase D (extra)
+      t4 <= t3 | (t2 & ~ph_w);      // phase W
    end
 end
-
-assign t1 = ph[1] & ~t2;                  // phase 1
-assign t2 = ph[2] & ~t4 & ~t3;            // phase 2
-assign t3 = ph[0] & ~t4;                  // phase D
-assign t4 = ph[3] & ~t1;                  // phase W
 
 //
 // According to documentation the D phase should be inserted:
 //
-//    - if configured MR bit 1 is 0
-//    - in DMA operations
 //    - in ASPI transaction
 //    - in IAKO transaction
 //
-assign ph_w = ~mr[1] | refsh | iop[2] | iop[3];
-
-assign chrg = ph[1];
-assign rs_chr = chrg;
-assign t4del = t4 & ~hwclr;
+assign ph_w = iop[2] | iop[3];
 
 //______________________________________________________________________________
 //
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (pin_pup)
-      init_t4 <= 1'b0;
+   dclo <= pin_dclo;
+
+   if (dclo)
+      reset <= 1'b1;
    else
       if (t4)
-         init_t4 <= 1'b1;
+         reset <= 1'b0;
 
-   if (pin_pup)
-      init <= 1'b1;
-   else
-      if (t1 & init_t4)
-         init <= 1'b0;
+   if (dclo)
+      mr[15:13] <= pin_bsel;
 end
 
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (t1)
-      bclr_t1 <= bclr_t2;
-
-   if (init)
-      bclr_t2 <= 1'b1;
+   if (reset)
+      hwclr <= 1'b1;
    else
-      if (t2)
-         bclr_t2 <= bclr;
+      if (t1)
+         hwclr <= ~iop[12] & (iop[11] | hwclr);
 end
 
-always @(*)
-begin
-   if (init)
-      mr[1:0] <= 2'b11;
-   else
-      if (mr_stb)
-         mr[1:0] <= ra[1:0];
+assign pin_bclr_n = ~hwclr;
 
-   if (mr_stb)
-   begin
-      mr[11:2] <= ra[11:2];
-      mr[15:12] <= rx[15:12];
-   end
-
-   if (~ph[3] & ~clk2)
-      mr0_ph3 <= mr[0];
-end
-
-assign pin_bclr_n = ~bclr_t2;
-assign hwclr = bclr_t2;
-assign bclr = ~iop[12] & (iop[11] | bclr_t2);
-assign da_pup = bclr_t2 | bclr_t1;
-assign mr_stb = ~t1 & t4 & iop5_t1 & t4_syn;
-
-assign bt[2]   = bt2_t[1];                                        //
+assign bt[2]   = bt2_t;                                           // restart
 assign bt[1:0] = 2'b00;                                           // start address
 assign bt[8:3] = 6'b000000;                                       // 000 - 140000
 assign bt[9]   = mr[15] & mr[14] & ~mr[13];                       // 001 - 100000
@@ -376,32 +266,24 @@ assign bt[12]  = (mr[15] & mr[14]) | (mr[15] & ~mr[14] & ~mr[13]);// 100 - 01000
 assign bt[13]  = (mr[15] & mr[14]) | (~mr[15] & mr[14] & mr[13]); // 101 - 000000
 assign bt[14]  = (mr[15] & mr[14]) | (~mr[15] & ~mr[13]);         // 110 - 173000
 assign bt[15]  = (mr[15] & mr[14]) | (~mr[15] & ~mr[14]);         // 111 - 172000
+
 //______________________________________________________________________________
 //
-assign wb_clr = mr[8] & cas_c0;
-assign wb_stb = ~mr[8] | (~cas_c0 & ~t2 & t1 & ~hwclr);
-assign wa0 = iop[0] ? rx[0] : ra[0];
+assign wa0 = iop[0] ? rx[0] : ra0;
 
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (init | wb_clr)
+   if (reset)
    begin
       wb0 <= 1'b0;
       wb1 <= 1'b0;
    end
    else
-      if (wb_stb)
+      if (t1)
       begin
-         wb0 <= wb0_t;
-         wb1 <= wb1_t;
+         wb0 <= (~wa0 | ~iop[4]) & (iop[8] | iop[10] | iop[15]);
+         wb1 <= (wa0 | ~iop[4]) & (iop[8] | iop[10] | iop[15]);
       end
-
-   if (t2)
-      wb0_t <= (~wa0 | ~iop[4] | mr[11]) & (iop[8] | iop[10] | iop[15]);
-
-   if (t2)
-      wb1_t <= (wa0 | ~iop[4] | mr[11])
-             & (mr[11] ? iop[7] | iop[9] : iop[8] | iop[10] | iop[15]);
 end
 
 //______________________________________________________________________________
@@ -415,7 +297,7 @@ assign pin_sel[1] = sm1;
 assign pin_wb_n[0] = ~wb0;
 assign pin_wb_n[1] = ~wb1;
 
-assign sm1_clr = ~bus_dn;
+assign sm1_clr = ~bus_wt;
 assign sm1_set = iop[3];
 
 //
@@ -425,46 +307,43 @@ assign sm1_set = iop[3];
 //  1     0       interrupt acknowkedment
 //  1     1       direct memory grant
 //
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (init)
+   if (reset)
+   begin
       sm0 <= 1'b0;
-   else
-      if (t2)
-         sm0 <= (iop[6] & (mr[9] | ~mr[10])) | (refsh & ~mr[9] & mr[10]);
-
-   if (init)
       sm1 <= 1'b0;
+   end
    else
-      if (t1 & sm1_clr)
+   begin
+      if (t1)
+         sm0 <= iop[6];
+
+      if (t1 & sm1_set)
+         sm1 <= 1'b1;
+
+      if (t4 & sm1_clr)
          sm1 <= 1'b0;
-      else
-         if (t2 & sm1_set)
-            sm1 <= 1'b1;
+   end
 end
 
-assign ras_s0 = t4 & sa_hx & t4_syn;
-assign ras_s1 = t3 & (refsh | iop[3]) & t3_syn;
-assign ras_c0 = t1 & (~hwclr & cas_c0 | init) & t1_syn;
+assign ras_s0 = (t3 | (t2 & ~ph_w)) & sa_hx;
+assign ras_s1 = t2 & ph_w & iop[3];
+assign ras_c0 = t4 & cas_c0 | reset;
 
-assign cas_s0 = t2 & ~hwclr & sa_ah;
-assign cas_s1 = t2 & ~hwclr & iop[2];
+assign cas_s0 = t1 & ~hwclr & sa_ah;
+assign cas_s1 = t1 & ~hwclr & iop[2];
+assign cas_c0 = t4 & plm_rdy & (cas | (ras & ~sa_hx)) | reset;
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (init)
-      cas_c0 <= 1'b1;
-   else
-      if (t4)
-         cas_c0 <= ~rdy_s0 & (cas | (ras & ~ras_s0));
-
    if (ras_c0)
       ras <= 1'b0;
    else
       if (ras_s0 | ras_s1)
          ras <= 1'b1;
 
-   if (cas_c0 & t1)
+   if (cas_c0 & t4)
       cas <= 1'b0;
    else
       if (cas_s0 | cas_s1)
@@ -476,27 +355,27 @@ end
 // Interrupt requests
 //
 assign pin_pi = pr;
-assign pi_lat = ~t1 & ~sa_lat & ~iop92t;
+assign pi_lat = t4 & (iop[2] | iop[9]);
 
-assign pr_c0 = ~t4 & cas_c0;
-assign pr_s0 = t3 & ~hwclr & cas;
-assign pr_s1 = t2 & ~hwclr & sa_ah;
+assign pr_s0 = (t3 | t2 & ph_w) & ~hwclr & cas;
+assign pr_s1 = t1 & ~hwclr & sa_ah;
+assign pr_c0 = t4 & cas_c0;
 
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (pr_s0 | pr_s1)
-      pr <= 1'b1;
+   if (reset)
+      pr <= 1'b0;
    else
-      if (pr_c0)
-         pr <= 1'b0;
-
-   if (t2 | init)
-      pi_oe <= ~mr[9] & ~bclr & ~cas;
+      if (pr_s0 | pr_s1)
+         pr <= 1'b1;
+      else
+         if (pr_c0)
+            pr <= 1'b0;
 end
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (init)
+   if (reset)
       pf0 <= 1'b0;
    else
       if (pi_lat)
@@ -508,19 +387,19 @@ begin
    if (~aclo & ~pf1 & pi_lat)
       pf2 <= 1'b1;
    else
-      if (init | aclo_clr)
+      if (reset | aclo_clr)
          pf2 <= 1'b0;
 
-   if (init | aclo_clr)
+   if (reset | aclo_clr)
       aclo <= 1'b0;
    else
       if (pf1 & pf2 & pi_lat)
          aclo <= 1'b1;
 end
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (init)
+   if (reset)
       hlt0 <= 1'b0;
    else
       if (pi_lat)
@@ -539,7 +418,7 @@ begin
          halt <= 1'b1;
 end
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (pi_lat)
    begin
@@ -564,141 +443,66 @@ assign inrq = (inr == 4'b0001) & ~psw[7]                          // prio 4 / 70
             | (inr == 4'b1110) & (~psw[5] | ~psw[6] | ~psw[7])    // prio 7 / 144
             | (inr == 4'b1111) & (~psw[5] | ~psw[6] | ~psw[7]);   // prio 7 / 140
 
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (init)
-      bt2_t[1] <= 1'b0;
+   if (reset)
+      bt2_t <= 1'b0;
    else
-      if (~t2 & bt2_t[0])
-         bt2_t[1] <= 1'b1;
-
-   if (t2)
-      bt2_t[0] <= iop[14];
+      if (t4 & iop[14])
+         bt2_t <= 1'b1;
 end
 
 //______________________________________________________________________________
 //
 // Data / Address multiplexed bus
 //
-always @(*)
-begin
-   if (da0_clr)
-      dal[0] <= 1'b0;
-   else
-      if (da_stl)
-         dal[0] <= da[0];
-
-   if (da_stl) dal[7:1] <= da[7:1];
-   if (da_sth) dal[15:8] <= da[15:8];
-end
-
-assign pin_dal[7:0] = da_oel ? dal[7:0] : 8'hZZ;
-assign pin_dal[15:8] = da_oeh ? dal[15:8] : 8'hZZ;
-
-assign da[7:0]  = (dx_da ? dx[15:8] : 8'h00) | (sx_da ? dx[7:0] : 8'h00);
-assign da[15:8] = (dx_da ? dx[7:0] : 8'h00) | (sx_da ? dx[15:8] : 8'h00);
-
-assign da_rdl = ~t1 & t4 & rs_dal;
-assign da_rdh = ~t1 & t4 & rs_dal;
-assign da0_clr = ~t4 & ~fc1 & ~plm[22];
-assign da_rst = ~t4 & ~bt2_t[1];
-assign pdc10_8 = pdc[10] | mr[11];
-
-assign da_stl = ~t4 & (da_rst | (t2 & (da_s2 | da_s4)));
-assign da_sth = ~t4 & (da_rst | (t2 & (da_s2 | (da_s4 & ~pdc10_8))));
-
-assign dx = (sx_af ? af[15:0] : 16'o000000)
-          | (da_rdl ? {8'o000, dx_da ? pin_dal[15:8] : pin_dal[7:0]} : 16'o000000)
-          | (da_rdh ? {dx_da ? pin_dal[7:0] : pin_dal[15:8], 8'o000} : 16'o000000)
-          | (sx_x ? x : 16'o000000);
-
-assign da_ocl = ~t4del & (iop[16] | ~pdc10_8) & (da_s5 | (~pdc10_8 & ~da_s1 & da_s4));
-assign da_och = ~t4del & ~pdc10_8 & (da_s5 | (da_s4 & ~iop[16]));
-
-always @(*)
-begin
-   if (t2)
-      rs_dal <= da_s5;
-
-   if (da_rst | da_och)
-      da_oeh <= 1'b0;
-   else
-      if (t2)
-         da_oeh <= ~da_pup & ~da_rst;
-
-
-   if (da_rst | da_ocl)
-      da_oel <= 1'b0;
-   else
-      if (t2)
-         da_oel <= ~da_pup & ~da_rst & (iop[16] | ~pdc10_8);
-end
-
-//______________________________________________________________________________
-//
-// Dynamic RAM address logic
-//
-assign pin_a = pi_oe ? sa : 8'oZZZ;
-assign sa_lat = ~t4;
-assign sa_al = ~sa_ah & (t4 | ~refsh);
-assign sa_rfa = refsh & ~t4;
-
-assign ref_ck = refsh & t4;
-
-always @(*)
-begin
-   if (sa_lat)
-      if (sa_rfa)
-         sa <= {rfa[6:0], rfa[7]};
-      else
-         if (sa_ah)
-            sa <= {mr[11] ? {ra[12], ra[0]} : {ra[14], ra[12]},
-                   ra[10], ra[8], ra[6], ra[4], ra[2], ra[14]};
-         else
-            if (sa_al)
-               sa <= {ra[13], ra[11], ra[9], ra[7], ra[5], ra[3], ra[1],
-                      mr[10] ? iop[6] : ra[15]};
-end
-
-always @(posedge ref_ck or posedge init)
-begin
-   if (init)
-      rfa <= 8'h00;
-   else
-      rfa <= rfa + 8'h01;
-end
-
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (t1)
-      refsh <= refrq & iop[1] & ~mr[9];
+   begin
+      if (da0_clr)
+         dal[0] <= 1'b0;
+      else
+         if (da_stl)
+            dal[0] <= da[0];
 
-   if (init | mr[11])
-      refrq <= 1'b1;
-   else
-      if (t2)
-         refrq <= ~refsh & (refrq | (iop[1] & ~mr[9]));
+      if (da_stl) dal[7:1] <= da[7:1];
+      if (da_sth) dal[15:8] <= da[15:8];
+   end
+end
 
-   if (t2)
-      ref_t2 <= refsh;
+assign pin_ad_out = dal;
 
-   if (init)
+assign da[7:0]  = (dx_da ? x[15:8] : 8'h00) | (sx_da ? x[7:0] : 8'h00);
+assign da[15:8] = (dx_da ? x[7:0] : 8'h00) | (sx_da ? x[15:8] : 8'h00);
+
+assign da0_clr = ~fc1 & ~plm[22];
+assign da_rst = ~bt2_t;
+
+assign da_stl = da_rst | da_s2 | da_s4;
+assign da_sth = da_rst | da_s2 | (da_s4 & ~pdc[10]);
+
+assign dx = (sx_af ? af[15:0] : 16'o000000)
+          | (da_rd ? (da_rx ? {pin_ad_in[7:0], pin_ad_in[15:8]} : pin_ad_in) : 16'o000000);
+
+assign sa_hx = iop[0] | iop[15];
+
+always @(posedge pin_clk_p or posedge reset)
+begin
+   if (reset)
       sa_ah <= 1'b0;
    else
       if (t4)
          sa_ah <= sa_hx;
-
-   if (t1)
-      sa_hx <= ~rs_ena | iop[0] | iop[15];
 end
 
 //______________________________________________________________________________
 //
 // Register block and X/Y buses
 //
-assign rs_s02 = plm[27] & ~plm[28] & ~plm[29] & ~tt_dns;
+assign rs_s02 = plm[27] & ~plm[28] & ~plm[29] & ~t4_dns;
 assign rs_d02 = plm[27] & ~plm[28] & ~rs_s02;
-assign rs_s35 = plm[20] & ~plm[10] & ~plm[12] & ~tt_dns;
+assign rs_s35 = plm[20] & ~plm[10] & ~plm[12] & ~t4_dns;
 assign rs_d35 = plm[20] & ~plm[10] & ~rs_s35;
 
 assign rsel[0] = ~rsel[7] &  plm[29] | rs_d02 & ri[0] | rs_s02 & ri[6];
@@ -712,43 +516,33 @@ assign rsel[5] = ~rsel[6] & ~plm[20] | rs_d35 & ri[2] | rs_s35 & ri[8];
 assign rsel[6] = plm[20] * ~plm[10];
 assign rsel[7] = plm[27] & ~plm[28];
 
-always @(*)
-begin
-   if (t1)
-   begin
-      rselx_t[0]  <= rs_ena & (rsel[2:0] == 3'b000) & rsel[7];
-      rselx_t[1]  <= rs_ena & (rsel[2:0] == 3'b001) & rsel[7];
-      rselx_t[2]  <= rs_ena & (rsel[2:0] == 3'b010) & rsel[7];
-      rselx_t[3]  <= rs_ena & (rsel[2:0] == 3'b011) & rsel[7];
-      rselx_t[4]  <= rs_ena & (rsel[2:0] == 3'b100) & rsel[7];
-      rselx_t[5]  <= rs_ena & (rsel[2:0] == 3'b101) & rsel[7];
-      rselx_t[6]  <= rs_ena & (rsel[2:0] == 3'b110);
-      rselx_t[7]  <= rs_ena & (rsel[2:0] == 3'b111);
-      rselx_t[8]  <= rs_ena & (rsel[2:0] == 3'b010) & ~rsel[7];
-      rselx_t[9]  <= rs_ena & (rsel[2:0] == 3'b011) & ~rsel[7];
-      rselx_t[10] <= rs_ena & (rsel[2:0] == 3'b100) & ~rsel[7];
-      rselx_t[11] <= rs_ena & (rsel[2:0] == 3'b101) & ~rsel[7];
+assign rselx[0]  = (rsel[2:0] == 3'b000) & rsel[7];
+assign rselx[1]  = (rsel[2:0] == 3'b001) & rsel[7];
+assign rselx[2]  = (rsel[2:0] == 3'b010) & rsel[7];
+assign rselx[3]  = (rsel[2:0] == 3'b011) & rsel[7];
+assign rselx[4]  = (rsel[2:0] == 3'b100) & rsel[7];
+assign rselx[5]  = (rsel[2:0] == 3'b101) & rsel[7];
+assign rselx[6]  = (rsel[2:0] == 3'b110);
+assign rselx[7]  = (rsel[2:0] == 3'b111);
+assign rselx[8]  = (rsel[2:0] == 3'b010) & ~rsel[7];
+assign rselx[9]  = (rsel[2:0] == 3'b011) & ~rsel[7];
+assign rselx[10] = (rsel[2:0] == 3'b100) & ~rsel[7];
+assign rselx[11] = (rsel[2:0] == 3'b101) & ~rsel[7];
 
-      rsely_t[0]  <= rs_ena & (rsel[5:3] == 3'b000) & rsel[6];
-      rsely_t[1]  <= rs_ena & (rsel[5:3] == 3'b001) & rsel[6];
-      rsely_t[2]  <= rs_ena & (rsel[5:3] == 3'b010) & rsel[6];
-      rsely_t[3]  <= rs_ena & (rsel[5:3] == 3'b011) & rsel[6];
-      rsely_t[4]  <= rs_ena & (rsel[5:3] == 3'b100) & rsel[6];
-      rsely_t[5]  <= rs_ena & (rsel[5:3] == 3'b101) & rsel[6];
-      rsely_t[6]  <= rs_ena & (rsel[5:3] == 3'b110);
-      rsely_t[7]  <= rs_ena & (rsel[5:3] == 3'b111);
-      rsely_t[8]  <= rs_ena & (rsel[5:3] == 3'b001) & ~rsel[6];
-      rsely_t[9]  <= rs_ena & (rsel[5:3] == 3'b000) & ~rsel[6];
-      rsely_t[10] <= rs_ena & (rsel[5:3] == 3'b100) & ~rsel[6];
-      rsely_t[11] <= rs_ena & (rsel[5:3] == 3'b101) & ~rsel[6] & ~inr_ry;
-   end
-end
+assign rsely[0]  = (rsel[5:3] == 3'b000) & rsel[6];
+assign rsely[1]  = (rsel[5:3] == 3'b001) & rsel[6];
+assign rsely[2]  = (rsel[5:3] == 3'b010) & rsel[6];
+assign rsely[3]  = (rsel[5:3] == 3'b011) & rsel[6];
+assign rsely[4]  = (rsel[5:3] == 3'b100) & rsel[6];
+assign rsely[5]  = (rsel[5:3] == 3'b101) & rsel[6];
+assign rsely[6]  = (rsel[5:3] == 3'b110);
+assign rsely[7]  = (rsel[5:3] == 3'b111);
+assign rsely[8]  = (rsel[5:3] == 3'b001) & ~rsel[6];
+assign rsely[9]  = (rsel[5:3] == 3'b000) & ~rsel[6];
+assign rsely[10] = (rsel[5:3] == 3'b100) & ~rsel[6];
+assign rsely[11] = (rsel[5:3] == 3'b101) & ~rsel[6] & ~inr_ry;
 
-assign rselx[11:0] = (~rs_chr & ~chrg) ? rselx_t[11:0] : 12'o0000;
-assign rsely[11:0] = (~rs_chr & ~t4) ? rsely_t[11:0] : 12'o0000;
-
-assign rx = (sx_ra ? ra : 16'o000000)
-          | (rselx[0]  ? r[0]  : 16'o000000)
+assign rx = (rselx[0]  ? r[0]  : 16'o000000)
           | (rselx[1]  ? r[1]  : 16'o000000)
           | (rselx[2]  ? r[2]  : 16'o000000)
           | (rselx[3]  ? r[3]  : 16'o000000)
@@ -762,7 +556,7 @@ assign rx = (sx_ra ? ra : 16'o000000)
           | (rselx[11] ? {8'o000, psw} : 16'o000000);
 
 
-assign ry = ((inr_ry & ~t4) ? {10'b00, inr[2], inr[3], ~inr[1], ~inr[0] ,2'b00} : 16'o000)
+assign ry = (inr_ry ? {10'b00, inr[2], inr[3], ~inr[1], ~inr[0] ,2'b00} : 16'o000)
           | (rsely[0]  ? r[0]  : 16'o000000)
           | (rsely[1]  ? r[1]  : 16'o000000)
           | (rsely[2]  ? r[2]  : 16'o000000)
@@ -776,9 +570,9 @@ assign ry = ((inr_ry & ~t4) ? {10'b00, inr[2], inr[3], ~inr[1], ~inr[0] ,2'b00} 
           | (rsely[10] ? r[10] : 16'o000000)
           | (rsely[11] ? {8'o000, psw} : 16'o000000);
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (sx_wl & rx_ena)
+   if (sx_wl)
    begin
       if (rselx[0]) r[0][7:0] <= wx[7:0];
       if (rselx[1]) r[1][7:0] <= wx[7:0];
@@ -794,7 +588,7 @@ begin
       if (rselx[11]) psw[7:0] <= wx[7:0];
    end
 
-   if (sx_wh & rx_ena)
+   if (sx_wh)
    begin
       if (rselx[0]) r[0][15:8] <= wx[15:8];
       if (rselx[1]) r[1][15:8] <= wx[15:8];
@@ -809,7 +603,7 @@ begin
       if (rselx[10]) r[10][15:8] <= wx[15:8];
    end
 
-   if (t4 & t4_syn & psw_wf)
+   if (t4 & psw_wf)
    begin
       if (psw_wc)
          psw[0] <= alu_cf;
@@ -821,151 +615,74 @@ end
 
 //______________________________________________________________________________
 //
-assign ra_stb = ~chrg & ~t1 & (iop5_t1 | ~t4) & ~iop50t & t2;
-assign sx_ra = ~chrg & ~t4 & ~rs_ena & ~rs_chr;
-assign ra0_clr = ~iop[4] & ~chrg & ~plm[22] & ~t4;
+assign ra_stb = (iop[0] | iop[5]) & t1;
+assign ra0_clr = ~iop[4] & ~plm[22];
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (~rs_ena)
-      ra[0] <= 1'b1;
+   if (ra0_clr)
+      ra0 <= 1'b0;
    else
-      if (ra0_clr)
-         ra[0] <= 1'b0;
-      else
-         if (ra_stb)
-            ra[0] <= rx[0];
-
-   if (ra_stb)
-      ra[15:1] <= rx[15:1];
+      if (ra_stb)
+         ra0 <= rx[0];
 end
 
-assign sx_x = ~t4 & ~chrg;
-assign sx_af = t4 & ~da_st[0];
-assign sx_da = (~t4 | da_st[0]) & da_stx;
-assign dx_da = (~t4 | da_st[0]) & ~da_st[1];
-assign da_stx = da_st[2] | (da_st[1] & da_st[0]);
+assign sx_af = ~da_s0;
+assign sx_da = da_stx;
+assign dx_da = ~da_s1;
+assign da_rd = da_s5 & ~hwclr;
+assign da_rx = da_s0 & ~da_s1;
+assign da_stx = da_s2 | (da_s1 & da_s0);
 
-always @(*)
-begin
-   if (t2)
-   begin
-      sx_wtl <= rs_ena & rs_wre & ~plm[15] & rse_nx;
-      sx_wth <= rs_ena & rs_wre & ~plm[15] & (pdc[2] | ~pdc[12]);
-   end
-end
+assign sx_wl = t4 & rs_wre & ~plm[15];
+assign sx_wh = t4 & rs_wre & ~plm[15] & (pdc[2] | ~pdc[12]);
 
-assign sx_wl = t4 & t4_syn & ~t1 & sx_wtl;
-assign sx_wh = t4 & t4_syn & ~t1 & sx_wth;
-
-assign sext = ~t4 & ~chrg & ~pdc[0] & ~pdc[1] & plm[17];
-assign rx_ena = t4 | (~hlt_rx & ~inr_ry);
+assign sext = ~pdc[0] & ~pdc[1] & plm[17];
+assign rx_ena = ~hlt_rx & ~inr_ry;
 assign ry_enl = aly;
 assign ry_enh = aly & ~pdc[2];
 
-assign halt_clr = ~t4 & hlt_rx;
-assign aclo_clr = ~t4 & inr_ry;
-assign immed = ~t4 & ~aly;
+assign halt_clr = hlt_rx;
+assign aclo_clr = inr_ry;
+assign immed = ~aly;
 
 assign hlt_rx = ~plm[8] & ~plm[10] & plm[12] & plm[14] & plm[16] & plm[18] & ~plm[20];
 assign inr_ry = ~plm[8] & plm[10] & ~plm[12] & plm[14] & plm[18];
 
 assign da_s0 = da_s4 | da_s5;
-assign da_s1 = rse_nx & (~pdc[12] | mr[11] | ~ra[0]);
-assign da_s2 = ~rs_ena | pdc[10] | pdc[11];
-assign da_s3 = rs_ena & plm[10] & plm[12] & ~plm[16] & plm[18] & ~plm[20];
-assign da_s4 = rs_ena & ~plm[14] & ~plm[16] & plm[18] & ~bus_dn;
-assign da_s5 = rs_ena &  plm[14] & ~plm[16] & plm[18];
+assign da_s1 = ~pdc[12] | ~ra0;
+assign da_s2 = pdc[10] | pdc[11];
+assign da_s3 = plm[10] & plm[12] & ~plm[16] & plm[18] & ~plm[20];
+assign da_s4 = ~plm[14] & ~plm[16] & plm[18] & ~bus_wt;
+assign da_s5 =  plm[14] & ~plm[16] & plm[18];
 
-always @(*)
-begin
-   if (t1)
-   begin
-      da_st[0] <= da_s0;
-      da_st[1] <= da_s1;
-      da_st[2] <= da_s2;
-      da_st[3] <= da_s3;
-   end
-end
-
-assign rse_in = ~mr[11] | iop[4] | ~rs_ena | ~rse_nx | (~iop[9] & ~iop[10]);
-
-always @(*)
-begin
-   if (~t1 & (init | (t4 & ~rdy_s0)))
-   begin
-      rs_ena <= rs_ena_t;
-      rse_nx <= rse_nx_t;
-   end
-
-   if (init)
-      rs_ena_t <= 1'b1;
-   else
-      if ((t1 | ~init) & ~t4 & t2 & ~bus_dn)
-         rs_ena_t <= rse_in;
-
-   if ((t1 | ~init) & ~t4 & t2 & ~bus_dn)
-         rse_nx_t <= rs_ena;
-end
-
-assign rdy_st = ~rdy & ~ref_t2 & ras;
-
-always @(*)
-begin
-   if (init | (t4 & rdy_s0))
-      iordy <= ~rdy_st;
-   else
-      if (rdy_st)
-         iordy <= iordy_t;
-
-   if (~rdy_st)
-      iordy_t <= 1'b0;
-   else
-      iordy_t <= init | (t4 & rdy_s0);
-
-   if (~t4)
-      rdy_s0 <= ~iordy;
-
-   if (init)
-      bus_dn <= 1'b0;
-   else
-      if (t4)
-         bus_dn <= rdy_s0;
-end
+assign bus_wt = ~plm_rdy;
+assign iordy = rdy | ~ras;
 
 //______________________________________________________________________________
 //
-always @(*)
-begin
-   if (t1)
-   begin
-      iop50t <= ~iop[0] & ~iop[5];
-      iop92t <= ~rs_ena | (~iop[2] & ~iop[9]);
-   end
-end
-
 assign fc1 =  plm[8] & ~plm[16];
-assign fc0 = ~plm[10] & ~plm[12] & plm[14] & ~plm[16] & ~plm[18] & ~plm[20] & ~t4 & ~chrg & psw_c;
+assign fc0 = ~plm[10] & ~plm[12] & plm[14] & ~plm[16] & ~plm[18] & ~plm[20] & psw_c;
 assign fc2 =  plm[10] & ~plm[12] & plm[14] & ~plm[16] & ~plm[18] &  plm[20];
-assign fc4 = ~plm[10] &  plm[12] & plm[14] & ~plm[16] & ~plm[18] & ~plm[20] & ~t4 & ~chrg;
+assign fc4 = ~plm[10] &  plm[12] & plm[14] & ~plm[16] & ~plm[18] & ~plm[20];
 assign fc3 = ~plm[10] & plm[14] & ~plm[16] & ~plm[18] & ~plm[20];
-assign alu_rs = ~t4 & ~chrg & fc3;
+assign alu_rs = fc3;
 
 assign alx = ~plm[10] | ~plm[12] | ~plm[14] | plm[16] | plm[18] | plm[20] | psw_n;
-assign alu_x00 = alx & ~chrg & ~t4 & ~plm[21];
-assign alu_x01 = alx & ~chrg & ~t4 & ~plm[17];
-assign alu_x10 = alx & ~chrg & ~t4 & ~plm[13];
-assign alu_x11 = alx & ~chrg & ~t4 &  plm[19];
+assign alu_x00 = alx & ~plm[21];
+assign alu_x01 = alx & ~plm[17];
+assign alu_x10 = alx & ~plm[13];
+assign alu_x11 = alx &  plm[19];
 
 assign aly = ~plm[8] | ~plm[14] | ~plm[16] | ~plm[18];
-assign alu_y01 = aly & ~chrg & ~t4 & ~plm[24];
-assign alu_y10 = aly & ~chrg & ~t4 & ~plm[26];
-assign alu_y11 = aly & ~chrg & ~t4 & ~plm[25];
+assign alu_y01 = aly & ~plm[24];
+assign alu_y10 = aly & ~plm[26];
+assign alu_y11 = aly & ~plm[25];
 
 assign ac_in =  plm[9] & ~plm[11]
              | ~plm[9] &  plm[11] & (plm[21] ^ ~psw_c);
 assign ax_in = plm[21] | ~aly | pdc[3];
-assign ay_in = ay[0] & (pdc[3] | plm[21] | ~aly | t4);
+assign ay_in = ay[0] & (pdc[3] | plm[21] | ~aly);
 
 //______________________________________________________________________________
 //
@@ -981,9 +698,9 @@ assign ax = (alu_rs  ? {fc4 & x[15], x[15:9], ~fc1 & x[8], x[7:1]} : 16'o000000)
 assign ay = (alu_y01 ? ~y &  x : 16'o000000)
           | (alu_y10 ?  y & ~x : 16'o000000)
           | (alu_y11 ?  y &  x : 16'o000000)
-          | {15'o00000, aly & plm[21] & ~chrg & ~t4 & ~pdc[3]};
+          | {15'o00000, aly & plm[21] & ~pdc[3]};
 
-always @(*) if (t2) af <= ax ^ ac[15:0];
+assign af = ax ^ ac[15:0];
 
 assign ac[0]  = ~(ac_in ^ ax_in);
 assign ac[1]  = ac_in & ax_in & ax[0]
@@ -1048,13 +765,11 @@ assign ac[16] = ac[12] & ax[15] & ax[14] & ax[13] & ax[12]
 
 assign wx[15:0] = sx_swp ? {dx[7:0], dx[15:8]} : dx[15:0];
 
-assign x[7:0]  = sx_wl ? wx[7:0] :
-                 (rx_ena ? rx[7:0] : 8'o000)
+assign x[7:0]  = (rx_ena ? rx[7:0] : 8'o000)
                | (halt_clr ? bt[7:0] : 8'o000)
                | (aclo_clr ? 8'o060 : 8'o000);
 
-assign x[15:8] = sx_wh ? wx[15:8] :
-                 (rx_ena ? rx[15:8] : 8'o000)
+assign x[15:8] = (rx_ena ? rx[15:8] : 8'o000)
                | (halt_clr ? bt[15:8] : 8'o000)
                | (aclo_clr ? {3'b000, ~vec, ~inr[0], ~inr[1], ~inr[2], ~inr[3]}: 8'o000);
 
@@ -1085,48 +800,35 @@ assign bra = ~ri[8] ^ ((~ri[15] & ~ri[10] & ~ri[9])
 assign alu_nf = af_byte ? af[7] : af[15];
 assign alu_vf = (vf_t[0] & (alu_nf ^ alu_cf)) | vf_t[1];
 assign alu_cf = (cf_t[0] & psw_wc) | cf_t[2] | cf_t[1];
+assign alu_zf = (sx_swp | (af[7:0] == 8'o000)) & (af_byte | (af[15:8] == 8'o000));
 
-always @(*)
-begin
-   if (t1)
-   begin
-      psw_wf <= aly & ~plm[22];
-      psw_wc <= plm[23];
-   end
+assign psw_wf = aly & ~plm[22];
+assign psw_wc = plm[23];
 
-   if (t4)
-      alu_zf <= (sx_swp | (af[7:0] == 8'o000))
-              & (af_byte | (af[15:8] == 8'o000));
-
-   if (~t4)
-   begin
-      vf_t[0] <= fc2 | fc3;
-      vf_t[1] <= ~fc2 & ~fc3 & ((fc1 ? ac[8] : ac[16]) ^ (fc1 ? ac[7] : ac[15]));
-
-      cf_t[0] <= ~fc2 & ~fc3 & ((fc1 ? ac[8] : ac[16]) ^ alu_x00);
-      cf_t[1] <= fc2 & (fc1 ? x[7] : x[15]);
-      cf_t[2] <= alu_rs & x[0];
-   end
-end
+assign vf_t[0] = fc2 | fc3;
+assign vf_t[1] = ~fc2 & ~fc3 & ((fc1 ? ac[8] : ac[16]) ^ (fc1 ? ac[7] : ac[15]));
+assign cf_t[0] = ~fc2 & ~fc3 & ((fc1 ? ac[8] : ac[16]) ^ alu_x00);
+assign cf_t[1] = fc2 & (fc1 ? x[7] : x[15]);
+assign cf_t[2] = alu_rs & x[0];
 
 //______________________________________________________________________________
 //
 // Microcode engine
 //
-t11_plm plm_matrix(.init(init), .m(m), .n(n), .sp(pla));
+t11_plm plm_matrix(.init(reset), .m(m), .n(n), .sp(pla));
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (t1 & ~t2)
+   if (t1)
    begin
       n <= na;
       m <= mi[15:6];
    end
 end
 
-assign mi[15:12] = mi_op ? ir[15:12] : {2'b00, ~mr[12], mi12_t};
+assign mi[15:12] = mi_op ? ir[15:12] : {3'b000, mi12_t};
 assign mi[11:6] = mi_op ? (mi_src ? ir[11:6] : 6'o00) | (mi_dst ? ir[5:0] : 6'o00) :
-                          {inrq & ~vec, inrq & vec, aclo, halt, psw[4], ~bt[2]};
+                          {inrq & ~vec, inrq & vec, aclo, halt, psw[4], ~bt2_t};
 
 //
 // The initial micro-instruction address for opcode decode
@@ -1142,46 +844,40 @@ assign na[5:0] = ~plm[5:0] | (na[7] ? sna : 6'b000000);
 assign na[6] = ~plm[6];
 assign na[7] = ~plm[7];
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
-   if (mi12_clr)
-      mi12_t <= 1'b0;
-   else
-      if (id[14] & pdc[9] & t2)
-         mi12_t <= 1'b1;
+   if (t4)
+      t4_dns <= mi_dns;
 
-   if (t2)
-      tt_dns <= mi_dns;
+   if (t1)
+      if (~bt2_t | da_s2)
+         mi12_t <= 1'b0;
+      else
+         if (id[14] & pdc[9])
+            mi12_t <= 1'b1;
 end
 
-assign mi12_clr = t2 & (~bt[2] | da_s2);
-assign plm = plm_stb ? 30'h3FFFFFFF : plm_t;
-assign op = plm_stb ? 7'h7F : op_t;
-
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (plm_stb)
+   if (reset)
    begin
-      op_t[0] <= pla[8];
-      op_t[1] <= pla[10];
-      op_t[2] <= pla[12];
-      op_t[3] <= pla[14];
-      op_t[4] <= pla[16];
-      op_t[5] <= pla[18];
-      op_t[6] <= pla[20];
+      op[0] <= 1'b0;
+      op[5] <= 1'b0;
    end
    else
-      if (op_clr)
+      if (plm_stb)
       begin
-         op_t[0] <= 1'b0;
-         op_t[5] <= 1'b0;
+         plm[0] <= pla[0] & ~plm_cz;
+         plm[29:1] <= pla[29:1];
+
+         op[0] <= pla[8];
+         op[1] <= pla[10];
+         op[2] <= pla[12];
+         op[3] <= pla[14];
+         op[4] <= pla[16];
+         op[5] <= pla[18];
+         op[6] <= pla[20];
       end
-
-   if (plm_stb)
-      plm_t[0] <= pla[0] & ~plm_cz;
-
-   if (plm_stb)
-      plm_t[29:1] <= pla[29:1];
 end
 
 assign pdc[0] = ~plm[9] | ~plm[11];
@@ -1200,32 +896,18 @@ assign pdc[10] = ~plm[8] & plm[10] & ~plm[12] & plm[14] & plm[18] & ~plm[20];
 assign pdc[11] = plm[8] & ~plm[14] & plm[16] & plm[18];
 assign pdc[12] = plm[8] & ~plm[16];
 
-assign plm_cz = ~t1 & plm_qz & alu_zf & t4 & t4_syn;
-assign op_clr = ~plm_stb & init;
+assign plm_cz = ~plm[8] & ~plm[14] & plm[16] & ~plm[18] & alu_zf;
 assign mi_op = ~pdc[6];
 assign mi_src = mi_op & ~mi_dns;
 assign mi_dst = mi_op & mi_dns;
-assign mi_dns = st_dns ? ~id_dns : tt_dns;
+assign mi_dns = st_dns ? ~id_dns : t4_dns;
 assign st_dns = pdc[4] | (pdc[5] & (id[8] | id[9]));
 
 assign rs_wre = bra | ~plm[10] | ~plm[12] | ~plm[14] | plm[16] | plm[18] | ~plm[20];
+assign sx_swp = ~plm[10] & ~plm[12] & plm[14] & ~plm[16] & ~plm[18] & plm[20];
+assign af_byte = pdc[12];
 
-always @(*)
-begin
-   if (t1)
-      plm_qz <= ~plm[8] & ~plm[14] & plm[16] & ~plm[18];
-
-   if (t1)
-      sx_swp = ~plm[10] & ~plm[12] & plm[14] & ~plm[16] & ~plm[18] & plm[20];
-
-   if (t1)
-      af_byte <= pdc[12];
-end
-
-assign iop[15] = ~op_clr & ~pdc[6] & ~iop[13] & ~plm[22];
-assign iop[16] = ~pdc[10] & (~pdc[12] | mr[11] | ra[0]);
-
-always @(*) if (t1) iop5_t1 <= iop[5];
+assign iop[15] = ~reset & ~pdc[6] & ~iop[13] & ~plm[22];
 
 t11_pio pio_matrix(.op(op), .iop(iop[14:0]));
 
@@ -1233,32 +915,15 @@ t11_pio pio_matrix(.op(op), .iop(iop[14:0]));
 //
 // PLM matrix strobes
 //
-assign plm_io = rs_ena & rse_in & iordy;
-assign plm_stb = plm_h0 & plm_h1 & t4;
-assign pl_up = ~plm_stb & plm_ch;
+assign plm_stb = plm_rdy & t4;
 
-always @(*)
+always @(posedge pin_clk_p or posedge reset)
 begin
-   if (init)
-      plm_h0 <= 1'b1;
+   if (reset)
+      plm_rdy <= 1'b1;
    else
-      if (~t4 & ~t4_syn)
-         plm_h0 <= plm_io;
-
-   if (t2)
-         plm_h1 <= 1'b1;
-      else
-         if (~plm_ch & t1)
-            plm_h1 <= 1'b0;
-
-   if (plm_stb)
-         plm_ch <= 1'b0;
-   else
-      if (op_clr)
-         plm_ch <= 1'b1;
-      else
-         if (~pl_up)
-            plm_ch <= 1'b1;
+      if (~t4)
+         plm_rdy <= iordy;
 end
 
 //______________________________________________________________________________
@@ -1267,14 +932,14 @@ end
 //
 t11_pid pid_matrix(.ir(ir), .id(id[17:0]));
 
-always @(*)
+always @(posedge pin_clk_p)
 begin
    if (ir_stl) ir[7:0] <= dx[7:0];
    if (ir_sth) ir[15:8] <= dx[15:8];
 end
 
-assign ir_stl = ~t1 & ~t2 & da_st[3] & da_st[1];
-assign ir_sth = ~t1 & ~t2 & da_st[3];
+assign ir_stl = t4 & da_s3 & da_s1;
+assign ir_sth = t4 & da_s3;
 assign ri = r[10];
 
 assign dns_s0 = pdc[9] & ~id[17];

@@ -1633,6 +1633,127 @@ def proc_vm3v(verb):
         print("assign p[%d]  = cmp(ib, 12'b%s);" % (i, l))
 
 
+def proc_t11(verb):
+    print("Decoding T11 PLA matrix ...")
+    for i in range(1, 141):
+        vlink = "P%d" %  i
+        vnet = netlist.get(vlink, None)
+        if vnet is None:
+            print("Net %s not found in netlist" % vlink)
+            exit(-1)
+        if verb:
+            print(vnet.name, vnet.nodes)
+
+        cmp = comp_by_pin(vnet, 1)
+        if cmp is None or cmp.pins[3] != "PL_ST":
+            print("No tranceiving component found in net %s" % vnet.name)
+            exit(-1)
+        vn = netlist.get(cmp.pins[2], None)
+        if vn is None:
+            print("Net %s not found in netlist" % cmp.pins[2])
+            exit(-1)
+
+        cmp = comp_by_pin(vn, 1)
+        if cmp is None or cmp.pins[2] != "+5V":
+            print("No tranceiving component found in net %s" % vn.name)
+            exit(-1)
+        vn = netlist.get(cmp.pins[3], None)
+        if vn is None:
+            print("Net %s not found in netlist" % cmp.pins[3])
+            exit(-1)
+
+        # gather mask for Pn-products for Mn/~Mn and Nn/~Nn
+        seta = 0
+        clra = 0
+        # skip dummy P75-P78, P88, P108, P130
+        if i != 88 and i != 108 and i != 130 and (i < 75 or i > 78):
+            for t in vn.nodes:
+                nodes = vn.nodes[t]
+                if len(nodes) == 1 and nodes[0] == 3:
+                    l = cmplist[t].pins[2]
+                    if re.fullmatch(r"M[0-9]", l):
+                        clra |= 1 << (int(l[1:]) + 8)
+                        continue
+                    if re.fullmatch(r"~M[0-9]", l):
+                        seta |= 1 << (int(l[2:]) + 8)
+                        continue
+                    if re.fullmatch(r"N[0-7]", l):
+                        clra |= 1 << int(l[1:])
+                        continue
+                    if re.fullmatch(r"~N[0-7]", l):
+                        seta |= 1 << int(l[2:])
+                        continue
+
+        if (seta & clra or seta >= (1<<18) or clra >= (1<<18)):
+            print("Net: %s bitmask %03X %03X error" % (vn.name, seta, clra))
+            exit(-1)
+
+        # convert mask to string like "000111xxxx"
+        l = ""
+        for j in range(17, -1, -1):
+            if seta & (1 << j):
+                l += "1"
+                continue
+            if clra & (1 << j):
+                l += "0"
+                continue
+            l += "x"
+
+        if verb:
+            print("%s: %07X %07X -> %s" % (vlink, seta, clra, l))
+        print("assign p[%d] = cmp({m, n}, {10'b%s, 8'b%s});" % (i, l[0:10], l[10:]))
+
+    for i in range(30):
+        plink = "PL%d" % i
+        pnet = netlist.get(plink, None)
+        if pnet is None:
+            print("Net %s not found in netlist" % plink)
+            exit(-1)
+        if verb:
+            print(pnet.name, pnet.nodes)
+
+        d = 0
+        for t in pnet.nodes:
+            nodes = pnet.nodes[t]
+            if len(nodes) != 1:
+                print("Net %s has invalid attachment (1) %s" % (plink, t))
+                exit(-1)
+            cmp = cmplist[t]
+            if cmp.pins[3] != plink:
+                if (cmp.pins[1] == plink and
+                    cmp.pins[2] == "PL_UP" and
+                    cmp.pins[3] == "+5V"):
+                    continue
+                if cmp.pins[2] == plink:
+                    continue
+                print("Net %s has invalid attachment (2) %s" % (plink, t))
+                exit(-1)
+            if cmp.pins[1] != "GND":
+                print("Net %s has invalid attachment (3) %s" % (plink, t))
+                exit(-1)
+
+            pname = cmp.pins[2]
+            if re.fullmatch(r"P\d{1,3}", pname):
+                d |= 1 << int(pname[1:])
+                continue
+            print("Unrecognized net %s found in net %s" % (pname, vnet.name))
+            exit(-1)
+
+        l = "assign pl[%d] = " % i
+        for j in range(140, 99, -1):
+            if d  & (1 << j):
+                l = l + "p[%d] | " % j
+        for j in range(99, 9, -1):
+            if d  & (1 << j):
+                l = l + "p[%d]  | " % j
+        for j in range(9, -1, -1):
+            if d  & (1 << j):
+                l = l + "p[%d]   | " % j
+        l = l[:-3]
+        l = l.strip()
+        print("%s;" % l)
+
+
 def proc_netlist(arch, verb):
     print("Processing netlist for arch: %s" % arch)
 
@@ -1683,6 +1804,10 @@ def proc_netlist(arch, verb):
         proc_vm3v(verb)
         return
 
+    if arch == "t11":
+        proc_t11(verb)
+        return
+
     print("Unsupported arch: %s" % arch)
     exit(-1)
 
@@ -1695,9 +1820,9 @@ if __name__ == '__main__':
     parser.add_argument("--arch",
                         choices=["cp1611", "cp1621", "dc302", "dc303",
                                  "vm3", "vm3b", "vm3c",
-                                 "vm3d", "vm3i", "vm3f", "vm3v"],
+                                 "vm3d", "vm3i", "vm3f", "vm3v", "t11"],
                         help="architecture used to translate the matrix",
-                        default="vm3")
+                        default="t11")
     parser.add_argument("--verbose",
                         action="store_true",
                         help="architecture used to translate the matrix")

@@ -105,26 +105,28 @@ assign de0_led[3] = ~de0_button[2];
 //
 t11 cpu
 (
-   .pin_clk(clk),                   // processor clock
-   .pin_cout(de0_gpio0_d[0]),       // processor clock output
-   .pin_pup(de0_gpio0_d[1]),        // power-up
+   .pin_clk_p(clk),                 // positive processor clock
+   .pin_clk_n(~clk),                // negative processor clock
+   .pin_dclo(de0_gpio0_d[1]),       // power-up
    .pin_bclr_n(de0_gpio0_d[2]),     // bus clear
    .pin_sel(de0_gpio0_d[4:3]),      // select output flag
    .pin_wb_n(de0_gpio0_d[6:5]),     // read/write/byte mask
    .pin_ready(de0_gpio0_d[7]),      // bus ready
                                     //
-   .pin_dal(de0_dram_dq),           // address/data bus
+   .pin_ad_out(de0_dram_dq),        // address/data bus
+   .pin_ad_in(de0_gpio1_d[15:0]),   // address/data bus
    .pin_ras_n(de0_gpio0_d[8]),      //
    .pin_cas_n(de0_gpio0_d[9]),      //
-   .pin_a(de0_dram_addr[7:0]),      // address bus
                                     //
    .pin_hlt_n(de0_gpio0_d[10]),     // supervisor exception requests
    .pin_pf_n(de0_gpio0_d[11]),      // power fail notification
    .pin_vec_n(de0_gpio0_d[12]),     // vectored interrupt request
    .pin_cp_n(de0_gpio0_d[16:13]),   // coded interrupt priority
-   .pin_pi(de0_gpio0_d[18])         // priority input strobe
+   .pin_pi(de0_gpio0_d[18]),        // priority input strobe
+   .pin_bsel(de0_gpio0_d[17:15])    // start address selector
 );
 
+assign   de0_gpio0_d[0]    = 1'bZ;
 assign   de0_gpio0_d[1]    = 1'bZ;
 assign   de0_gpio0_d[7]    = 1'bZ;
 assign   de0_gpio0_d[10]   = 1'bZ;
@@ -144,7 +146,7 @@ assign   de0_uart_txd   = 1'bz;
 assign   de0_uart_cts   = 1'bz;
 
 // assign   de0_dram_dq    = 16'hzzzz;
-assign   de0_dram_addr[12:8]  = 5'h00;
+assign   de0_dram_addr[12:0]  = 13'h00;
 assign   de0_dram_ldqm  = 1'b0;
 assign   de0_dram_udqm  = 1'b0;
 assign   de0_dram_we_n  = 1'b1;
