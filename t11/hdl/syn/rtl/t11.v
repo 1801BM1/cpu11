@@ -28,9 +28,7 @@ module t11
 
 //______________________________________________________________________________
 //
-reg            t1, t2, t3, t4;   // clock generator phases
-wire           ph_w;             // insert phase D between phases 2 and 3
-                                 //
+reg            t1, t2, t4;       // clock generator phases
 reg            dclo;             //
 reg            reset;            // power-up reset
 reg            hwclr;            //
@@ -209,25 +207,15 @@ begin
    begin
       t1 <= 1'b1;
       t2 <= 1'b0;
-      t3 <= 1'b0;
       t4 <= 1'b0;
    end
    else
    begin
       t1 <= t4;                     // phase 1
       t2 <= t1;                     // phase 2
-      t3 <= t2 & ph_w;              // phase D (extra)
-      t4 <= t3 | (t2 & ~ph_w);      // phase W
+      t4 <= t2;                     // phase W
    end
 end
-
-//
-// According to documentation the D phase should be inserted:
-//
-//    - in ASPI transaction
-//    - in IAKO transaction
-//
-assign ph_w = iop[2] | iop[3];
 
 //______________________________________________________________________________
 //
@@ -327,8 +315,8 @@ begin
    end
 end
 
-assign ras_s0 = (t3 | (t2 & ~ph_w)) & sa_hx;
-assign ras_s1 = t2 & ph_w & iop[3];
+assign ras_s0 = t2 & sa_hx;
+assign ras_s1 = t2 & iop[3];
 assign ras_c0 = t4 & cas_c0 | reset;
 
 assign cas_s0 = t1 & ~hwclr & sa_ah;
@@ -357,7 +345,7 @@ end
 assign pin_pi = pr;
 assign pi_lat = t4 & (iop[2] | iop[9]);
 
-assign pr_s0 = (t3 | t2 & ph_w) & ~hwclr & cas;
+assign pr_s0 = t2 & ~hwclr & cas;
 assign pr_s1 = t1 & ~hwclr & sa_ah;
 assign pr_c0 = t4 & cas_c0;
 

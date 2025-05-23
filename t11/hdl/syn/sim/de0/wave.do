@@ -19,8 +19,6 @@ add wave -noupdate -group clk -label pin_clk_n /tb_t11/cpu/pin_clk_n
 add wave -noupdate -group clk -label t1 /tb_t11/cpu/t1
 add wave -noupdate -group clk -label t2 /tb_t11/cpu/t2
 add wave -noupdate -group clk -label t4 /tb_t11/cpu/t4
-add wave -noupdate -group clk -label ph_w /tb_t11/cpu/ph_w
-add wave -noupdate -group clk -label t3 /tb_t11/cpu/t3
 add wave -noupdate -group init -label dclo /tb_t11/cpu/dclo
 add wave -noupdate -group init -label reset /tb_t11/cpu/reset
 add wave -noupdate -group init -label hwclr /tb_t11/cpu/hwclr
@@ -141,10 +139,10 @@ add wave -noupdate -group bus -group pr -label aclo /tb_t11/cpu/aclo
 add wave -noupdate -group bus -group pr -label halt /tb_t11/cpu/halt
 add wave -noupdate -group bus -group pr -label vec /tb_t11/cpu/vec
 add wave -noupdate -group bus -group pr -label inr -radix hexadecimal /tb_t11/cpu/inr
-add wave -noupdate -group bus -group sa -label sa_ah /tb_t11/cpu/sa_ah
 add wave -noupdate -group bus -group ra -label ra_stb /tb_t11/cpu/ra_stb
 add wave -noupdate -group bus -group ra -label ra0_clr /tb_t11/cpu/ra0_clr
 add wave -noupdate -group bus -group bsta -label iordy /tb_t11/cpu/iordy
+add wave -noupdate -group bus -group bsta -label sa_ah /tb_t11/cpu/sa_ah
 add wave -noupdate -group ir -label ir -radix octal -childformat {{{/tb_t11/cpu/ir[15]} -radix octal} {{/tb_t11/cpu/ir[14]} -radix octal} {{/tb_t11/cpu/ir[13]} -radix octal} {{/tb_t11/cpu/ir[12]} -radix octal} {{/tb_t11/cpu/ir[11]} -radix octal} {{/tb_t11/cpu/ir[10]} -radix octal} {{/tb_t11/cpu/ir[9]} -radix octal} {{/tb_t11/cpu/ir[8]} -radix octal} {{/tb_t11/cpu/ir[7]} -radix octal} {{/tb_t11/cpu/ir[6]} -radix octal} {{/tb_t11/cpu/ir[5]} -radix octal} {{/tb_t11/cpu/ir[4]} -radix octal} {{/tb_t11/cpu/ir[3]} -radix octal} {{/tb_t11/cpu/ir[2]} -radix octal} {{/tb_t11/cpu/ir[1]} -radix octal} {{/tb_t11/cpu/ir[0]} -radix octal}} -subitemconfig {{/tb_t11/cpu/ir[15]} {-height 15 -radix octal} {/tb_t11/cpu/ir[14]} {-height 15 -radix octal} {/tb_t11/cpu/ir[13]} {-height 15 -radix octal} {/tb_t11/cpu/ir[12]} {-height 15 -radix octal} {/tb_t11/cpu/ir[11]} {-height 15 -radix octal} {/tb_t11/cpu/ir[10]} {-height 15 -radix octal} {/tb_t11/cpu/ir[9]} {-height 15 -radix octal} {/tb_t11/cpu/ir[8]} {-height 15 -radix octal} {/tb_t11/cpu/ir[7]} {-height 15 -radix octal} {/tb_t11/cpu/ir[6]} {-height 15 -radix octal} {/tb_t11/cpu/ir[5]} {-height 15 -radix octal} {/tb_t11/cpu/ir[4]} {-height 15 -radix octal} {/tb_t11/cpu/ir[3]} {-height 15 -radix octal} {/tb_t11/cpu/ir[2]} {-height 15 -radix octal} {/tb_t11/cpu/ir[1]} {-height 15 -radix octal} {/tb_t11/cpu/ir[0]} {-height 15 -radix octal}} /tb_t11/cpu/ir
 add wave -noupdate -group ir -label ir_sth /tb_t11/cpu/ir_sth
 add wave -noupdate -group ir -label ir_stl /tb_t11/cpu/ir_stl
@@ -165,7 +163,7 @@ add wave -noupdate -group tty -label rd /tb_t11/tty_rd
 add wave -noupdate -group tty -label wb /tb_t11/tty_wb
 add wave -noupdate -group tty -label sel /tb_t11/tty_sel
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {3615000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {8122905000 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 147
 configure wave -valuecolwidth 59
@@ -181,4 +179,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {8121945147 ps} {8123029203 ps}
+WaveRestoreZoom {8056994396 ps} {8126373980 ps}
