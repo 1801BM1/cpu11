@@ -1,0 +1,58 @@
+FROM ubuntu:24.04 as builder
+LABEL org.opencontainers.image.authors="yshestakov@gmail.com"
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV RT11=/usr/local/share/rt11
+RUN apt-get -q update
+RUN apt-get -yq install \
+	cmake gcc g++ iverilog git make jq curl unzip \
+	libpcre3-dev libedit-dev libpng-dev libpcap-dev \
+	libsdl2-dev libsdl2-ttf-dev libvdeplug-dev
+RUN git clone https://github.com/nzeemin/ukncbtl-utils.git /usr/local/src/ukncbtl-utils
+RUN cd /usr/local/src/ukncbtl-utils; \
+  make -C rt11dsk V=1 all && install -m 755 rt11dsk/rt11dsk /usr/local/bin/
+# https://gunkies.org/wiki/Installing_RT-11_5.3_on_SIMH
+# 
+WORKDIR /usr/local/src/
+RUN curl -LO -s https://github.com/simh/simh/archive/refs/heads/master.zip && \
+  unzip -x master.zip && ls -l
+RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
+ADD dectape.c /usr/local/src/
+RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
+#
+FROM ubuntu:24.04 as worker
+LABEL org.opencontainers.image.authors="yshestakov@gmail.com"
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV RT11=/usr/local/share/rt11
+RUN apt-get -q update
+RUN apt-get -yq install \
+	iverilog git make vim jq curl dos2unix srecord \
+	libsdl2-2.0-0 \
+	libsdl2-ttf-2.0-0 \
+	libpcre3 \
+	libedit2 \
+	libpng16-16t64 \
+	libpcap0.8t64 \
+	libvdeplug2t64
+COPY --from=builder /usr/local/bin/* /usr/local/bin/
+COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
+RUN mkdir -p /usr/local/share/rt11/Disks
+WORKDIR $RT11
+# 1. Get an empty RL02 disk image where your installation will live.
+RUN curl -LO -s http://www.dbit.com/pub/pdp11/empty/rl02.dsk.gz && \
+  gunzip rl02.dsk.gz && \
+  mv rl02.dsk Disks/empty-rl02.dsk
+# 2. Get the Mentec software kit distributed as RL02 image
+RUN curl -LO -s http://simh.trailing-edge.com/kits/rtv53swre.tar.Z
+RUN zcat rtv53swre.tar.Z |tar -xvf - && rm rtv53swre.tar.Z
+ADD STARTF.COM .
+ADD HALT.MAC .
+ADD HALT.SAV .
+ADD initial.ini .
+ADD boot.ini .
+ADD init_rt11os_image.sh .
+ADD comp_mac2sav.sh /usr/local/bin/
+RUN ls -l
+RUN ./init_rt11os_image.sh
+#WORKDIR /work
