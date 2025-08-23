@@ -23,13 +23,13 @@ RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
 FROM ubuntu:18.04 as worker
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
-ENV PATH=$PATH:/modelsim/linux
+ENV PATH=$PATH:/modelsim/linux:/work/xen/tools/unix
 ENV RT11=/usr/local/share/rt11
 # Update APT repo metadata
 RUN apt-get -y update
 # Install tools and runtime libs for SIMH
 RUN apt-get -yq install \
-	iverilog git make vim jq curl dos2unix srecord \
+	iverilog git make vim jq curl dos2unix srecord iverilog \
 	libsdl2-2.0-0 \
 	libsdl2-ttf-2.0-0 \
 	libpcre3 \

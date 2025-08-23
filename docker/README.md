@@ -62,4 +62,19 @@ cd ~/work/cpu11/t11/hdl/syn/sim/de0
 Need to note that `~/work/cpu11` is the directory where `cpu11.git` is checked out
 
 
+## Run external ModelSim for T11
+
+The goal is to change dir to the proper directory with `run.do` script for particular CPU11 model
+and run it usinv `vsim` command in command-line mode:
+
+```sh
+~/work/cpu11/docker/run_bionic.sh -c 'cd /work/t11/hdl/syn/sim/de0; vsim -c -onfinish exit -do "run.do" < /dev/null'
+```
+
+Need to note about how ModelSim is mounted to the container.
+the `run_bionic.sh` script check for `MODELSIM_DIR` directory where actual ModelSim is installed on the host.
+By default it uses `/tank/modelsim-q13/13.0sp1/modelsim_ase` if not defined.
+
+In the container `$MODELSIM_DIR` is mounted as a volume into `/modelsim` directory.
+Also it is assumed `/modelsim/linux` contains ModelSim binaries including `vsim`
 
