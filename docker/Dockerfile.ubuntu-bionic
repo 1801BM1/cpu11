@@ -1,5 +1,4 @@
-FROM ubuntu:24.04 as builder
-LABEL org.opencontainers.image.authors="yshestakov@gmail.com"
+FROM ubuntu:18.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV RT11=/usr/local/share/rt11
@@ -21,12 +20,13 @@ RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
 ADD xen/tools/unix/dectape.c /usr/local/src/
 RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
 #
-FROM ubuntu:24.04 as worker
-LABEL org.opencontainers.image.authors="yshestakov@gmail.com"
+FROM ubuntu:18.04 as worker
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
+ENV PATH=$PATH:/modelsim/linux
 ENV RT11=/usr/local/share/rt11
-RUN apt-get -q update
+# Update APT repo metadata
+RUN apt-get -y update
 # Install tools and runtime libs for SIMH
 RUN apt-get -yq install \
 	iverilog git make vim jq curl dos2unix srecord \
@@ -34,11 +34,17 @@ RUN apt-get -yq install \
 	libsdl2-ttf-2.0-0 \
 	libpcre3 \
 	libedit2 \
-	libpng16-16t64 \
-	libpcap0.8t64 \
-	libvdeplug2t64
+	libpng16-16 \
+	libpcap0.8 \
+	libvdeplug2
+# Enable i386 architecture
+RUN dpkg --add-architecture i386 && apt-get -y update
+# Install 32-bit libc and other useful tools
+RUN apt-get -yq install libc6:i386 gcc-multilib g++-multilib \
+	libxft2:i386 libxext6:i386 libncurses5:i386
 COPY --from=builder /usr/local/bin/* /usr/local/bin/
 COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
+# Make RT-11 stuff
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
 # 1. Get an empty RL02 disk image where your installation will live.
@@ -57,5 +63,5 @@ ADD xen/tools/unix/init_rt11os_image.sh .
 ADD xen/tools/unix/comp_mac2sav.sh /usr/local/bin/
 RUN ls -l
 RUN ./init_rt11os_image.sh
-RUN apt-get -y clean all ; rm -rf /var/cache/apt/
-#WORKDIR /work
+# Optional: Clean up to reduce image size
+RUN apt-get -y clean all ; rm -rf /var/cache/apt/ /var/lib/apt/lists/*

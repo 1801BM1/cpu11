@@ -8,7 +8,8 @@ tests running as part of CI workflow.
 * `rt11dsk` tool by Zeemen to copy in/out files into RL02 disks
 * `dectape` tool by by Bob Frazier to copy in/out files using "DEC tape" aka `MT0` device in RT-11
 * RT-11 v5.3 (free for hobby use in SIMH), installed OS in the `rt11os.dsk` image
-* Icarus Verilog to run test benches.
+* Icarus Verilog to run test benches (Ubuntu 24.04 based image).
+* a few 32-bit runtime libraries to run ModelSim 10.1d from Quartus 13 (externally mounted to the container)
 
 # Docker image build flow
 
@@ -23,7 +24,7 @@ The process is scripted into `docker/build_image.sh` script and it used Podman t
 It should work with `docker` tool as well:
 
 ```sh
-docker build -t quay.io/yshestakov/cpu11-tools:latest -f docker/Dockerfile.ubuntu-noble docker/ 
+docker build -t quay.io/yshestakov/cpu11-tools-noble:latest -f docker/Dockerfile.ubuntu-noble ./ 
 ```
 
 Resulting Docker image could be fetched from 
@@ -36,7 +37,7 @@ How to run the container and get interfactive shell (`docker` could be used inst
 ```
     podman run --rm -ti  \
         -v $(pwd):/work \
-        quay.io/yshestakov/cpu11-tools:latest  \
+        quay.io/yshestakov/cpu11-tools-noble:latest  \
         /bin/bash $@
 ```
 
@@ -46,7 +47,7 @@ How to run the container and get interfactive shell (`docker` could be used inst
 
 ```sh
 cd t11/tst
-../../docker/run.sh /work/docker/comp_mac2sav.sh test.mac
+../../docker/run_noble.sh /work/docker/comp_mac2sav.sh test.mac
 ```
 
 Resulting files will be storede in `t11/tst/out` relative to root of checked out `cpu11.git` repo
@@ -55,7 +56,7 @@ Resulting files will be storede in `t11/tst/out` relative to root of checked out
 
 ```sh
 cd ~/work/cpu11/t11/hdl/syn/sim/de0
-~/work/cpu11/docker/run.sh -c 'cd /work/t11/hdl/syn/sim/de0; ./run_iverilog.sh'
+~/work/cpu11/docker/run_noble.sh -c 'cd /work/t11/hdl/syn/sim/de0; ./run_iverilog.sh'
 ```
 
 Need to note that `~/work/cpu11` is the directory where `cpu11.git` is checked out
