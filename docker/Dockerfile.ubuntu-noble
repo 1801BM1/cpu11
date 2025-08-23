@@ -15,9 +15,14 @@ RUN cd /usr/local/src/ukncbtl-utils; \
 # https://gunkies.org/wiki/Installing_RT-11_5.3_on_SIMH
 # 
 WORKDIR /usr/local/src/
+# get and build SIMH 4.0
 RUN curl -LO -s https://github.com/simh/simh/archive/refs/heads/master.zip && \
   unzip -x master.zip && ls -l
 RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
+# build macro11 tool
+RUN cd /usr/local/src && git clone https://github.com/simh/simtools.git && \
+ cd simtools/crossassemblers/macro11 && make
+# build dectape tool
 ADD xen/tools/unix/dectape.c /usr/local/src/
 RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
 #
@@ -40,6 +45,7 @@ RUN apt-get -yq install \
 	libvdeplug2t64
 COPY --from=builder /usr/local/bin/* /usr/local/bin/
 COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
+COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
 # 1. Get an empty RL02 disk image where your installation will live.
@@ -56,7 +62,8 @@ ADD xen/rt11/initial.ini .
 ADD xen/rt11/boot.ini .
 ADD xen/tools/unix/init_rt11os_image.sh .
 ADD xen/tools/unix/comp_mac2sav.sh /usr/local/bin/
-RUN ls -l
+ADD xen/tools/unix/obj2bin.pl /usr/local/bin/
 RUN ./init_rt11os_image.sh
-RUN apt-get -y clean all ; rm -rf /var/cache/apt/
-#WORKDIR /work
+# Optional: Clean up to reduce image size
+RUN apt-get -y clean all ; rm -rf /var/cache/apt/ /var/lib/apt/lists/*
+WORKDIR /work
