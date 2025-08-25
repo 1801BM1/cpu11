@@ -35,7 +35,12 @@ RUN cd /usr/local/src && \
   make all && \
   mkdir /tmp/binutils && \
   make install DESTDIR=/tmp/binutils
-#
+# Get and build bin2load
+RUN cd /usr/local/src && \
+  git clone https://github.com/jguillaumes/retroutils.git && \
+  cd retroutils/bin2load && \
+  make bin2load
+# Runtime/worker container
 FROM ubuntu:24.04 as worker
 LABEL org.opencontainers.image.authors="yshestakov@gmail.com"
 ENV PATH=$PATH:/work/xen/tools/unix
@@ -58,6 +63,7 @@ COPY --from=builder /usr/local/bin/* /usr/local/bin/
 COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
 COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
 COPY --from=builder /tmp/binutils /
+COPY --from=builder /usr/local/src/retroutils/bin2load/bin2load /usr/local/bin/
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
 # 1. Get an empty RL02 disk image where your installation will live.

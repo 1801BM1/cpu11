@@ -32,7 +32,12 @@ RUN cd /usr/local/src && \
   ../configure  --target=pdp11-aout && \
   mkdir /tmp/binutils && \
   DESTDIR=/tmp/binutils make all install
-#
+# Get and build bin2load
+RUN cd /usr/local/src && \
+  git clone https://github.com/jguillaumes/retroutils.git && \
+  cd retroutils/bin2load && \
+  make bin2load
+# Runtime/worker container
 FROM ubuntu:18.04 as worker
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -59,6 +64,7 @@ COPY --from=builder /usr/local/bin/* /usr/local/bin/
 COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
 COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
 COPY --from=builder /tmp/binutils/* /usr/
+COPY --from=builder /usr/local/src/retroutils/bin2load/bin2load /usr/local/bin/
 # Make RT-11 stuff
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
