@@ -4,26 +4,34 @@ ENV LANG=C.UTF-8
 ENV RT11=/usr/local/share/rt11
 RUN apt-get -q update
 RUN apt-get -yq install \
-	cmake gcc g++ iverilog git make jq curl unzip \
+	cmake gcc g++ git make jq curl unzip xz-utils \
 	libpcre3-dev libedit-dev libpng-dev libpcap-dev \
 	libsdl2-dev libsdl2-ttf-dev libvdeplug-dev
 RUN apt-get -y dist-upgrade
 RUN git clone https://github.com/nzeemin/ukncbtl-utils.git /usr/local/src/ukncbtl-utils
 RUN cd /usr/local/src/ukncbtl-utils; \
   make -C rt11dsk V=1 all && install -m 755 rt11dsk/rt11dsk /usr/local/bin/
-# https://gunkies.org/wiki/Installing_RT-11_5.3_on_SIMH
 # 
 WORKDIR /usr/local/src/
-# get and build SIMH 4.0
+# https://gunkies.org/wiki/Installing_RT-11_5.3_on_SIMH
+# Get and build SIMH 4.0
 RUN curl -LO -s https://github.com/simh/simh/archive/refs/heads/master.zip && \
   unzip -x master.zip && ls -l
 RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
-# build macro11 tool
+# Build macro11 tool
 RUN cd /usr/local/src && git clone https://github.com/simh/simtools.git && \
  cd simtools/crossassemblers/macro11 && make
-# build dectape tool
+# Build dectape tool
 ADD xen/tools/unix/dectape.c /usr/local/src/
 RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
+# Get and build binutils
+RUN cd /usr/local/src && \
+  curl -s -LO https://sourceware.org/pub/binutils/releases/binutils-2.45.tar.xz && \
+  tar -xf binutils-2.45.tar.xz && \
+  cd binutils-2.45 && mkdir build && cd build && \
+  ../configure  --target=pdp11-aout && \
+  mkdir /tmp/binutils && \
+  DESTDIR=/tmp/binutils make all install
 #
 FROM ubuntu:18.04 as worker
 ENV DEBIAN_FRONTEND=noninteractive
@@ -34,7 +42,7 @@ ENV RT11=/usr/local/share/rt11
 RUN apt-get -y update
 # Install tools and runtime libs for SIMH
 RUN apt-get -yq install \
-	iverilog git make vim jq curl dos2unix srecord iverilog \
+	iverilog git make vim jq curl dos2unix srecord \
 	libsdl2-2.0-0 \
 	libsdl2-ttf-2.0-0 \
 	libpcre3 \
@@ -50,6 +58,7 @@ RUN apt-get -yq install libc6:i386 gcc-multilib g++-multilib \
 COPY --from=builder /usr/local/bin/* /usr/local/bin/
 COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
 COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
+COPY --from=builder /tmp/binutils/* /usr/
 # Make RT-11 stuff
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
