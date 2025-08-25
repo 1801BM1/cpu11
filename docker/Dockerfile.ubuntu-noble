@@ -72,6 +72,7 @@ ADD xen/rt11/HALT.MAC .
 ADD xen/rt11/HALT.SAV .
 ADD xen/rt11/initial.ini .
 ADD xen/rt11/boot.ini .
+ADD xen/rt11/pdp11-aout.ld .
 ADD xen/tools/unix/init_rt11os_image.sh .
 ADD xen/tools/unix/comp_mac2sav.sh /usr/local/bin/
 ADD xen/tools/unix/obj2bin.pl /usr/local/bin/
