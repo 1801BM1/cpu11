@@ -10,8 +10,10 @@ tests running as part of CI workflow.
 * RT-11 v5.3 (free for hobby use in SIMH), installed OS in the `rt11os.dsk` image
 * Icarus Verilog to run test benches (Ubuntu 24.04 based image).
 * a few 32-bit runtime libraries to run ModelSim 10.1d from Quartus 13 (externally mounted to the container)
+* GCC 4.3.0 for pdp11-aout target (C compiler only)
 * bintuils 2.45: pdp11-aout-{as, ld, ar, objcopy, objdump}
-* bin2load tool (converts BIN to LDA format)
+* `pdp11-aout.ld` script to produce executable by RT-11 by GNU binutils
+* `bin2load` tool (converts BIN to LDA format)
 
 # Docker image build flow
 

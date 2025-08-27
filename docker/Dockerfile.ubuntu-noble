@@ -26,15 +26,6 @@ RUN cd /usr/local/src && git clone https://github.com/simh/simtools.git && \
 # Build dectape tool
 ADD xen/tools/unix/dectape.c /usr/local/src/
 RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
-# Get and build binutils
-RUN cd /usr/local/src && \
-  curl -s -LO https://sourceware.org/pub/binutils/releases/binutils-2.45.tar.xz && \
-  tar -xf binutils-2.45.tar.xz && \
-  cd binutils-2.45 && mkdir build && cd build && \
-  ../configure  --target=pdp11-aout && \
-  make all && \
-  mkdir /tmp/binutils && \
-  make install DESTDIR=/tmp/binutils
 # Get and build bin2load
 RUN cd /usr/local/src && \
   git clone https://github.com/jguillaumes/retroutils.git && \
@@ -47,9 +38,10 @@ ENV PATH=$PATH:/work/xen/tools/unix
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV RT11=/usr/local/share/rt11
-RUN apt-get -y update >/dev/null
+RUN apt-get -y update  >/dev/null
 # Install tools and runtime libs for SIMH
 RUN apt-get -yq install \
+	ca-certificates \
 	iverilog git make vim jq curl dos2unix srecord \
 	libsdl2-2.0-0 \
 	libsdl2-ttf-2.0-0 \
@@ -59,10 +51,16 @@ RUN apt-get -yq install \
 	libpcap0.8t64 \
 	libvdeplug2t64 \
 	> /dev/null
+# Install binutils and gcc from https://1801bm1.com/ubuntu APT repo
+ADD docker/1801bm1.sources /etc/apt/sources.list.d/
+ADD docker/1801bm1.gpg.asc /usr/share/keyrings/1801bm1.gpg.asc
+RUN apt-get -y update
+RUN apt-get -yq install gcc-14-pdp11-cross binutils-pdp11-cross
+	
 COPY --from=builder /usr/local/bin/* /usr/local/bin/
 COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
 COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
-COPY --from=builder /tmp/binutils /
+# COPY --from=builder /tmp/binutils /
 COPY --from=builder /usr/local/src/retroutils/bin2load/bin2load /usr/local/bin/
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
