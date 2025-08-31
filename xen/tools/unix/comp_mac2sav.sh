@@ -3,7 +3,7 @@ if [ $# -eq 0 ] ; then
 	echo "Usage: $0 file.mac" >&2
 	exit 1
 fi
-ROOT=$(realpath $(dirname $0)/..)
+ROOT=$(realpath $(dirname $0)/../../..)
 FN="$1"
 # echo "ROOT is $ROOT; EXT_ROOT is $EXT_ROOT; WD is $WD"
 PFX=${WD#$EXT_ROOT/}
@@ -46,7 +46,7 @@ rt11dsk a /dev/shm/rt11os.dsk /dev/shm/STARTF.COM >/dev/null
 mkdir -p /tmp/empty/
 cp $LOCAL_FN /tmp/empty/
 touch -t 9101011200 /tmp/empty/*
-/work/docker/dectape -o /tmp/empty/ /dev/shm/test.tap
+dectape -o /tmp/empty/ /dev/shm/test.tap
 # Create INI file to run SIMH / pdp11
 cat <<EOF >$tmpini
 set cpu 11/23+ 256K noidle

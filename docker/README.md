@@ -51,7 +51,7 @@ How to run the container and get interfactive shell (`docker` could be used inst
 
 ```sh
 cd t11/tst
-../../docker/run_noble.sh /work/docker/comp_mac2sav.sh test.mac
+../../docker/run_noble.sh /work/xen/tools/unix/comp_mac2sav.sh test.mac
 ```
 
 Resulting files will be storede in `t11/tst/out` relative to root of checked out `cpu11.git` repo

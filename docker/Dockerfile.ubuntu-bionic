@@ -14,13 +14,13 @@ RUN cd /usr/local/src/ukncbtl-utils; \
 # 
 WORKDIR /usr/local/src/
 # https://gunkies.org/wiki/Installing_RT-11_5.3_on_SIMH
-# Get and build SIMH 4.0
-RUN curl -LO -s https://github.com/simh/simh/archive/refs/heads/master.zip && \
-  unzip -x master.zip && ls -l
-RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
-# Build macro11 tool
-RUN cd /usr/local/src && git clone https://github.com/simh/simtools.git && \
- cd simtools/crossassemblers/macro11 && make
+## Get and build SIMH 4.0
+#RUN curl -LO -s https://github.com/simh/simh/archive/refs/heads/master.zip && \
+#  unzip -x master.zip && ls -l
+#RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
+## Build macro11 tool
+#RUN cd /usr/local/src && git clone https://github.com/simh/simtools.git && \
+# cd simtools/crossassemblers/macro11 && make
 # Build dectape tool
 ADD xen/tools/unix/dectape.c /usr/local/src/
 RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
@@ -55,14 +55,14 @@ RUN dpkg --add-architecture i386 && apt-get -y update
 RUN apt-get -yq install libc6:i386 gcc-multilib g++-multilib \
 	libxft2:i386 libxext6:i386 libncurses5:i386
 COPY --from=builder /usr/local/bin/* /usr/local/bin/
-COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
-COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
+# COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
+# COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
 COPY --from=builder /usr/local/src/retroutils/bin2load/bin2load /usr/local/bin/
 # Install binutils and gcc from https://1801bm1.com/ubuntu APT repo
 ADD docker/1801bm1.list /etc/apt/sources.list.d/
 ADD docker/1801bm1.gpg.asc /etc/apt/trusted.gpg.d/1801bm1.gpg.asc
 RUN apt-get -y update
-RUN apt-get -yq install gcc-14-pdp11-cross binutils-pdp11-cross
+RUN apt-get -yq install gcc-14-pdp11-cross binutils-pdp11-cross simh
 # Make RT-11 stuff
 RUN mkdir -p /usr/local/share/rt11/Disks
 WORKDIR $RT11
