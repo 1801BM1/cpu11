@@ -139,8 +139,6 @@ set files [list \
  [file normalize "${origin_dir}/rtl/vm1_defs.v"] \
  [file normalize "${origin_dir}/rtl/xpll.v"] \
  [file normalize "${origin_dir}/rtl/ram_sp_nc.v"] \
- [file normalize "${origin_dir}/rtl/ram_dp_byte_we.v"] \
- [file normalize "${origin_dir}/rtl/vm1_xlib.v"] \
  [file normalize "${origin_dir}/../lib/config.v"] \
  [file normalize "${origin_dir}/../lib/wbc_rst.v"] \
  [file normalize "${origin_dir}/../lib/wbc_uart.v"] \
@@ -149,9 +147,10 @@ set files [list \
  [file normalize "${origin_dir}/../../vm1/hdl/wbc/rtl/vm1_plm.v"] \
  [file normalize "${origin_dir}/../../vm1/hdl/wbc/rtl/vm1_tve.v"] \
  [file normalize "${origin_dir}/../../vm1/hdl/wbc/rtl/vm1_wb.v"] \
+ [file normalize "${origin_dir}/../../vm1/hdl/syn/rtl/vm1_simlib.v"] \
  [file normalize "${origin_dir}/../lib/wbc_vm1.v"] \
  [file normalize "${origin_dir}/../tst/vm1.mem"] \
- [file normalize "${origin_dir}/syn/vm1_reg.mif"] \
+ [file normalize "${origin_dir}/../../vm1/hdl/syn/rtl/vm1_reg.mif"] \
 ]
 add_files -norecurse -fileset $obj $files
 # [file normalize "${origin_dir}/../../vm1/hdl/wbc/rtl/vm1_reg.v"] \
@@ -181,8 +180,8 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Memory File" -objects $file_obj
 
 
-set file "$origin_dir/syn/vm1_reg.mif"
-set file [file normalize $file]
+set file "$origin_dir/../../vm1/hdl/syn/rtl/vm1_reg.mif"
+set file [file normalize "$file"]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Memory Initialization Files" -objects $file_obj
 
@@ -557,5 +556,5 @@ move_dashboard_gadget -name {drc_1} -row 2 -col 0
 move_dashboard_gadget -name {timing_1} -row 0 -col 1
 move_dashboard_gadget -name {utilization_2} -row 1 -col 1
 move_dashboard_gadget -name {methodology_1} -row 2 -col 1
-# Set current dashboard to 'default_dashboard' 
+# Set current dashboard to 'default_dashboard'
 current_dashboard default_dashboard 
