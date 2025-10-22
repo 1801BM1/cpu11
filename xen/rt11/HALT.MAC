@@ -1,0 +1,12 @@
+        .TITLE  HALT-ME
+        .MCALL  .TTYOUT,.EXIT
+PROG::	MOV     #MSG,R1  ;STARTING ADDRESS OF STRING
+1$:     MOVB    (R1)+,R0 ;FETCH NEXT CHARACTER
+        BEQ     DONE     ;IF ZERO, EXIT LOOP
+        .TTYOUT          ;OTHERWISE PRINT IT
+        BR      1$       ;REPEAT LOOP
+DONE:   HALT
+	.EXIT
+
+MSG:    .ASCIZ /HALT SYSTEM  /
+        .END    PROG
