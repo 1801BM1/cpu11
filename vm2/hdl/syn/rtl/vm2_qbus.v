@@ -454,6 +454,8 @@ reg            to_rply;                //
 // assign sync_clr    = mc_res | (~iop_wr & ~rply3 & rply2);
 // assign mc_rdy     = alu_nrdy & plm[0];
 // assign mc_drdy    = ~plm[27] | mc_drdy1;
+// assign dc_fl      = (ir_stb ? pld[10] : ~dc_fb)
+//                   & ((ir_stb & dc_bi) | (~dc_mop0 & dc_mop1));
 //______________________________________________________________________________
 //
 // Extrenal pin assignments
@@ -924,7 +926,8 @@ assign dc_j7 = ir_stb
 
 assign dc_i7  = (breg[2:0] == 3'b111);
 assign dc_bi  = pld[5];
-assign dc_fl  = (ir_stb ? pld[10] : ~dc_fb) & ((ir_stb & dc_bi) | (~dc_mop0 & dc_mop1));
+assign dc_fl  = ir_stb ? pld[10] & (pld[5] | (pld[4] & ~pld[3])) :
+                         ~dc_fb & (~dc_mop0 & dc_mop1);
 assign dc_aux = dc_j7 | br_cmdrq;
 assign alt_cnst = (~dc_fb & plm[30]) | (dc_fb & plm[30] & plm[5] & plm[6]);
 
