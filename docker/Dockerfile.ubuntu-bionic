@@ -1,0 +1,88 @@
+FROM ubuntu:18.04 as builder
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV RT11=/usr/local/share/rt11
+RUN apt-get -q update
+RUN apt-get -yq install \
+	cmake gcc g++ git make jq curl unzip xz-utils \
+	libpcre3-dev libedit-dev libpng-dev libpcap-dev \
+	libsdl2-dev libsdl2-ttf-dev libvdeplug-dev
+RUN apt-get -y dist-upgrade
+RUN git clone https://github.com/nzeemin/ukncbtl-utils.git /usr/local/src/ukncbtl-utils
+RUN cd /usr/local/src/ukncbtl-utils; \
+  make -C rt11dsk V=1 all && install -m 755 rt11dsk/rt11dsk /usr/local/bin/
+# 
+WORKDIR /usr/local/src/
+# https://gunkies.org/wiki/Installing_RT-11_5.3_on_SIMH
+## Get and build SIMH 4.0
+#RUN curl -LO -s https://github.com/simh/simh/archive/refs/heads/master.zip && \
+#  unzip -x master.zip && ls -l
+#RUN cd simh-master && make pdp11 && install -m 755 BIN/pdp11 /usr/local/bin/
+## Build macro11 tool
+#RUN cd /usr/local/src && git clone https://github.com/simh/simtools.git && \
+# cd simtools/crossassemblers/macro11 && make
+# Build dectape tool
+ADD xen/tools/unix/dectape.c /usr/local/src/
+RUN gcc -o /usr/local/bin/dectape /usr/local/src/dectape.c
+# Get and build bin2load
+RUN cd /usr/local/src && \
+  git clone https://github.com/jguillaumes/retroutils.git && \
+  cd retroutils/bin2load && \
+  make bin2load
+# Runtime/worker container
+FROM ubuntu:18.04 as worker
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV PATH=$PATH:/modelsim/linux:/work/xen/tools/unix
+ENV RT11=/usr/local/share/rt11
+# Update APT repo metadata
+RUN apt-get -y update
+# Install tools and runtime libs for SIMH
+RUN apt-get -yq install \
+	ca-certificates \
+	iverilog git make vim jq curl dos2unix srecord \
+	libsdl2-2.0-0 \
+	libsdl2-ttf-2.0-0 \
+	libpcre3 \
+	libedit2 \
+	libpng16-16 \
+	libpcap0.8 \
+	libvdeplug2 \
+	>/dev/null
+# Enable i386 architecture
+RUN dpkg --add-architecture i386 && apt-get -y update
+# Install 32-bit libc and other useful tools
+RUN apt-get -yq install libc6:i386 gcc-multilib g++-multilib \
+	libxft2:i386 libxext6:i386 libncurses5:i386
+COPY --from=builder /usr/local/bin/* /usr/local/bin/
+# COPY --from=builder /usr/local/src/simh-master/BIN/pdp11 /usr/local/bin/
+# COPY --from=builder /usr/local/src/simtools/crossassemblers/macro11/macro11 /usr/local/bin/
+COPY --from=builder /usr/local/src/retroutils/bin2load/bin2load /usr/local/bin/
+# Install binutils and gcc from https://1801bm1.com/ubuntu APT repo
+ADD docker/1801bm1.list /etc/apt/sources.list.d/
+ADD docker/1801bm1.gpg.asc /etc/apt/trusted.gpg.d/1801bm1.gpg.asc
+RUN apt-get -y update
+RUN apt-get -yq install gcc-14-pdp11-cross binutils-pdp11-cross simh
+# Make RT-11 stuff
+RUN mkdir -p /usr/local/share/rt11/Disks
+WORKDIR $RT11
+# 1. Get an empty RL02 disk image where your installation will live.
+RUN curl -LO -s http://www.dbit.com/pub/pdp11/empty/rl02.dsk.gz && \
+  gunzip rl02.dsk.gz && \
+  mv rl02.dsk Disks/empty-rl02.dsk
+# 2. Get the Mentec software kit distributed as RL02 image
+RUN curl -LO -s http://simh.trailing-edge.com/kits/rtv53swre.tar.Z
+RUN zcat rtv53swre.tar.Z |tar -xvf - && rm rtv53swre.tar.Z
+ADD xen/rt11/STARTF.COM .
+ADD xen/rt11/HALT.MAC .
+ADD xen/rt11/HALT.SAV .
+ADD xen/rt11/initial.ini .
+ADD xen/rt11/boot.ini .
+ADD xen/rt11/pdp11-aout.ld .
+ADD xen/tools/unix/init_rt11os_image.sh .
+ADD xen/tools/unix/comp_mac2sav.sh /usr/local/bin/
+ADD xen/tools/unix/obj2bin.pl /usr/local/bin/
+RUN ./init_rt11os_image.sh
+# Optional: Clean up to reduce image size
+RUN apt-get -y clean all ; rm -rf /var/cache/apt/ /var/lib/apt/lists/*
+WORKDIR /work

@@ -8,3 +8,7 @@ xen/qa7/syn/ip/**
 #q[ak]7.ip_user_files/**
 #q[ak]7.runs/**
 #q[ak]7.src/**
+*.bin
+*.hex
+*.mem
+*.mif

@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://1801bm1.com/ubuntu
+Suites: noble
+Components: main
+Signed-By: /usr/share/keyrings/1801bm1.gpg.asc

@@ -1,0 +1,14 @@
+# +timescale+1ns/100ps
++incdir+../../tbe
+#vlog -vlog01compat -work work +incdir+../../tbe {../../tbe/config.v}
+../../tbe/config.v
+#vlog -vlog01compat -work work +incdir+../../tbe {../../tbe/de0_tb1.v}
+../../tbe/de0_tb1.v
+#vlog -vlog01compat -work work +incdir+../../tbe {../../../wbc/rtl/t11_plm.v}
+../../../wbc/rtl/t11_plm.v
+#vlog -vlog01compat -work work +incdir+../../tbe {../../rtl/t11.v}
+../../rtl/t11.v
+# top module:
+#-s tb_t11
+# output file
+#-o tb_t11.vvp
