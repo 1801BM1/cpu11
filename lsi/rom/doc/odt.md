@@ -264,7 +264,7 @@ a Double Bus Error occurred.
 While RUBOUT is not truly a command, the console does support this
 character. When typing in either address or data, the user can type
 RUBOUT to erase the previously typed character and the console will
-respond with a "\" (Backslash-ASCII 134<sub>8</sub>) for every
+respond with a "\\" (Backslash-ASCII 134<sub>8</sub>) for every
 typed RUBOUT.
 ```
 @ 000100/ 077777 123457 (RUBOUT) \ 6 CR LF
